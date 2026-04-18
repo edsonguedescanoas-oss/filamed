@@ -80,6 +80,14 @@ function TvPage() {
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<{
+    text: string;
+    voice: string;
+    status: "falando" | "ok" | "erro" | "vazio";
+    at: Date;
+    error?: string;
+  } | null>(null);
+  const [showDebug, setShowDebug] = useState(true);
 
   // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
   const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
@@ -329,8 +337,31 @@ function TvPage() {
       synth.cancel();
 
       utterance.onstart = () => console.info("[TV] 🔊 falando:", utterance.text);
-      utterance.onerror = (e) => console.error("[TV] erro TTS:", e.error, utterance.text);
-      utterance.onend = () => console.info("[TV] ✓ fim da fala");
+      utterance.onstart = () => {
+        console.info("[TV] 🔊 falando:", utterance.text);
+        setDebugInfo({
+          text: utterance.text,
+          voice: utterance.voice?.name ?? "padrão do sistema",
+          status: "falando",
+          at: new Date(),
+        });
+      };
+      utterance.onerror = (e) => {
+        console.error("[TV] erro TTS:", e.error, utterance.text);
+        setDebugInfo({
+          text: utterance.text,
+          voice: utterance.voice?.name ?? "padrão do sistema",
+          status: "erro",
+          at: new Date(),
+          error: String(e.error ?? "desconhecido"),
+        });
+      };
+      utterance.onend = () => {
+        console.info("[TV] ✓ fim da fala");
+        setDebugInfo((prev) =>
+          prev && prev.text === utterance.text ? { ...prev, status: "ok", at: new Date() } : prev,
+        );
+      };
       console.info("[TV] speak() →", { text: utterance.text, voice: utterance.voice?.name, voicesCount: synth.getVoices().length });
       synth.speak(utterance);
 
@@ -408,7 +439,16 @@ function TvPage() {
     ].filter(Boolean);
     const texto = partes.join(" ").trim();
     console.info("[TV] texto final da chamada:", texto || "<vazio>");
-    if (!texto) return;
+    if (!texto) {
+      setDebugInfo({
+        text: "<vazio>",
+        voice: utterance.voice?.name ?? "padrão do sistema",
+        status: "vazio",
+        at: new Date(),
+        error: "Texto montado ficou vazio",
+      });
+      return;
+    }
 
     utterance.text = texto;
     speakUtterance(utterance);
