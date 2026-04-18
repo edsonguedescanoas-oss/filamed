@@ -1,0 +1,1 @@
+DELETE FROM public.filas WHERE unidade_id = 'b19afae5-85b8-481b-9869-0d3b9da95950';
