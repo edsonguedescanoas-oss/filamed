@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Loader2,
   Megaphone,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -262,14 +263,34 @@ export function RecepcaoWidgets({ unidadeId }: { unidadeId: string }) {
  * MEDICO / ENFERMEIRO — fila de atendimento
  * ────────────────────────────────────────────────────────── */
 
+type SenhaStatus = "aguardando" | "chamada" | "em_atendimento" | "finalizada" | "ausente" | "cancelada";
+
 type ProximaSenha = {
   id: string;
   codigo: string;
   prioridade: string;
+  status: SenhaStatus;
   created_at: string;
+  updated_at: string;
   fila_id: string;
+  paciente_id: string | null;
   filas: { nome: string; cor: string | null } | null;
 };
+
+const PRIO_RANK: Record<string, number> = { urgente: 0, preferencial: 1, normal: 2 };
+
+function sortSenhas(list: ProximaSenha[]): ProximaSenha[] {
+  // chamadas primeiro, depois aguardando por prioridade + ordem de chegada
+  return [...list].sort((a, b) => {
+    if (a.status !== b.status) {
+      if (a.status === "chamada") return -1;
+      if (b.status === "chamada") return 1;
+    }
+    const r = (PRIO_RANK[a.prioridade] ?? 9) - (PRIO_RANK[b.prioridade] ?? 9);
+    if (r !== 0) return r;
+    return a.created_at.localeCompare(b.created_at);
+  });
+}
 
 export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   const { user } = useAuth();
@@ -278,52 +299,176 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   const [chamadas, setChamadas] = useState(0);
   const [emAtendimento, setEmAtendimento] = useState(0);
   const [proximas, setProximas] = useState<ProximaSenha[]>([]);
+  const [temAtivo, setTemAtivo] = useState(false);
 
   // Modal de chamada
   const [chamarSenha, setChamarSenha] = useState<ProximaSenha | null>(null);
   const [destino, setDestino] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    const [agRes, chRes, emRes, proxRes] = await Promise.all([
-      supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("unidade_id", unidadeId)
-        .eq("status", "aguardando"),
-      supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("unidade_id", unidadeId)
-        .eq("status", "chamada"),
-      supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("unidade_id", unidadeId)
-        .eq("status", "em_atendimento"),
-      supabase
-        .from("senhas")
-        .select("id,codigo,prioridade,created_at,fila_id,filas(nome,cor)")
-        .eq("unidade_id", unidadeId)
-        .eq("status", "aguardando")
-        .order("prioridade", { ascending: false })
-        .order("created_at", { ascending: true })
-        .limit(8),
-    ]);
-    setAguardando(agRes.count ?? 0);
-    setChamadas(chRes.count ?? 0);
-    setEmAtendimento(emRes.count ?? 0);
-    setProximas((proxRes.data ?? []) as ProximaSenha[]);
-    setLoading(false);
-  };
+  // Loading por linha (Chamar / Iniciar)
+  const [actionId, setActionId] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancel = false;
+
+    const load = async () => {
+      setLoading(true);
+      const [agRes, chRes, emRes, proxRes, ativoRes] = await Promise.all([
+        supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .eq("status", "aguardando"),
+        supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .eq("status", "chamada"),
+        supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .eq("status", "em_atendimento"),
+        supabase
+          .from("senhas")
+          .select("id,codigo,prioridade,status,created_at,updated_at,fila_id,paciente_id,filas(nome,cor)")
+          .eq("unidade_id", unidadeId)
+          .in("status", ["aguardando", "chamada"])
+          .order("prioridade", { ascending: false })
+          .order("created_at", { ascending: true })
+          .limit(10),
+        user
+          ? supabase
+              .from("atendimentos")
+              .select("id", { count: "exact", head: true })
+              .eq("unidade_id", unidadeId)
+              .eq("profissional_id", user.id)
+              .is("finalizado_em", null)
+          : Promise.resolve({ count: 0 }),
+      ]);
+      if (cancel) return;
+      setAguardando(agRes.count ?? 0);
+      setChamadas(chRes.count ?? 0);
+      setEmAtendimento(emRes.count ?? 0);
+      setProximas(sortSenhas((proxRes.data ?? []) as ProximaSenha[]));
+      setTemAtivo(((ativoRes as { count: number | null }).count ?? 0) > 0);
+      setLoading(false);
+    };
+
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadeId]);
+    return () => {
+      cancel = true;
+    };
+  }, [unidadeId, user]);
+
+  // Realtime — atualiza lista e contadores quando senhas mudam
+  useEffect(() => {
+    const ch = supabase
+      .channel(`dashboard-atendimento-${unidadeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "senhas",
+          filter: `unidade_id=eq.${unidadeId}`,
+        },
+        async (payload) => {
+          // Recalcula contadores quando algum status muda
+          const recountStatuses = async () => {
+            const [a, c, e] = await Promise.all([
+              supabase
+                .from("senhas")
+                .select("id", { count: "exact", head: true })
+                .eq("unidade_id", unidadeId)
+                .eq("status", "aguardando"),
+              supabase
+                .from("senhas")
+                .select("id", { count: "exact", head: true })
+                .eq("unidade_id", unidadeId)
+                .eq("status", "chamada"),
+              supabase
+                .from("senhas")
+                .select("id", { count: "exact", head: true })
+                .eq("unidade_id", unidadeId)
+                .eq("status", "em_atendimento"),
+            ]);
+            setAguardando(a.count ?? 0);
+            setChamadas(c.count ?? 0);
+            setEmAtendimento(e.count ?? 0);
+          };
+
+          if (payload.eventType === "DELETE") {
+            const old = payload.old as { id: string };
+            setProximas((prev) => prev.filter((p) => p.id !== old.id));
+            await recountStatuses();
+            return;
+          }
+
+          const row = payload.new as Omit<ProximaSenha, "filas"> & { filas?: never };
+          const ativa = ["aguardando", "chamada"].includes(row.status);
+
+          if (!ativa) {
+            // saiu da nossa lista (em_atendimento, finalizada, etc.)
+            setProximas((prev) => prev.filter((p) => p.id !== row.id));
+            await recountStatuses();
+            return;
+          }
+
+          // Buscar dados da fila para enriquecer (sem await bloqueante)
+          const { data: filaData } = await supabase
+            .from("filas")
+            .select("nome,cor")
+            .eq("id", row.fila_id)
+            .maybeSingle();
+
+          const enriched: ProximaSenha = {
+            ...row,
+            filas: filaData ?? null,
+          };
+
+          setProximas((prev) => {
+            const exists = prev.some((p) => p.id === row.id);
+            const next = exists
+              ? prev.map((p) => (p.id === row.id ? enriched : p))
+              : [...prev, enriched];
+            return sortSenhas(next).slice(0, 10);
+          });
+          await recountStatuses();
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "atendimentos",
+          filter: `unidade_id=eq.${unidadeId}`,
+        },
+        async () => {
+          if (!user) return;
+          const { count } = await supabase
+            .from("atendimentos")
+            .select("id", { count: "exact", head: true })
+            .eq("unidade_id", unidadeId)
+            .eq("profissional_id", user.id)
+            .is("finalizado_em", null);
+          setTemAtivo((count ?? 0) > 0);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [unidadeId, user]);
 
   const abrirChamar = (s: ProximaSenha) => {
+    if (temAtivo) {
+      toast.error("Finalize o atendimento atual antes de chamar outra senha.");
+      return;
+    }
     setChamarSenha(s);
     setDestino(s.filas?.nome ? `${s.filas.nome} 1` : "");
   };
@@ -350,16 +495,42 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
       });
       if (e2) throw e2;
       toast.success(`${chamarSenha.codigo} chamada para ${destino.trim()}.`);
-      // Otimista: remove da lista de "aguardando" e atualiza contadores
-      setProximas((prev) => prev.filter((p) => p.id !== chamarSenha.id));
-      setAguardando((n) => Math.max(0, n - 1));
-      setChamadas((n) => n + 1);
       setChamarSenha(null);
       setDestino("");
+      // o realtime vai atualizar lista e contadores
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao chamar senha.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const iniciarAtendimento = async (s: ProximaSenha) => {
+    if (!user) return;
+    if (temAtivo) {
+      toast.error("Já existe um atendimento em andamento.");
+      return;
+    }
+    setActionId(s.id);
+    try {
+      const { error: e1 } = await supabase.from("atendimentos").insert({
+        unidade_id: unidadeId,
+        senha_id: s.id,
+        paciente_id: s.paciente_id,
+        profissional_id: user.id,
+      });
+      if (e1) throw e1;
+      const { error: e2 } = await supabase
+        .from("senhas")
+        .update({ status: "em_atendimento", updated_at: new Date().toISOString() })
+        .eq("id", s.id);
+      if (e2) throw e2;
+      toast.success(`Atendimento iniciado: ${s.codigo}.`);
+      // realtime cuida do resto
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao iniciar atendimento.");
+    } finally {
+      setActionId(null);
     }
   };
 
@@ -389,8 +560,15 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <div className="flex items-center justify-between">
-          <SectionTitle>Próximos pacientes na fila</SectionTitle>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <SectionTitle>Próximos pacientes na fila</SectionTitle>
+            {temAtivo && (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                Você tem um atendimento ativo. Finalize-o para chamar/iniciar outro.
+              </p>
+            )}
+          </div>
           <Link
             to="/app/atendimento"
             className="text-sm text-primary inline-flex items-center gap-1 hover:underline"
@@ -411,10 +589,15 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
                 0,
                 Math.floor((Date.now() - new Date(s.created_at).getTime()) / 60000),
               );
+              const isChamada = s.status === "chamada";
               return (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-3"
+                  className={`flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors ${
+                    isChamada
+                      ? "border-amber-500/40 bg-amber-500/5"
+                      : "border-border bg-muted/30"
+                  }`}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div
@@ -422,8 +605,13 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
                       style={{ backgroundColor: s.filas?.cor ?? "hsl(var(--primary))" }}
                     />
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-base font-bold">{s.codigo}</span>
+                        {isChamada && (
+                          <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-0 text-[10px] py-0 px-1.5">
+                            Chamada
+                          </Badge>
+                        )}
                         {s.prioridade !== "normal" && (
                           <Badge variant="outline" className="capitalize text-[10px] py-0 px-1.5">
                             {s.prioridade}
@@ -435,14 +623,33 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => abrirChamar(s)}
-                    className="bg-gradient-primary shrink-0"
-                  >
-                    <Megaphone className="h-3.5 w-3.5" />
-                    Chamar
-                  </Button>
+                  <div className="flex shrink-0 gap-1.5">
+                    {isChamada ? (
+                      <Button
+                        size="sm"
+                        onClick={() => void iniciarAtendimento(s)}
+                        disabled={actionId === s.id || temAtivo}
+                        className="bg-gradient-primary"
+                      >
+                        {actionId === s.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5" />
+                        )}
+                        Iniciar
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => abrirChamar(s)}
+                        disabled={temAtivo}
+                        className="bg-gradient-primary"
+                      >
+                        <Megaphone className="h-3.5 w-3.5" />
+                        Chamar
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })
