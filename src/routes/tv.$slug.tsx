@@ -211,13 +211,14 @@ function TvPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `unidade_id=eq.${unidade.id}` },
         (payload) => {
           const nova = payload.new as Chamada;
+          console.info("[TV] 📣 chamada recebida via realtime:", nova, "soundOn:", soundOnRef.current);
           setChamadas((prev) => [nova, ...prev].slice(0, 10));
           if (soundOnRef.current) {
             playDing();
-            // Aguarda um instante após o ding e fala a chamada
             void announceChamada(nova);
-            // Agenda até 2 rechamadas (30s e 60s) caso a senha continue como "chamada"
             agendarRechamadas(nova);
+          } else {
+            console.warn("[TV] som desativado — clique em 'Ativar som' no painel");
           }
         },
       )
