@@ -860,6 +860,98 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Card flutuante de Atendimento ativo */}
+      {atendimentoAtivo && (
+        <div
+          className="fixed bottom-4 right-4 z-50 w-[20rem] max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-bottom-4 duration-300"
+          role="region"
+          aria-label="Atendimento ativo"
+        >
+          <div className="rounded-2xl border-2 border-primary/40 bg-card shadow-elegant overflow-hidden">
+            {/* Cabeçalho sempre visível */}
+            <button
+              type="button"
+              onClick={() => setMinimizado((m) => !m)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gradient-primary text-primary-foreground"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-wider">
+                  Em atendimento
+                </span>
+                <span className="font-mono text-sm font-bold truncate">
+                  · {atendimentoAtivo.codigo}
+                </span>
+              </div>
+              {minimizado ? (
+                <ChevronUp className="h-4 w-4 shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 shrink-0" />
+              )}
+            </button>
+
+            {!minimizado && (
+              <div className="p-4 space-y-4">
+                {/* Paciente */}
+                <div className="flex items-start gap-2.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">
+                      {atendimentoAtivo.paciente_nome ?? "Paciente não identificado"}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {atendimentoAtivo.fila_nome ?? "—"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timer */}
+                <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-center">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                    Tempo decorrido
+                  </div>
+                  <div className="mt-1 font-mono text-3xl font-bold tabular-nums text-foreground">
+                    {(() => {
+                      const sec = Math.max(
+                        0,
+                        Math.floor(
+                          (Date.now() - new Date(atendimentoAtivo.iniciado_em).getTime()) / 1000,
+                        ),
+                      );
+                      const h = Math.floor(sec / 3600);
+                      const m = Math.floor((sec % 3600) / 60);
+                      const s = sec % 60;
+                      const pad = (n: number) => n.toString().padStart(2, "0");
+                      return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Ação */}
+                <Button
+                  onClick={() => void finalizarAtendimento()}
+                  disabled={finalizando}
+                  className="w-full bg-gradient-primary"
+                  size="lg"
+                >
+                  {finalizando ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  Finalizar atendimento
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
