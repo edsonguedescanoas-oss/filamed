@@ -423,6 +423,12 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   // IDs de senhas urgentes já vistas — para tocar o alerta apenas em entradas novas
   const urgentesVistasRef = useRef<Set<string>>(new Set());
   const primeiroLoadRef = useRef(true);
+
+  // Destrava o AudioContext na primeira interação do usuário (clique/tecla/toque)
+  // para que os alertas sonoros funcionem mesmo sem interação prévia com o dashboard.
+  useEffect(() => {
+    ensureAudioUnlock();
+  }, []);
   // Tick para o timer ao vivo
   const [, setNowTick] = useState(0);
   useEffect(() => {
