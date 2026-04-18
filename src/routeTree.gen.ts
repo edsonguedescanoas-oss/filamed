@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
+import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
 
@@ -47,6 +48,11 @@ const AppAppIndexRoute = AppAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppRecepcaoRoute = AppAppRecepcaoRouteImport.update({
+  id: '/recepcao',
+  path: '/recepcao',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppPacientesRoute = AppAppPacientesRouteImport.update({
   id: '/pacientes',
   path: '/pacientes',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppAppRouteWithChildren
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
+  '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/': typeof AppAppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
+  '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app': typeof AppAppIndexRoute
 }
 export interface FileRoutesById {
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/_app/app': typeof AppAppRouteWithChildren
   '/_app/app/filas': typeof AppAppFilasRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
+  '/_app/app/recepcao': typeof AppAppRecepcaoRoute
   '/_app/app/': typeof AppAppIndexRoute
 }
 export interface FileRouteTypes {
@@ -95,9 +104,17 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/filas'
     | '/app/pacientes'
+    | '/app/recepcao'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/setup' | '/app/filas' | '/app/pacientes' | '/app'
+  to:
+    | '/'
+    | '/login'
+    | '/setup'
+    | '/app/filas'
+    | '/app/pacientes'
+    | '/app/recepcao'
+    | '/app'
   id:
     | '__root__'
     | '/'
@@ -107,6 +124,7 @@ export interface FileRouteTypes {
     | '/_app/app'
     | '/_app/app/filas'
     | '/_app/app/pacientes'
+    | '/_app/app/recepcao'
     | '/_app/app/'
   fileRoutesById: FileRoutesById
 }
@@ -161,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppIndexRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/recepcao': {
+      id: '/_app/app/recepcao'
+      path: '/recepcao'
+      fullPath: '/app/recepcao'
+      preLoaderRoute: typeof AppAppRecepcaoRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/pacientes': {
       id: '/_app/app/pacientes'
       path: '/pacientes'
@@ -181,12 +206,14 @@ declare module '@tanstack/react-router' {
 interface AppAppRouteChildren {
   AppAppFilasRoute: typeof AppAppFilasRoute
   AppAppPacientesRoute: typeof AppAppPacientesRoute
+  AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
   AppAppIndexRoute: typeof AppAppIndexRoute
 }
 
 const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppFilasRoute: AppAppFilasRoute,
   AppAppPacientesRoute: AppAppPacientesRoute,
+  AppAppRecepcaoRoute: AppAppRecepcaoRoute,
   AppAppIndexRoute: AppAppIndexRoute,
 }
 
