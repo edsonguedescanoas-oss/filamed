@@ -174,6 +174,45 @@ function playUrgenteAlert() {
   }
 }
 
+/**
+ * Pede permissão para notificações do navegador (idempotente).
+ * Só pede se o estado for "default" — não reabre o prompt se já foi negado.
+ */
+function requestNotificationPermission() {
+  if (typeof window === "undefined" || !("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    void Notification.requestPermission().catch(() => {});
+  }
+}
+
+/**
+ * Mostra uma notificação nativa apenas se a aba NÃO estiver visível
+ * (background, minimizada ou em outra aba). Se a aba estiver focada,
+ * o toast + som já são suficientes.
+ */
+function notifyUrgenteIfHidden(codigo: string, fila: string | null) {
+  if (typeof window === "undefined" || !("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+  if (typeof document !== "undefined" && document.visibilityState === "visible") return;
+
+  try {
+    const n = new Notification(`🚨 Senha urgente: ${codigo}`, {
+      body: fila ? `Nova prioridade urgente em ${fila}` : "Nova prioridade urgente na fila",
+      tag: `senha-urgente-${codigo}`, // evita empilhar notificações duplicadas
+      requireInteraction: false,
+      silent: false,
+    });
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+    // Auto-fecha após 8s
+    setTimeout(() => n.close(), 8000);
+  } catch {
+    // ignora
+  }
+}
+
 /* ──────────────────────────────────────────────────────────
  * RECEPÇÃO — senhas geradas hoje, por fila, últimas geradas
  * ────────────────────────────────────────────────────────── */
@@ -426,8 +465,10 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
 
   // Destrava o AudioContext na primeira interação do usuário (clique/tecla/toque)
   // para que os alertas sonoros funcionem mesmo sem interação prévia com o dashboard.
+  // Também pede permissão para notificações nativas do navegador.
   useEffect(() => {
     ensureAudioUnlock();
+    requestNotificationPermission();
   }, []);
   // Tick para o timer ao vivo
   const [, setNowTick] = useState(0);
@@ -573,7 +614,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
           const row = payload.new as Omit<ProximaSenha, "filas"> & { filas?: never };
           const ativa = ["aguardando", "chamada"].includes(row.status);
 
-          // 🔔 Alerta sonoro: nova senha urgente que ainda não vimos
+          // 🔔 Alerta sonoro + notificação: nova senha urgente que ainda não vimos
           if (
             ativa &&
             row.prioridade === "urgente" &&
@@ -584,6 +625,8 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
             toast.warning(`Senha urgente: ${row.codigo}`, {
               description: "Nova prioridade urgente entrou na fila.",
             });
+            // Notificação nativa só dispara se a aba estiver em background
+            notifyUrgenteIfHidden(row.codigo, null);
           }
 
           if (!ativa) {
