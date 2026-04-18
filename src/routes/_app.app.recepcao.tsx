@@ -515,7 +515,7 @@ function RecepcaoPage() {
 
           <Button
             onClick={handleGerar}
-            disabled={!filaId || emitting || filas.length === 0}
+            disabled={!filaId || emitting || filas.length === 0 || !pacienteSelecionado}
             className="mt-5 w-full bg-gradient-primary shadow-soft text-base h-12"
             size="lg"
           >
@@ -528,6 +528,11 @@ function RecepcaoPage() {
               </>
             )}
           </Button>
+          {!pacienteSelecionado && (
+            <p className="mt-2 text-xs text-muted-foreground text-center">
+              Selecione ou cadastre um paciente para emitir a senha.
+            </p>
+          )}
         </section>
 
         {/* ─────── RECENTES ─────── */}
