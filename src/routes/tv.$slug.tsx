@@ -80,6 +80,50 @@ function TvPage() {
   const [error, setError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
 
+  // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
+  const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
+  const [ptVoices, setPtVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(VOICE_STORAGE_KEY);
+  });
+
+  // Carrega lista de vozes (algumas plataformas só populam após `voiceschanged`)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const synth = window.speechSynthesis;
+    const refresh = () => {
+      const all = synth.getVoices();
+      const pt = all.filter((v) => v.lang?.toLowerCase().startsWith("pt"));
+      pt.sort((a, b) => {
+        const aBR = a.lang === "pt-BR" ? 0 : 1;
+        const bBR = b.lang === "pt-BR" ? 0 : 1;
+        if (aBR !== bBR) return aBR - bBR;
+        return a.name.localeCompare(b.name);
+      });
+      setPtVoices(pt);
+    };
+    refresh();
+    synth.addEventListener("voiceschanged", refresh);
+    return () => synth.removeEventListener("voiceschanged", refresh);
+  }, []);
+
+  const handleSelectVoice = (uri: string) => {
+    setSelectedVoiceURI(uri || null);
+    if (typeof window !== "undefined") {
+      if (uri) localStorage.setItem(VOICE_STORAGE_KEY, uri);
+      else localStorage.removeItem(VOICE_STORAGE_KEY);
+    }
+    // Pré-visualização curta com a voz selecionada
+    if (uri && typeof window !== "undefined" && "speechSynthesis" in window) {
+      const u = new SpeechSynthesisUtterance("Voz selecionada");
+      u.lang = "pt-BR";
+      const v = window.speechSynthesis.getVoices().find((x) => x.voiceURI === uri);
+      if (v) u.voice = v;
+      window.speechSynthesis.speak(u);
+    }
+  };
+
   // Carregamento inicial
   useEffect(() => {
     let mounted = true;
