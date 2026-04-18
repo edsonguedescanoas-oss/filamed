@@ -239,3 +239,65 @@ function SignUpForm({
     </form>
   );
 }
+
+function QuickLoginPanel() {
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const [loadingRole, setLoadingRole] = useState<AppRole | null>(null);
+
+  const quickLogin = async (account: typeof TEST_ACCOUNTS[number]) => {
+    setLoadingRole(account.role);
+    try {
+      await signIn(account.email, TEST_PASSWORD);
+      toast.success(`Entrando como ${account.label}…`);
+      void navigate({ to: "/app" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Falha ao entrar";
+      toast.error(msg);
+    } finally {
+      setLoadingRole(null);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-xl border border-dashed border-border bg-muted/30 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="h-4 w-4 text-primary" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Login rápido — contas de teste
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Todas vinculadas à unidade <span className="font-medium text-foreground">Canoas</span>. Abra abas
+        diferentes para simular a equipe trabalhando em conjunto.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {TEST_ACCOUNTS.map((acc) => {
+          const Icon = acc.icon;
+          const isLoading = loadingRole === acc.role;
+          return (
+            <Button
+              key={acc.role}
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={loadingRole !== null}
+              onClick={() => quickLogin(acc)}
+              className="justify-start h-auto py-2 px-2.5"
+            >
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Icon className={`h-3.5 w-3.5 ${acc.color}`} />
+              )}
+              <span className="ml-1.5 text-xs">{acc.label}</span>
+            </Button>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[10px] text-muted-foreground/70 text-center">
+        Senha: <code className="font-mono">Teste1234!</code>
+      </p>
+    </div>
+  );
+}
