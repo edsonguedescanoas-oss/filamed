@@ -91,7 +91,17 @@ function TvPage() {
   // Cache reativo de nomes de paciente por paciente_id (alimenta a UI)
   const [pacienteNomes, setPacienteNomes] = useState<Record<string, string>>({});
 
-  // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
+  // Configuração de voz vinda do banco (configurada no admin)
+  type VoiceProvider = "browser" | "google" | "elevenlabs";
+  type VoiceCfg = { provider: VoiceProvider; voice_id: string | null; rate: number; pitch: number };
+  const [voiceCfg, setVoiceCfg] = useState<VoiceCfg>({
+    provider: "browser",
+    voice_id: null,
+    rate: 0.95,
+    pitch: 1,
+  });
+
+  // Vozes pt-* disponíveis no navegador (apenas para fallback/preview local)
   const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
   const [ptVoices, setPtVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(() => {
