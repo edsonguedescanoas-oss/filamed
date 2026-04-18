@@ -88,6 +88,8 @@ function TvPage() {
     error?: string;
   } | null>(null);
   const [showDebug, setShowDebug] = useState(true);
+  // Cache reativo de nomes de paciente por paciente_id (alimenta a UI)
+  const [pacienteNomes, setPacienteNomes] = useState<Record<string, string>>({});
 
   // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
   const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
@@ -415,6 +417,9 @@ function TvPage() {
 
     const nome = primeiroEUltimoNome(raw);
     pacienteCacheRef.current.set(senha.paciente_id, nome);
+    setPacienteNomes((prev) =>
+      prev[senha.paciente_id!] === nome ? prev : { ...prev, [senha.paciente_id!]: nome },
+    );
     return nome;
   };
 
@@ -523,6 +528,41 @@ function TvPage() {
     }
     return list;
   }, [chamadas, senhasMap]);
+
+  // Pré-carrega nomes dos pacientes das senhas visíveis (destaque + últimas chamadas)
+  useEffect(() => {
+    const idsParaBuscar = new Set<string>();
+    if (destaque?.senha.paciente_id && !pacienteNomes[destaque.senha.paciente_id]) {
+      idsParaBuscar.add(destaque.senha.paciente_id);
+    }
+    for (const { senha } of ultimasChamadas) {
+      if (senha.paciente_id && !pacienteNomes[senha.paciente_id]) {
+        idsParaBuscar.add(senha.paciente_id);
+      }
+    }
+    if (idsParaBuscar.size === 0) return;
+
+    let mounted = true;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("pacientes")
+        .select("id,nome_completo")
+        .in("id", Array.from(idsParaBuscar));
+      if (!mounted || error || !data) return;
+      setPacienteNomes((prev) => {
+        const next = { ...prev };
+        for (const p of data as { id: string; nome_completo: string }[]) {
+          const nome = primeiroEUltimoNome(p.nome_completo);
+          next[p.id] = nome;
+          pacienteCacheRef.current.set(p.id, nome);
+        }
+        return next;
+      });
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [destaque, ultimasChamadas, pacienteNomes]);
 
   const aguardandoPorFila = useMemo(() => {
     const groups = new Map<string, Senha[]>();
@@ -662,6 +702,16 @@ function TvPage() {
                   </div>
                   <PrioridadeTag prioridade={destaque.senha.prioridade} big />
                 </div>
+                {destaque.senha.paciente_id && pacienteNomes[destaque.senha.paciente_id] && (
+                  <div className="mt-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+                      Paciente
+                    </div>
+                    <div className="mt-1 font-display text-3xl font-bold text-white">
+                      {pacienteNomes[destaque.senha.paciente_id]}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-6 flex items-end justify-between gap-4 flex-wrap">
                   <div>
                     <div className="text-sm text-slate-400">Dirija-se a</div>
@@ -700,6 +750,11 @@ function TvPage() {
                     className="rounded-2xl border border-white/10 bg-slate-800/60 p-4 text-center"
                   >
                     <div className="font-display text-3xl font-bold tabular-nums">{senha.codigo}</div>
+                    {senha.paciente_id && pacienteNomes[senha.paciente_id] && (
+                      <div className="mt-1 truncate text-xs font-medium text-slate-200">
+                        {pacienteNomes[senha.paciente_id]}
+                      </div>
+                    )}
                     <div className="mt-1 text-xs text-slate-400 truncate">{chamada.destino}</div>
                   </li>
                 ))}
