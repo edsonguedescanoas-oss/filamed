@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Loader2,
   Megaphone,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
