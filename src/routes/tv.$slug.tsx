@@ -534,9 +534,12 @@ function TvPage() {
   };
 
   const announceChamada = async (chamada: Chamada) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const utterance = createPreparedUtterance();
-    if (!utterance) return;
+    const cfg = voiceCfgRef.current;
+    const usingBrowser = cfg.provider === "browser";
+    if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) return;
+
+    const utterance = usingBrowser ? createPreparedUtterance() : null;
+    if (usingBrowser && !utterance) return;
 
     const senha = await resolveDadosDaSenha(chamada.senha_id);
 
@@ -553,11 +556,11 @@ function TvPage() {
       chamada.destino ? `Dirija-se ${formatarDestino(chamada.destino)}.` : null,
     ].filter(Boolean);
     const texto = partes.join(" ").trim();
-    console.info("[TV] texto final da chamada:", texto || "<vazio>");
+    console.info("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
     if (!texto) {
       setDebugInfo({
         text: "<vazio>",
-        voice: utterance.voice?.name ?? "padrão do sistema",
+        voice: usingBrowser ? (utterance?.voice?.name ?? "padrão do sistema") : cfg.provider,
         status: "vazio",
         at: new Date(),
         error: "Texto montado ficou vazio",
@@ -565,8 +568,12 @@ function TvPage() {
       return;
     }
 
-    utterance.text = texto;
-    speakUtterance(utterance);
+    if (usingBrowser && utterance) {
+      utterance.text = texto;
+      speakUtterance(utterance);
+    } else {
+      await playRemoteTts(texto, cfg);
+    }
   };
 
   // ── Rechamada automática ───────────────────────────────
