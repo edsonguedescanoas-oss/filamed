@@ -10,6 +10,7 @@ import {
   Check,
   X,
   AlertCircle,
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -20,6 +21,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -83,6 +92,13 @@ function RecepcaoPage() {
   const [recentes, setRecentes] = useState<(Senha & { paciente?: { nome_completo: string } | null })[]>([]);
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+
+  // cadastro rápido de paciente
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoCpf, setNovoCpf] = useState("");
+  const [novoTelefone, setNovoTelefone] = useState("");
+  const [savingNovo, setSavingNovo] = useState(false);
 
   const fetchFilas = async () => {
     if (!unidadeId) return;
@@ -188,20 +204,22 @@ function RecepcaoPage() {
 
   const handleGerar = async () => {
     if (!filaId || !canGerar) return;
+    if (!pacienteSelecionado) {
+      toast.error("Selecione ou cadastre um paciente para gerar a senha");
+      return;
+    }
     setEmitting(true);
     try {
       const { data, error } = await supabase.rpc("gerar_senha", {
         _fila_id: filaId,
         _prioridade: prioridade,
-        _paciente_id: pacienteSelecionado?.id ?? undefined,
+        _paciente_id: pacienteSelecionado.id,
         _origem: "recepcao",
       });
       if (error) throw error;
       const senha = data as unknown as Senha;
       toast.success(`Senha ${senha.codigo} emitida`, {
-        description: pacienteSelecionado
-          ? `Vinculada a ${pacienteSelecionado.nome_completo}`
-          : undefined,
+        description: `Vinculada a ${pacienteSelecionado.nome_completo}`,
       });
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
@@ -214,6 +232,42 @@ function RecepcaoPage() {
       toast.error(msg);
     } finally {
       setEmitting(false);
+    }
+  };
+
+  const handleSalvarNovoPaciente = async () => {
+    if (!unidadeId) return;
+    const nome = novoNome.trim();
+    if (nome.length < 2) {
+      toast.error("Informe o nome completo do paciente");
+      return;
+    }
+    setSavingNovo(true);
+    try {
+      const { data, error } = await supabase
+        .from("pacientes")
+        .insert({
+          unidade_id: unidadeId,
+          nome_completo: nome,
+          cpf: onlyDigits(novoCpf) || null,
+          telefone: onlyDigits(novoTelefone) || null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      setPacienteSelecionado(data as Paciente);
+      setPacienteQuery("");
+      setPacientes([]);
+      setNovoOpen(false);
+      setNovoNome("");
+      setNovoCpf("");
+      setNovoTelefone("");
+      toast.success("Paciente cadastrado", { description: nome });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Falha ao cadastrar paciente";
+      toast.error(msg);
+    } finally {
+      setSavingNovo(false);
     }
   };
 
@@ -332,9 +386,23 @@ function RecepcaoPage() {
             </div>
           </div>
 
-          {/* paciente */}
+          {/* paciente (obrigatório) */}
           <div className="mt-5">
-            <Label className="mb-2 block">Paciente (opcional)</Label>
+            <div className="mb-2 flex items-center justify-between">
+              <Label>
+                Paciente <span className="text-destructive">*</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() => {
+                  setNovoNome(pacienteQuery.trim());
+                  setNovoOpen(true);
+                }}
+                className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <UserPlus className="h-3.5 w-3.5" /> Novo paciente
+              </button>
+            </div>
             {pacienteSelecionado ? (
               <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-primary text-primary-foreground">
@@ -376,8 +444,20 @@ function RecepcaoPage() {
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       </div>
                     ) : pacientes.length === 0 ? (
-                      <div className="p-3 text-sm text-muted-foreground text-center">
-                        Nenhum paciente encontrado.
+                      <div className="p-3 text-sm text-center space-y-2">
+                        <p className="text-muted-foreground">Nenhum paciente encontrado.</p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setNovoNome(pacienteQuery.trim());
+                            setNovoOpen(true);
+                          }}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Cadastrar “{pacienteQuery.trim()}”
+                        </Button>
                       </div>
                     ) : (
                       <ul className="max-h-64 overflow-y-auto">
@@ -435,7 +515,7 @@ function RecepcaoPage() {
 
           <Button
             onClick={handleGerar}
-            disabled={!filaId || emitting || filas.length === 0}
+            disabled={!filaId || emitting || filas.length === 0 || !pacienteSelecionado}
             className="mt-5 w-full bg-gradient-primary shadow-soft text-base h-12"
             size="lg"
           >
@@ -448,6 +528,11 @@ function RecepcaoPage() {
               </>
             )}
           </Button>
+          {!pacienteSelecionado && (
+            <p className="mt-2 text-xs text-muted-foreground text-center">
+              Selecione ou cadastre um paciente para emitir a senha.
+            </p>
+          )}
         </section>
 
         {/* ─────── RECENTES ─────── */}
@@ -525,6 +610,69 @@ function RecepcaoPage() {
           )}
         </section>
       </div>
+
+      {/* Dialog de cadastro rápido de paciente */}
+      <Dialog open={novoOpen} onOpenChange={setNovoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo paciente</DialogTitle>
+            <DialogDescription>
+              Cadastre rapidamente para vincular à senha. Outros dados podem ser completados depois em Pacientes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="novo-nome" className="mb-1.5 block">
+                Nome completo <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="novo-nome"
+                value={novoNome}
+                onChange={(e) => setNovoNome(e.target.value)}
+                placeholder="Ex: Maria da Silva"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="novo-cpf" className="mb-1.5 block">CPF</Label>
+                <Input
+                  id="novo-cpf"
+                  value={novoCpf}
+                  onChange={(e) => setNovoCpf(e.target.value)}
+                  placeholder="Opcional"
+                  inputMode="numeric"
+                />
+              </div>
+              <div>
+                <Label htmlFor="novo-tel" className="mb-1.5 block">Telefone</Label>
+                <Input
+                  id="novo-tel"
+                  value={novoTelefone}
+                  onChange={(e) => setNovoTelefone(e.target.value)}
+                  placeholder="Opcional"
+                  inputMode="tel"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNovoOpen(false)} disabled={savingNovo}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void handleSalvarNovoPaciente()} disabled={savingNovo}>
+              {savingNovo ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  Cadastrar e usar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
