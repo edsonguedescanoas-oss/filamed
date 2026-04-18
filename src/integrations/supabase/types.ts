@@ -515,6 +515,35 @@ export type Database = {
         Args: { _unidade_id: string; _user_id: string }
         Returns: boolean
       }
+      gerar_senha: {
+        Args: {
+          _fila_id: string
+          _origem?: string
+          _paciente_id?: string
+          _prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+        }
+        Returns: {
+          codigo: string
+          created_at: string
+          fila_id: string
+          finalizada_em: string | null
+          id: string
+          origem: string | null
+          paciente_id: string | null
+          posicao: number | null
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          status: Database["public"]["Enums"]["senha_status"]
+          token_publico: string
+          unidade_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "senhas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
