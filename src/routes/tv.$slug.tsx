@@ -702,6 +702,16 @@ function TvPage() {
                   </div>
                   <PrioridadeTag prioridade={destaque.senha.prioridade} big />
                 </div>
+                {destaque.senha.paciente_id && pacienteNomes[destaque.senha.paciente_id] && (
+                  <div className="mt-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+                      Paciente
+                    </div>
+                    <div className="mt-1 font-display text-3xl font-bold text-white">
+                      {pacienteNomes[destaque.senha.paciente_id]}
+                    </div>
+                  </div>
+                )}
                 <div className="mt-6 flex items-end justify-between gap-4 flex-wrap">
                   <div>
                     <div className="text-sm text-slate-400">Dirija-se a</div>
