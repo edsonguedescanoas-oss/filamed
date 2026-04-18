@@ -1,6 +1,6 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX } from "lucide-react";
+import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -61,7 +61,12 @@ function formatarDestino(destino: string): string {
   return `ao ${d}`;
 }
 
+type TvSearch = { kiosk?: boolean };
+
 export const Route = createFileRoute("/tv/$slug")({
+  validateSearch: (search: Record<string, unknown>): TvSearch => ({
+    kiosk: search.kiosk === true || search.kiosk === "1" || search.kiosk === "true",
+  }),
   head: ({ params }) => ({
     meta: [
       { title: `Painel — ${params.slug} — FilaMed` },
@@ -73,6 +78,7 @@ export const Route = createFileRoute("/tv/$slug")({
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
+  const { kiosk } = useSearch({ from: "/tv/$slug" });
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
