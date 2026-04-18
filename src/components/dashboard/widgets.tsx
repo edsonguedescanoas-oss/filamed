@@ -275,7 +275,14 @@ type ProximaSenha = {
   fila_id: string;
   paciente_id: string | null;
   filas: { nome: string; cor: string | null } | null;
+  pacientes: { nome_completo: string } | null;
 };
+
+function primeiroEUltimoNome(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  if (partes.length <= 2) return nome.trim();
+  return `${partes[0]} ${partes[partes.length - 1]}`;
+}
 
 const PRIO_RANK: Record<string, number> = { urgente: 0, preferencial: 1, normal: 2 };
 
