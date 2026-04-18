@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
 import { LayoutDashboard, ListOrdered, Users, Ticket, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { allowedRoutesFor } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/app")({
   component: AppShell,
@@ -16,13 +18,16 @@ const NAV = [
 
 function AppShell() {
   const location = useLocation();
+  const { roles } = useAuth();
+  const allowed = allowedRoutesFor(roles);
+  const visibleNav = NAV.filter((item) => allowed.has(item.to));
 
   return (
     <div>
       <nav className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex gap-1 overflow-x-auto">
-            {NAV.map((item) => {
+            {visibleNav.map((item) => {
               const active = item.exact
                 ? location.pathname === item.to
                 : location.pathname.startsWith(item.to);
