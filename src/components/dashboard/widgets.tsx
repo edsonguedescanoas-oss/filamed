@@ -275,7 +275,14 @@ type ProximaSenha = {
   fila_id: string;
   paciente_id: string | null;
   filas: { nome: string; cor: string | null } | null;
+  pacientes: { nome_completo: string } | null;
 };
+
+function primeiroEUltimoNome(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  if (partes.length <= 2) return nome.trim();
+  return `${partes[0]} ${partes[partes.length - 1]}`;
+}
 
 const PRIO_RANK: Record<string, number> = { urgente: 0, preferencial: 1, normal: 2 };
 
@@ -332,7 +339,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
           .eq("status", "em_atendimento"),
         supabase
           .from("senhas")
-          .select("id,codigo,prioridade,status,created_at,updated_at,fila_id,paciente_id,filas(nome,cor)")
+          .select("id,codigo,prioridade,status,created_at,updated_at,fila_id,paciente_id,filas(nome,cor),pacientes(nome_completo)")
           .eq("unidade_id", unidadeId)
           .in("status", ["aguardando", "chamada"])
           .order("prioridade", { ascending: false })
@@ -416,16 +423,22 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
             return;
           }
 
-          // Buscar dados da fila para enriquecer (sem await bloqueante)
-          const { data: filaData } = await supabase
-            .from("filas")
-            .select("nome,cor")
-            .eq("id", row.fila_id)
-            .maybeSingle();
+          // Buscar fila e paciente em paralelo para enriquecer
+          const [filaRes, pacRes] = await Promise.all([
+            supabase.from("filas").select("nome,cor").eq("id", row.fila_id).maybeSingle(),
+            row.paciente_id
+              ? supabase
+                  .from("pacientes")
+                  .select("nome_completo")
+                  .eq("id", row.paciente_id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null }),
+          ]);
 
           const enriched: ProximaSenha = {
             ...row,
-            filas: filaData ?? null,
+            filas: filaRes.data ?? null,
+            pacientes: pacRes.data ?? null,
           };
 
           setProximas((prev) => {
@@ -620,6 +633,11 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-base font-bold">{s.codigo}</span>
+                        {s.pacientes?.nome_completo && (
+                          <span className="text-sm font-medium text-foreground/80 truncate max-w-[14rem]">
+                            {primeiroEUltimoNome(s.pacientes.nome_completo)}
+                          </span>
+                        )}
                         {isChamada && (
                           <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-0 text-[10px] py-0 px-1.5">
                             Chamada
@@ -633,6 +651,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
                       </div>
                       <div className="text-xs text-muted-foreground truncate">
                         {s.filas?.nome ?? "—"} · {wait} min
+                        {!s.pacientes?.nome_completo && " · sem paciente vinculado"}
                       </div>
                     </div>
                   </div>
