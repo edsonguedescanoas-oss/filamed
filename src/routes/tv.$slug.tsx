@@ -183,7 +183,87 @@ function TvPage() {
     setSoundOn(true);
     // gesto do usuário desbloqueia AudioContext
     playDing();
+    // Também "aquece" a Web Speech API com uma fala silenciosa
+    primeSpeech();
   };
+
+  // ── Voz: Web Speech API ────────────────────────────────
+  const pacienteCacheRef = useRef<Map<string, string>>(new Map());
+  const senhasMapRef = useRef(new Map<string, Senha>());
+  useEffect(() => {
+    senhasMapRef.current = new Map(senhas.map((s) => [s.id, s]));
+  }, [senhas]);
+
+  const primeSpeech = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      u.lang = "pt-BR";
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* ignora */
+    }
+  };
+
+  const speak = (text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      const synth = window.speechSynthesis;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "pt-BR";
+      u.rate = 0.95;
+      u.pitch = 1;
+      u.volume = 1;
+      const voices = synth.getVoices();
+      const ptVoice =
+        voices.find((v) => v.lang === "pt-BR") ??
+        voices.find((v) => v.lang?.startsWith("pt"));
+      if (ptVoice) u.voice = ptVoice;
+      synth.speak(u);
+    } catch {
+      /* ignora */
+    }
+  };
+
+  const announceChamada = async (chamada: Chamada) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const senha = senhasMapRef.current.get(chamada.senha_id);
+
+    // Pequeno delay para o "ding" terminar antes da fala
+    await new Promise((r) => setTimeout(r, 700));
+
+    // Resolve o nome do paciente (cache → fetch)
+    let nome: string | null = null;
+    if (pacienteCacheRef.current.has(chamada.senha_id)) {
+      const cached = pacienteCacheRef.current.get(chamada.senha_id);
+      nome = cached && cached.length > 0 ? cached : null;
+    } else {
+      try {
+        const { data } = await supabase
+          .from("senhas")
+          .select("codigo, pacientes(nome_completo)")
+          .eq("id", chamada.senha_id)
+          .maybeSingle();
+        const raw = (data as { pacientes: { nome_completo: string } | null } | null)
+          ?.pacientes?.nome_completo;
+        nome = raw ? primeiroEUltimoNome(raw) : null;
+        pacienteCacheRef.current.set(chamada.senha_id, nome ?? "");
+      } catch {
+        nome = null;
+      }
+    }
+
+    const codigo = senha?.codigo ?? "";
+    const codigoFalado = codigo ? soletrarCodigo(codigo) : "";
+    const partes = [
+      nome ? `${nome},` : null,
+      codigoFalado ? `senha ${codigoFalado},` : null,
+      `dirija-se ${formatarDestino(chamada.destino)}`,
+    ].filter(Boolean);
+    speak(partes.join(" "));
+  };
+
 
   // Derivações
   const filasMap = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
