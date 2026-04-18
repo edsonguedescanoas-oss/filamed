@@ -610,6 +610,69 @@ function RecepcaoPage() {
           )}
         </section>
       </div>
+
+      {/* Dialog de cadastro rápido de paciente */}
+      <Dialog open={novoOpen} onOpenChange={setNovoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo paciente</DialogTitle>
+            <DialogDescription>
+              Cadastre rapidamente para vincular à senha. Outros dados podem ser completados depois em Pacientes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="novo-nome" className="mb-1.5 block">
+                Nome completo <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="novo-nome"
+                value={novoNome}
+                onChange={(e) => setNovoNome(e.target.value)}
+                placeholder="Ex: Maria da Silva"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="novo-cpf" className="mb-1.5 block">CPF</Label>
+                <Input
+                  id="novo-cpf"
+                  value={novoCpf}
+                  onChange={(e) => setNovoCpf(e.target.value)}
+                  placeholder="Opcional"
+                  inputMode="numeric"
+                />
+              </div>
+              <div>
+                <Label htmlFor="novo-tel" className="mb-1.5 block">Telefone</Label>
+                <Input
+                  id="novo-tel"
+                  value={novoTelefone}
+                  onChange={(e) => setNovoTelefone(e.target.value)}
+                  placeholder="Opcional"
+                  inputMode="tel"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNovoOpen(false)} disabled={savingNovo}>
+              Cancelar
+            </Button>
+            <Button onClick={() => void handleSalvarNovoPaciente()} disabled={savingNovo}>
+              {savingNovo ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  Cadastrar e usar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
