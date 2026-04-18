@@ -1,9 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Users, ListOrdered, Megaphone, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import {
+  AdminWidgets,
+  RecepcaoWidgets,
+  AtendimentoWidgets,
+  GestorWidgets,
+  EmptyDashboard,
+} from "@/components/dashboard/widgets";
 
 export const Route = createFileRoute("/_app/app/")({
   head: () => ({ meta: [{ title: "Dashboard — FilaMed" }] }),
@@ -24,12 +30,18 @@ function DashboardPage() {
       .then(({ data }) => setUnidadeNome(data?.nome ?? null));
   }, [profile?.unidade_id]);
 
-  const cards = [
-    { icon: Users, title: "Pacientes", desc: "Cadastro e histórico", count: "—" },
-    { icon: ListOrdered, title: "Filas ativas", desc: "Senhas em tempo real", count: "—" },
-    { icon: Megaphone, title: "Chamadas hoje", desc: "Painel de TV", count: "—" },
-    { icon: BarChart3, title: "Tempo médio", desc: "Espera no atendimento", count: "—" },
-  ];
+  const unidadeId = profile?.unidade_id ?? null;
+
+  // Prioridade de exibição: admin > gestor > recepção > médico/enfermeiro
+  const renderWidgets = () => {
+    if (!unidadeId) return null;
+    if (roles.includes("admin")) return <AdminWidgets unidadeId={unidadeId} />;
+    if (roles.includes("gestor")) return <GestorWidgets unidadeId={unidadeId} />;
+    if (roles.includes("recepcao")) return <RecepcaoWidgets unidadeId={unidadeId} />;
+    if (roles.includes("medico") || roles.includes("enfermeiro"))
+      return <AtendimentoWidgets unidadeId={unidadeId} />;
+    return <EmptyDashboard />;
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
@@ -54,29 +66,7 @@ function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <div
-            key={c.title}
-            className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant"
-          >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
-              <c.icon className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div className="mt-5 font-display text-3xl font-bold">{c.count}</div>
-            <div className="mt-1 font-medium">{c.title}</div>
-            <div className="text-sm text-muted-foreground">{c.desc}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-10 rounded-2xl border border-dashed border-border bg-muted/30 p-8 text-center">
-        <h3 className="font-display text-lg font-semibold">Próximos módulos</h3>
-        <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">
-          Cadastro de pacientes, geração de senhas, painel de TV em modo quiosque e
-          acompanhamento pelo paciente serão habilitados aqui nos próximos passos.
-        </p>
-      </div>
+      <div className="mt-10">{renderWidgets()}</div>
     </div>
   );
 }
