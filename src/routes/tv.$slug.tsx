@@ -1069,9 +1069,9 @@ function TvPage() {
                 {debugInfo.error}
               </div>
             )}
-            {!soundOn && (
+            {audioBlocked && (
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-amber-200">
-                Som desativado — clique em "Ativar som" no topo.
+                Áudio bloqueado pelo navegador. Toque/clique na tela uma vez para liberar.
               </div>
             )}
           </div>
