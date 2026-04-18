@@ -204,20 +204,22 @@ function RecepcaoPage() {
 
   const handleGerar = async () => {
     if (!filaId || !canGerar) return;
+    if (!pacienteSelecionado) {
+      toast.error("Selecione ou cadastre um paciente para gerar a senha");
+      return;
+    }
     setEmitting(true);
     try {
       const { data, error } = await supabase.rpc("gerar_senha", {
         _fila_id: filaId,
         _prioridade: prioridade,
-        _paciente_id: pacienteSelecionado?.id ?? undefined,
+        _paciente_id: pacienteSelecionado.id,
         _origem: "recepcao",
       });
       if (error) throw error;
       const senha = data as unknown as Senha;
       toast.success(`Senha ${senha.codigo} emitida`, {
-        description: pacienteSelecionado
-          ? `Vinculada a ${pacienteSelecionado.nome_completo}`
-          : undefined,
+        description: `Vinculada a ${pacienteSelecionado.nome_completo}`,
       });
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
@@ -230,6 +232,42 @@ function RecepcaoPage() {
       toast.error(msg);
     } finally {
       setEmitting(false);
+    }
+  };
+
+  const handleSalvarNovoPaciente = async () => {
+    if (!unidadeId) return;
+    const nome = novoNome.trim();
+    if (nome.length < 2) {
+      toast.error("Informe o nome completo do paciente");
+      return;
+    }
+    setSavingNovo(true);
+    try {
+      const { data, error } = await supabase
+        .from("pacientes")
+        .insert({
+          unidade_id: unidadeId,
+          nome_completo: nome,
+          cpf: onlyDigits(novoCpf) || null,
+          telefone: onlyDigits(novoTelefone) || null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      setPacienteSelecionado(data as Paciente);
+      setPacienteQuery("");
+      setPacientes([]);
+      setNovoOpen(false);
+      setNovoNome("");
+      setNovoCpf("");
+      setNovoTelefone("");
+      toast.success("Paciente cadastrado", { description: nome });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Falha ao cadastrar paciente";
+      toast.error(msg);
+    } finally {
+      setSavingNovo(false);
     }
   };
 
