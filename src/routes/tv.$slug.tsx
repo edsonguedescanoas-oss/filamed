@@ -23,6 +23,43 @@ type Chamada = {
   created_at: string;
 };
 
+/* ── Helpers de fala ───────────────────────────────────── */
+function primeiroEUltimoNome(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  if (partes.length <= 2) return nome.trim();
+  return `${partes[0]} ${partes[partes.length - 1]}`;
+}
+
+/**
+ * Soletra letras do código (A045 → "A, zero quatro cinco") para o TTS pronunciar
+ * de forma clara em ambientes barulhentos. Letras isoladas, números agrupados.
+ */
+function soletrarCodigo(codigo: string): string {
+  const trimmed = codigo.trim();
+  // Separa letras iniciais dos números: "A045" → "A " + "045"
+  const match = trimmed.match(/^([A-Za-z]*)(\d*)(.*)$/);
+  if (!match) return trimmed;
+  const letras = match[1].toUpperCase().split("").join(" ");
+  const numeros = match[2]
+    .split("")
+    .map((d) => ({ "0": "zero", "1": "um", "2": "dois", "3": "três", "4": "quatro", "5": "cinco", "6": "seis", "7": "sete", "8": "oito", "9": "nove" })[d] ?? d)
+    .join(" ");
+  const resto = match[3];
+  return [letras, numeros, resto].filter(Boolean).join(" ").trim();
+}
+
+/**
+ * Adiciona preposição apropriada se o destino não começar com uma.
+ * "Consultório 2" → "ao Consultório 2"; "à Sala 3" → mantém.
+ */
+function formatarDestino(destino: string): string {
+  const d = destino.trim();
+  if (/^(ao|à|aos|às|para|no|na|nos|nas)\s/i.test(d)) return d;
+  // Heurística: começa com vogal feminina comum → "à", senão "ao"
+  if (/^[Ss]ala/.test(d)) return `à ${d}`;
+  return `ao ${d}`;
+}
+
 export const Route = createFileRoute("/tv/$slug")({
   head: ({ params }) => ({
     meta: [
@@ -126,7 +163,11 @@ function TvPage() {
         (payload) => {
           const nova = payload.new as Chamada;
           setChamadas((prev) => [nova, ...prev].slice(0, 10));
-          if (soundOnRef.current) playDing();
+          if (soundOnRef.current) {
+            playDing();
+            // Aguarda um instante após o ding e fala a chamada
+            void announceChamada(nova);
+          }
         },
       )
       .subscribe();
@@ -179,7 +220,87 @@ function TvPage() {
     setSoundOn(true);
     // gesto do usuário desbloqueia AudioContext
     playDing();
+    // Também "aquece" a Web Speech API com uma fala silenciosa
+    primeSpeech();
   };
+
+  // ── Voz: Web Speech API ────────────────────────────────
+  const pacienteCacheRef = useRef<Map<string, string>>(new Map());
+  const senhasMapRef = useRef(new Map<string, Senha>());
+  useEffect(() => {
+    senhasMapRef.current = new Map(senhas.map((s) => [s.id, s]));
+  }, [senhas]);
+
+  const primeSpeech = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      u.lang = "pt-BR";
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* ignora */
+    }
+  };
+
+  const speak = (text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      const synth = window.speechSynthesis;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "pt-BR";
+      u.rate = 0.95;
+      u.pitch = 1;
+      u.volume = 1;
+      const voices = synth.getVoices();
+      const ptVoice =
+        voices.find((v) => v.lang === "pt-BR") ??
+        voices.find((v) => v.lang?.startsWith("pt"));
+      if (ptVoice) u.voice = ptVoice;
+      synth.speak(u);
+    } catch {
+      /* ignora */
+    }
+  };
+
+  const announceChamada = async (chamada: Chamada) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const senha = senhasMapRef.current.get(chamada.senha_id);
+
+    // Pequeno delay para o "ding" terminar antes da fala
+    await new Promise((r) => setTimeout(r, 700));
+
+    // Resolve o nome do paciente (cache → fetch)
+    let nome: string | null = null;
+    if (pacienteCacheRef.current.has(chamada.senha_id)) {
+      const cached = pacienteCacheRef.current.get(chamada.senha_id);
+      nome = cached && cached.length > 0 ? cached : null;
+    } else {
+      try {
+        const { data } = await supabase
+          .from("senhas")
+          .select("codigo, pacientes(nome_completo)")
+          .eq("id", chamada.senha_id)
+          .maybeSingle();
+        const raw = (data as { pacientes: { nome_completo: string } | null } | null)
+          ?.pacientes?.nome_completo;
+        nome = raw ? primeiroEUltimoNome(raw) : null;
+        pacienteCacheRef.current.set(chamada.senha_id, nome ?? "");
+      } catch {
+        nome = null;
+      }
+    }
+
+    const codigo = senha?.codigo ?? "";
+    const codigoFalado = codigo ? soletrarCodigo(codigo) : "";
+    const partes = [
+      nome ? `${nome},` : null,
+      codigoFalado ? `senha ${codigoFalado},` : null,
+      `dirija-se ${formatarDestino(chamada.destino)}`,
+    ].filter(Boolean);
+    speak(partes.join(" "));
+  };
+
 
   // Derivações
   const filasMap = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
