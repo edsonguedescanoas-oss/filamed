@@ -79,7 +79,10 @@ function TvPage() {
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
-  const [soundOn, setSoundOn] = useState(false);
+  // O painel TV nunca deve ficar mudo. Tentamos manter o som sempre ativo;
+  // se o browser bloquear (autoplay policy), mostramos overlay pedindo 1 clique.
+  const [soundOn, setSoundOn] = useState(true);
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const [debugInfo, setDebugInfo] = useState<{
     text: string;
     voice: string;
