@@ -34,9 +34,15 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Paciente = Database["public"]["Tables"]["pacientes"]["Row"];
 
+import { RoleGuard } from "@/components/role-guard";
+
 export const Route = createFileRoute("/_app/app/pacientes")({
   head: () => ({ meta: [{ title: "Pacientes — FilaMed" }] }),
-  component: PacientesPage,
+  component: () => (
+    <RoleGuard allow={["recepcao", "medico", "enfermeiro", "gestor"]} path="/app/pacientes">
+      <PacientesPage />
+    </RoleGuard>
+  ),
 });
 
 // ───────── helpers de máscara ─────────

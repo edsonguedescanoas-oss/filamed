@@ -28,9 +28,15 @@ type Paciente = Database["public"]["Tables"]["pacientes"]["Row"];
 type Senha = Database["public"]["Tables"]["senhas"]["Row"];
 type Prioridade = Database["public"]["Enums"]["senha_prioridade"];
 
+import { RoleGuard } from "@/components/role-guard";
+
 export const Route = createFileRoute("/_app/app/recepcao")({
   head: () => ({ meta: [{ title: "Recepção — FilaMed" }] }),
-  component: RecepcaoPage,
+  component: () => (
+    <RoleGuard allow={["recepcao"]} path="/app/recepcao">
+      <RecepcaoPage />
+    </RoleGuard>
+  ),
 });
 
 const PRIORIDADES: { value: Prioridade; label: string; ring: string; badge: string }[] = [
