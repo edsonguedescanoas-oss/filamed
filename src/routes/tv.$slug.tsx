@@ -65,7 +65,11 @@ type TvSearch = { kiosk?: boolean };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearch => ({
-    kiosk: search.kiosk === true || search.kiosk === "1" || search.kiosk === "true",
+    kiosk:
+      search.kiosk === true ||
+      search.kiosk === 1 ||
+      search.kiosk === "1" ||
+      search.kiosk === "true",
   }),
   head: ({ params }) => ({
     meta: [
@@ -346,7 +350,8 @@ function TvPage() {
   // Em modo kiosk, tenta entrar em fullscreen na primeira interação do usuário
   useEffect(() => {
     if (!kiosk || typeof window === "undefined") return;
-    void requestFullscreen();
+    // Não chamamos requestFullscreen sem gesto (gera warning no console).
+    // Aguardamos a primeira interação do usuário (clique/toque/tecla).
     const onInteract = () => {
       void requestFullscreen();
       window.removeEventListener("click", onInteract);
