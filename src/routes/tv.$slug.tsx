@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX } from "lucide-react";
+import { Activity, Bug, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -80,6 +80,14 @@ function TvPage() {
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<{
+    text: string;
+    voice: string;
+    status: "falando" | "ok" | "erro" | "vazio";
+    at: Date;
+    error?: string;
+  } | null>(null);
+  const [showDebug, setShowDebug] = useState(true);
 
   // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
   const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
@@ -329,8 +337,31 @@ function TvPage() {
       synth.cancel();
 
       utterance.onstart = () => console.info("[TV] 🔊 falando:", utterance.text);
-      utterance.onerror = (e) => console.error("[TV] erro TTS:", e.error, utterance.text);
-      utterance.onend = () => console.info("[TV] ✓ fim da fala");
+      utterance.onstart = () => {
+        console.info("[TV] 🔊 falando:", utterance.text);
+        setDebugInfo({
+          text: utterance.text,
+          voice: utterance.voice?.name ?? "padrão do sistema",
+          status: "falando",
+          at: new Date(),
+        });
+      };
+      utterance.onerror = (e) => {
+        console.error("[TV] erro TTS:", e.error, utterance.text);
+        setDebugInfo({
+          text: utterance.text,
+          voice: utterance.voice?.name ?? "padrão do sistema",
+          status: "erro",
+          at: new Date(),
+          error: String(e.error ?? "desconhecido"),
+        });
+      };
+      utterance.onend = () => {
+        console.info("[TV] ✓ fim da fala");
+        setDebugInfo((prev) =>
+          prev && prev.text === utterance.text ? { ...prev, status: "ok", at: new Date() } : prev,
+        );
+      };
       console.info("[TV] speak() →", { text: utterance.text, voice: utterance.voice?.name, voicesCount: synth.getVoices().length });
       synth.speak(utterance);
 
@@ -408,7 +439,16 @@ function TvPage() {
     ].filter(Boolean);
     const texto = partes.join(" ").trim();
     console.info("[TV] texto final da chamada:", texto || "<vazio>");
-    if (!texto) return;
+    if (!texto) {
+      setDebugInfo({
+        text: "<vazio>",
+        voice: utterance.voice?.name ?? "padrão do sistema",
+        status: "vazio",
+        at: new Date(),
+        error: "Texto montado ficou vazio",
+      });
+      return;
+    }
 
     utterance.text = texto;
     speakUtterance(utterance);
@@ -584,6 +624,18 @@ function TvPage() {
               {soundOn ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-slate-400" />}
               <span className="hidden sm:inline">{soundOn ? "Som ativo" : "Ativar som"}</span>
             </button>
+            <button
+              onClick={() => setShowDebug((v) => !v)}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                showDebug
+                  ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                  : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+              }`}
+              title={showDebug ? "Ocultar painel de debug" : "Exibir painel de debug"}
+            >
+              <Bug className="h-4 w-4" />
+              <span className="hidden sm:inline">Debug</span>
+            </button>
           </div>
         </div>
       </header>
@@ -724,6 +776,80 @@ function TvPage() {
       <footer className="border-t border-white/5 py-3 text-center text-[10px] uppercase tracking-[0.3em] text-slate-600">
         FilaMed · Atualização em tempo real
       </footer>
+
+      {/* Debug badge — útil para diagnosticar TTS no painel */}
+      {showDebug && debugInfo && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-md rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Bug className="h-4 w-4 text-primary" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Debug TTS
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                  debugInfo.status === "falando"
+                    ? "bg-primary/20 text-primary animate-pulse"
+                    : debugInfo.status === "ok"
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : debugInfo.status === "vazio"
+                        ? "bg-amber-500/20 text-amber-300"
+                        : "bg-red-500/20 text-red-300"
+                }`}
+              >
+                {debugInfo.status}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowDebug(false)}
+              className="text-slate-500 hover:text-white transition-colors"
+              title="Fechar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-3 space-y-2 text-xs">
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-slate-500">Texto anunciado</div>
+              <div className="mt-0.5 break-words rounded-lg bg-slate-800/60 p-2 font-mono text-slate-100">
+                {debugInfo.text || "—"}
+              </div>
+            </div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase tracking-wide text-slate-500">Voz</div>
+                <div className="mt-0.5 truncate text-slate-200">{debugInfo.voice}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-[10px] uppercase tracking-wide text-slate-500">Hora</div>
+                <div className="mt-0.5 font-mono tabular-nums text-slate-200">
+                  {debugInfo.at.toLocaleTimeString("pt-BR")}
+                </div>
+              </div>
+            </div>
+            {debugInfo.error && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-red-200">
+                {debugInfo.error}
+              </div>
+            )}
+            {!soundOn && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-amber-200">
+                Som desativado — clique em "Ativar som" no topo.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showDebug && !debugInfo && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-2xl border border-white/10 bg-slate-900/95 p-3 text-xs text-slate-400 shadow-2xl backdrop-blur">
+          <div className="flex items-center gap-2">
+            <Bug className="h-4 w-4 text-primary" />
+            <span>Debug ativo — aguardando próxima chamada…</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
