@@ -1013,6 +1013,26 @@ function TvPage() {
         FilaMed · Atualização em tempo real
       </footer>
 
+      {/* Overlay quando áudio está bloqueado pelo browser (autoplay policy).
+          Um único toque/clique destrava e nunca mais aparece. */}
+      {audioBlocked && (
+        <button
+          type="button"
+          onClick={handleEnableSound}
+          className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-slate-950/85 backdrop-blur-sm text-white transition-opacity"
+        >
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 ring-4 ring-primary/40 animate-pulse">
+            <Volume2 className="h-12 w-12 text-primary" />
+          </div>
+          <div className="text-center">
+            <p className="font-display text-3xl font-bold">Toque para ativar o som</p>
+            <p className="mt-2 text-sm text-slate-300">
+              O navegador exige uma interação para iniciar o áudio. Depois disso, o painel anuncia automaticamente.
+            </p>
+          </div>
+        </button>
+      )}
+
       {/* Debug badge — útil para diagnosticar TTS no painel */}
       {showDebug && debugInfo && (
         <div className="fixed bottom-4 right-4 z-50 max-w-md rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur">
