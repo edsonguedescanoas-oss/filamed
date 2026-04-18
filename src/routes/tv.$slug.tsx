@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Megaphone, Volume2, VolumeX } from "lucide-react";
+import { Activity, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Unidade = { id: string; nome: string; slug: string };
