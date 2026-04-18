@@ -423,16 +423,22 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
             return;
           }
 
-          // Buscar dados da fila para enriquecer (sem await bloqueante)
-          const { data: filaData } = await supabase
-            .from("filas")
-            .select("nome,cor")
-            .eq("id", row.fila_id)
-            .maybeSingle();
+          // Buscar fila e paciente em paralelo para enriquecer
+          const [filaRes, pacRes] = await Promise.all([
+            supabase.from("filas").select("nome,cor").eq("id", row.fila_id).maybeSingle(),
+            row.paciente_id
+              ? supabase
+                  .from("pacientes")
+                  .select("nome_completo")
+                  .eq("id", row.paciente_id)
+                  .maybeSingle()
+              : Promise.resolve({ data: null }),
+          ]);
 
           const enriched: ProximaSenha = {
             ...row,
-            filas: filaData ?? null,
+            filas: filaRes.data ?? null,
+            pacientes: pacRes.data ?? null,
           };
 
           setProximas((prev) => {
