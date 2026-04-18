@@ -988,6 +988,19 @@ function TvPage() {
                 <p className="font-display text-2xl">Aguardando próxima chamada…</p>
               </div>
             )}
+
+            {/* QR Code discreto no canto: paciente acompanha pelo celular */}
+            {destaque?.senha.token_publico && (
+              <div className="absolute bottom-5 right-5 flex flex-col items-center opacity-90 transition-opacity hover:opacity-100">
+                <QrCode
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/s/${destaque.senha.token_publico}`}
+                  size={kiosk ? 110 : 96}
+                />
+                <div className="mt-1 text-center text-[10px] font-medium uppercase tracking-wider text-slate-300">
+                  Acompanhe no celular
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Últimas chamadas */}
