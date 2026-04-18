@@ -188,6 +188,10 @@ function TvPage() {
             }
             if (payload.eventType === "UPDATE") {
               const updated = payload.new as Senha;
+              // Se a senha não está mais com status "chamada", cancela rechamadas pendentes
+              if (updated.status !== "chamada") {
+                cancelRechamadas(updated.id);
+              }
               const next = prev.map((s) => (s.id === updated.id ? updated : s));
               return next.filter((s) =>
                 ["aguardando", "chamada", "em_atendimento"].includes(s.status),
@@ -195,6 +199,7 @@ function TvPage() {
             }
             if (payload.eventType === "DELETE") {
               const old = payload.old as { id: string };
+              cancelRechamadas(old.id);
               return prev.filter((s) => s.id !== old.id);
             }
             return prev;
@@ -211,12 +216,16 @@ function TvPage() {
             playDing();
             // Aguarda um instante após o ding e fala a chamada
             void announceChamada(nova);
+            // Agenda até 2 rechamadas (30s e 60s) caso a senha continue como "chamada"
+            agendarRechamadas(nova);
           }
         },
       )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
+      // Limpa todos os timers pendentes ao desmontar
+      cancelAllRechamadas();
     };
   }, [unidade]);
 
