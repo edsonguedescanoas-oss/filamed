@@ -21,6 +21,12 @@ interface VoiceConfig {
   pitch: number;
 }
 
+interface VoiceConfigMeta {
+  provider: Provider;
+  voice_id: string | null;
+  updated_at: string;
+}
+
 const ELEVEN_VOICES = [
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah (feminina, multilíngue)" },
   { id: "FGY2WhTYpPnrIDTdsKH5", name: "Laura (feminina, jovem)" },
@@ -47,6 +53,26 @@ const GOOGLE_VOICES = [
 
 const SAMPLE_TEXT = "Paciente João Silva. Senha A zero quatro cinco. Dirija-se ao Consultório dois.";
 
+function providerLabel(p: Provider): string {
+  if (p === "google") return "Google Cloud TTS";
+  if (p === "elevenlabs") return "ElevenLabs";
+  return "Navegador (grátis)";
+}
+
+function voiceDisplayName(meta: VoiceConfigMeta, browserVoices: SpeechSynthesisVoice[]): string {
+  const { provider, voice_id } = meta;
+  if (!voice_id) return "Voz padrão do provedor";
+  if (provider === "elevenlabs") {
+    return ELEVEN_VOICES.find((v) => v.id === voice_id)?.name ?? voice_id;
+  }
+  if (provider === "google") {
+    return GOOGLE_VOICES.find((v) => v.id === voice_id)?.name ?? voice_id;
+  }
+  // browser: voice_id é o `name` da voz
+  const v = browserVoices.find((b) => b.name === voice_id) ?? browserVoices.find((b) => b.voiceURI === voice_id);
+  return v ? `${v.name} (${v.lang})` : voice_id;
+}
+
 function VozConfigPage() {
   const { profile, roles } = useAuth();
   const isAdmin = roles.includes("admin");
@@ -62,6 +88,8 @@ function VozConfigPage() {
     pitch: 1.0,
   });
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  // Snapshot do que está realmente salvo no banco (o que a TV está usando agora).
+  const [activeMeta, setActiveMeta] = useState<VoiceConfigMeta | null>(null);
 
   // Lista de vozes do navegador (pt-*)
   useEffect(() => {
@@ -86,7 +114,7 @@ function VozConfigPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("unidade_voice_config")
-        .select("provider,voice_id,rate,pitch")
+        .select("provider,voice_id,rate,pitch,updated_at")
         .eq("unidade_id", unidadeId)
         .maybeSingle();
       if (!mounted) return;
@@ -100,11 +128,47 @@ function VozConfigPage() {
           rate: Number(data.rate),
           pitch: Number(data.pitch),
         });
+        setActiveMeta({
+          provider: data.provider as Provider,
+          voice_id: data.voice_id,
+          updated_at: data.updated_at,
+        });
       }
       setLoading(false);
     })();
     return () => {
       mounted = false;
+    };
+  }, [unidadeId]);
+
+  // Realtime: se outro admin alterar, atualizamos o "em uso pela TV"
+  useEffect(() => {
+    if (!unidadeId) return;
+    const ch = supabase
+      .channel(`voz-cfg-admin-${unidadeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "unidade_voice_config",
+          filter: `unidade_id=eq.${unidadeId}`,
+        },
+        (payload) => {
+          const row = payload.new as
+            | { provider?: string; voice_id?: string | null; updated_at?: string }
+            | null;
+          if (!row?.updated_at) return;
+          setActiveMeta({
+            provider: (row.provider as Provider) ?? "browser",
+            voice_id: row.voice_id ?? null,
+            updated_at: row.updated_at,
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
     };
   }, [unidadeId]);
 
@@ -144,6 +208,11 @@ function VozConfigPage() {
       toast.error("Erro ao salvar: " + error.message);
       return;
     }
+    setActiveMeta({
+      provider: config.provider,
+      voice_id: config.voice_id,
+      updated_at: new Date().toISOString(),
+    });
     toast.success("Configuração de voz salva!");
   };
 
@@ -228,6 +297,55 @@ function VozConfigPage() {
           </div>
         </div>
       </header>
+
+      {/* Em uso pela TV (lê do banco) */}
+      <section className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/15">
+              <Volume2 className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                Em uso pela TV agora
+              </div>
+              {activeMeta ? (
+                <>
+                  <div className="mt-1 font-semibold text-sm">
+                    {voiceDisplayName(activeMeta, browserVoices)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Provedor:{" "}
+                    <span className="font-medium text-foreground">
+                      {providerLabel(activeMeta.provider)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Nenhuma configuração salva — a TV está usando a voz padrão do navegador.
+                </div>
+              )}
+            </div>
+          </div>
+          {activeMeta && (
+            <div className="text-right">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Última alteração
+              </div>
+              <div className="text-sm font-mono tabular-nums">
+                {new Date(activeMeta.updated_at).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Provedor */}
       <section className="space-y-3">
