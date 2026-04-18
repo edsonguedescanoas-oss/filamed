@@ -529,6 +529,41 @@ function TvPage() {
     return list;
   }, [chamadas, senhasMap]);
 
+  // Pré-carrega nomes dos pacientes das senhas visíveis (destaque + últimas chamadas)
+  useEffect(() => {
+    const idsParaBuscar = new Set<string>();
+    if (destaque?.senha.paciente_id && !pacienteNomes[destaque.senha.paciente_id]) {
+      idsParaBuscar.add(destaque.senha.paciente_id);
+    }
+    for (const { senha } of ultimasChamadas) {
+      if (senha.paciente_id && !pacienteNomes[senha.paciente_id]) {
+        idsParaBuscar.add(senha.paciente_id);
+      }
+    }
+    if (idsParaBuscar.size === 0) return;
+
+    let mounted = true;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("pacientes")
+        .select("id,nome_completo")
+        .in("id", Array.from(idsParaBuscar));
+      if (!mounted || error || !data) return;
+      setPacienteNomes((prev) => {
+        const next = { ...prev };
+        for (const p of data as { id: string; nome_completo: string }[]) {
+          const nome = primeiroEUltimoNome(p.nome_completo);
+          next[p.id] = nome;
+          pacienteCacheRef.current.set(p.id, nome);
+        }
+        return next;
+      });
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [destaque, ultimasChamadas, pacienteNomes]);
+
   const aguardandoPorFila = useMemo(() => {
     const groups = new Map<string, Senha[]>();
     for (const s of senhas) {
