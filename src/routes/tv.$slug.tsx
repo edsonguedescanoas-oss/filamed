@@ -15,6 +15,7 @@ type Senha = {
   paciente_id: string | null;
   status: SenhaStatus;
   prioridade: SenhaPrioridade;
+  token_publico: string;
   updated_at: string;
   created_at: string;
 };
