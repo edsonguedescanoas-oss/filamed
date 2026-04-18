@@ -426,8 +426,10 @@ function TvPage() {
 
     const voices = synth.getVoices();
     // Prioridade: voz salva no banco (provider=browser) > localStorage legado > default pt-BR
+    // O voice_id salvo é o `name` da voz (portátil entre dispositivos); fallback p/ voiceURI legado.
     const cfgVoice = cfg.provider === "browser" && cfg.voice_id
-      ? voices.find((v) => v.voiceURI === cfg.voice_id)
+      ? voices.find((v) => v.name === cfg.voice_id) ??
+        voices.find((v) => v.voiceURI === cfg.voice_id)
       : null;
     const saved = !cfgVoice && selectedVoiceURI ? voices.find((v) => v.voiceURI === selectedVoiceURI) : null;
     const ptVoice =
