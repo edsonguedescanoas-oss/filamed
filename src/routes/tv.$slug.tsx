@@ -186,7 +186,7 @@ function TvPage() {
           .order("ordem"),
         supabase
           .from("senhas")
-          .select("id,codigo,fila_id,paciente_id,status,prioridade,updated_at,created_at")
+          .select("id,codigo,fila_id,paciente_id,status,prioridade,token_publico,updated_at,created_at")
           .eq("unidade_id", uni.id)
           .in("status", ["aguardando", "chamada", "em_atendimento"])
           .order("created_at"),
