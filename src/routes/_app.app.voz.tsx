@@ -278,6 +278,55 @@ function VozConfigPage() {
         </div>
       </header>
 
+      {/* Em uso pela TV (lê do banco) */}
+      <section className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/15">
+              <Volume2 className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                Em uso pela TV agora
+              </div>
+              {activeMeta ? (
+                <>
+                  <div className="mt-1 font-semibold text-sm">
+                    {voiceDisplayName(activeMeta, browserVoices)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Provedor:{" "}
+                    <span className="font-medium text-foreground">
+                      {providerLabel(activeMeta.provider)}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Nenhuma configuração salva — a TV está usando a voz padrão do navegador.
+                </div>
+              )}
+            </div>
+          </div>
+          {activeMeta && (
+            <div className="text-right">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Última alteração
+              </div>
+              <div className="text-sm font-mono tabular-nums">
+                {new Date(activeMeta.updated_at).toLocaleString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Provedor */}
       <section className="space-y-3">
         <Label className="text-sm font-semibold">Provedor de voz</Label>
