@@ -211,13 +211,14 @@ function TvPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `unidade_id=eq.${unidade.id}` },
         (payload) => {
           const nova = payload.new as Chamada;
+          console.info("[TV] 📣 chamada recebida via realtime:", nova, "soundOn:", soundOnRef.current);
           setChamadas((prev) => [nova, ...prev].slice(0, 10));
           if (soundOnRef.current) {
             playDing();
-            // Aguarda um instante após o ding e fala a chamada
             void announceChamada(nova);
-            // Agenda até 2 rechamadas (30s e 60s) caso a senha continue como "chamada"
             agendarRechamadas(nova);
+          } else {
+            console.warn("[TV] som desativado — clique em 'Ativar som' no painel");
           }
         },
       )
@@ -297,28 +298,43 @@ function TvPage() {
   };
 
   const speak = (text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      console.warn("[TV] speechSynthesis indisponível");
+      return;
+    }
     try {
       const synth = window.speechSynthesis;
+      // Alguns navegadores (Chrome) entram em estado "paused" após longos períodos —
+      // dá resume() antes de falar e cancela qualquer fala anterior travada.
+      if (synth.paused) synth.resume();
+      synth.cancel();
+
       const u = new SpeechSynthesisUtterance(text);
       u.lang = "pt-BR";
       u.rate = 0.95;
       u.pitch = 1;
       u.volume = 1;
       const voices = synth.getVoices();
-      // 1) Voz salva pelo usuário, se ainda existir
       const saved = selectedVoiceURI
         ? voices.find((v) => v.voiceURI === selectedVoiceURI)
         : null;
-      // 2) Fallback: primeira pt-BR, depois qualquer pt-*
       const ptVoice =
         saved ??
         voices.find((v) => v.lang === "pt-BR") ??
         voices.find((v) => v.lang?.startsWith("pt"));
       if (ptVoice) u.voice = ptVoice;
+      u.onstart = () => console.info("[TV] 🔊 falando:", text);
+      u.onerror = (e) => console.error("[TV] erro TTS:", e.error, text);
+      u.onend = () => console.info("[TV] ✓ fim da fala");
+      console.info("[TV] speak() →", { text, voice: ptVoice?.name, voicesCount: voices.length });
       synth.speak(u);
-    } catch {
-      /* ignora */
+
+      // Workaround Chrome: speechSynthesis pausa sozinho após ~15s; mantém vivo
+      setTimeout(() => {
+        if (synth.speaking && synth.paused) synth.resume();
+      }, 100);
+    } catch (e) {
+      console.error("[TV] exceção em speak():", e);
     }
   };
 
