@@ -370,18 +370,47 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
         user
           ? supabase
               .from("atendimentos")
-              .select("id", { count: "exact", head: true })
+              .select(
+                "id,iniciado_em,senha_id,paciente_id,senhas!inner(codigo,filas(nome)),pacientes(nome_completo)",
+              )
               .eq("unidade_id", unidadeId)
               .eq("profissional_id", user.id)
               .is("finalizado_em", null)
-          : Promise.resolve({ count: 0 }),
+              .order("iniciado_em", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
       if (cancel) return;
       setAguardando(agRes.count ?? 0);
       setChamadas(chRes.count ?? 0);
       setEmAtendimento(emRes.count ?? 0);
       setProximas(sortSenhas((proxRes.data ?? []) as ProximaSenha[]));
-      setTemAtivo(((ativoRes as { count: number | null }).count ?? 0) > 0);
+      const ativoData = (ativoRes as {
+        data:
+          | {
+              id: string;
+              iniciado_em: string;
+              senha_id: string;
+              paciente_id: string | null;
+              senhas: { codigo: string; filas: { nome: string } | null } | null;
+              pacientes: { nome_completo: string } | null;
+            }
+          | null;
+      }).data;
+      setAtendimentoAtivo(
+        ativoData
+          ? {
+              id: ativoData.id,
+              iniciado_em: ativoData.iniciado_em,
+              senha_id: ativoData.senha_id,
+              paciente_id: ativoData.paciente_id,
+              codigo: ativoData.senhas?.codigo ?? "—",
+              paciente_nome: ativoData.pacientes?.nome_completo ?? null,
+              fila_nome: ativoData.senhas?.filas?.nome ?? null,
+            }
+          : null,
+      );
       setLoading(false);
     };
 
