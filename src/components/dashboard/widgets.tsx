@@ -90,19 +90,71 @@ function startOfTodayISO() {
 }
 
 /**
- * Toca um "ding-dong" curto de alerta usando WebAudio (sem arquivos externos).
- * Falha silenciosamente se o browser bloquear o autoplay (sem interação do usuário ainda).
+ * AudioContext singleton — criado uma única vez e desbloqueado no primeiro
+ * gesto do usuário (clique/tecla/toque). Browsers exigem que o AudioContext
+ * seja iniciado dentro de um event handler de gesto, senão o estado fica "suspended".
+ */
+let _audioCtx: AudioContext | null = null;
+let _audioUnlockBound = false;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  if (_audioCtx) return _audioCtx;
+  const AudioCtx =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtx) return null;
+  try {
+    _audioCtx = new AudioCtx();
+  } catch {
+    return null;
+  }
+  return _audioCtx;
+}
+
+/**
+ * Registra listeners "once" que destravam o AudioContext na primeira interação.
+ * Idempotente — pode ser chamado várias vezes.
+ */
+function ensureAudioUnlock() {
+  if (typeof window === "undefined" || _audioUnlockBound) return;
+  _audioUnlockBound = true;
+
+  const unlock = () => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+    // Toca um buffer silencioso para "armar" o pipeline em iOS/Safari
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch {
+      // ignora
+    }
+  };
+
+  const opts: AddEventListenerOptions = { once: true, capture: true };
+  window.addEventListener("pointerdown", unlock, opts);
+  window.addEventListener("keydown", unlock, opts);
+  window.addEventListener("touchstart", unlock, opts);
+}
+
+/**
+ * Toca um "ding-dong" curto usando o AudioContext persistente.
+ * Se o contexto ainda estiver suspenso (sem gesto do usuário), tenta resumir
+ * — o browser pode silenciar, mas as próximas tocadas funcionarão.
  */
 function playUrgenteAlert() {
-  if (typeof window === "undefined") return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    void ctx.resume().catch(() => {});
+  }
   try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
     const now = ctx.currentTime;
-
     const beep = (freq: number, start: number, duration: number) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -115,17 +167,10 @@ function playUrgenteAlert() {
       osc.start(now + start);
       osc.stop(now + start + duration + 0.02);
     };
-
-    // Dois beeps rápidos (ding-dong) — chamativo mas curto
     beep(880, 0, 0.18);
     beep(1175, 0.2, 0.22);
-
-    // Fecha o contexto depois para liberar recursos
-    setTimeout(() => {
-      void ctx.close().catch(() => {});
-    }, 600);
   } catch {
-    // ignora — alguns browsers exigem gesto do usuário antes
+    // ignora
   }
 }
 
@@ -378,6 +423,12 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   // IDs de senhas urgentes já vistas — para tocar o alerta apenas em entradas novas
   const urgentesVistasRef = useRef<Set<string>>(new Set());
   const primeiroLoadRef = useRef(true);
+
+  // Destrava o AudioContext na primeira interação do usuário (clique/tecla/toque)
+  // para que os alertas sonoros funcionem mesmo sem interação prévia com o dashboard.
+  useEffect(() => {
+    ensureAudioUnlock();
+  }, []);
   // Tick para o timer ao vivo
   const [, setNowTick] = useState(0);
   useEffect(() => {
