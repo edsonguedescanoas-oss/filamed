@@ -88,6 +88,8 @@ function TvPage() {
     error?: string;
   } | null>(null);
   const [showDebug, setShowDebug] = useState(true);
+  // Cache reativo de nomes de paciente por paciente_id (alimenta a UI)
+  const [pacienteNomes, setPacienteNomes] = useState<Record<string, string>>({});
 
   // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
   const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
