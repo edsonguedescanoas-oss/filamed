@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
+import { TvCarrossel } from "@/components/tv-carrossel";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
@@ -1029,6 +1030,14 @@ function TvPage() {
               </ul>
             )}
           </div>
+
+          {/* Carrossel de mídia (sinalização digital) — pausa enquanto há chamada destacada */}
+          {unidade && (
+            <TvCarrossel
+              unidadeId={unidade.id}
+              paused={Boolean(destaque)}
+            />
+          )}
         </section>
 
         {/* Coluna direita: aguardando por fila */}
