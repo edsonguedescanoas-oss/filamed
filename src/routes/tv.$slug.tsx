@@ -1,6 +1,6 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX } from "lucide-react";
+import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -61,7 +61,12 @@ function formatarDestino(destino: string): string {
   return `ao ${d}`;
 }
 
+type TvSearch = { kiosk?: boolean };
+
 export const Route = createFileRoute("/tv/$slug")({
+  validateSearch: (search: Record<string, unknown>): TvSearch => ({
+    kiosk: search.kiosk === true || search.kiosk === "1" || search.kiosk === "true",
+  }),
   head: ({ params }) => ({
     meta: [
       { title: `Painel — ${params.slug} — FilaMed` },
@@ -73,6 +78,7 @@ export const Route = createFileRoute("/tv/$slug")({
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
+  const { kiosk } = useSearch({ from: "/tv/$slug" });
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
@@ -299,6 +305,63 @@ function TvPage() {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // Fullscreen — controle e auto-ativação no modo kiosk
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  const requestFullscreen = async () => {
+    if (typeof document === "undefined") return;
+    try {
+      const el = document.documentElement as HTMLElement & {
+        webkitRequestFullscreen?: () => Promise<void>;
+      };
+      if (document.fullscreenElement) return;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+    } catch {
+      /* navegador pode bloquear sem gesto — silencioso */
+    }
+  };
+  const exitFullscreen = async () => {
+    if (typeof document === "undefined") return;
+    try {
+      const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
+      if (!document.fullscreenElement) return;
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+    } catch {
+      /* ignora */
+    }
+  };
+  const toggleFullscreen = () => {
+    if (isFullscreen) void exitFullscreen();
+    else void requestFullscreen();
+  };
+
+  // Em modo kiosk, tenta entrar em fullscreen na primeira interação do usuário
+  useEffect(() => {
+    if (!kiosk || typeof window === "undefined") return;
+    void requestFullscreen();
+    const onInteract = () => {
+      void requestFullscreen();
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+    window.addEventListener("click", onInteract);
+    window.addEventListener("touchstart", onInteract);
+    window.addEventListener("keydown", onInteract);
+    return () => {
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+  }, [kiosk]);
 
   // Som
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -778,7 +841,8 @@ function TvPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/40">
-      {/* Header */}
+      {/* Header — oculto em modo kiosk */}
+      {!kiosk && (
       <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-8 py-4">
           <div className="flex items-center gap-3">
@@ -845,12 +909,27 @@ function TvPage() {
                 {audioBlocked ? "Toque a tela" : "Som ativo"}
               </span>
             </div>
+            <button
+              onClick={toggleFullscreen}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors"
+              title={isFullscreen ? "Sair de tela cheia" : "Entrar em tela cheia"}
+            >
+              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              <span className="hidden lg:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
+            </button>
           </div>
         </div>
       </header>
+      )}
 
       {/* Conteúdo */}
-      <main className="mx-auto max-w-[1600px] grid gap-6 px-8 py-8 lg:grid-cols-[1.5fr_1fr]">
+      <main
+        className={
+          kiosk
+            ? "mx-auto max-w-[1600px] grid gap-6 px-6 py-6 lg:grid-cols-[1.5fr_1fr]"
+            : "mx-auto max-w-[1600px] grid gap-6 px-8 py-8 lg:grid-cols-[1.5fr_1fr]"
+        }
+      >
         {/* Coluna esquerda: destaque + últimas chamadas */}
         <section className="space-y-6">
           <div
