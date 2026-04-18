@@ -433,7 +433,13 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
       setAguardando(agRes.count ?? 0);
       setChamadas(chRes.count ?? 0);
       setEmAtendimento(emRes.count ?? 0);
-      setProximas(sortSenhas((proxRes.data ?? []) as ProximaSenha[]));
+      const proximasOrdenadas = sortSenhas((proxRes.data ?? []) as ProximaSenha[]);
+      // Inicializa o conjunto de "vistas" com as urgentes ativas no primeiro load — sem tocar som
+      for (const p of proximasOrdenadas) {
+        if (p.prioridade === "urgente") urgentesVistasRef.current.add(p.id);
+      }
+      primeiroLoadRef.current = false;
+      setProximas(proximasOrdenadas);
       const ativoData = (ativoRes as {
         data:
           | {
