@@ -11,6 +11,7 @@ type Senha = {
   id: string;
   codigo: string;
   fila_id: string;
+  paciente_id: string | null;
   status: SenhaStatus;
   prioridade: SenhaPrioridade;
   updated_at: string;
@@ -150,7 +151,7 @@ function TvPage() {
           .order("ordem"),
         supabase
           .from("senhas")
-          .select("id,codigo,fila_id,status,prioridade,updated_at,created_at")
+          .select("id,codigo,fila_id,paciente_id,status,prioridade,updated_at,created_at")
           .eq("unidade_id", uni.id)
           .in("status", ["aguardando", "chamada", "em_atendimento"])
           .order("created_at"),
@@ -338,42 +339,70 @@ function TvPage() {
     }
   };
 
+  const resolveDadosDaSenha = async (senhaId: string) => {
+    const senhaAtual = senhasMapRef.current.get(senhaId);
+    if (senhaAtual?.codigo && senhaAtual.paciente_id) return senhaAtual;
+
+    const { data, error } = await supabase
+      .from("senhas")
+      .select("id,codigo,fila_id,paciente_id,status,prioridade,updated_at,created_at")
+      .eq("id", senhaId)
+      .maybeSingle();
+
+    if (error || !data) {
+      console.warn("[TV] não foi possível resolver dados da senha:", senhaId, error?.message);
+      return senhaAtual ?? null;
+    }
+
+    const resolved = data as Senha;
+    senhasMapRef.current.set(resolved.id, resolved);
+    return resolved;
+  };
+
+  const resolveNomePaciente = async (senha: Senha | null) => {
+    if (!senha?.paciente_id) return null;
+
+    const cached = pacienteCacheRef.current.get(senha.paciente_id);
+    if (cached) return cached;
+
+    const { data, error } = await supabase
+      .from("pacientes")
+      .select("nome_completo")
+      .eq("id", senha.paciente_id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("[TV] não foi possível carregar paciente da senha:", senha.id, error.message);
+      return null;
+    }
+
+    const raw = (data as { nome_completo?: string } | null)?.nome_completo?.trim();
+    if (!raw) return null;
+
+    const nome = primeiroEUltimoNome(raw);
+    pacienteCacheRef.current.set(senha.paciente_id, nome);
+    return nome;
+  };
+
   const announceChamada = async (chamada: Chamada) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const senha = senhasMapRef.current.get(chamada.senha_id);
+    const senha = await resolveDadosDaSenha(chamada.senha_id);
 
     // Pequeno delay para o "ding" terminar antes da fala
     await new Promise((r) => setTimeout(r, 700));
 
-    // Resolve o nome do paciente (cache → fetch)
-    let nome: string | null = null;
-    if (pacienteCacheRef.current.has(chamada.senha_id)) {
-      const cached = pacienteCacheRef.current.get(chamada.senha_id);
-      nome = cached && cached.length > 0 ? cached : null;
-    } else {
-      try {
-        const { data } = await supabase
-          .from("senhas")
-          .select("codigo, pacientes(nome_completo)")
-          .eq("id", chamada.senha_id)
-          .maybeSingle();
-        const raw = (data as { pacientes: { nome_completo: string } | null } | null)
-          ?.pacientes?.nome_completo;
-        nome = raw ? primeiroEUltimoNome(raw) : null;
-        pacienteCacheRef.current.set(chamada.senha_id, nome ?? "");
-      } catch {
-        nome = null;
-      }
-    }
+    const nome = await resolveNomePaciente(senha);
 
     const codigo = senha?.codigo ?? "";
     const codigoFalado = codigo ? soletrarCodigo(codigo) : "";
     const partes = [
-      nome ? `${nome},` : null,
-      codigoFalado ? `senha ${codigoFalado},` : null,
-      `dirija-se ${formatarDestino(chamada.destino)}`,
+      nome ? `Paciente ${nome}.` : null,
+      codigoFalado ? `Senha ${codigoFalado}.` : null,
+      chamada.destino ? `Dirija-se ${formatarDestino(chamada.destino)}.` : null,
     ].filter(Boolean);
-    speak(partes.join(" "));
+    const texto = partes.join(" ").trim();
+    console.info("[TV] texto final da chamada:", texto || "<vazio>");
+    if (texto) speak(texto);
   };
 
   // ── Rechamada automática ───────────────────────────────
