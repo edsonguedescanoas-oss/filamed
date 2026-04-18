@@ -346,6 +346,61 @@ function TvPage() {
     senhasMapRef.current = new Map(senhas.map((s) => [s.id, s]));
   }, [senhas]);
 
+  // Mantém voiceCfg em ref para acessar dentro de callbacks de realtime sem closure stale
+  const voiceCfgRef = useRef(voiceCfg);
+  useEffect(() => {
+    voiceCfgRef.current = voiceCfg;
+  }, [voiceCfg]);
+
+  // Reproduz áudio TTS retornado pela edge function (Google ou ElevenLabs)
+  const playRemoteTts = async (text: string, cfg: VoiceCfg) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("tts", {
+        body: {
+          text,
+          provider: cfg.provider,
+          voiceId: cfg.voice_id,
+          rate: cfg.rate,
+          pitch: cfg.pitch,
+        },
+      });
+      if (error) throw error;
+      if (!data?.audioContent) throw new Error("Sem áudio retornado");
+
+      setDebugInfo({
+        text,
+        voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+        status: "falando",
+        at: new Date(),
+      });
+
+      const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`);
+      audio.onended = () => {
+        setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
+      };
+      audio.onerror = () => {
+        setDebugInfo({
+          text,
+          voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+          status: "erro",
+          at: new Date(),
+          error: "Falha ao reproduzir áudio",
+        });
+      };
+      await audio.play();
+    } catch (err) {
+      console.error("[TV] erro TTS remoto:", err);
+      setDebugInfo({
+        text,
+        voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+        status: "erro",
+        at: new Date(),
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+
   const primeSpeech = () => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     try {
