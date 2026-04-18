@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, ListOrdered, Users, Ticket } from "lucide-react";
+import { LayoutDashboard, ListOrdered, Users, Ticket, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/app")({
@@ -9,6 +9,7 @@ export const Route = createFileRoute("/_app/app")({
 const NAV = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/recepcao", label: "Recepção", icon: Ticket, exact: false },
+  { to: "/app/atendimento", label: "Atendimento", icon: Stethoscope, exact: false },
   { to: "/app/filas", label: "Filas", icon: ListOrdered, exact: false },
   { to: "/app/pacientes", label: "Pacientes", icon: Users, exact: false },
 ] as const;
