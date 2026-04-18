@@ -360,6 +360,46 @@ function TvPage() {
     speak(partes.join(" "));
   };
 
+  // ── Rechamada automática ───────────────────────────────
+  // Para cada chamada, mantém os timers de até 2 repetições.
+  // Se o status da senha sair de "chamada", cancela.
+  const rechamadasRef = useRef<Map<string, ReturnType<typeof setTimeout>[]>>(new Map());
+
+  const cancelRechamadas = (senhaId: string) => {
+    const timers = rechamadasRef.current.get(senhaId);
+    if (!timers) return;
+    for (const t of timers) clearTimeout(t);
+    rechamadasRef.current.delete(senhaId);
+  };
+
+  const cancelAllRechamadas = () => {
+    for (const timers of rechamadasRef.current.values()) {
+      for (const t of timers) clearTimeout(t);
+    }
+    rechamadasRef.current.clear();
+  };
+
+  const agendarRechamadas = (chamada: Chamada) => {
+    // Limpa qualquer agendamento anterior dessa senha (caso seja re-chamada manual)
+    cancelRechamadas(chamada.senha_id);
+
+    const tentar = async () => {
+      // Só repete se a senha ainda estiver com status "chamada" e o som estiver ligado
+      if (!soundOnRef.current) return;
+      const atual = senhasMapRef.current.get(chamada.senha_id);
+      if (!atual || atual.status !== "chamada") {
+        cancelRechamadas(chamada.senha_id);
+        return;
+      }
+      playDing();
+      await announceChamada(chamada);
+    };
+
+    const t1 = setTimeout(() => void tentar(), 30_000);
+    const t2 = setTimeout(() => void tentar(), 60_000);
+    rechamadasRef.current.set(chamada.senha_id, [t1, t2]);
+  };
+
 
   // Derivações
   const filasMap = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
