@@ -23,6 +23,43 @@ type Chamada = {
   created_at: string;
 };
 
+/* ── Helpers de fala ───────────────────────────────────── */
+function primeiroEUltimoNome(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  if (partes.length <= 2) return nome.trim();
+  return `${partes[0]} ${partes[partes.length - 1]}`;
+}
+
+/**
+ * Soletra letras do código (A045 → "A, zero quatro cinco") para o TTS pronunciar
+ * de forma clara em ambientes barulhentos. Letras isoladas, números agrupados.
+ */
+function soletrarCodigo(codigo: string): string {
+  const trimmed = codigo.trim();
+  // Separa letras iniciais dos números: "A045" → "A " + "045"
+  const match = trimmed.match(/^([A-Za-z]*)(\d*)(.*)$/);
+  if (!match) return trimmed;
+  const letras = match[1].toUpperCase().split("").join(" ");
+  const numeros = match[2]
+    .split("")
+    .map((d) => ({ "0": "zero", "1": "um", "2": "dois", "3": "três", "4": "quatro", "5": "cinco", "6": "seis", "7": "sete", "8": "oito", "9": "nove" })[d] ?? d)
+    .join(" ");
+  const resto = match[3];
+  return [letras, numeros, resto].filter(Boolean).join(" ").trim();
+}
+
+/**
+ * Adiciona preposição apropriada se o destino não começar com uma.
+ * "Consultório 2" → "ao Consultório 2"; "à Sala 3" → mantém.
+ */
+function formatarDestino(destino: string): string {
+  const d = destino.trim();
+  if (/^(ao|à|aos|às|para|no|na|nos|nas)\s/i.test(d)) return d;
+  // Heurística: começa com vogal feminina comum → "à", senão "ao"
+  if (/^[Ss]ala/.test(d)) return `à ${d}`;
+  return `ao ${d}`;
+}
+
 export const Route = createFileRoute("/tv/$slug")({
   head: ({ params }) => ({
     meta: [
