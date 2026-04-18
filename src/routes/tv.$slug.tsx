@@ -186,11 +186,51 @@ function TvPage() {
       setFilas((filasRes.data ?? []) as Fila[]);
       setSenhas((senhasRes.data ?? []) as Senha[]);
       setChamadas((chamadasRes.data ?? []) as Chamada[]);
+
+      // Carrega config de voz da unidade (se existir)
+      const { data: cfg } = await supabase
+        .from("unidade_voice_config")
+        .select("provider,voice_id,rate,pitch")
+        .eq("unidade_id", uni.id)
+        .maybeSingle();
+      if (mounted && cfg) {
+        setVoiceCfg({
+          provider: (cfg.provider as VoiceProvider) ?? "browser",
+          voice_id: cfg.voice_id,
+          rate: Number(cfg.rate) || 0.95,
+          pitch: Number(cfg.pitch) || 1,
+        });
+      }
     })();
     return () => {
       mounted = false;
     };
   }, [slug]);
+
+  // Realtime: assina mudanças na config de voz da unidade
+  useEffect(() => {
+    if (!unidade) return;
+    const ch = supabase
+      .channel(`voice-cfg-${unidade.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "unidade_voice_config", filter: `unidade_id=eq.${unidade.id}` },
+        (payload) => {
+          const row = payload.new as { provider?: string; voice_id?: string | null; rate?: number; pitch?: number } | null;
+          if (!row) return;
+          setVoiceCfg({
+            provider: (row.provider as VoiceProvider) ?? "browser",
+            voice_id: row.voice_id ?? null,
+            rate: Number(row.rate) || 0.95,
+            pitch: Number(row.pitch) || 1,
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [unidade]);
 
   // Realtime — escuta senhas e chamadas da unidade
   useEffect(() => {
