@@ -110,7 +110,10 @@ function VozConfigPage() {
 
   const voiceOptions = useMemo(() => {
     if (config.provider === "browser") {
-      return browserVoices.map((v) => ({ id: v.voiceURI, name: `${v.name} (${v.lang})` }));
+      // IMPORTANTE: usamos `name` (não voiceURI) porque voiceURI varia entre
+      // dispositivos. O painel TV procura por nome para conseguir aplicar a
+      // mesma voz mesmo em outro computador/celular.
+      return browserVoices.map((v) => ({ id: v.name, name: `${v.name} (${v.lang})` }));
     }
     if (config.provider === "google") return GOOGLE_VOICES;
     if (config.provider === "elevenlabs") return ELEVEN_VOICES;
