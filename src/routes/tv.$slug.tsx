@@ -841,7 +841,8 @@ function TvPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/40">
-      {/* Header */}
+      {/* Header — oculto em modo kiosk */}
+      {!kiosk && (
       <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-8 py-4">
           <div className="flex items-center gap-3">
@@ -908,12 +909,27 @@ function TvPage() {
                 {audioBlocked ? "Toque a tela" : "Som ativo"}
               </span>
             </div>
+            <button
+              onClick={toggleFullscreen}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors"
+              title={isFullscreen ? "Sair de tela cheia" : "Entrar em tela cheia"}
+            >
+              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              <span className="hidden lg:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
+            </button>
           </div>
         </div>
       </header>
+      )}
 
       {/* Conteúdo */}
-      <main className="mx-auto max-w-[1600px] grid gap-6 px-8 py-8 lg:grid-cols-[1.5fr_1fr]">
+      <main
+        className={
+          kiosk
+            ? "mx-auto max-w-[1600px] grid gap-6 px-6 py-6 lg:grid-cols-[1.5fr_1fr]"
+            : "mx-auto max-w-[1600px] grid gap-6 px-8 py-8 lg:grid-cols-[1.5fr_1fr]"
+        }
+      >
         {/* Coluna esquerda: destaque + últimas chamadas */}
         <section className="space-y-6">
           <div
