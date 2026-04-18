@@ -374,6 +374,10 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   // Finalizar atendimento ativo
   const [finalizando, setFinalizando] = useState(false);
   const [minimizado, setMinimizado] = useState(false);
+
+  // IDs de senhas urgentes já vistas — para tocar o alerta apenas em entradas novas
+  const urgentesVistasRef = useRef<Set<string>>(new Set());
+  const primeiroLoadRef = useRef(true);
   // Tick para o timer ao vivo
   const [, setNowTick] = useState(0);
   useEffect(() => {
