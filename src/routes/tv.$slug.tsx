@@ -336,11 +336,61 @@ function TvPage() {
   };
   const handleEnableSound = () => {
     setSoundOn(true);
+    setAudioBlocked(false);
     // gesto do usuário desbloqueia AudioContext
     playDing();
     // Também "aquece" a Web Speech API com uma fala silenciosa
     primeSpeech();
   };
+
+  // Tenta destravar áudio automaticamente. Se o browser bloquear (autoplay policy),
+  // sinaliza audioBlocked=true para mostrar overlay pedindo 1 clique do operador.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const tryUnlock = async () => {
+      try {
+        const Ctor =
+          window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctor) return;
+        let ctx = audioCtxRef.current;
+        if (!ctx) {
+          ctx = new Ctor();
+          audioCtxRef.current = ctx;
+        }
+        if (ctx.state === "suspended") {
+          await ctx.resume();
+        }
+        if (cancelled) return;
+        if (ctx.state !== "running") {
+          setAudioBlocked(true);
+        } else {
+          setAudioBlocked(false);
+          primeSpeech();
+        }
+      } catch {
+        if (!cancelled) setAudioBlocked(true);
+      }
+    };
+    void tryUnlock();
+    // Qualquer interação do usuário destrava: clique, toque, tecla
+    const onInteract = () => {
+      handleEnableSound();
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+    window.addEventListener("click", onInteract);
+    window.addEventListener("touchstart", onInteract);
+    window.addEventListener("keydown", onInteract);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Voz: Web Speech API ────────────────────────────────
   const pacienteCacheRef = useRef<Map<string, string>>(new Map());
