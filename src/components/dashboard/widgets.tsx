@@ -513,6 +513,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
 
           if (payload.eventType === "DELETE") {
             const old = payload.old as { id: string };
+            urgentesVistasRef.current.delete(old.id);
             setProximas((prev) => prev.filter((p) => p.id !== old.id));
             await recountStatuses();
             return;
@@ -520,6 +521,19 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
 
           const row = payload.new as Omit<ProximaSenha, "filas"> & { filas?: never };
           const ativa = ["aguardando", "chamada"].includes(row.status);
+
+          // 🔔 Alerta sonoro: nova senha urgente que ainda não vimos
+          if (
+            ativa &&
+            row.prioridade === "urgente" &&
+            !urgentesVistasRef.current.has(row.id)
+          ) {
+            urgentesVistasRef.current.add(row.id);
+            playUrgenteAlert();
+            toast.warning(`Senha urgente: ${row.codigo}`, {
+              description: "Nova prioridade urgente entrou na fila.",
+            });
+          }
 
           if (!ativa) {
             // saiu da nossa lista (em_atendimento, finalizada, etc.)
