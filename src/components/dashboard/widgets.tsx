@@ -512,13 +512,30 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
         },
         async () => {
           if (!user) return;
-          const { count } = await supabase
+          const { data } = await supabase
             .from("atendimentos")
-            .select("id", { count: "exact", head: true })
+            .select(
+              "id,iniciado_em,senha_id,paciente_id,senhas!inner(codigo,filas(nome)),pacientes(nome_completo)",
+            )
             .eq("unidade_id", unidadeId)
             .eq("profissional_id", user.id)
-            .is("finalizado_em", null);
-          setTemAtivo((count ?? 0) > 0);
+            .is("finalizado_em", null)
+            .order("iniciado_em", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          setAtendimentoAtivo(
+            data
+              ? {
+                  id: data.id,
+                  iniciado_em: data.iniciado_em,
+                  senha_id: data.senha_id,
+                  paciente_id: data.paciente_id,
+                  codigo: data.senhas?.codigo ?? "—",
+                  paciente_nome: data.pacientes?.nome_completo ?? null,
+                  fila_nome: data.senhas?.filas?.nome ?? null,
+                }
+              : null,
+          );
         },
       )
       .subscribe();
