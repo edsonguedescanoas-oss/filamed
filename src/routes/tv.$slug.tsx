@@ -1030,6 +1030,14 @@ function TvPage() {
               </ul>
             )}
           </div>
+
+          {/* Carrossel de mídia (sinalização digital) — pausa enquanto há chamada destacada */}
+          {unidade && (
+            <TvCarrossel
+              unidadeId={unidade.id}
+              paused={Boolean(destaque)}
+            />
+          )}
         </section>
 
         {/* Coluna direita: aguardando por fila */}
