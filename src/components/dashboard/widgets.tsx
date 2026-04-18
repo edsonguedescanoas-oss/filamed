@@ -603,12 +603,16 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
     }
     setActionId(s.id);
     try {
-      const { error: e1 } = await supabase.from("atendimentos").insert({
-        unidade_id: unidadeId,
-        senha_id: s.id,
-        paciente_id: s.paciente_id,
-        profissional_id: user.id,
-      });
+      const { data: novo, error: e1 } = await supabase
+        .from("atendimentos")
+        .insert({
+          unidade_id: unidadeId,
+          senha_id: s.id,
+          paciente_id: s.paciente_id,
+          profissional_id: user.id,
+        })
+        .select("id,iniciado_em")
+        .maybeSingle();
       if (e1) throw e1;
       const { error: e2 } = await supabase
         .from("senhas")
@@ -620,11 +624,55 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
       setProximas((prev) => prev.filter((p) => p.id !== s.id));
       setChamadas((n) => Math.max(0, n - 1));
       setEmAtendimento((n) => n + 1);
-      setTemAtivo(true);
+      if (novo) {
+        setAtendimentoAtivo({
+          id: novo.id,
+          iniciado_em: novo.iniciado_em,
+          senha_id: s.id,
+          paciente_id: s.paciente_id,
+          codigo: s.codigo,
+          paciente_nome: s.pacientes?.nome_completo ?? null,
+          fila_nome: s.filas?.nome ?? null,
+        });
+        setMinimizado(false);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao iniciar atendimento.");
     } finally {
       setActionId(null);
+    }
+  };
+
+  const finalizarAtendimento = async () => {
+    if (!atendimentoAtivo) return;
+    setFinalizando(true);
+    try {
+      const agora = new Date();
+      const dur = Math.max(
+        0,
+        Math.floor((agora.getTime() - new Date(atendimentoAtivo.iniciado_em).getTime()) / 1000),
+      );
+      const { error: e1 } = await supabase
+        .from("atendimentos")
+        .update({ finalizado_em: agora.toISOString(), duracao_segundos: dur })
+        .eq("id", atendimentoAtivo.id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase
+        .from("senhas")
+        .update({
+          status: "finalizada",
+          finalizada_em: agora.toISOString(),
+          updated_at: agora.toISOString(),
+        })
+        .eq("id", atendimentoAtivo.senha_id);
+      if (e2) throw e2;
+      toast.success(`${atendimentoAtivo.codigo} — atendimento finalizado.`);
+      setAtendimentoAtivo(null);
+      setEmAtendimento((n) => Math.max(0, n - 1));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao finalizar atendimento.");
+    } finally {
+      setFinalizando(false);
     }
   };
 
