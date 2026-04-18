@@ -530,6 +530,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      setup_initial_unidade: {
+        Args: {
+          _cnpj?: string
+          _endereco?: string
+          _nome: string
+          _slug?: string
+          _telefone?: string
+        }
+        Returns: string
+      }
+      unaccent_simple: { Args: { _text: string }; Returns: string }
       user_unidade_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
