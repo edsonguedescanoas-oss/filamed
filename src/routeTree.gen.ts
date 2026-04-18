@@ -13,6 +13,7 @@ import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TvIndexRouteImport } from './routes/tv.index'
 import { Route as TvSlugRouteImport } from './routes/tv.$slug'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
@@ -38,6 +39,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvIndexRoute = TvIndexRouteImport.update({
+  id: '/tv/',
+  path: '/tv/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TvSlugRoute = TvSlugRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/app': typeof AppAppRouteWithChildren
   '/tv/$slug': typeof TvSlugRoute
+  '/tv/': typeof TvIndexRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/tv/$slug': typeof TvSlugRoute
+  '/tv': typeof TvIndexRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/_app/app': typeof AppAppRouteWithChildren
   '/tv/$slug': typeof TvSlugRoute
+  '/tv/': typeof TvIndexRoute
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
   '/_app/app/filas': typeof AppAppFilasRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/app'
     | '/tv/$slug'
+    | '/tv/'
     | '/app/atendimento'
     | '/app/filas'
     | '/app/pacientes'
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/tv/$slug'
+    | '/tv'
     | '/app/atendimento'
     | '/app/filas'
     | '/app/pacientes'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/_app/app'
     | '/tv/$slug'
+    | '/tv/'
     | '/_app/app/atendimento'
     | '/_app/app/filas'
     | '/_app/app/pacientes'
@@ -158,6 +170,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
   TvSlugRoute: typeof TvSlugRoute
+  TvIndexRoute: typeof TvIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tv/': {
+      id: '/tv/'
+      path: '/tv'
+      fullPath: '/tv/'
+      preLoaderRoute: typeof TvIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tv/$slug': {
@@ -277,6 +297,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
   TvSlugRoute: TvSlugRoute,
+  TvIndexRoute: TvIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
