@@ -1,12 +1,28 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Activity, Loader2 } from "lucide-react";
+import { Activity, Loader2, Shield, Ticket, Stethoscope, HeartPulse, BarChart3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { toast } from "sonner";
+
+// Contas de teste compartilhando a unidade Canoas
+const TEST_ACCOUNTS: Array<{
+  role: AppRole;
+  label: string;
+  email: string;
+  icon: typeof Shield;
+  color: string;
+}> = [
+  { role: "admin",      label: "Admin",      email: "admin.teste@filamed.dev",      icon: Shield,      color: "text-violet-600" },
+  { role: "recepcao",   label: "Recepção",   email: "recepcao.teste@filamed.dev",   icon: Ticket,      color: "text-blue-600" },
+  { role: "medico",     label: "Médico",     email: "medico.teste@filamed.dev",     icon: Stethoscope, color: "text-emerald-600" },
+  { role: "enfermeiro", label: "Enfermeiro", email: "enfermeiro.teste@filamed.dev", icon: HeartPulse,  color: "text-rose-600" },
+  { role: "gestor",     label: "Gestor",     email: "gestor.teste@filamed.dev",     icon: BarChart3,   color: "text-amber-600" },
+];
+const TEST_PASSWORD = "Teste1234!";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
