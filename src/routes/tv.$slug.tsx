@@ -126,7 +126,11 @@ function TvPage() {
         (payload) => {
           const nova = payload.new as Chamada;
           setChamadas((prev) => [nova, ...prev].slice(0, 10));
-          if (soundOnRef.current) playDing();
+          if (soundOnRef.current) {
+            playDing();
+            // Aguarda um instante após o ding e fala a chamada
+            void announceChamada(nova);
+          }
         },
       )
       .subscribe();
