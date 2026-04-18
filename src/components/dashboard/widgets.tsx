@@ -339,7 +339,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
           .eq("status", "em_atendimento"),
         supabase
           .from("senhas")
-          .select("id,codigo,prioridade,status,created_at,updated_at,fila_id,paciente_id,filas(nome,cor)")
+          .select("id,codigo,prioridade,status,created_at,updated_at,fila_id,paciente_id,filas(nome,cor),pacientes(nome_completo)")
           .eq("unidade_id", unidadeId)
           .in("status", ["aguardando", "chamada"])
           .order("prioridade", { ascending: false })
