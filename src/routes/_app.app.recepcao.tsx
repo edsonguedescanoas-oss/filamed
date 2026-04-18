@@ -93,6 +93,13 @@ function RecepcaoPage() {
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
+  // cadastro rápido de paciente
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoCpf, setNovoCpf] = useState("");
+  const [novoTelefone, setNovoTelefone] = useState("");
+  const [savingNovo, setSavingNovo] = useState(false);
+
   const fetchFilas = async () => {
     if (!unidadeId) return;
     setLoadingFilas(true);
