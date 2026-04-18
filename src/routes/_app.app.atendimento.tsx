@@ -78,7 +78,8 @@ function AtendimentoPage() {
 
   // Carregamento inicial
   useEffect(() => {
-    if (!profile?.unidade_id || !user) return;
+    const unidadeId = profile?.unidade_id;
+    if (!unidadeId || !user) return;
     let mounted = true;
     void (async () => {
       setLoading(true);
@@ -86,23 +87,23 @@ function AtendimentoPage() {
         supabase
           .from("filas")
           .select("id,nome,prefixo_senha,cor,ordem")
-          .eq("unidade_id", profile.unidade_id)
+          .eq("unidade_id", unidadeId)
           .eq("ativa", true)
           .order("ordem"),
         supabase
           .from("senhas")
           .select("id,codigo,fila_id,paciente_id,status,prioridade,created_at,updated_at")
-          .eq("unidade_id", profile.unidade_id)
+          .eq("unidade_id", unidadeId)
           .in("status", ["aguardando", "chamada", "em_atendimento"])
           .order("created_at"),
         supabase
           .from("pacientes")
           .select("id,nome_completo")
-          .eq("unidade_id", profile.unidade_id),
+          .eq("unidade_id", unidadeId),
         supabase
           .from("atendimentos")
           .select("id,senha_id,iniciado_em,finalizado_em,duracao_segundos,observacoes,profissional_id")
-          .eq("unidade_id", profile.unidade_id)
+          .eq("unidade_id", unidadeId)
           .eq("profissional_id", user.id)
           .is("finalizado_em", null)
           .order("iniciado_em", { ascending: false })
