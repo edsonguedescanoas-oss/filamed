@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Megaphone, Volume2, VolumeX } from "lucide-react";
+import { Activity, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -79,6 +79,50 @@ function TvPage() {
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
+
+  // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
+  const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
+  const [ptVoices, setPtVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(VOICE_STORAGE_KEY);
+  });
+
+  // Carrega lista de vozes (algumas plataformas só populam após `voiceschanged`)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const synth = window.speechSynthesis;
+    const refresh = () => {
+      const all = synth.getVoices();
+      const pt = all.filter((v) => v.lang?.toLowerCase().startsWith("pt"));
+      pt.sort((a, b) => {
+        const aBR = a.lang === "pt-BR" ? 0 : 1;
+        const bBR = b.lang === "pt-BR" ? 0 : 1;
+        if (aBR !== bBR) return aBR - bBR;
+        return a.name.localeCompare(b.name);
+      });
+      setPtVoices(pt);
+    };
+    refresh();
+    synth.addEventListener("voiceschanged", refresh);
+    return () => synth.removeEventListener("voiceschanged", refresh);
+  }, []);
+
+  const handleSelectVoice = (uri: string) => {
+    setSelectedVoiceURI(uri || null);
+    if (typeof window !== "undefined") {
+      if (uri) localStorage.setItem(VOICE_STORAGE_KEY, uri);
+      else localStorage.removeItem(VOICE_STORAGE_KEY);
+    }
+    // Pré-visualização curta com a voz selecionada
+    if (uri && typeof window !== "undefined" && "speechSynthesis" in window) {
+      const u = new SpeechSynthesisUtterance("Voz selecionada");
+      u.lang = "pt-BR";
+      const v = window.speechSynthesis.getVoices().find((x) => x.voiceURI === uri);
+      if (v) u.voice = v;
+      window.speechSynthesis.speak(u);
+    }
+  };
 
   // Carregamento inicial
   useEffect(() => {
@@ -253,7 +297,13 @@ function TvPage() {
       u.pitch = 1;
       u.volume = 1;
       const voices = synth.getVoices();
+      // 1) Voz salva pelo usuário, se ainda existir
+      const saved = selectedVoiceURI
+        ? voices.find((v) => v.voiceURI === selectedVoiceURI)
+        : null;
+      // 2) Fallback: primeira pt-BR, depois qualquer pt-*
       const ptVoice =
+        saved ??
         voices.find((v) => v.lang === "pt-BR") ??
         voices.find((v) => v.lang?.startsWith("pt"));
       if (ptVoice) u.voice = ptVoice;
@@ -400,6 +450,29 @@ function TvPage() {
                 </div>
               </div>
             </div>
+            {/* Seletor de voz pt-BR (só aparece se houver vozes disponíveis) */}
+            {ptVoices.length > 0 && (
+              <label
+                className="hidden md:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium hover:bg-white/10 transition-colors cursor-pointer"
+                title="Voz usada para anunciar as chamadas"
+              >
+                <Mic className="h-4 w-4 text-slate-400" />
+                <select
+                  value={selectedVoiceURI ?? ""}
+                  onChange={(e) => handleSelectVoice(e.target.value)}
+                  className="bg-transparent border-0 outline-none text-sm font-medium text-slate-200 max-w-[180px] truncate cursor-pointer focus:ring-0"
+                >
+                  <option value="" className="bg-slate-900">
+                    Voz automática
+                  </option>
+                  {ptVoices.map((v) => (
+                    <option key={v.voiceURI} value={v.voiceURI} className="bg-slate-900">
+                      {v.name} ({v.lang})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <button
               onClick={soundOn ? () => setSoundOn(false) : handleEnableSound}
               className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
