@@ -17,6 +17,7 @@ import { Route as TvIndexRouteImport } from './routes/tv.index'
 import { Route as TvSlugRouteImport } from './routes/tv.$slug'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
+import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
@@ -61,6 +62,11 @@ const AppAppIndexRoute = AppAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppVozRoute = AppAppVozRouteImport.update({
+  id: '/voz',
+  path: '/voz',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppRecepcaoRoute = AppAppRecepcaoRouteImport.update({
   id: '/recepcao',
   path: '/recepcao',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
+  '/app/voz': typeof AppAppVozRoute
   '/app/': typeof AppAppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
+  '/app/voz': typeof AppAppVozRoute
   '/app': typeof AppAppIndexRoute
 }
 export interface FileRoutesById {
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_app/app/filas': typeof AppAppFilasRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
+  '/_app/app/voz': typeof AppAppVozRoute
   '/_app/app/': typeof AppAppIndexRoute
 }
 export interface FileRouteTypes {
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/app/filas'
     | '/app/pacientes'
     | '/app/recepcao'
+    | '/app/voz'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/app/filas'
     | '/app/pacientes'
     | '/app/recepcao'
+    | '/app/voz'
     | '/app'
   id:
     | '__root__'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/_app/app/filas'
     | '/_app/app/pacientes'
     | '/_app/app/recepcao'
+    | '/_app/app/voz'
     | '/_app/app/'
   fileRoutesById: FileRoutesById
 }
@@ -231,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppIndexRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/voz': {
+      id: '/_app/app/voz'
+      path: '/voz'
+      fullPath: '/app/voz'
+      preLoaderRoute: typeof AppAppVozRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/recepcao': {
       id: '/_app/app/recepcao'
       path: '/recepcao'
@@ -267,6 +286,7 @@ interface AppAppRouteChildren {
   AppAppFilasRoute: typeof AppAppFilasRoute
   AppAppPacientesRoute: typeof AppAppPacientesRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
+  AppAppVozRoute: typeof AppAppVozRoute
   AppAppIndexRoute: typeof AppAppIndexRoute
 }
 
@@ -275,6 +295,7 @@ const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppFilasRoute: AppAppFilasRoute,
   AppAppPacientesRoute: AppAppPacientesRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
+  AppAppVozRoute: AppAppVozRoute,
   AppAppIndexRoute: AppAppIndexRoute,
 }
 
@@ -302,12 +323,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

@@ -91,7 +91,17 @@ function TvPage() {
   // Cache reativo de nomes de paciente por paciente_id (alimenta a UI)
   const [pacienteNomes, setPacienteNomes] = useState<Record<string, string>>({});
 
-  // Vozes pt-* disponíveis no navegador + voz escolhida (persistida em localStorage)
+  // Configuração de voz vinda do banco (configurada no admin)
+  type VoiceProvider = "browser" | "google" | "elevenlabs";
+  type VoiceCfg = { provider: VoiceProvider; voice_id: string | null; rate: number; pitch: number };
+  const [voiceCfg, setVoiceCfg] = useState<VoiceCfg>({
+    provider: "browser",
+    voice_id: null,
+    rate: 0.95,
+    pitch: 1,
+  });
+
+  // Vozes pt-* disponíveis no navegador (apenas para fallback/preview local)
   const VOICE_STORAGE_KEY = "filamed.tv.voiceURI";
   const [ptVoices, setPtVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(() => {
@@ -176,11 +186,51 @@ function TvPage() {
       setFilas((filasRes.data ?? []) as Fila[]);
       setSenhas((senhasRes.data ?? []) as Senha[]);
       setChamadas((chamadasRes.data ?? []) as Chamada[]);
+
+      // Carrega config de voz da unidade (se existir)
+      const { data: cfg } = await supabase
+        .from("unidade_voice_config")
+        .select("provider,voice_id,rate,pitch")
+        .eq("unidade_id", uni.id)
+        .maybeSingle();
+      if (mounted && cfg) {
+        setVoiceCfg({
+          provider: (cfg.provider as VoiceProvider) ?? "browser",
+          voice_id: cfg.voice_id,
+          rate: Number(cfg.rate) || 0.95,
+          pitch: Number(cfg.pitch) || 1,
+        });
+      }
     })();
     return () => {
       mounted = false;
     };
   }, [slug]);
+
+  // Realtime: assina mudanças na config de voz da unidade
+  useEffect(() => {
+    if (!unidade) return;
+    const ch = supabase
+      .channel(`voice-cfg-${unidade.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "unidade_voice_config", filter: `unidade_id=eq.${unidade.id}` },
+        (payload) => {
+          const row = payload.new as { provider?: string; voice_id?: string | null; rate?: number; pitch?: number } | null;
+          if (!row) return;
+          setVoiceCfg({
+            provider: (row.provider as VoiceProvider) ?? "browser",
+            voice_id: row.voice_id ?? null,
+            rate: Number(row.rate) || 0.95,
+            pitch: Number(row.pitch) || 1,
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [unidade]);
 
   // Realtime — escuta senhas e chamadas da unidade
   useEffect(() => {
@@ -296,6 +346,61 @@ function TvPage() {
     senhasMapRef.current = new Map(senhas.map((s) => [s.id, s]));
   }, [senhas]);
 
+  // Mantém voiceCfg em ref para acessar dentro de callbacks de realtime sem closure stale
+  const voiceCfgRef = useRef(voiceCfg);
+  useEffect(() => {
+    voiceCfgRef.current = voiceCfg;
+  }, [voiceCfg]);
+
+  // Reproduz áudio TTS retornado pela edge function (Google ou ElevenLabs)
+  const playRemoteTts = async (text: string, cfg: VoiceCfg) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("tts", {
+        body: {
+          text,
+          provider: cfg.provider,
+          voiceId: cfg.voice_id,
+          rate: cfg.rate,
+          pitch: cfg.pitch,
+        },
+      });
+      if (error) throw error;
+      if (!data?.audioContent) throw new Error("Sem áudio retornado");
+
+      setDebugInfo({
+        text,
+        voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+        status: "falando",
+        at: new Date(),
+      });
+
+      const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`);
+      audio.onended = () => {
+        setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
+      };
+      audio.onerror = () => {
+        setDebugInfo({
+          text,
+          voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+          status: "erro",
+          at: new Date(),
+          error: "Falha ao reproduzir áudio",
+        });
+      };
+      await audio.play();
+    } catch (err) {
+      console.error("[TV] erro TTS remoto:", err);
+      setDebugInfo({
+        text,
+        voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+        status: "erro",
+        at: new Date(),
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+
   const primeSpeech = () => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     try {
@@ -312,16 +417,21 @@ function TvPage() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
 
     const synth = window.speechSynthesis;
+    const cfg = voiceCfgRef.current;
     const utterance = new SpeechSynthesisUtterance("");
     utterance.lang = "pt-BR";
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    utterance.rate = cfg.rate || 0.95;
+    utterance.pitch = cfg.pitch || 1;
     utterance.volume = 1;
 
     const voices = synth.getVoices();
-    const saved = selectedVoiceURI ? voices.find((v) => v.voiceURI === selectedVoiceURI) : null;
+    // Prioridade: voz salva no banco (provider=browser) > localStorage legado > default pt-BR
+    const cfgVoice = cfg.provider === "browser" && cfg.voice_id
+      ? voices.find((v) => v.voiceURI === cfg.voice_id)
+      : null;
+    const saved = !cfgVoice && selectedVoiceURI ? voices.find((v) => v.voiceURI === selectedVoiceURI) : null;
     const ptVoice =
-      saved ?? voices.find((v) => v.lang === "pt-BR") ?? voices.find((v) => v.lang?.startsWith("pt"));
+      cfgVoice ?? saved ?? voices.find((v) => v.lang === "pt-BR") ?? voices.find((v) => v.lang?.startsWith("pt"));
 
     if (ptVoice) utterance.voice = ptVoice;
 
@@ -424,9 +534,12 @@ function TvPage() {
   };
 
   const announceChamada = async (chamada: Chamada) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const utterance = createPreparedUtterance();
-    if (!utterance) return;
+    const cfg = voiceCfgRef.current;
+    const usingBrowser = cfg.provider === "browser";
+    if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) return;
+
+    const utterance = usingBrowser ? createPreparedUtterance() : null;
+    if (usingBrowser && !utterance) return;
 
     const senha = await resolveDadosDaSenha(chamada.senha_id);
 
@@ -443,11 +556,11 @@ function TvPage() {
       chamada.destino ? `Dirija-se ${formatarDestino(chamada.destino)}.` : null,
     ].filter(Boolean);
     const texto = partes.join(" ").trim();
-    console.info("[TV] texto final da chamada:", texto || "<vazio>");
+    console.info("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
     if (!texto) {
       setDebugInfo({
         text: "<vazio>",
-        voice: utterance.voice?.name ?? "padrão do sistema",
+        voice: usingBrowser ? (utterance?.voice?.name ?? "padrão do sistema") : cfg.provider,
         status: "vazio",
         at: new Date(),
         error: "Texto montado ficou vazio",
@@ -455,8 +568,12 @@ function TvPage() {
       return;
     }
 
-    utterance.text = texto;
-    speakUtterance(utterance);
+    if (usingBrowser && utterance) {
+      utterance.text = texto;
+      speakUtterance(utterance);
+    } else {
+      await playRemoteTts(texto, cfg);
+    }
   };
 
   // ── Rechamada automática ───────────────────────────────
