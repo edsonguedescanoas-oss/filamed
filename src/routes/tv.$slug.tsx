@@ -750,6 +750,11 @@ function TvPage() {
                     className="rounded-2xl border border-white/10 bg-slate-800/60 p-4 text-center"
                   >
                     <div className="font-display text-3xl font-bold tabular-nums">{senha.codigo}</div>
+                    {senha.paciente_id && pacienteNomes[senha.paciente_id] && (
+                      <div className="mt-1 truncate text-xs font-medium text-slate-200">
+                        {pacienteNomes[senha.paciente_id]}
+                      </div>
+                    )}
                     <div className="mt-1 text-xs text-slate-400 truncate">{chamada.destino}</div>
                   </li>
                 ))}
