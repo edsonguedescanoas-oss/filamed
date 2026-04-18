@@ -253,7 +253,13 @@ function TvPage() {
       u.pitch = 1;
       u.volume = 1;
       const voices = synth.getVoices();
+      // 1) Voz salva pelo usuário, se ainda existir
+      const saved = selectedVoiceURI
+        ? voices.find((v) => v.voiceURI === selectedVoiceURI)
+        : null;
+      // 2) Fallback: primeira pt-BR, depois qualquer pt-*
       const ptVoice =
+        saved ??
         voices.find((v) => v.lang === "pt-BR") ??
         voices.find((v) => v.lang?.startsWith("pt"));
       if (ptVoice) u.voice = ptVoice;
