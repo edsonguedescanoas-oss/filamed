@@ -495,9 +495,18 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
       });
       if (e2) throw e2;
       toast.success(`${chamarSenha.codigo} chamada para ${destino.trim()}.`);
+      // Atualização otimista local (realtime sincroniza outras abas)
+      setProximas((prev) =>
+        sortSenhas(
+          prev.map((p) =>
+            p.id === chamarSenha.id ? { ...p, status: "chamada", updated_at: agora } : p,
+          ),
+        ),
+      );
+      setAguardando((n) => Math.max(0, n - 1));
+      setChamadas((n) => n + 1);
       setChamarSenha(null);
       setDestino("");
-      // o realtime vai atualizar lista e contadores
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao chamar senha.");
     } finally {
