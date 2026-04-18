@@ -262,62 +262,106 @@ export function RecepcaoWidgets({ unidadeId }: { unidadeId: string }) {
  * MEDICO / ENFERMEIRO — fila de atendimento
  * ────────────────────────────────────────────────────────── */
 
+type ProximaSenha = {
+  id: string;
+  codigo: string;
+  prioridade: string;
+  created_at: string;
+  fila_id: string;
+  filas: { nome: string; cor: string | null } | null;
+};
+
 export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [aguardando, setAguardando] = useState(0);
   const [chamadas, setChamadas] = useState(0);
   const [emAtendimento, setEmAtendimento] = useState(0);
-  const [proximas, setProximas] = useState<
-    {
-      id: string;
-      codigo: string;
-      prioridade: string;
-      created_at: string;
-      filas: { nome: string; cor: string | null } | null;
-    }[]
-  >([]);
+  const [proximas, setProximas] = useState<ProximaSenha[]>([]);
+
+  // Modal de chamada
+  const [chamarSenha, setChamarSenha] = useState<ProximaSenha | null>(null);
+  const [destino, setDestino] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const [agRes, chRes, emRes, proxRes] = await Promise.all([
+      supabase
+        .from("senhas")
+        .select("id", { count: "exact", head: true })
+        .eq("unidade_id", unidadeId)
+        .eq("status", "aguardando"),
+      supabase
+        .from("senhas")
+        .select("id", { count: "exact", head: true })
+        .eq("unidade_id", unidadeId)
+        .eq("status", "chamada"),
+      supabase
+        .from("senhas")
+        .select("id", { count: "exact", head: true })
+        .eq("unidade_id", unidadeId)
+        .eq("status", "em_atendimento"),
+      supabase
+        .from("senhas")
+        .select("id,codigo,prioridade,created_at,fila_id,filas(nome,cor)")
+        .eq("unidade_id", unidadeId)
+        .eq("status", "aguardando")
+        .order("prioridade", { ascending: false })
+        .order("created_at", { ascending: true })
+        .limit(8),
+    ]);
+    setAguardando(agRes.count ?? 0);
+    setChamadas(chRes.count ?? 0);
+    setEmAtendimento(emRes.count ?? 0);
+    setProximas((proxRes.data ?? []) as ProximaSenha[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    let cancel = false;
-    const load = async () => {
-      setLoading(true);
-      const [agRes, chRes, emRes, proxRes] = await Promise.all([
-        supabase
-          .from("senhas")
-          .select("id", { count: "exact", head: true })
-          .eq("unidade_id", unidadeId)
-          .eq("status", "aguardando"),
-        supabase
-          .from("senhas")
-          .select("id", { count: "exact", head: true })
-          .eq("unidade_id", unidadeId)
-          .eq("status", "chamada"),
-        supabase
-          .from("senhas")
-          .select("id", { count: "exact", head: true })
-          .eq("unidade_id", unidadeId)
-          .eq("status", "em_atendimento"),
-        supabase
-          .from("senhas")
-          .select("id,codigo,prioridade,created_at,filas(nome,cor)")
-          .eq("unidade_id", unidadeId)
-          .eq("status", "aguardando")
-          .order("prioridade", { ascending: false })
-          .order("created_at", { ascending: true })
-          .limit(8),
-      ]);
-      if (cancel) return;
-      setAguardando(agRes.count ?? 0);
-      setChamadas(chRes.count ?? 0);
-      setEmAtendimento(emRes.count ?? 0);
-      setProximas((proxRes.data ?? []) as typeof proximas);
-      setLoading(false);
-    };
     void load();
-    return () => {
-      cancel = true;
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId]);
+
+  const abrirChamar = (s: ProximaSenha) => {
+    setChamarSenha(s);
+    setDestino(s.filas?.nome ? `${s.filas.nome} 1` : "");
+  };
+
+  const confirmarChamar = async () => {
+    if (!chamarSenha || !user) return;
+    if (!destino.trim()) {
+      toast.error("Informe o destino (consultório, sala, guichê...).");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const agora = new Date().toISOString();
+      const { error: e1 } = await supabase
+        .from("senhas")
+        .update({ status: "chamada", updated_at: agora })
+        .eq("id", chamarSenha.id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("chamadas").insert({
+        unidade_id: unidadeId,
+        senha_id: chamarSenha.id,
+        destino: destino.trim(),
+        chamado_por: user.id,
+      });
+      if (e2) throw e2;
+      toast.success(`${chamarSenha.codigo} chamada para ${destino.trim()}.`);
+      // Otimista: remove da lista de "aguardando" e atualiza contadores
+      setProximas((prev) => prev.filter((p) => p.id !== chamarSenha.id));
+      setAguardando((n) => Math.max(0, n - 1));
+      setChamadas((n) => n + 1);
+      setChamarSenha(null);
+      setDestino("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao chamar senha.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -370,31 +414,93 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
               return (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/30 p-3"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div
-                      className="h-10 w-1 rounded-full"
+                      className="h-10 w-1 rounded-full shrink-0"
                       style={{ backgroundColor: s.filas?.cor ?? "hsl(var(--primary))" }}
                     />
-                    <div>
-                      <div className="font-mono text-base font-bold">{s.codigo}</div>
-                      <div className="text-xs text-muted-foreground">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-bold">{s.codigo}</span>
+                        {s.prioridade !== "normal" && (
+                          <Badge variant="outline" className="capitalize text-[10px] py-0 px-1.5">
+                            {s.prioridade}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
                         {s.filas?.nome ?? "—"} · {wait} min
                       </div>
                     </div>
                   </div>
-                  {s.prioridade !== "normal" && (
-                    <Badge variant="outline" className="capitalize text-xs">
-                      {s.prioridade}
-                    </Badge>
-                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => abrirChamar(s)}
+                    className="bg-gradient-primary shrink-0"
+                  >
+                    <Megaphone className="h-3.5 w-3.5" />
+                    Chamar
+                  </Button>
                 </div>
               );
             })
           )}
         </div>
       </div>
+
+      <Dialog
+        open={!!chamarSenha}
+        onOpenChange={(o) => {
+          if (!o) {
+            setChamarSenha(null);
+            setDestino("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              Chamar senha{" "}
+              <span className="font-mono text-primary">{chamarSenha?.codigo}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {chamarSenha?.filas?.nome ?? "Fila"} — informe para onde o paciente deve se dirigir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="destino-dashboard">Destino</Label>
+            <Input
+              id="destino-dashboard"
+              autoFocus
+              value={destino}
+              onChange={(e) => setDestino(e.target.value)}
+              placeholder="Consultório 1, Sala 3, Guichê A..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !submitting) void confirmarChamar();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChamarSenha(null)} disabled={submitting}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => void confirmarChamar()}
+              disabled={submitting || !destino.trim()}
+              className="bg-gradient-primary"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Megaphone className="h-4 w-4" />
+              )}
+              Chamar agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
