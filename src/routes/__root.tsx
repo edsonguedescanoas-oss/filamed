@@ -30,10 +30,17 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "FilaMed" },
       { name: "description", content: "FilaMed is a smart queue management system for healthcare units, enhancing efficiency and patient experience." },
       { name: "author", content: "Lovable" },
+      // Performance & UX hints
+      { name: "theme-color", content: "#0F172A" },
+      { name: "color-scheme", content: "light dark" },
+      { name: "format-detection", content: "telephone=no" },
+      // Security: equivalentes aplicáveis via meta (X-Frame-Options/CSP completos exigem headers HTTP do Worker)
+      { name: "referrer", content: "strict-origin-when-cross-origin" },
+      { httpEquiv: "X-Content-Type-Options", content: "nosniff" },
       { property: "og:title", content: "FilaMed" },
       { property: "og:description", content: "FilaMed is a smart queue management system for healthcare units, enhancing efficiency and patient experience." },
       { property: "og:type", content: "website" },
@@ -47,6 +54,9 @@ export const Route = createRootRoute({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      // Reduz latência da 1ª chamada Supabase (auth, REST, realtime)
+      { rel: "preconnect", href: "https://bccvpirrqwhqsinlmpth.supabase.co", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "https://bccvpirrqwhqsinlmpth.supabase.co" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap",
