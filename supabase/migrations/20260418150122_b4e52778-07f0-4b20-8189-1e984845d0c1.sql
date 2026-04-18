@@ -1,0 +1,1 @@
+DELETE FROM public.pacientes WHERE unidade_id = 'e444402d-5ac5-4822-be57-9cec71741aa6' AND nome_completo IN ('Maria Silva Santos', 'João Oliveira Costa', 'Ana Paula Ferreira');
