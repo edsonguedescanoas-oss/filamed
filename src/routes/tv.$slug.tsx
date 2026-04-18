@@ -306,6 +306,63 @@ function TvPage() {
     return () => clearInterval(t);
   }, []);
 
+  // Fullscreen — controle e auto-ativação no modo kiosk
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  const requestFullscreen = async () => {
+    if (typeof document === "undefined") return;
+    try {
+      const el = document.documentElement as HTMLElement & {
+        webkitRequestFullscreen?: () => Promise<void>;
+      };
+      if (document.fullscreenElement) return;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+    } catch {
+      /* navegador pode bloquear sem gesto — silencioso */
+    }
+  };
+  const exitFullscreen = async () => {
+    if (typeof document === "undefined") return;
+    try {
+      const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
+      if (!document.fullscreenElement) return;
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+    } catch {
+      /* ignora */
+    }
+  };
+  const toggleFullscreen = () => {
+    if (isFullscreen) void exitFullscreen();
+    else void requestFullscreen();
+  };
+
+  // Em modo kiosk, tenta entrar em fullscreen na primeira interação do usuário
+  useEffect(() => {
+    if (!kiosk || typeof window === "undefined") return;
+    void requestFullscreen();
+    const onInteract = () => {
+      void requestFullscreen();
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+    window.addEventListener("click", onInteract);
+    window.addEventListener("touchstart", onInteract);
+    window.addEventListener("keydown", onInteract);
+    return () => {
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+  }, [kiosk]);
+
   // Som
   const audioCtxRef = useRef<AudioContext | null>(null);
   const soundOnRef = useRef(false);
