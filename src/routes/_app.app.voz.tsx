@@ -53,6 +53,26 @@ const GOOGLE_VOICES = [
 
 const SAMPLE_TEXT = "Paciente João Silva. Senha A zero quatro cinco. Dirija-se ao Consultório dois.";
 
+function providerLabel(p: Provider): string {
+  if (p === "google") return "Google Cloud TTS";
+  if (p === "elevenlabs") return "ElevenLabs";
+  return "Navegador (grátis)";
+}
+
+function voiceDisplayName(meta: VoiceConfigMeta, browserVoices: SpeechSynthesisVoice[]): string {
+  const { provider, voice_id } = meta;
+  if (!voice_id) return "Voz padrão do provedor";
+  if (provider === "elevenlabs") {
+    return ELEVEN_VOICES.find((v) => v.id === voice_id)?.name ?? voice_id;
+  }
+  if (provider === "google") {
+    return GOOGLE_VOICES.find((v) => v.id === voice_id)?.name ?? voice_id;
+  }
+  // browser: voice_id é o `name` da voz
+  const v = browserVoices.find((b) => b.name === voice_id) ?? browserVoices.find((b) => b.voiceURI === voice_id);
+  return v ? `${v.name} (${v.lang})` : voice_id;
+}
+
 function VozConfigPage() {
   const { profile, roles } = useAuth();
   const isAdmin = roles.includes("admin");
