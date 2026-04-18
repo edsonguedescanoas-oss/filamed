@@ -158,7 +158,10 @@ function VozConfigPage() {
         u.rate = config.rate;
         u.pitch = config.pitch;
         if (config.voice_id) {
-          const v = synth.getVoices().find((x) => x.voiceURI === config.voice_id);
+          const voices = synth.getVoices();
+          const v =
+            voices.find((x) => x.name === config.voice_id) ??
+            voices.find((x) => x.voiceURI === config.voice_id);
           if (v) u.voice = v;
         }
         u.onend = () => setPreviewing(false);
