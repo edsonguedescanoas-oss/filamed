@@ -2,6 +2,7 @@ import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { QrCode } from "@/components/qr-code";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
@@ -14,6 +15,7 @@ type Senha = {
   paciente_id: string | null;
   status: SenhaStatus;
   prioridade: SenhaPrioridade;
+  token_publico: string;
   updated_at: string;
   created_at: string;
 };
@@ -184,7 +186,7 @@ function TvPage() {
           .order("ordem"),
         supabase
           .from("senhas")
-          .select("id,codigo,fila_id,paciente_id,status,prioridade,updated_at,created_at")
+          .select("id,codigo,fila_id,paciente_id,status,prioridade,token_publico,updated_at,created_at")
           .eq("unidade_id", uni.id)
           .in("status", ["aguardando", "chamada", "em_atendimento"])
           .order("created_at"),
@@ -984,6 +986,19 @@ function TvPage() {
               <div className="mt-10 flex flex-col items-center justify-center py-16 text-center text-slate-400">
                 <Megaphone className="h-16 w-16 mb-4 opacity-50" />
                 <p className="font-display text-2xl">Aguardando próxima chamada…</p>
+              </div>
+            )}
+
+            {/* QR Code discreto no canto: paciente acompanha pelo celular */}
+            {destaque?.senha.token_publico && (
+              <div className="absolute bottom-5 right-5 flex flex-col items-center opacity-90 transition-opacity hover:opacity-100">
+                <QrCode
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/s/${destaque.senha.token_publico}`}
+                  size={kiosk ? 110 : 96}
+                />
+                <div className="mt-1 text-center text-[10px] font-medium uppercase tracking-wider text-slate-300">
+                  Acompanhe no celular
+                </div>
               </div>
             )}
           </div>
