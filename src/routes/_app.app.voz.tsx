@@ -68,6 +68,8 @@ function VozConfigPage() {
     pitch: 1.0,
   });
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+  // Snapshot do que está realmente salvo no banco (o que a TV está usando agora).
+  const [activeMeta, setActiveMeta] = useState<VoiceConfigMeta | null>(null);
 
   // Lista de vozes do navegador (pt-*)
   useEffect(() => {
