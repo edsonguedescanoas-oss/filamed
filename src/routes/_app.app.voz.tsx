@@ -191,6 +191,60 @@ function VozConfigPage() {
   const handleSave = async () => {
     if (!unidadeId) return;
     setSaving(true);
+
+    // Para provedores externos, valida com chamada real à edge function antes
+    // de salvar — evita gravar uma configuração que vai quebrar a TV
+    // silenciosamente por falta de API key ou voz inválida.
+    if (config.provider === "google" || config.provider === "elevenlabs") {
+      const toastId = toast.loading(
+        `Validando ${providerLabel(config.provider)}…`,
+      );
+      try {
+        const { data, error } = await supabase.functions.invoke("tts", {
+          body: {
+            text: "Teste de voz.",
+            provider: config.provider,
+            voiceId: config.voice_id,
+            rate: config.rate,
+            pitch: config.pitch,
+          },
+        });
+
+        // Edge function devolve { error: "..." } com status 4xx/5xx — o SDK
+        // entrega como FunctionsHttpError; tentamos extrair a mensagem real.
+        if (error) {
+          let detail = error.message;
+          // O SDK expõe a Response original em error.context
+          const ctx = (error as unknown as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            try {
+              const body = await ctx.json();
+              if (body?.error) detail = body.error;
+            } catch {
+              /* corpo não-JSON, mantém mensagem original */
+            }
+          }
+          throw new Error(detail);
+        }
+        if (!data?.audioContent) {
+          throw new Error("A edge function não retornou áudio.");
+        }
+        toast.dismiss(toastId);
+      } catch (err) {
+        toast.dismiss(toastId);
+        setSaving(false);
+        const msg = err instanceof Error ? err.message : String(err);
+        const isMissingKey = /não configurada|API[_ ]?KEY/i.test(msg);
+        toast.error(
+          isMissingKey
+            ? `Chave de API ausente: ${msg}. Configure o secret antes de salvar.`
+            : `Falha ao validar ${providerLabel(config.provider)}: ${msg}`,
+          { duration: 8000 },
+        );
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("unidade_voice_config")
       .upsert(
@@ -213,7 +267,7 @@ function VozConfigPage() {
       voice_id: config.voice_id,
       updated_at: new Date().toISOString(),
     });
-    toast.success("Configuração de voz salva!");
+    toast.success("Configuração de voz salva e validada!");
   };
 
   const handlePreview = async () => {
