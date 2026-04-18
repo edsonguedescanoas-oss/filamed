@@ -299,6 +299,16 @@ function sortSenhas(list: ProximaSenha[]): ProximaSenha[] {
   });
 }
 
+type AtendimentoAtivo = {
+  id: string;
+  iniciado_em: string;
+  senha_id: string;
+  paciente_id: string | null;
+  codigo: string;
+  paciente_nome: string | null;
+  fila_nome: string | null;
+};
+
 export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -306,7 +316,8 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   const [chamadas, setChamadas] = useState(0);
   const [emAtendimento, setEmAtendimento] = useState(0);
   const [proximas, setProximas] = useState<ProximaSenha[]>([]);
-  const [temAtivo, setTemAtivo] = useState(false);
+  const [atendimentoAtivo, setAtendimentoAtivo] = useState<AtendimentoAtivo | null>(null);
+  const temAtivo = atendimentoAtivo !== null;
 
   // Modal de chamada
   const [chamarSenha, setChamarSenha] = useState<ProximaSenha | null>(null);
@@ -315,6 +326,17 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
 
   // Loading por linha (Chamar / Iniciar)
   const [actionId, setActionId] = useState<string | null>(null);
+
+  // Finalizar atendimento ativo
+  const [finalizando, setFinalizando] = useState(false);
+  const [minimizado, setMinimizado] = useState(false);
+  // Tick para o timer ao vivo
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    if (!atendimentoAtivo) return;
+    const t = setInterval(() => setNowTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [atendimentoAtivo]);
 
   useEffect(() => {
     let cancel = false;
