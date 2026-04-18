@@ -1,12 +1,28 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Activity, Loader2 } from "lucide-react";
+import { Activity, Loader2, Shield, Ticket, Stethoscope, HeartPulse, BarChart3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { toast } from "sonner";
+
+// Contas de teste compartilhando a unidade Canoas
+const TEST_ACCOUNTS: Array<{
+  role: AppRole;
+  label: string;
+  email: string;
+  icon: typeof Shield;
+  color: string;
+}> = [
+  { role: "admin",      label: "Admin",      email: "admin.teste@filamed.dev",      icon: Shield,      color: "text-violet-600" },
+  { role: "recepcao",   label: "Recepção",   email: "recepcao.teste@filamed.dev",   icon: Ticket,      color: "text-blue-600" },
+  { role: "medico",     label: "Médico",     email: "medico.teste@filamed.dev",     icon: Stethoscope, color: "text-emerald-600" },
+  { role: "enfermeiro", label: "Enfermeiro", email: "enfermeiro.teste@filamed.dev", icon: HeartPulse,  color: "text-rose-600" },
+  { role: "gestor",     label: "Gestor",     email: "gestor.teste@filamed.dev",     icon: BarChart3,   color: "text-amber-600" },
+];
+const TEST_PASSWORD = "Teste1234!";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -72,7 +88,9 @@ function LoginPage() {
             Entre com seu email ou crie uma conta para começar.
           </p>
 
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")} className="mt-8">
+          <QuickLoginPanel />
+
+          <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")} className="mt-6">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
@@ -219,5 +237,67 @@ function SignUpForm({
         Após criar a conta, você configurará sua unidade de saúde no próximo passo.
       </p>
     </form>
+  );
+}
+
+function QuickLoginPanel() {
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const [loadingRole, setLoadingRole] = useState<AppRole | null>(null);
+
+  const quickLogin = async (account: typeof TEST_ACCOUNTS[number]) => {
+    setLoadingRole(account.role);
+    try {
+      await signIn(account.email, TEST_PASSWORD);
+      toast.success(`Entrando como ${account.label}…`);
+      void navigate({ to: "/app" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Falha ao entrar";
+      toast.error(msg);
+    } finally {
+      setLoadingRole(null);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-xl border border-dashed border-border bg-muted/30 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="h-4 w-4 text-primary" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Login rápido — contas de teste
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        Todas vinculadas à unidade <span className="font-medium text-foreground">Canoas</span>. Abra abas
+        diferentes para simular a equipe trabalhando em conjunto.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {TEST_ACCOUNTS.map((acc) => {
+          const Icon = acc.icon;
+          const isLoading = loadingRole === acc.role;
+          return (
+            <Button
+              key={acc.role}
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={loadingRole !== null}
+              onClick={() => quickLogin(acc)}
+              className="justify-start h-auto py-2 px-2.5"
+            >
+              {isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Icon className={`h-3.5 w-3.5 ${acc.color}`} />
+              )}
+              <span className="ml-1.5 text-xs">{acc.label}</span>
+            </Button>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[10px] text-muted-foreground/70 text-center">
+        Senha: <code className="font-mono">Teste1234!</code>
+      </p>
+    </div>
   );
 }
