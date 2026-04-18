@@ -417,16 +417,21 @@ function TvPage() {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
 
     const synth = window.speechSynthesis;
+    const cfg = voiceCfgRef.current;
     const utterance = new SpeechSynthesisUtterance("");
     utterance.lang = "pt-BR";
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    utterance.rate = cfg.rate || 0.95;
+    utterance.pitch = cfg.pitch || 1;
     utterance.volume = 1;
 
     const voices = synth.getVoices();
-    const saved = selectedVoiceURI ? voices.find((v) => v.voiceURI === selectedVoiceURI) : null;
+    // Prioridade: voz salva no banco (provider=browser) > localStorage legado > default pt-BR
+    const cfgVoice = cfg.provider === "browser" && cfg.voice_id
+      ? voices.find((v) => v.voiceURI === cfg.voice_id)
+      : null;
+    const saved = !cfgVoice && selectedVoiceURI ? voices.find((v) => v.voiceURI === selectedVoiceURI) : null;
     const ptVoice =
-      saved ?? voices.find((v) => v.lang === "pt-BR") ?? voices.find((v) => v.lang?.startsWith("pt"));
+      cfgVoice ?? saved ?? voices.find((v) => v.lang === "pt-BR") ?? voices.find((v) => v.lang?.startsWith("pt"));
 
     if (ptVoice) utterance.voice = ptVoice;
 
