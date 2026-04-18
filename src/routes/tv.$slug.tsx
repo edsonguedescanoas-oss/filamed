@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX } from "lucide-react";
+import { Activity, Bug, Clock, Loader2, Megaphone, Mic, Volume2, VolumeX, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -623,6 +623,18 @@ function TvPage() {
             >
               {soundOn ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-slate-400" />}
               <span className="hidden sm:inline">{soundOn ? "Som ativo" : "Ativar som"}</span>
+            </button>
+            <button
+              onClick={() => setShowDebug((v) => !v)}
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                showDebug
+                  ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20"
+                  : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10"
+              }`}
+              title={showDebug ? "Ocultar painel de debug" : "Exibir painel de debug"}
+            >
+              <Bug className="h-4 w-4" />
+              <span className="hidden sm:inline">Debug</span>
             </button>
           </div>
         </div>
