@@ -298,39 +298,42 @@ function TvPage() {
     }
   };
 
-  const speak = (text: string) => {
+  const createPreparedUtterance = () => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance("");
+    utterance.lang = "pt-BR";
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    const voices = synth.getVoices();
+    const saved = selectedVoiceURI ? voices.find((v) => v.voiceURI === selectedVoiceURI) : null;
+    const ptVoice =
+      saved ?? voices.find((v) => v.lang === "pt-BR") ?? voices.find((v) => v.lang?.startsWith("pt"));
+
+    if (ptVoice) utterance.voice = ptVoice;
+
+    return utterance;
+  };
+
+  const speakUtterance = (utterance: SpeechSynthesisUtterance) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
       console.warn("[TV] speechSynthesis indisponível");
       return;
     }
     try {
       const synth = window.speechSynthesis;
-      // Alguns navegadores (Chrome) entram em estado "paused" após longos períodos —
-      // dá resume() antes de falar e cancela qualquer fala anterior travada.
       if (synth.paused) synth.resume();
       synth.cancel();
 
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "pt-BR";
-      u.rate = 0.95;
-      u.pitch = 1;
-      u.volume = 1;
-      const voices = synth.getVoices();
-      const saved = selectedVoiceURI
-        ? voices.find((v) => v.voiceURI === selectedVoiceURI)
-        : null;
-      const ptVoice =
-        saved ??
-        voices.find((v) => v.lang === "pt-BR") ??
-        voices.find((v) => v.lang?.startsWith("pt"));
-      if (ptVoice) u.voice = ptVoice;
-      u.onstart = () => console.info("[TV] 🔊 falando:", text);
-      u.onerror = (e) => console.error("[TV] erro TTS:", e.error, text);
-      u.onend = () => console.info("[TV] ✓ fim da fala");
-      console.info("[TV] speak() →", { text, voice: ptVoice?.name, voicesCount: voices.length });
-      synth.speak(u);
+      utterance.onstart = () => console.info("[TV] 🔊 falando:", utterance.text);
+      utterance.onerror = (e) => console.error("[TV] erro TTS:", e.error, utterance.text);
+      utterance.onend = () => console.info("[TV] ✓ fim da fala");
+      console.info("[TV] speak() →", { text: utterance.text, voice: utterance.voice?.name, voicesCount: synth.getVoices().length });
+      synth.speak(utterance);
 
-      // Workaround Chrome: speechSynthesis pausa sozinho após ~15s; mantém vivo
       setTimeout(() => {
         if (synth.speaking && synth.paused) synth.resume();
       }, 100);
@@ -386,6 +389,9 @@ function TvPage() {
 
   const announceChamada = async (chamada: Chamada) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const utterance = createPreparedUtterance();
+    if (!utterance) return;
+
     const senha = await resolveDadosDaSenha(chamada.senha_id);
 
     // Pequeno delay para o "ding" terminar antes da fala
@@ -402,7 +408,10 @@ function TvPage() {
     ].filter(Boolean);
     const texto = partes.join(" ").trim();
     console.info("[TV] texto final da chamada:", texto || "<vazio>");
-    if (texto) speak(texto);
+    if (!texto) return;
+
+    utterance.text = texto;
+    speakUtterance(utterance);
   };
 
   // ── Rechamada automática ───────────────────────────────
