@@ -188,6 +188,11 @@ function VozConfigPage() {
       toast.error("Erro ao salvar: " + error.message);
       return;
     }
+    setActiveMeta({
+      provider: config.provider,
+      voice_id: config.voice_id,
+      updated_at: new Date().toISOString(),
+    });
     toast.success("Configuração de voz salva!");
   };
 
