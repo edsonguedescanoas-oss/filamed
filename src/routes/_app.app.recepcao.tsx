@@ -386,9 +386,23 @@ function RecepcaoPage() {
             </div>
           </div>
 
-          {/* paciente */}
+          {/* paciente (obrigatório) */}
           <div className="mt-5">
-            <Label className="mb-2 block">Paciente (opcional)</Label>
+            <div className="mb-2 flex items-center justify-between">
+              <Label>
+                Paciente <span className="text-destructive">*</span>
+              </Label>
+              <button
+                type="button"
+                onClick={() => {
+                  setNovoNome(pacienteQuery.trim());
+                  setNovoOpen(true);
+                }}
+                className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <UserPlus className="h-3.5 w-3.5" /> Novo paciente
+              </button>
+            </div>
             {pacienteSelecionado ? (
               <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-primary text-primary-foreground">
@@ -430,8 +444,20 @@ function RecepcaoPage() {
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       </div>
                     ) : pacientes.length === 0 ? (
-                      <div className="p-3 text-sm text-muted-foreground text-center">
-                        Nenhum paciente encontrado.
+                      <div className="p-3 text-sm text-center space-y-2">
+                        <p className="text-muted-foreground">Nenhum paciente encontrado.</p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setNovoNome(pacienteQuery.trim());
+                            setNovoOpen(true);
+                          }}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          Cadastrar “{pacienteQuery.trim()}”
+                        </Button>
                       </div>
                     ) : (
                       <ul className="max-h-64 overflow-y-auto">
