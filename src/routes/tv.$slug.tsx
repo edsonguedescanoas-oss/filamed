@@ -65,7 +65,11 @@ type TvSearch = { kiosk?: boolean };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearch => ({
-    kiosk: search.kiosk === true || search.kiosk === "1" || search.kiosk === "true",
+    kiosk:
+      search.kiosk === true ||
+      search.kiosk === 1 ||
+      search.kiosk === "1" ||
+      search.kiosk === "true",
   }),
   head: ({ params }) => ({
     meta: [
