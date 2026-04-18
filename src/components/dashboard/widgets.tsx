@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Ticket,
@@ -87,6 +87,46 @@ function startOfTodayISO() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+/**
+ * Toca um "ding-dong" curto de alerta usando WebAudio (sem arquivos externos).
+ * Falha silenciosamente se o browser bloquear o autoplay (sem interação do usuário ainda).
+ */
+function playUrgenteAlert() {
+  if (typeof window === "undefined") return;
+  try {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    const beep = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + start);
+      gain.gain.setValueAtTime(0.0001, now + start);
+      gain.gain.exponentialRampToValueAtTime(0.35, now + start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + start);
+      osc.stop(now + start + duration + 0.02);
+    };
+
+    // Dois beeps rápidos (ding-dong) — chamativo mas curto
+    beep(880, 0, 0.18);
+    beep(1175, 0.2, 0.22);
+
+    // Fecha o contexto depois para liberar recursos
+    setTimeout(() => {
+      void ctx.close().catch(() => {});
+    }, 600);
+  } catch {
+    // ignora — alguns browsers exigem gesto do usuário antes
+  }
 }
 
 /* ──────────────────────────────────────────────────────────
