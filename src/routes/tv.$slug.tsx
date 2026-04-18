@@ -417,6 +417,9 @@ function TvPage() {
 
     const nome = primeiroEUltimoNome(raw);
     pacienteCacheRef.current.set(senha.paciente_id, nome);
+    setPacienteNomes((prev) =>
+      prev[senha.paciente_id!] === nome ? prev : { ...prev, [senha.paciente_id!]: nome },
+    );
     return nome;
   };
 
