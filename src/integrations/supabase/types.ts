@@ -438,6 +438,47 @@ export type Database = {
           },
         ]
       }
+      unidade_voice_config: {
+        Row: {
+          created_at: string
+          id: string
+          pitch: number
+          provider: string
+          rate: number
+          unidade_id: string
+          updated_at: string
+          voice_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pitch?: number
+          provider?: string
+          rate?: number
+          unidade_id: string
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pitch?: number
+          provider?: string
+          rate?: number
+          unidade_id?: string
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unidade_voice_config_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: true
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades: {
         Row: {
           ativo: boolean
