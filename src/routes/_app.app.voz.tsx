@@ -21,6 +21,12 @@ interface VoiceConfig {
   pitch: number;
 }
 
+interface VoiceConfigMeta {
+  provider: Provider;
+  voice_id: string | null;
+  updated_at: string;
+}
+
 const ELEVEN_VOICES = [
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah (feminina, multilíngue)" },
   { id: "FGY2WhTYpPnrIDTdsKH5", name: "Laura (feminina, jovem)" },
