@@ -633,6 +633,11 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-base font-bold">{s.codigo}</span>
+                        {s.pacientes?.nome_completo && (
+                          <span className="text-sm font-medium text-foreground/80 truncate max-w-[14rem]">
+                            {primeiroEUltimoNome(s.pacientes.nome_completo)}
+                          </span>
+                        )}
                         {isChamada && (
                           <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-0 text-[10px] py-0 px-1.5">
                             Chamada
@@ -646,6 +651,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
                       </div>
                       <div className="text-xs text-muted-foreground truncate">
                         {s.filas?.nome ?? "—"} · {wait} min
+                        {!s.pacientes?.nome_completo && " · sem paciente vinculado"}
                       </div>
                     </div>
                   </div>
