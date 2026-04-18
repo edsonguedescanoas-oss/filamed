@@ -79,7 +79,10 @@ function TvPage() {
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
-  const [soundOn, setSoundOn] = useState(false);
+  // O painel TV nunca deve ficar mudo. Tentamos manter o som sempre ativo;
+  // se o browser bloquear (autoplay policy), mostramos overlay pedindo 1 clique.
+  const [soundOn, setSoundOn] = useState(true);
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const [debugInfo, setDebugInfo] = useState<{
     text: string;
     voice: string;
@@ -333,11 +336,61 @@ function TvPage() {
   };
   const handleEnableSound = () => {
     setSoundOn(true);
+    setAudioBlocked(false);
     // gesto do usuário desbloqueia AudioContext
     playDing();
     // Também "aquece" a Web Speech API com uma fala silenciosa
     primeSpeech();
   };
+
+  // Tenta destravar áudio automaticamente. Se o browser bloquear (autoplay policy),
+  // sinaliza audioBlocked=true para mostrar overlay pedindo 1 clique do operador.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const tryUnlock = async () => {
+      try {
+        const Ctor =
+          window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctor) return;
+        let ctx = audioCtxRef.current;
+        if (!ctx) {
+          ctx = new Ctor();
+          audioCtxRef.current = ctx;
+        }
+        if (ctx.state === "suspended") {
+          await ctx.resume();
+        }
+        if (cancelled) return;
+        if (ctx.state !== "running") {
+          setAudioBlocked(true);
+        } else {
+          setAudioBlocked(false);
+          primeSpeech();
+        }
+      } catch {
+        if (!cancelled) setAudioBlocked(true);
+      }
+    };
+    void tryUnlock();
+    // Qualquer interação do usuário destrava: clique, toque, tecla
+    const onInteract = () => {
+      handleEnableSound();
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+    window.addEventListener("click", onInteract);
+    window.addEventListener("touchstart", onInteract);
+    window.addEventListener("keydown", onInteract);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("keydown", onInteract);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Voz: Web Speech API ────────────────────────────────
   const pacienteCacheRef = useRef<Map<string, string>>(new Map());
@@ -775,14 +828,23 @@ function TvPage() {
                 </select>
               </label>
             )}
-            <button
-              onClick={soundOn ? () => setSoundOn(false) : handleEnableSound}
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors"
-              title={soundOn ? "Desativar som" : "Ativar som"}
+            <div
+              className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium ${
+                audioBlocked
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                  : "border-white/10 bg-white/5 text-slate-200"
+              }`}
+              title={audioBlocked ? "Áudio bloqueado pelo navegador — clique na tela" : "Som sempre ativo"}
             >
-              {soundOn ? <Volume2 className="h-4 w-4 text-primary" /> : <VolumeX className="h-4 w-4 text-slate-400" />}
-              <span className="hidden sm:inline">{soundOn ? "Som ativo" : "Ativar som"}</span>
-            </button>
+              {audioBlocked ? (
+                <VolumeX className="h-4 w-4" />
+              ) : (
+                <Volume2 className="h-4 w-4 text-primary" />
+              )}
+              <span className="hidden sm:inline">
+                {audioBlocked ? "Toque a tela" : "Som ativo"}
+              </span>
+            </div>
             <button
               onClick={() => setShowDebug((v) => !v)}
               className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
@@ -951,6 +1013,26 @@ function TvPage() {
         FilaMed · Atualização em tempo real
       </footer>
 
+      {/* Overlay quando áudio está bloqueado pelo browser (autoplay policy).
+          Um único toque/clique destrava e nunca mais aparece. */}
+      {audioBlocked && (
+        <button
+          type="button"
+          onClick={handleEnableSound}
+          className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-slate-950/85 backdrop-blur-sm text-white transition-opacity"
+        >
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 ring-4 ring-primary/40 animate-pulse">
+            <Volume2 className="h-12 w-12 text-primary" />
+          </div>
+          <div className="text-center">
+            <p className="font-display text-3xl font-bold">Toque para ativar o som</p>
+            <p className="mt-2 text-sm text-slate-300">
+              O navegador exige uma interação para iniciar o áudio. Depois disso, o painel anuncia automaticamente.
+            </p>
+          </div>
+        </button>
+      )}
+
       {/* Debug badge — útil para diagnosticar TTS no painel */}
       {showDebug && debugInfo && (
         <div className="fixed bottom-4 right-4 z-50 max-w-md rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl backdrop-blur">
@@ -1007,9 +1089,9 @@ function TvPage() {
                 {debugInfo.error}
               </div>
             )}
-            {!soundOn && (
+            {audioBlocked && (
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-amber-200">
-                Som desativado — clique em "Ativar som" no topo.
+                Áudio bloqueado pelo navegador. Toque/clique na tela uma vez para liberar.
               </div>
             )}
           </div>
