@@ -13,6 +13,10 @@ import {
   Loader2,
   Megaphone,
   Play,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  User as UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
