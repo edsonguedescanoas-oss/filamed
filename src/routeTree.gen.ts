@@ -19,6 +19,7 @@ import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
+import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -69,6 +70,11 @@ const AppAppFilasRoute = AppAppFilasRouteImport.update({
   path: '/filas',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppAtendimentoRoute = AppAppAtendimentoRouteImport.update({
+  id: '/atendimento',
+  path: '/atendimento',
+  getParentRoute: () => AppAppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/app': typeof AppAppRouteWithChildren
   '/tv/$slug': typeof TvSlugRoute
+  '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/tv/$slug': typeof TvSlugRoute
+  '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/_app/app': typeof AppAppRouteWithChildren
   '/tv/$slug': typeof TvSlugRoute
+  '/_app/app/atendimento': typeof AppAppAtendimentoRoute
   '/_app/app/filas': typeof AppAppFilasRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/app'
     | '/tv/$slug'
+    | '/app/atendimento'
     | '/app/filas'
     | '/app/pacientes'
     | '/app/recepcao'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/tv/$slug'
+    | '/app/atendimento'
     | '/app/filas'
     | '/app/pacientes'
     | '/app/recepcao'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/_app/app'
     | '/tv/$slug'
+    | '/_app/app/atendimento'
     | '/_app/app/filas'
     | '/_app/app/pacientes'
     | '/_app/app/recepcao'
@@ -220,10 +232,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppFilasRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/atendimento': {
+      id: '/_app/app/atendimento'
+      path: '/atendimento'
+      fullPath: '/app/atendimento'
+      preLoaderRoute: typeof AppAppAtendimentoRouteImport
+      parentRoute: typeof AppAppRoute
+    }
   }
 }
 
 interface AppAppRouteChildren {
+  AppAppAtendimentoRoute: typeof AppAppAtendimentoRoute
   AppAppFilasRoute: typeof AppAppFilasRoute
   AppAppPacientesRoute: typeof AppAppPacientesRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
@@ -231,6 +251,7 @@ interface AppAppRouteChildren {
 }
 
 const AppAppRouteChildren: AppAppRouteChildren = {
+  AppAppAtendimentoRoute: AppAppAtendimentoRoute,
   AppAppFilasRoute: AppAppFilasRoute,
   AppAppPacientesRoute: AppAppPacientesRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
@@ -260,3 +281,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
