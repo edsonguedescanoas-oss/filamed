@@ -94,7 +94,7 @@ function VozConfigPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("unidade_voice_config")
-        .select("provider,voice_id,rate,pitch")
+        .select("provider,voice_id,rate,pitch,updated_at")
         .eq("unidade_id", unidadeId)
         .maybeSingle();
       if (!mounted) return;
@@ -108,11 +108,47 @@ function VozConfigPage() {
           rate: Number(data.rate),
           pitch: Number(data.pitch),
         });
+        setActiveMeta({
+          provider: data.provider as Provider,
+          voice_id: data.voice_id,
+          updated_at: data.updated_at,
+        });
       }
       setLoading(false);
     })();
     return () => {
       mounted = false;
+    };
+  }, [unidadeId]);
+
+  // Realtime: se outro admin alterar, atualizamos o "em uso pela TV"
+  useEffect(() => {
+    if (!unidadeId) return;
+    const ch = supabase
+      .channel(`voz-cfg-admin-${unidadeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "unidade_voice_config",
+          filter: `unidade_id=eq.${unidadeId}`,
+        },
+        (payload) => {
+          const row = payload.new as
+            | { provider?: string; voice_id?: string | null; updated_at?: string }
+            | null;
+          if (!row?.updated_at) return;
+          setActiveMeta({
+            provider: (row.provider as Provider) ?? "browser",
+            voice_id: row.voice_id ?? null,
+            updated_at: row.updated_at,
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
     };
   }, [unidadeId]);
 
