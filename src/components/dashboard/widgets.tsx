@@ -13,6 +13,10 @@ import {
   Loader2,
   Megaphone,
   Play,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  User as UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -299,6 +303,16 @@ function sortSenhas(list: ProximaSenha[]): ProximaSenha[] {
   });
 }
 
+type AtendimentoAtivo = {
+  id: string;
+  iniciado_em: string;
+  senha_id: string;
+  paciente_id: string | null;
+  codigo: string;
+  paciente_nome: string | null;
+  fila_nome: string | null;
+};
+
 export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -306,7 +320,8 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   const [chamadas, setChamadas] = useState(0);
   const [emAtendimento, setEmAtendimento] = useState(0);
   const [proximas, setProximas] = useState<ProximaSenha[]>([]);
-  const [temAtivo, setTemAtivo] = useState(false);
+  const [atendimentoAtivo, setAtendimentoAtivo] = useState<AtendimentoAtivo | null>(null);
+  const temAtivo = atendimentoAtivo !== null;
 
   // Modal de chamada
   const [chamarSenha, setChamarSenha] = useState<ProximaSenha | null>(null);
@@ -315,6 +330,17 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
 
   // Loading por linha (Chamar / Iniciar)
   const [actionId, setActionId] = useState<string | null>(null);
+
+  // Finalizar atendimento ativo
+  const [finalizando, setFinalizando] = useState(false);
+  const [minimizado, setMinimizado] = useState(false);
+  // Tick para o timer ao vivo
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    if (!atendimentoAtivo) return;
+    const t = setInterval(() => setNowTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [atendimentoAtivo]);
 
   useEffect(() => {
     let cancel = false;
@@ -348,18 +374,47 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
         user
           ? supabase
               .from("atendimentos")
-              .select("id", { count: "exact", head: true })
+              .select(
+                "id,iniciado_em,senha_id,paciente_id,senhas!inner(codigo,filas(nome)),pacientes(nome_completo)",
+              )
               .eq("unidade_id", unidadeId)
               .eq("profissional_id", user.id)
               .is("finalizado_em", null)
-          : Promise.resolve({ count: 0 }),
+              .order("iniciado_em", { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
       if (cancel) return;
       setAguardando(agRes.count ?? 0);
       setChamadas(chRes.count ?? 0);
       setEmAtendimento(emRes.count ?? 0);
       setProximas(sortSenhas((proxRes.data ?? []) as ProximaSenha[]));
-      setTemAtivo(((ativoRes as { count: number | null }).count ?? 0) > 0);
+      const ativoData = (ativoRes as {
+        data:
+          | {
+              id: string;
+              iniciado_em: string;
+              senha_id: string;
+              paciente_id: string | null;
+              senhas: { codigo: string; filas: { nome: string } | null } | null;
+              pacientes: { nome_completo: string } | null;
+            }
+          | null;
+      }).data;
+      setAtendimentoAtivo(
+        ativoData
+          ? {
+              id: ativoData.id,
+              iniciado_em: ativoData.iniciado_em,
+              senha_id: ativoData.senha_id,
+              paciente_id: ativoData.paciente_id,
+              codigo: ativoData.senhas?.codigo ?? "—",
+              paciente_nome: ativoData.pacientes?.nome_completo ?? null,
+              fila_nome: ativoData.senhas?.filas?.nome ?? null,
+            }
+          : null,
+      );
       setLoading(false);
     };
 
@@ -461,13 +516,30 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
         },
         async () => {
           if (!user) return;
-          const { count } = await supabase
+          const { data } = await supabase
             .from("atendimentos")
-            .select("id", { count: "exact", head: true })
+            .select(
+              "id,iniciado_em,senha_id,paciente_id,senhas!inner(codigo,filas(nome)),pacientes(nome_completo)",
+            )
             .eq("unidade_id", unidadeId)
             .eq("profissional_id", user.id)
-            .is("finalizado_em", null);
-          setTemAtivo((count ?? 0) > 0);
+            .is("finalizado_em", null)
+            .order("iniciado_em", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          setAtendimentoAtivo(
+            data
+              ? {
+                  id: data.id,
+                  iniciado_em: data.iniciado_em,
+                  senha_id: data.senha_id,
+                  paciente_id: data.paciente_id,
+                  codigo: data.senhas?.codigo ?? "—",
+                  paciente_nome: data.pacientes?.nome_completo ?? null,
+                  fila_nome: data.senhas?.filas?.nome ?? null,
+                }
+              : null,
+          );
         },
       )
       .subscribe();
@@ -535,12 +607,16 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
     }
     setActionId(s.id);
     try {
-      const { error: e1 } = await supabase.from("atendimentos").insert({
-        unidade_id: unidadeId,
-        senha_id: s.id,
-        paciente_id: s.paciente_id,
-        profissional_id: user.id,
-      });
+      const { data: novo, error: e1 } = await supabase
+        .from("atendimentos")
+        .insert({
+          unidade_id: unidadeId,
+          senha_id: s.id,
+          paciente_id: s.paciente_id,
+          profissional_id: user.id,
+        })
+        .select("id,iniciado_em")
+        .maybeSingle();
       if (e1) throw e1;
       const { error: e2 } = await supabase
         .from("senhas")
@@ -552,11 +628,55 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
       setProximas((prev) => prev.filter((p) => p.id !== s.id));
       setChamadas((n) => Math.max(0, n - 1));
       setEmAtendimento((n) => n + 1);
-      setTemAtivo(true);
+      if (novo) {
+        setAtendimentoAtivo({
+          id: novo.id,
+          iniciado_em: novo.iniciado_em,
+          senha_id: s.id,
+          paciente_id: s.paciente_id,
+          codigo: s.codigo,
+          paciente_nome: s.pacientes?.nome_completo ?? null,
+          fila_nome: s.filas?.nome ?? null,
+        });
+        setMinimizado(false);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao iniciar atendimento.");
     } finally {
       setActionId(null);
+    }
+  };
+
+  const finalizarAtendimento = async () => {
+    if (!atendimentoAtivo) return;
+    setFinalizando(true);
+    try {
+      const agora = new Date();
+      const dur = Math.max(
+        0,
+        Math.floor((agora.getTime() - new Date(atendimentoAtivo.iniciado_em).getTime()) / 1000),
+      );
+      const { error: e1 } = await supabase
+        .from("atendimentos")
+        .update({ finalizado_em: agora.toISOString(), duracao_segundos: dur })
+        .eq("id", atendimentoAtivo.id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase
+        .from("senhas")
+        .update({
+          status: "finalizada",
+          finalizada_em: agora.toISOString(),
+          updated_at: agora.toISOString(),
+        })
+        .eq("id", atendimentoAtivo.senha_id);
+      if (e2) throw e2;
+      toast.success(`${atendimentoAtivo.codigo} — atendimento finalizado.`);
+      setAtendimentoAtivo(null);
+      setEmAtendimento((n) => Math.max(0, n - 1));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao finalizar atendimento.");
+    } finally {
+      setFinalizando(false);
     }
   };
 
@@ -740,6 +860,98 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Card flutuante de Atendimento ativo */}
+      {atendimentoAtivo && (
+        <div
+          className="fixed bottom-4 right-4 z-50 w-[20rem] max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-bottom-4 duration-300"
+          role="region"
+          aria-label="Atendimento ativo"
+        >
+          <div className="rounded-2xl border-2 border-primary/40 bg-card shadow-elegant overflow-hidden">
+            {/* Cabeçalho sempre visível */}
+            <button
+              type="button"
+              onClick={() => setMinimizado((m) => !m)}
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gradient-primary text-primary-foreground"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-wider">
+                  Em atendimento
+                </span>
+                <span className="font-mono text-sm font-bold truncate">
+                  · {atendimentoAtivo.codigo}
+                </span>
+              </div>
+              {minimizado ? (
+                <ChevronUp className="h-4 w-4 shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 shrink-0" />
+              )}
+            </button>
+
+            {!minimizado && (
+              <div className="p-4 space-y-4">
+                {/* Paciente */}
+                <div className="flex items-start gap-2.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium truncate">
+                      {atendimentoAtivo.paciente_nome ?? "Paciente não identificado"}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {atendimentoAtivo.fila_nome ?? "—"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timer */}
+                <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-center">
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                    Tempo decorrido
+                  </div>
+                  <div className="mt-1 font-mono text-3xl font-bold tabular-nums text-foreground">
+                    {(() => {
+                      const sec = Math.max(
+                        0,
+                        Math.floor(
+                          (Date.now() - new Date(atendimentoAtivo.iniciado_em).getTime()) / 1000,
+                        ),
+                      );
+                      const h = Math.floor(sec / 3600);
+                      const m = Math.floor((sec % 3600) / 60);
+                      const s = sec % 60;
+                      const pad = (n: number) => n.toString().padStart(2, "0");
+                      return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Ação */}
+                <Button
+                  onClick={() => void finalizarAtendimento()}
+                  disabled={finalizando}
+                  className="w-full bg-gradient-primary"
+                  size="lg"
+                >
+                  {finalizando ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  Finalizar atendimento
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
