@@ -20,9 +20,15 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+import { RoleGuard } from "@/components/role-guard";
+
 export const Route = createFileRoute("/_app/app/atendimento")({
   head: () => ({ meta: [{ title: "Atendimento — FilaMed" }] }),
-  component: AtendimentoPage,
+  component: () => (
+    <RoleGuard allow={["medico", "enfermeiro"]} path="/app/atendimento">
+      <AtendimentoPage />
+    </RoleGuard>
+  ),
 });
 
 type Prioridade = "normal" | "preferencial" | "urgente";

@@ -39,9 +39,15 @@ import type { Database } from "@/integrations/supabase/types";
 type FilaTipo = Database["public"]["Enums"]["fila_tipo"];
 type Fila = Database["public"]["Tables"]["filas"]["Row"];
 
+import { RoleGuard } from "@/components/role-guard";
+
 export const Route = createFileRoute("/_app/app/filas")({
   head: () => ({ meta: [{ title: "Filas — FilaMed" }] }),
-  component: FilasPage,
+  component: () => (
+    <RoleGuard allow={["recepcao", "gestor"]} path="/app/filas">
+      <FilasPage />
+    </RoleGuard>
+  ),
 });
 
 const TIPOS: { value: FilaTipo; label: string }[] = [
