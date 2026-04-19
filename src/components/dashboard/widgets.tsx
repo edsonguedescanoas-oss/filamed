@@ -39,6 +39,13 @@ import { useAuth } from "@/hooks/use-auth";
  * Helpers compartilhados
  * ────────────────────────────────────────────────────────── */
 
+interface TrendInfo {
+  /** Variação percentual vs período anterior (ex: 12 = +12%, -8 = -8%). null = sem dado anterior */
+  pct: number | null;
+  /** Rótulo do comparador, ex: "vs ontem" */
+  label?: string;
+}
+
 function StatCard({
   icon: Icon,
   label,
@@ -46,6 +53,7 @@ function StatCard({
   hint,
   loading,
   accent = "primary",
+  trend,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -53,6 +61,7 @@ function StatCard({
   hint?: string;
   loading?: boolean;
   accent?: "primary" | "success" | "warning" | "danger";
+  trend?: TrendInfo;
 }) {
   const accentBg = {
     primary: "bg-gradient-primary shadow-glow",
@@ -63,8 +72,34 @@ function StatCard({
 
   const iconColor = accent === "primary" ? "text-primary-foreground" : "";
 
+  // Renderiza a tendência: ▲ verde para alta, ▼ vermelho para queda, traço neutro para 0/sem dado.
+  const renderTrend = () => {
+    if (!trend) return null;
+    if (trend.pct === null) {
+      return (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          — {trend.label ?? "sem comparativo"}
+        </span>
+      );
+    }
+    const isUp = trend.pct > 0;
+    const isFlat = trend.pct === 0;
+    const cls = isFlat
+      ? "text-muted-foreground"
+      : isUp
+        ? "text-emerald-600 dark:text-emerald-400"
+        : "text-destructive";
+    const arrow = isFlat ? "→" : isUp ? "▲" : "▼";
+    return (
+      <span className={`inline-flex items-center gap-1 text-xs font-medium ${cls}`}>
+        {arrow} {Math.abs(trend.pct)}%{" "}
+        <span className="text-muted-foreground font-normal">{trend.label ?? "vs ontem"}</span>
+      </span>
+    );
+  };
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant">
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accentBg}`}>
         <Icon className={`h-5 w-5 ${iconColor}`} />
       </div>
@@ -73,8 +108,24 @@ function StatCard({
       </div>
       <div className="mt-1 font-medium">{label}</div>
       {hint && <div className="text-sm text-muted-foreground">{hint}</div>}
+      {trend && !loading && <div className="mt-2">{renderTrend()}</div>}
     </div>
   );
+}
+
+/** Calcula variação percentual entre hoje e ontem. Retorna null se ontem = 0 (evita divisão por zero). */
+function calcTrend(hoje: number, ontem: number): number | null {
+  if (ontem === 0) return null;
+  return Math.round(((hoje - ontem) / ontem) * 100);
+}
+
+/** ISO do início de ontem e início de hoje — para janelas de comparação. */
+function ontemRange() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const ontem = new Date(hoje);
+  ontem.setDate(ontem.getDate() - 1);
+  return { ontemISO: ontem.toISOString(), hojeISO: hoje.toISOString() };
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
@@ -1121,8 +1172,12 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
 export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
   const [loading, setLoading] = useState(true);
   const [senhasHoje, setSenhasHoje] = useState(0);
+  const [senhasOntem, setSenhasOntem] = useState(0);
   const [finalizadasHoje, setFinalizadasHoje] = useState(0);
+  const [finalizadasOntem, setFinalizadasOntem] = useState(0);
+  const [emAtendimentoAgora, setEmAtendimentoAgora] = useState(0);
   const [tempoMedioMin, setTempoMedioMin] = useState<number | null>(null);
+  const [tempoMedioOntemMin, setTempoMedioOntemMin] = useState<number | null>(null);
   const [pacientes, setPacientes] = useState(0);
   const [filasAtivas, setFilasAtivas] = useState(0);
   const [taxaConclusao, setTaxaConclusao] = useState(0);
@@ -1132,13 +1187,30 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
     const load = async () => {
       setLoading(true);
       const inicio = startOfTodayISO();
+      const { ontemISO, hojeISO } = ontemRange();
 
-      const [senhasRes, finalRes, atendRes, pacRes, filasRes] = await Promise.all([
+      const [
+        senhasRes,
+        senhasOntemRes,
+        finalRes,
+        finalOntemRes,
+        emAtRes,
+        atendRes,
+        atendOntemRes,
+        pacRes,
+        filasRes,
+      ] = await Promise.all([
         supabase
           .from("senhas")
           .select("id", { count: "exact", head: true })
           .eq("unidade_id", unidadeId)
           .gte("created_at", inicio),
+        supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .gte("created_at", ontemISO)
+          .lt("created_at", hojeISO),
         supabase
           .from("senhas")
           .select("id", { count: "exact", head: true })
@@ -1146,11 +1218,30 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
           .eq("status", "finalizada")
           .gte("created_at", inicio),
         supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .eq("status", "finalizada")
+          .gte("created_at", ontemISO)
+          .lt("created_at", hojeISO),
+        supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .eq("status", "em_atendimento"),
+        supabase
           .from("atendimentos")
           .select("duracao_segundos")
           .eq("unidade_id", unidadeId)
           .not("duracao_segundos", "is", null)
           .gte("iniciado_em", inicio),
+        supabase
+          .from("atendimentos")
+          .select("duracao_segundos")
+          .eq("unidade_id", unidadeId)
+          .not("duracao_segundos", "is", null)
+          .gte("iniciado_em", ontemISO)
+          .lt("iniciado_em", hojeISO),
         supabase
           .from("pacientes")
           .select("id", { count: "exact", head: true })
@@ -1167,14 +1258,19 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
       const total = senhasRes.count ?? 0;
       const fin = finalRes.count ?? 0;
       setSenhasHoje(total);
+      setSenhasOntem(senhasOntemRes.count ?? 0);
       setFinalizadasHoje(fin);
+      setFinalizadasOntem(finalOntemRes.count ?? 0);
+      setEmAtendimentoAgora(emAtRes.count ?? 0);
       setTaxaConclusao(total ? Math.round((fin / total) * 100) : 0);
 
-      const durs = ((atendRes.data ?? []) as { duracao_segundos: number | null }[])
-        .map((r) => r.duracao_segundos ?? 0)
-        .filter((n) => n > 0);
-      setTempoMedioMin(
-        durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length / 60) : null,
+      const calcMedia = (rows: { duracao_segundos: number | null }[]) => {
+        const durs = rows.map((r) => r.duracao_segundos ?? 0).filter((n) => n > 0);
+        return durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length / 60) : null;
+      };
+      setTempoMedioMin(calcMedia((atendRes.data ?? []) as { duracao_segundos: number | null }[]));
+      setTempoMedioOntemMin(
+        calcMedia((atendOntemRes.data ?? []) as { duracao_segundos: number | null }[]),
       );
       setPacientes(pacRes.count ?? 0);
       setFilasAtivas(filasRes.count ?? 0);
@@ -1186,17 +1282,42 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
     };
   }, [unidadeId]);
 
+  const tempoMedioTrend: TrendInfo | undefined =
+    tempoMedioMin !== null && tempoMedioOntemMin !== null && tempoMedioOntemMin > 0
+      ? {
+          // Para tempo médio, "menos é melhor" — invertemos o sinal para que ▼ apareça em verde
+          // quando o tempo cai. O cálculo bruto é: hoje - ontem; se hoje < ontem queremos verde.
+          pct: -calcTrend(tempoMedioMin, tempoMedioOntemMin)!,
+          label: "vs ontem",
+        }
+      : undefined;
+
   return (
     <div className="space-y-8">
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Ticket} label="Senhas hoje" value={senhasHoje} loading={loading} />
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
-          icon={TrendingUp}
-          label="Taxa de conclusão"
-          value={`${taxaConclusao}%`}
-          hint={`${finalizadasHoje} finalizadas`}
+          icon={Ticket}
+          label="Senhas hoje"
+          value={senhasHoje}
+          loading={loading}
+          trend={{ pct: calcTrend(senhasHoje, senhasOntem), label: "vs ontem" }}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="Finalizadas hoje"
+          value={finalizadasHoje}
+          hint={`Taxa ${taxaConclusao}%`}
           loading={loading}
           accent="success"
+          trend={{ pct: calcTrend(finalizadasHoje, finalizadasOntem), label: "vs ontem" }}
+        />
+        <StatCard
+          icon={Stethoscope}
+          label="Em atendimento"
+          value={emAtendimentoAgora}
+          hint="Agora"
+          loading={loading}
+          accent="primary"
         />
         <StatCard
           icon={Clock}
@@ -1205,6 +1326,7 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
           hint="Atendimentos hoje"
           loading={loading}
           accent="warning"
+          trend={tempoMedioTrend}
         />
         <StatCard
           icon={Users}
