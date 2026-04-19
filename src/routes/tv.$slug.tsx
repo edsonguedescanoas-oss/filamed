@@ -569,7 +569,7 @@ function TvPage() {
       setDebugInfo({
         text: "(config)",
         voice: cfg.voice_id,
-        status: "voz indisponível",
+        status: "erro",
         at: new Date(),
         error: `Voz "${cfg.voice_id}" não está instalada neste dispositivo. Reconfigure em /app/voz aqui mesmo, ou escolha provider Google/ElevenLabs.`,
       });
