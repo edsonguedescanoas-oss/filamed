@@ -25,6 +25,19 @@ const TEST_ACCOUNTS: Array<{
 const TEST_PASSWORD = "Teste1234!";
 
 export const Route = createFileRoute("/login")({
+  // Aceita ?redirect=... para voltar à URL pretendida após login
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
+  // Já logado vai direto pra /app (ou para o redirect pretendido)
+  beforeLoad: ({ context, search }) => {
+    if (context.auth.isAuthenticated && context.auth.profile?.unidade_id) {
+      throw redirect({ to: search.redirect ?? "/app" });
+    }
+    if (context.auth.isAuthenticated && !context.auth.profile?.unidade_id) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Entrar — FilaMed" },

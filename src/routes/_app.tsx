@@ -1,8 +1,7 @@
-import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, Link, useLocation, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
-  Loader2,
   LogOut,
   Menu,
   LayoutDashboard,
@@ -31,6 +30,20 @@ import { canAccessRoute } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app")({
+  // Guard idiomático: roda antes de renderizar qualquer rota /app/*.
+  // Sem flash de conteúdo — o redirect acontece antes do React montar.
+  beforeLoad: ({ context, location }) => {
+    const { auth } = context;
+    if (!auth.isAuthenticated) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+    if (!auth.profile?.unidade_id) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   component: AppLayout,
 });
 

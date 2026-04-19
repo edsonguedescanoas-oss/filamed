@@ -10,6 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/setup")({
+  // Não logado → login. Já tem unidade → dashboard.
+  beforeLoad: ({ context }) => {
+    if (!context.auth.isAuthenticated) {
+      throw redirect({ to: "/login" });
+    }
+    if (context.auth.profile?.unidade_id) {
+      throw redirect({ to: "/app" });
+    }
+  },
   head: () => ({
     meta: [{ title: "Configurar unidade — FilaMed" }],
   }),

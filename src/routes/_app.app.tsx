@@ -1,10 +1,23 @@
-import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, Link, useLocation, redirect } from "@tanstack/react-router";
 import { LayoutDashboard, ListOrdered, Users, Ticket, Stethoscope, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { allowedRoutesFor } from "@/lib/permissions";
+import { allowedRoutesFor, canAccessRoute } from "@/lib/permissions";
 
 export const Route = createFileRoute("/_app/app")({
+  // Bloqueia URL direta para rotas sem permissão (ex: médico digitando /app/recepcao).
+  // Admin sempre passa. Dashboard /app é liberado por allowedRoutesFor.
+  beforeLoad: ({ context, location }) => {
+    const { auth } = context;
+    const isAdmin = auth.roles.includes("admin");
+    if (isAdmin) return;
+    if (!canAccessRoute(auth.roles, location.pathname)) {
+      throw redirect({
+        to: "/app",
+        search: { denied: location.pathname } as never,
+      });
+    }
+  },
   component: AppShell,
 });
 
