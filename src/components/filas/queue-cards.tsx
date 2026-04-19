@@ -264,7 +264,7 @@ function QueueCard({
                         "h-5 px-1.5 text-[10px] capitalize",
                         s.prioridade === "urgente"
                           ? "border-destructive/40 text-destructive"
-                          : "border-amber-400/60 text-amber-600 dark:text-amber-400",
+                          : "border-primary/40 text-primary",
                       )}
                     >
                       {s.prioridade}
