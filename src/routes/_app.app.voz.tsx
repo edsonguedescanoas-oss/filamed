@@ -1,8 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Mic, Play, Save, Volume2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  Mic,
+  Play,
+  RefreshCw,
+  Save,
+  Volume2,
+  XCircle,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useVoiceHealth } from "@/hooks/use-voice-health";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
