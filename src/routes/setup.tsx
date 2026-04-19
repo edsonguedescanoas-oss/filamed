@@ -61,13 +61,7 @@ function SetupPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  // beforeLoad já filtrou estados de loading/auth — render direto.
 
   return (
     <div className="min-h-screen bg-background">
