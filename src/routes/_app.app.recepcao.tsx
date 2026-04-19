@@ -142,29 +142,13 @@ function RecepcaoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId]);
 
-  // realtime nas senhas
-  useEffect(() => {
-    if (!unidadeId) return;
-    const channel = supabase
-      .channel(`senhas-recepcao-${unidadeId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "senhas",
-          filter: `unidade_id=eq.${unidadeId}`,
-        },
-        () => {
-          void fetchRecentes();
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadeId]);
+  // realtime nas senhas via hook compartilhado
+  useRealtimeTable({
+    table: "senhas",
+    filter: unidadeId ? `unidade_id=eq.${unidadeId}` : undefined,
+    enabled: !!unidadeId,
+    onChange: () => void fetchRecentes(),
+  });
 
   // busca de pacientes (debounced)
   useEffect(() => {
