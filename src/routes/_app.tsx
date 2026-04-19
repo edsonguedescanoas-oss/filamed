@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate, Link, useLocation, redirect } fro
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  Loader2,
   LogOut,
   Menu,
   LayoutDashboard,

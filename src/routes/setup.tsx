@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Activity, Loader2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ function SetupPage() {
             </div>
             <span className="font-display text-lg font-semibold">FilaMed</span>
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => void signOut().then(() => navigate({ to: "/login" }))}>
+          <Button variant="ghost" size="sm" onClick={() => void signOut().then(() => navigate({ to: "/login", search: { redirect: undefined } }))}>
             Sair
           </Button>
         </div>
