@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, Link, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, Link, useLocation, redirect } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -31,6 +31,20 @@ import { canAccessRoute } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app")({
+  // Guard idiomático: roda antes de renderizar qualquer rota /app/*.
+  // Sem flash de conteúdo — o redirect acontece antes do React montar.
+  beforeLoad: ({ context, location }) => {
+    const { auth } = context;
+    if (!auth.isAuthenticated) {
+      throw redirect({
+        to: "/login",
+        search: { redirect: location.href },
+      });
+    }
+    if (!auth.profile?.unidade_id) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   component: AppLayout,
 });
 
@@ -69,21 +83,12 @@ function getInitials(nome: string): string {
 }
 
 function AppLayout() {
-  const { isLoading, isAuthenticated, profile, roles, signOut } = useAuth();
+  const { profile, roles, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (!isAuthenticated) {
-      void navigate({ to: "/login" });
-      return;
-    }
-    if (profile && !profile.unidade_id) {
-      void navigate({ to: "/setup" });
-    }
-  }, [isLoading, isAuthenticated, profile, navigate]);
+  // Redirects de auth/unidade agora ficam no beforeLoad — sem flash de conteúdo.
 
   // Fecha o menu mobile ao trocar de rota
   useEffect(() => {
@@ -98,7 +103,9 @@ function AppLayout() {
 
   const primaryRole: AppRole | undefined = roles[0];
 
-  if (isLoading || !isAuthenticated || !profile?.unidade_id) {
+  // Fallback raro: snapshot do auth-store ainda não populou o profile no React
+  // (o beforeLoad já garantiu sessão + unidade, então é flicker mínimo).
+  if (!profile) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -108,6 +115,7 @@ function AppLayout() {
 
   const handleLogout = async () => {
     await signOut();
+    // O subscribeAuth do router invalida e o beforeLoad de /_app redireciona.
     void navigate({ to: "/login" });
   };
 

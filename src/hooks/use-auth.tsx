@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getAuthSnapshot,
+  subscribeAuth,
+  refreshAuthSnapshot,
+  loadInitialAuth,
+} from "@/lib/auth-store";
 
 export type AppRole = "admin" | "recepcao" | "medico" | "enfermeiro" | "gestor";
 
@@ -30,62 +36,32 @@ export interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
+/**
+ * Provider fino sobre o auth-store global. A fonte da verdade é o store;
+ * aqui só refletimos o snapshot em estado React para componentes.
+ *
+ * Por que não duplicar fetches? Porque o router já chama loadInitialAuth()
+ * em beforeLoad da raiz e mantém um listener sincronizando com onAuthStateChange.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [roles, setRoles] = useState<AppRole[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadProfileAndRoles = async (userId: string) => {
-    // Não bloqueia o callback de auth — chamado de forma assíncrona
-    const [profileRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-    setProfile((profileRes.data as UserProfile | null) ?? null);
-    setRoles(((rolesRes.data ?? []) as { role: AppRole }[]).map((r) => r.role));
-  };
+  const [snap, setSnap] = useState(() => getAuthSnapshot());
 
   useEffect(() => {
-    // 1) Listener PRIMEIRO (evita race conditions)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      if (newSession?.user) {
-        // Defer para evitar deadlock no callback
-        setTimeout(() => {
-          void loadProfileAndRoles(newSession.user.id);
-        }, 0);
-      } else {
-        setProfile(null);
-        setRoles([]);
-      }
-    });
-
-    // 2) Sessão inicial
-    void supabase.auth.getSession().then(({ data: { session: existing } }) => {
-      setSession(existing);
-      if (existing?.user) {
-        void loadProfileAndRoles(existing.user.id).finally(() => setIsLoading(false));
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => sub.subscription.unsubscribe();
+    // Garante o boot caso o router ainda não tenha disparado (ex: testes)
+    void loadInitialAuth();
+    return subscribeAuth(setSnap);
   }, []);
 
   const value: AuthState = {
-    isLoading,
-    isAuthenticated: !!session,
-    session,
-    user: session?.user ?? null,
-    profile,
-    roles,
-    hasRole: (role) => roles.includes(role),
-    hasAnyRole: (rs) => rs.some((r) => roles.includes(r)),
-    refreshProfile: async () => {
-      if (session?.user) await loadProfileAndRoles(session.user.id);
-    },
+    isLoading: snap.isLoading,
+    isAuthenticated: snap.isAuthenticated,
+    session: snap.session,
+    user: snap.session?.user ?? null,
+    profile: snap.profile,
+    roles: snap.roles,
+    hasRole: (role) => snap.roles.includes(role),
+    hasAnyRole: (rs) => rs.some((r) => snap.roles.includes(r)),
+    refreshProfile: refreshAuthSnapshot,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;

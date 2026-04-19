@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Activity, Loader2, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/setup")({
+  // Não logado → login. Já tem unidade → dashboard.
+  beforeLoad: ({ context }) => {
+    if (!context.auth.isAuthenticated) {
+      throw redirect({ to: "/login" });
+    }
+    if (context.auth.profile?.unidade_id) {
+      throw redirect({ to: "/app" });
+    }
+  },
   head: () => ({
     meta: [{ title: "Configurar unidade — FilaMed" }],
   }),
@@ -17,7 +26,7 @@ export const Route = createFileRoute("/setup")({
 });
 
 function SetupPage() {
-  const { isAuthenticated, isLoading, profile, refreshProfile, signOut } = useAuth();
+  const { profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -27,15 +36,7 @@ function SetupPage() {
     telefone: "",
   });
 
-  // Quem não está logado, vai pro login
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) void navigate({ to: "/login" });
-  }, [isLoading, isAuthenticated, navigate]);
-
-  // Quem já tem unidade, vai pro app
-  useEffect(() => {
-    if (profile?.unidade_id) void navigate({ to: "/app" });
-  }, [profile, navigate]);
+  // Redirects (não-logado/já-tem-unidade) ficam no beforeLoad agora.
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -60,13 +61,7 @@ function SetupPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  // beforeLoad já filtrou estados de loading/auth — render direto.
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,7 +73,7 @@ function SetupPage() {
             </div>
             <span className="font-display text-lg font-semibold">FilaMed</span>
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => void signOut().then(() => navigate({ to: "/login" }))}>
+          <Button variant="ghost" size="sm" onClick={() => void signOut().then(() => navigate({ to: "/login", search: { redirect: undefined } }))}>
             Sair
           </Button>
         </div>

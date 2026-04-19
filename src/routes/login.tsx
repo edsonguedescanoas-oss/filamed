@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Activity, Loader2, Shield, Ticket, Stethoscope, HeartPulse, BarChart3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,24 @@ const TEST_ACCOUNTS: Array<{
 ];
 const TEST_PASSWORD = "Teste1234!";
 
+interface LoginSearch {
+  redirect?: string;
+}
+
 export const Route = createFileRoute("/login")({
+  // `redirect` opcional permite navegar para /login sem search params.
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
+  // Já logado vai direto pra /app (ou para o redirect pretendido)
+  beforeLoad: ({ context, search }) => {
+    if (context.auth.isAuthenticated && context.auth.profile?.unidade_id) {
+      throw redirect({ to: search.redirect ?? "/app" });
+    }
+    if (context.auth.isAuthenticated && !context.auth.profile?.unidade_id) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Entrar — FilaMed" },
