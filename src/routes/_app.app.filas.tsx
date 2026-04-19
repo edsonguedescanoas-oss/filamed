@@ -40,6 +40,7 @@ type FilaTipo = Database["public"]["Enums"]["fila_tipo"];
 type Fila = Database["public"]["Tables"]["filas"]["Row"];
 
 import { RoleGuard } from "@/components/role-guard";
+import { QueueCards } from "@/components/filas/queue-cards";
 
 export const Route = createFileRoute("/_app/app/filas")({
   head: () => ({ meta: [{ title: "Filas — FilaMed" }] }),
@@ -193,7 +194,26 @@ function FilasPage() {
         </div>
       )}
 
-      <div className="mt-8">
+      {/* Cards de gestão operacional por fila */}
+      {!loading && filas.length > 0 && unidadeId && (
+        <section className="mt-8">
+          <div className="mb-4 flex items-end justify-between">
+            <div>
+              <h2 className="font-display text-xl font-semibold">Gestão das filas</h2>
+              <p className="text-sm text-muted-foreground">
+                Acompanhe e chame o próximo paciente em cada fila ativa.
+              </p>
+            </div>
+          </div>
+          <QueueCards unidadeId={unidadeId} filas={filas} canCall={canManage} />
+        </section>
+      )}
+
+      <div className="mt-10">
+        <h2 className="font-display text-xl font-semibold">Configuração das filas</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Edite tipo, cor, prefixo e ordem de exibição.
+        </p>
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
