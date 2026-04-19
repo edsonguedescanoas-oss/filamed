@@ -207,8 +207,8 @@ function QueueCard({
           <h3 className="font-display font-semibold truncate">{fila.nome}</h3>
           <p className="text-xs text-muted-foreground capitalize">{fila.tipo}</p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-primary">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           Ativa
         </span>
       </div>
