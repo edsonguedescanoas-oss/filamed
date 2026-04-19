@@ -421,7 +421,18 @@ function VozConfigPage() {
         </div>
       </section>
 
-      {/* Provedor */}
+      {/* Saúde do provedor (ping periódico) */}
+      <HealthCard
+        provider={activeMeta?.provider ?? "browser"}
+        status={health.status}
+        message={health.message}
+        latencyMs={health.latencyMs}
+        lastCheckedAt={health.lastCheckedAt}
+        onRefresh={() => void health.refresh()}
+        hasConfig={!!activeMeta}
+      />
+
+
       <section className="space-y-3">
         <Label className="text-sm font-semibold">Provedor de voz</Label>
         <div className="grid gap-3 md:grid-cols-3">
