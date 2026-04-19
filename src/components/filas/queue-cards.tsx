@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeTable } from "@/hooks/use-realtime-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -73,27 +74,13 @@ export function QueueCards({ unidadeId, filas, canCall }: QueueCardsProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId, filas.map((f) => f.id + f.ativa).join(",")]);
 
-  // realtime
-  useEffect(() => {
-    if (!unidadeId) return;
-    const channel = supabase
-      .channel(`filas-stats-${unidadeId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "senhas",
-          filter: `unidade_id=eq.${unidadeId}`,
-        },
-        () => void fetchStats(),
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadeId, filasAtivas.length]);
+  // realtime via hook compartilhado (debounce 300ms incluso)
+  useRealtimeTable({
+    table: "senhas",
+    filter: unidadeId ? `unidade_id=eq.${unidadeId}` : undefined,
+    enabled: !!unidadeId && filasAtivas.length > 0,
+    onChange: () => void fetchStats(),
+  });
 
   const handleChamarProximo = async (fila: Fila) => {
     if (!canCall) return;
