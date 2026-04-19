@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TvIndexRouteImport } from './routes/tv.index'
 import { Route as TvSlugRouteImport } from './routes/tv.$slug'
 import { Route as STokenRouteImport } from './routes/s.$token'
+import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
@@ -56,6 +57,11 @@ const TvSlugRoute = TvSlugRouteImport.update({
 const STokenRoute = STokenRouteImport.update({
   id: '/s/$token',
   path: '/s/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HooksHealthcheckRoute = HooksHealthcheckRouteImport.update({
+  id: '/hooks/healthcheck',
+  path: '/hooks/healthcheck',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAppRoute = AppAppRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/app': typeof AppAppRouteWithChildren
+  '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv': typeof TvIndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/_app/app': typeof AppAppRouteWithChildren
+  '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/app'
+    | '/hooks/healthcheck'
     | '/s/$token'
     | '/tv/$slug'
     | '/tv/'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/setup'
+    | '/hooks/healthcheck'
     | '/s/$token'
     | '/tv/$slug'
     | '/tv'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/_app/app'
+    | '/hooks/healthcheck'
     | '/s/$token'
     | '/tv/$slug'
     | '/tv/'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
+  HooksHealthcheckRoute: typeof HooksHealthcheckRoute
   STokenRoute: typeof STokenRoute
   TvSlugRoute: typeof TvSlugRoute
   TvIndexRoute: typeof TvIndexRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/s/$token'
       fullPath: '/s/$token'
       preLoaderRoute: typeof STokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/healthcheck': {
+      id: '/hooks/healthcheck'
+      path: '/hooks/healthcheck'
+      fullPath: '/hooks/healthcheck'
+      preLoaderRoute: typeof HooksHealthcheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/app': {
@@ -337,6 +357,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
+  HooksHealthcheckRoute: HooksHealthcheckRoute,
   STokenRoute: STokenRoute,
   TvSlugRoute: TvSlugRoute,
   TvIndexRoute: TvIndexRoute,
