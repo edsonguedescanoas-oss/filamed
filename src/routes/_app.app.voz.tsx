@@ -421,6 +421,38 @@ function VozConfigPage() {
         </div>
       </section>
 
+      {/* Aviso: voz salva (browser) não existe no navegador atual */}
+      {activeMeta?.provider === "browser" &&
+        activeMeta.voice_id &&
+        browserVoices.length > 0 &&
+        !browserVoices.some(
+          (v) => v.name === activeMeta.voice_id || v.voiceURI === activeMeta.voice_id,
+        ) && (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+            <div className="flex items-start gap-2">
+              <Mic className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+              <div className="space-y-1">
+                <p className="font-semibold text-destructive">
+                  A voz configurada não existe neste dispositivo
+                </p>
+                <p className="text-muted-foreground">
+                  A voz salva no banco é{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                    {activeMeta.voice_id}
+                  </code>
+                  , mas ela não está instalada no navegador atual. Vozes do
+                  navegador são <strong>locais ao dispositivo</strong> — uma TV
+                  rodando em outro computador/Android/Smart TV provavelmente também
+                  não terá. Reconfigure escolhendo uma voz da lista abaixo (no
+                  próprio dispositivo da TV) ou troque para o provedor{" "}
+                  <strong>Google Cloud TTS</strong> / <strong>ElevenLabs</strong>,
+                  que funcionam em qualquer dispositivo.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
       {/* Saúde do provedor (ping periódico) */}
       <HealthCard
         provider={activeMeta?.provider ?? "browser"}

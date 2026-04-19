@@ -555,14 +555,41 @@ function TvPage() {
       ? voices.find((v) => v.name === cfg.voice_id) ??
         voices.find((v) => v.voiceURI === cfg.voice_id)
       : null;
+
+    // Diagnóstico: se admin salvou uma voz específica e ela NÃO existe neste
+    // dispositivo (caso comum quando admin configura no Chrome desktop e a TV
+    // roda em Android/Firefox/Safari sem essa voz instalada), avisamos no debug
+    // — sem isso, a TV ficava muda silenciosamente.
+    if (cfg.provider === "browser" && cfg.voice_id && !cfgVoice) {
+      const available = voices.map((v) => v.name).join(", ") || "(nenhuma)";
+      console.warn(
+        `[TV] voz configurada "${cfg.voice_id}" não existe neste dispositivo. ` +
+          `Vozes disponíveis: ${available}. Usando fallback.`,
+      );
+      setDebugInfo({
+        text: "(config)",
+        voice: cfg.voice_id,
+        status: "erro",
+        at: new Date(),
+        error: `Voz "${cfg.voice_id}" não está instalada neste dispositivo. Reconfigure em /app/voz aqui mesmo, ou escolha provider Google/ElevenLabs.`,
+      });
+    }
+
     const saved = !cfgVoice && selectedVoiceURI ? voices.find((v) => v.voiceURI === selectedVoiceURI) : null;
     const ptVoice =
-      cfgVoice ?? saved ?? voices.find((v) => v.lang === "pt-BR") ?? voices.find((v) => v.lang?.startsWith("pt"));
+      cfgVoice ??
+      saved ??
+      voices.find((v) => v.lang === "pt-BR") ??
+      voices.find((v) => v.lang?.toLowerCase().startsWith("pt")) ??
+      // Último recurso: qualquer voz disponível, mesmo que em outro idioma —
+      // melhor falar com sotaque do que ficar mudo.
+      voices[0];
 
     if (ptVoice) utterance.voice = ptVoice;
 
     return utterance;
   };
+
 
   const speakUtterance = (utterance: SpeechSynthesisUtterance) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {
