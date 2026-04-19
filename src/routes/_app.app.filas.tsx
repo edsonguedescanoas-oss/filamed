@@ -40,6 +40,7 @@ type FilaTipo = Database["public"]["Enums"]["fila_tipo"];
 type Fila = Database["public"]["Tables"]["filas"]["Row"];
 
 import { RoleGuard } from "@/components/role-guard";
+import { QueueCards } from "@/components/filas/queue-cards";
 
 export const Route = createFileRoute("/_app/app/filas")({
   head: () => ({ meta: [{ title: "Filas — FilaMed" }] }),
