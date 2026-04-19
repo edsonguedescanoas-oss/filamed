@@ -1,12 +1,21 @@
 // Edge function: gera áudio TTS via Google Cloud TTS ou ElevenLabs.
-// Recebe { text, provider, voiceId, rate?, pitch? } e devolve { audioContent: base64, mime }.
+// Recebe { text, provider, voiceId, rate?, pitch? } e devolve { audioContent: base64, mime, cached }.
 // Pública (verify_jwt = false) — usada pelo painel TV anônimo.
+//
+// Cache: hash SHA-256 de (provider+voiceId+rate+pitch+text) → arquivo no bucket
+// `tts-cache`. Antes de chamar a API paga, tenta baixar do cache. Após gerar,
+// salva no cache em segundo plano (não bloqueia a resposta).
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const MAX_TEXT_LENGTH = 500; // chamadas de senha são curtas — evita abuso
+const CACHE_BUCKET = "tts-cache";
 
 type Provider = "google" | "elevenlabs";
 
@@ -17,6 +26,39 @@ interface Payload {
   rate?: number;
   pitch?: number;
 }
+
+// --- utilidades --------------------------------------------------------------
+
+function bufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunk = 0x8000; // chunk para evitar stack overflow no String.fromCharCode
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function cacheKey(p: Required<Pick<Payload, "provider">> & Payload): string {
+  const parts = [
+    p.provider,
+    p.voiceId ?? "",
+    String(p.rate ?? 0.95),
+    String(p.pitch ?? 1.0),
+    p.text.trim(),
+  ].join("|");
+  return parts;
+}
+
+// --- providers ---------------------------------------------------------------
 
 async function googleTts(text: string, voiceId: string | undefined, rate: number, pitch: number) {
   const apiKey = Deno.env.get("GOOGLE_TTS_API_KEY");
@@ -84,17 +126,43 @@ async function elevenLabsTts(text: string, voiceId: string | undefined, rate: nu
   }
 
   const buffer = await res.arrayBuffer();
-  // @ts-ignore Deno global
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer.slice(0, 0)))) || "";
-  // Conversão segura (sem stack overflow) usando Uint8Array em chunks
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return { audioContent: btoa(binary) || base64, mime: "audio/mpeg" };
+  return { audioContent: bufferToBase64(buffer), mime: "audio/mpeg" };
 }
+
+// --- cache helpers -----------------------------------------------------------
+
+function getStorageClient() {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) return null; // cache vira no-op se faltar env (não quebra TTS)
+  return createClient(url, key);
+}
+
+async function tryReadCache(hash: string): Promise<string | null> {
+  const client = getStorageClient();
+  if (!client) return null;
+  const { data, error } = await client.storage.from(CACHE_BUCKET).download(`${hash}.mp3`);
+  if (error || !data) return null;
+  const buffer = await data.arrayBuffer();
+  return bufferToBase64(buffer);
+}
+
+async function writeCache(hash: string, base64: string): Promise<void> {
+  const client = getStorageClient();
+  if (!client) return;
+  // base64 → bytes
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  await client.storage
+    .from(CACHE_BUCKET)
+    .upload(`${hash}.mp3`, bytes, {
+      contentType: "audio/mpeg",
+      upsert: false, // se outro request gerou primeiro, mantém o existente
+    });
+}
+
+// --- handler -----------------------------------------------------------------
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -112,21 +180,51 @@ Deno.serve(async (req) => {
       });
     }
 
-    let result;
-    if (provider === "google") {
-      result = await googleTts(text, voiceId, rate, pitch);
-    } else if (provider === "elevenlabs") {
-      result = await elevenLabsTts(text, voiceId, rate);
-    } else {
+    if (text.length > MAX_TEXT_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `text excede ${MAX_TEXT_LENGTH} caracteres` }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (provider !== "google" && provider !== "elevenlabs") {
       return new Response(JSON.stringify({ error: "provider inválido" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // 1) Cache lookup
+    const hash = await sha256Hex(cacheKey({ text, provider, voiceId, rate, pitch }));
+    const cached = await tryReadCache(hash);
+    if (cached) {
+      return new Response(
+        JSON.stringify({ audioContent: cached, mime: "audio/mpeg", cached: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // 2) Geração
+    const result =
+      provider === "google"
+        ? await googleTts(text, voiceId, rate, pitch)
+        : await elevenLabsTts(text, voiceId, rate);
+
+    // 3) Cache write em background — não bloqueia a resposta
+    // EdgeRuntime.waitUntil garante que a promise termine mesmo após o response
+    const cachePromise = writeCache(hash, result.audioContent).catch((e) =>
+      console.error("[tts] cache write falhou:", e),
+    );
+    // @ts-ignore EdgeRuntime é global no Deno Deploy / Supabase Edge
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(cachePromise);
+
+    return new Response(
+      JSON.stringify({ ...result, cached: false }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     console.error("[tts] erro:", err);
     return new Response(
