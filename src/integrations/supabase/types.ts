@@ -600,6 +600,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      marcar_senhas_ausentes: { Args: never; Returns: number }
       setup_initial_unidade: {
         Args: {
           _cnpj?: string
