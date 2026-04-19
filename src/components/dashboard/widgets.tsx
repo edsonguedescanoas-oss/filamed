@@ -1172,8 +1172,12 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
 export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
   const [loading, setLoading] = useState(true);
   const [senhasHoje, setSenhasHoje] = useState(0);
+  const [senhasOntem, setSenhasOntem] = useState(0);
   const [finalizadasHoje, setFinalizadasHoje] = useState(0);
+  const [finalizadasOntem, setFinalizadasOntem] = useState(0);
+  const [emAtendimentoAgora, setEmAtendimentoAgora] = useState(0);
   const [tempoMedioMin, setTempoMedioMin] = useState<number | null>(null);
+  const [tempoMedioOntemMin, setTempoMedioOntemMin] = useState<number | null>(null);
   const [pacientes, setPacientes] = useState(0);
   const [filasAtivas, setFilasAtivas] = useState(0);
   const [taxaConclusao, setTaxaConclusao] = useState(0);
@@ -1183,13 +1187,30 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
     const load = async () => {
       setLoading(true);
       const inicio = startOfTodayISO();
+      const { ontemISO, hojeISO } = ontemRange();
 
-      const [senhasRes, finalRes, atendRes, pacRes, filasRes] = await Promise.all([
+      const [
+        senhasRes,
+        senhasOntemRes,
+        finalRes,
+        finalOntemRes,
+        emAtRes,
+        atendRes,
+        atendOntemRes,
+        pacRes,
+        filasRes,
+      ] = await Promise.all([
         supabase
           .from("senhas")
           .select("id", { count: "exact", head: true })
           .eq("unidade_id", unidadeId)
           .gte("created_at", inicio),
+        supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .gte("created_at", ontemISO)
+          .lt("created_at", hojeISO),
         supabase
           .from("senhas")
           .select("id", { count: "exact", head: true })
@@ -1197,11 +1218,30 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
           .eq("status", "finalizada")
           .gte("created_at", inicio),
         supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .eq("status", "finalizada")
+          .gte("created_at", ontemISO)
+          .lt("created_at", hojeISO),
+        supabase
+          .from("senhas")
+          .select("id", { count: "exact", head: true })
+          .eq("unidade_id", unidadeId)
+          .eq("status", "em_atendimento"),
+        supabase
           .from("atendimentos")
           .select("duracao_segundos")
           .eq("unidade_id", unidadeId)
           .not("duracao_segundos", "is", null)
           .gte("iniciado_em", inicio),
+        supabase
+          .from("atendimentos")
+          .select("duracao_segundos")
+          .eq("unidade_id", unidadeId)
+          .not("duracao_segundos", "is", null)
+          .gte("iniciado_em", ontemISO)
+          .lt("iniciado_em", hojeISO),
         supabase
           .from("pacientes")
           .select("id", { count: "exact", head: true })
@@ -1218,14 +1258,19 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
       const total = senhasRes.count ?? 0;
       const fin = finalRes.count ?? 0;
       setSenhasHoje(total);
+      setSenhasOntem(senhasOntemRes.count ?? 0);
       setFinalizadasHoje(fin);
+      setFinalizadasOntem(finalOntemRes.count ?? 0);
+      setEmAtendimentoAgora(emAtRes.count ?? 0);
       setTaxaConclusao(total ? Math.round((fin / total) * 100) : 0);
 
-      const durs = ((atendRes.data ?? []) as { duracao_segundos: number | null }[])
-        .map((r) => r.duracao_segundos ?? 0)
-        .filter((n) => n > 0);
-      setTempoMedioMin(
-        durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length / 60) : null,
+      const calcMedia = (rows: { duracao_segundos: number | null }[]) => {
+        const durs = rows.map((r) => r.duracao_segundos ?? 0).filter((n) => n > 0);
+        return durs.length ? Math.round(durs.reduce((a, b) => a + b, 0) / durs.length / 60) : null;
+      };
+      setTempoMedioMin(calcMedia((atendRes.data ?? []) as { duracao_segundos: number | null }[]));
+      setTempoMedioOntemMin(
+        calcMedia((atendOntemRes.data ?? []) as { duracao_segundos: number | null }[]),
       );
       setPacientes(pacRes.count ?? 0);
       setFilasAtivas(filasRes.count ?? 0);
@@ -1237,17 +1282,42 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
     };
   }, [unidadeId]);
 
+  const tempoMedioTrend: TrendInfo | undefined =
+    tempoMedioMin !== null && tempoMedioOntemMin !== null && tempoMedioOntemMin > 0
+      ? {
+          // Para tempo médio, "menos é melhor" — invertemos o sinal para que ▼ apareça em verde
+          // quando o tempo cai. O cálculo bruto é: hoje - ontem; se hoje < ontem queremos verde.
+          pct: -calcTrend(tempoMedioMin, tempoMedioOntemMin)!,
+          label: "vs ontem",
+        }
+      : undefined;
+
   return (
     <div className="space-y-8">
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Ticket} label="Senhas hoje" value={senhasHoje} loading={loading} />
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
-          icon={TrendingUp}
-          label="Taxa de conclusão"
-          value={`${taxaConclusao}%`}
-          hint={`${finalizadasHoje} finalizadas`}
+          icon={Ticket}
+          label="Senhas hoje"
+          value={senhasHoje}
+          loading={loading}
+          trend={{ pct: calcTrend(senhasHoje, senhasOntem), label: "vs ontem" }}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="Finalizadas hoje"
+          value={finalizadasHoje}
+          hint={`Taxa ${taxaConclusao}%`}
           loading={loading}
           accent="success"
+          trend={{ pct: calcTrend(finalizadasHoje, finalizadasOntem), label: "vs ontem" }}
+        />
+        <StatCard
+          icon={Stethoscope}
+          label="Em atendimento"
+          value={emAtendimentoAgora}
+          hint="Agora"
+          loading={loading}
+          accent="primary"
         />
         <StatCard
           icon={Clock}
@@ -1256,6 +1326,7 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
           hint="Atendimentos hoje"
           loading={loading}
           accent="warning"
+          trend={tempoMedioTrend}
         />
         <StatCard
           icon={Users}
