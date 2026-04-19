@@ -39,6 +39,13 @@ import { useAuth } from "@/hooks/use-auth";
  * Helpers compartilhados
  * ────────────────────────────────────────────────────────── */
 
+interface TrendInfo {
+  /** Variação percentual vs período anterior (ex: 12 = +12%, -8 = -8%). null = sem dado anterior */
+  pct: number | null;
+  /** Rótulo do comparador, ex: "vs ontem" */
+  label?: string;
+}
+
 function StatCard({
   icon: Icon,
   label,
@@ -46,6 +53,7 @@ function StatCard({
   hint,
   loading,
   accent = "primary",
+  trend,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -53,6 +61,7 @@ function StatCard({
   hint?: string;
   loading?: boolean;
   accent?: "primary" | "success" | "warning" | "danger";
+  trend?: TrendInfo;
 }) {
   const accentBg = {
     primary: "bg-gradient-primary shadow-glow",
@@ -63,8 +72,34 @@ function StatCard({
 
   const iconColor = accent === "primary" ? "text-primary-foreground" : "";
 
+  // Renderiza a tendência: ▲ verde para alta, ▼ vermelho para queda, traço neutro para 0/sem dado.
+  const renderTrend = () => {
+    if (!trend) return null;
+    if (trend.pct === null) {
+      return (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          — {trend.label ?? "sem comparativo"}
+        </span>
+      );
+    }
+    const isUp = trend.pct > 0;
+    const isFlat = trend.pct === 0;
+    const cls = isFlat
+      ? "text-muted-foreground"
+      : isUp
+        ? "text-emerald-600 dark:text-emerald-400"
+        : "text-destructive";
+    const arrow = isFlat ? "→" : isUp ? "▲" : "▼";
+    return (
+      <span className={`inline-flex items-center gap-1 text-xs font-medium ${cls}`}>
+        {arrow} {Math.abs(trend.pct)}%{" "}
+        <span className="text-muted-foreground font-normal">{trend.label ?? "vs ontem"}</span>
+      </span>
+    );
+  };
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant">
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accentBg}`}>
         <Icon className={`h-5 w-5 ${iconColor}`} />
       </div>
@@ -73,8 +108,24 @@ function StatCard({
       </div>
       <div className="mt-1 font-medium">{label}</div>
       {hint && <div className="text-sm text-muted-foreground">{hint}</div>}
+      {trend && !loading && <div className="mt-2">{renderTrend()}</div>}
     </div>
   );
+}
+
+/** Calcula variação percentual entre hoje e ontem. Retorna null se ontem = 0 (evita divisão por zero). */
+function calcTrend(hoje: number, ontem: number): number | null {
+  if (ontem === 0) return null;
+  return Math.round(((hoje - ontem) / ontem) * 100);
+}
+
+/** ISO do início de ontem e início de hoje — para janelas de comparação. */
+function ontemRange() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const ontem = new Date(hoje);
+  ontem.setDate(ontem.getDate() - 1);
+  return { ontemISO: ontem.toISOString(), hojeISO: hoje.toISOString() };
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
