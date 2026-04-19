@@ -1,5 +1,6 @@
 import { createRouter, useRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { getAuthSnapshot, loadInitialAuth, subscribeAuth } from "@/lib/auth-store";
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
@@ -55,13 +56,35 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
 }
 
 export const getRouter = () => {
+  // Dispara o carregamento do snapshot de auth o quanto antes.
+  // No client, o `beforeLoad` da raiz aguarda esse promise antes de avaliar guards.
+  void loadInitialAuth();
+
   const router = createRouter({
     routeTree,
-    context: {},
+    context: {
+      // Snapshot atual (será re-lido em cada beforeLoad via context)
+      auth: getAuthSnapshot(),
+    },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
     defaultErrorComponent: DefaultErrorComponent,
   });
 
+  // Mantém o context do router sincronizado com o auth-store e re-avalia
+  // os guards quando a sessão muda (login, logout, refresh de profile).
+  if (typeof window !== "undefined") {
+    subscribeAuth((snap) => {
+      router.update({ context: { auth: snap } });
+      void router.invalidate();
+    });
+  }
+
   return router;
 };
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+}

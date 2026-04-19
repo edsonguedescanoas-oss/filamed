@@ -1,6 +1,11 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { loadInitialAuth, type AuthSnapshot } from "@/lib/auth-store";
+
+export interface RouterContext {
+  auth: AuthSnapshot;
+}
 
 import appCss from "../styles.css?url";
 
@@ -26,7 +31,12 @@ function NotFoundComponent() {
   );
 }
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterContext>()({
+  // Garante que o snapshot de auth está pronto antes de qualquer guard avaliar.
+  // Idempotente — só faz fetch na primeira chamada por sessão de browser.
+  beforeLoad: async () => {
+    await loadInitialAuth();
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
