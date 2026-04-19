@@ -24,9 +24,13 @@ const TEST_ACCOUNTS: Array<{
 ];
 const TEST_PASSWORD = "Teste1234!";
 
+interface LoginSearch {
+  redirect?: string;
+}
+
 export const Route = createFileRoute("/login")({
-  // Aceita ?redirect=... para voltar à URL pretendida após login
-  validateSearch: (search: Record<string, unknown>) => ({
+  // `redirect` opcional permite navegar para /login sem search params.
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
   // Já logado vai direto pra /app (ou para o redirect pretendido)

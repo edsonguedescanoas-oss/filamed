@@ -26,7 +26,7 @@ export const Route = createFileRoute("/setup")({
 });
 
 function SetupPage() {
-  const { isAuthenticated, isLoading, profile, refreshProfile, signOut } = useAuth();
+  const { profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
@@ -36,15 +36,7 @@ function SetupPage() {
     telefone: "",
   });
 
-  // Quem não está logado, vai pro login
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) void navigate({ to: "/login" });
-  }, [isLoading, isAuthenticated, navigate]);
-
-  // Quem já tem unidade, vai pro app
-  useEffect(() => {
-    if (profile?.unidade_id) void navigate({ to: "/app" });
-  }, [profile, navigate]);
+  // Redirects (não-logado/já-tem-unidade) ficam no beforeLoad agora.
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
