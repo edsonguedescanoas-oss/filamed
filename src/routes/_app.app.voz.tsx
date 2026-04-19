@@ -101,6 +101,16 @@ function VozConfigPage() {
   // Snapshot do que está realmente salvo no banco (o que a TV está usando agora).
   const [activeMeta, setActiveMeta] = useState<VoiceConfigMeta | null>(null);
 
+  // Indicador de saúde: ping periódico na edge function tts pra detectar
+  // chave expirada / quota / provider fora do ar antes da TV "ficar muda".
+  // Usa o que está SALVO (activeMeta), não o que está sendo editado.
+  const health = useVoiceHealth({
+    provider: activeMeta?.provider ?? "browser",
+    voiceId: activeMeta?.voice_id ?? null,
+    intervalMs: 60_000,
+    enabled: !!activeMeta,
+  });
+
   // Lista de vozes do navegador (pt-*)
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
