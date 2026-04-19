@@ -607,3 +607,125 @@ function ProviderCard({
     </button>
   );
 }
+
+function HealthCard({
+  provider,
+  status,
+  message,
+  latencyMs,
+  lastCheckedAt,
+  onRefresh,
+  hasConfig,
+}: {
+  provider: Provider;
+  status: "idle" | "checking" | "ok" | "error";
+  message: string | null;
+  latencyMs: number | null;
+  lastCheckedAt: Date | null;
+  onRefresh: () => void;
+  hasConfig: boolean;
+}) {
+  const isBrowser = provider === "browser";
+
+  const tone =
+    status === "error"
+      ? {
+          border: "border-destructive/40",
+          bg: "bg-destructive/5",
+          dot: "bg-destructive",
+          icon: <XCircle className="h-4 w-4 text-destructive" />,
+          label: "Provedor com falha",
+          labelColor: "text-destructive",
+        }
+      : status === "ok"
+        ? {
+            border: "border-emerald-500/30",
+            bg: "bg-emerald-500/5",
+            dot: "bg-emerald-500",
+            icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+            label: isBrowser ? "Voz local pronta" : "Provedor saudável",
+            labelColor: "text-emerald-600 dark:text-emerald-400",
+          }
+        : status === "checking"
+          ? {
+              border: "border-border",
+              bg: "bg-muted/30",
+              dot: "bg-muted-foreground animate-pulse",
+              icon: <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />,
+              label: "Verificando provedor…",
+              labelColor: "text-muted-foreground",
+            }
+          : {
+              border: "border-border",
+              bg: "bg-muted/20",
+              dot: "bg-muted-foreground",
+              icon: <Volume2 className="h-4 w-4 text-muted-foreground" />,
+              label: "Aguardando primeira verificação",
+              labelColor: "text-muted-foreground",
+            };
+
+  return (
+    <section className={`rounded-xl border ${tone.border} ${tone.bg} p-4`}>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-background/60">
+            {tone.icon}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`inline-block h-2 w-2 rounded-full ${tone.dot}`} />
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                Saúde do provedor
+              </div>
+            </div>
+            <div className={`mt-1 font-semibold text-sm ${tone.labelColor}`}>
+              {tone.label}
+            </div>
+            {!hasConfig ? (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Salve uma configuração para iniciar o monitoramento.
+              </div>
+            ) : status === "error" && message ? (
+              <div className="text-xs text-destructive/90 mt-0.5 max-w-md">
+                {message}
+              </div>
+            ) : status === "ok" && !isBrowser && latencyMs != null ? (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Resposta em <span className="font-mono tabular-nums">{latencyMs}ms</span> · ping a cada 60s
+              </div>
+            ) : status === "ok" && isBrowser ? (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Síntese roda no navegador — sem dependência de rede.
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onRefresh}
+            disabled={status === "checking"}
+            className="gap-1.5 h-7 text-xs"
+          >
+            <RefreshCw
+              className={`h-3 w-3 ${status === "checking" ? "animate-spin" : ""}`}
+            />
+            Verificar agora
+          </Button>
+          {lastCheckedAt && (
+            <div className="text-[10px] text-muted-foreground font-mono tabular-nums">
+              {lastCheckedAt.toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
