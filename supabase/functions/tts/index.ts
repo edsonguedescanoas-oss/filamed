@@ -117,7 +117,7 @@ async function googleTts(
   if (!res.ok) {
     const errBody = await res.text();
     if (isProviderUnavailable("google", res.status, errBody)) {
-      console.warn(`[tts] Google indisponível (${res.status}): ${errBody.slice(0, 200)}`);
+      console.warn(`[tts] Google indisponível (${res.status}): ${errBody.slice(0, 800)}`);
       return { ok: false, unavailable: true, reason: `google_${res.status}`, status: res.status };
     }
     throw new Error(`Google TTS falhou: ${res.status} ${errBody}`);
