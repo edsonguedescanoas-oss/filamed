@@ -214,6 +214,19 @@ function validatePriceId(value: string): string | null {
   return null;
 }
 
+type PriceCheckStatus = "loading" | "ok" | "inactive" | "missing" | "invalid" | "error";
+
+interface PriceCheckResult {
+  status: PriceCheckStatus;
+  message?: string;
+}
+
+function getStripeEnvFromClientToken(): "sandbox" | "live" {
+  return import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN?.toString().startsWith("pk_test_")
+    ? "sandbox"
+    : "live";
+}
+
 function AdminPlanosPage() {
   const [planos, setPlanos] = useState<PlanoRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -221,6 +234,56 @@ function AdminPlanosPage() {
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<PlanoRow | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [priceChecks, setPriceChecks] = useState<Record<string, PriceCheckResult>>({});
+
+  const checkPriceId = useCallback(async (priceId: string) => {
+    if (!priceId) return;
+    // Não recheca se já temos resultado não-erro
+    setPriceChecks((prev) => {
+      if (prev[priceId] && prev[priceId].status !== "error") return prev;
+      return { ...prev, [priceId]: { status: "loading" } };
+    });
+    // Pré-valida formato local pra evitar chamada desnecessária
+    if (validatePriceId(priceId) !== null) {
+      setPriceChecks((prev) => ({
+        ...prev,
+        [priceId]: { status: "invalid", message: "Formato inválido" },
+      }));
+      return;
+    }
+    try {
+      const env = getStripeEnvFromClientToken();
+      const { data, error } = await supabase.functions.invoke("check-stripe-price", {
+        body: { priceId, environment: env },
+      });
+      if (error) {
+        setPriceChecks((prev) => ({
+          ...prev,
+          [priceId]: { status: "error", message: error.message },
+        }));
+        return;
+      }
+      if (!data?.exists) {
+        setPriceChecks((prev) => ({
+          ...prev,
+          [priceId]: { status: "missing", message: data?.error ?? "Não encontrado no Stripe" },
+        }));
+        return;
+      }
+      setPriceChecks((prev) => ({
+        ...prev,
+        [priceId]: data.active
+          ? { status: "ok", message: "Ativo no Stripe" }
+          : { status: "inactive", message: "Existe mas está inativo" },
+      }));
+    } catch (e: any) {
+      setPriceChecks((prev) => ({
+        ...prev,
+        [priceId]: { status: "error", message: e?.message || String(e) },
+      }));
+    }
+  }, []);
+
 
   async function syncStripe(p: PlanoRow) {
     if (!p.preco_mensal_centavos || p.preco_mensal_centavos <= 0) {
