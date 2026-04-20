@@ -60,9 +60,39 @@ function cacheKey(p: Required<Pick<Payload, "provider">> & Payload): string {
 
 // --- providers ---------------------------------------------------------------
 
-async function googleTts(text: string, voiceId: string | undefined, rate: number, pitch: number) {
+type TtsResult =
+  | { ok: true; audioContent: string; mime: string }
+  | { ok: false; unavailable: true; reason: string; status: number };
+
+/**
+ * Detecta erros "permanentes" do provider (credencial revogada, API desabilitada,
+ * cota zerada). Para esses casos devolvemos fallback ao invés de 500 — assim o
+ * cliente cai gracioso para Web Speech API e a TV nunca fica muda.
+ */
+function isProviderUnavailable(provider: Provider, status: number, body: string): boolean {
+  // Google: 403 com SERVICE_DISABLED / API_KEY_SERVICE_BLOCKED / PERMISSION_DENIED
+  // ElevenLabs: 401 missing_permissions / invalid_api_key, 403 quota_exceeded
+  if (provider === "google") {
+    if (status === 403 || status === 401) return true;
+    if (status === 429 && /quota/i.test(body)) return true;
+  }
+  if (provider === "elevenlabs") {
+    if (status === 401 || status === 403) return true;
+    if (status === 429 && /(quota|exceeded)/i.test(body)) return true;
+  }
+  return false;
+}
+
+async function googleTts(
+  text: string,
+  voiceId: string | undefined,
+  rate: number,
+  pitch: number,
+): Promise<TtsResult> {
   const apiKey = Deno.env.get("GOOGLE_TTS_API_KEY");
-  if (!apiKey) throw new Error("GOOGLE_TTS_API_KEY não configurada");
+  if (!apiKey) {
+    return { ok: false, unavailable: true, reason: "GOOGLE_TTS_API_KEY não configurada", status: 0 };
+  }
 
   const voice = voiceId || "pt-BR-Neural2-C";
   const langCode = voice.split("-").slice(0, 2).join("-") || "pt-BR";
@@ -85,16 +115,26 @@ async function googleTts(text: string, voiceId: string | undefined, rate: number
   );
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Google TTS falhou: ${res.status} ${err}`);
+    const errBody = await res.text();
+    if (isProviderUnavailable("google", res.status, errBody)) {
+      console.warn(`[tts] Google indisponível (${res.status}): ${errBody.slice(0, 200)}`);
+      return { ok: false, unavailable: true, reason: `google_${res.status}`, status: res.status };
+    }
+    throw new Error(`Google TTS falhou: ${res.status} ${errBody}`);
   }
   const data = await res.json();
-  return { audioContent: data.audioContent as string, mime: "audio/mpeg" };
+  return { ok: true, audioContent: data.audioContent as string, mime: "audio/mpeg" };
 }
 
-async function elevenLabsTts(text: string, voiceId: string | undefined, rate: number) {
+async function elevenLabsTts(
+  text: string,
+  voiceId: string | undefined,
+  rate: number,
+): Promise<TtsResult> {
   const apiKey = Deno.env.get("ELEVENLABS_API_KEY");
-  if (!apiKey) throw new Error("ELEVENLABS_API_KEY não configurada");
+  if (!apiKey) {
+    return { ok: false, unavailable: true, reason: "ELEVENLABS_API_KEY não configurada", status: 0 };
+  }
 
   const voice = voiceId || "EXAVITQu4vr4xnSDxMaL"; // Sarah por padrão
 
@@ -121,12 +161,16 @@ async function elevenLabsTts(text: string, voiceId: string | undefined, rate: nu
   );
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`ElevenLabs falhou: ${res.status} ${err}`);
+    const errBody = await res.text();
+    if (isProviderUnavailable("elevenlabs", res.status, errBody)) {
+      console.warn(`[tts] ElevenLabs indisponível (${res.status}): ${errBody.slice(0, 200)}`);
+      return { ok: false, unavailable: true, reason: `elevenlabs_${res.status}`, status: res.status };
+    }
+    throw new Error(`ElevenLabs falhou: ${res.status} ${errBody}`);
   }
 
   const buffer = await res.arrayBuffer();
-  return { audioContent: bufferToBase64(buffer), mime: "audio/mpeg" };
+  return { ok: true, audioContent: bufferToBase64(buffer), mime: "audio/mpeg" };
 }
 
 // --- cache helpers -----------------------------------------------------------
@@ -213,6 +257,22 @@ Deno.serve(async (req) => {
         ? await googleTts(text, voiceId, rate, pitch)
         : await elevenLabsTts(text, voiceId, rate);
 
+    // 2a) Fallback gracioso: provider indisponível (credencial revogada, API
+    // desabilitada, cota zerada). Devolvemos 200 com audioContent: null pra
+    // que o cliente caia em Web Speech sem registrar erro 500.
+    if (!result.ok) {
+      return new Response(
+        JSON.stringify({
+          audioContent: null,
+          fallback: "browser",
+          error: "provider_unavailable",
+          provider,
+          reason: result.reason,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // 3) Cache write em background — não bloqueia a resposta
     // EdgeRuntime.waitUntil garante que a promise termine mesmo após o response
     const cachePromise = writeCache(hash, result.audioContent).catch((e) =>
@@ -222,7 +282,7 @@ Deno.serve(async (req) => {
     if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(cachePromise);
 
     return new Response(
-      JSON.stringify({ ...result, cached: false }),
+      JSON.stringify({ audioContent: result.audioContent, mime: result.mime, cached: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
