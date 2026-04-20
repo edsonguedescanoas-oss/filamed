@@ -64,13 +64,24 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      // Google Fonts: preload assíncrono (não bloqueia render).
+      // O <script> abaixo promove para stylesheet quando carregado.
+      // Fallback noscript no body garante fontes mesmo sem JS.
       {
-        rel: "stylesheet",
+        rel: "preload",
+        as: "style",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap",
+        id: "gf-async",
       },
       {
         rel: "stylesheet",
         href: appCss,
+      },
+    ],
+    scripts: [
+      {
+        children:
+          "(function(){var l=document.getElementById('gf-async');if(l){l.rel='stylesheet';}})();",
       },
     ],
   }),
@@ -86,6 +97,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <noscript>
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap"
+          />
+        </noscript>
         {children}
         <Scripts />
       </body>
