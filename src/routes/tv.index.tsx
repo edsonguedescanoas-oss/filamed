@@ -20,11 +20,8 @@ function TvIndexPage() {
 
   useEffect(() => {
     void (async () => {
-      const { data } = await supabase
-        .from("unidades")
-        .select("id,nome,slug")
-        .eq("ativo", true)
-        .order("nome");
+      // RPC pública: lista só id/nome/slug, sem cnpj/endereço/telefone
+      const { data } = await supabase.rpc("get_unidades_publicas");
       setUnidades((data ?? []) as Unidade[]);
     })();
   }, []);

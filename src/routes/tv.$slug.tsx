@@ -13,10 +13,12 @@ type Senha = {
   id: string;
   codigo: string;
   fila_id: string;
+  /** Não vem do anon; só populado se a TV rodar autenticada (futuro). */
   paciente_id: string | null;
   status: SenhaStatus;
   prioridade: SenhaPrioridade;
-  token_publico: string;
+  /** Não exposto ao anon. Mantido para compat com rotas autenticadas. */
+  token_publico?: string;
   updated_at: string;
   created_at: string;
 };
@@ -165,12 +167,10 @@ function TvPage() {
   useEffect(() => {
     let mounted = true;
     void (async () => {
-      const { data: uni, error: uniErr } = await supabase
-        .from("unidades")
-        .select("id,nome,slug")
-        .eq("slug", slug)
-        .eq("ativo", true)
-        .maybeSingle();
+      // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone)
+      const { data: uniRows, error: uniErr } = await supabase
+        .rpc("get_unidade_publica_by_slug", { _slug: slug });
+      const uni = (uniRows ?? [])[0] ?? null;
       if (!mounted) return;
       if (uniErr || !uni) {
         setError("Unidade não encontrada");
@@ -185,22 +185,14 @@ function TvPage() {
           .eq("unidade_id", uni.id)
           .eq("ativa", true)
           .order("ordem"),
-        supabase
-          .from("senhas")
-          .select("id,codigo,fila_id,paciente_id,status,prioridade,token_publico,updated_at,created_at")
-          .eq("unidade_id", uni.id)
-          .in("status", ["aguardando", "chamada", "em_atendimento"])
-          .order("created_at"),
-        supabase
-          .from("chamadas")
-          .select("id,senha_id,destino,created_at")
-          .eq("unidade_id", uni.id)
-          .order("created_at", { ascending: false })
-          .limit(10),
+        // RPC pública: senhas ativas SEM paciente_id e SEM token_publico
+        supabase.rpc("get_senhas_ativas", { _unidade_id: uni.id }),
+        // RPC pública: apenas chamadas dos últimos 60s (basta para piscar a TV)
+        supabase.rpc("get_chamadas_recentes", { _unidade_id: uni.id }),
       ]);
       if (!mounted) return;
       setFilas((filasRes.data ?? []) as Fila[]);
-      setSenhas((senhasRes.data ?? []) as Senha[]);
+      setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
       setChamadas((chamadasRes.data ?? []) as Chamada[]);
 
       // Carrega config de voz da unidade (se existir)
@@ -642,18 +634,17 @@ function TvPage() {
     const senhaAtual = senhasMapRef.current.get(senhaId);
     if (senhaAtual?.codigo && senhaAtual.paciente_id) return senhaAtual;
 
+    // Anon não pode mais ler senhas direto. Buscamos só os campos públicos via RPC.
     const { data, error } = await supabase
-      .from("senhas")
-      .select("id,codigo,fila_id,paciente_id,status,prioridade,updated_at,created_at")
-      .eq("id", senhaId)
-      .maybeSingle();
+      .rpc("get_senhas_ativas", { _unidade_id: unidade?.id ?? "" });
+    const found = ((data ?? []) as Senha[]).find((s) => s.id === senhaId) ?? null;
 
-    if (error || !data) {
+    if (error || !found) {
       console.warn("[TV] não foi possível resolver dados da senha:", senhaId, error?.message);
       return senhaAtual ?? null;
     }
 
-    const resolved = data as Senha;
+    const resolved: Senha = { ...found, paciente_id: found.paciente_id ?? null };
     senhasMapRef.current.set(resolved.id, resolved);
     return resolved;
   };
