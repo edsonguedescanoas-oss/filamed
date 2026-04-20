@@ -490,6 +490,9 @@ function PlanoEditorDialog({
       ativo: form.ativo,
       destaque: form.destaque,
       ordem,
+      gateway_price_id_mensal: form.gateway_price_id_mensal.trim() || null,
+      gateway_price_id_anual: form.gateway_price_id_anual.trim() || null,
+      gateway_price_id_anual_oneoff: form.gateway_price_id_anual_oneoff.trim() || null,
     };
 
     setSaving(true);
