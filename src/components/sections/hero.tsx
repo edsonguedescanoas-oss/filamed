@@ -61,8 +61,11 @@ export function Hero() {
             <img
               src={heroMockup}
               alt="Painel administrativo, TV de chamadas e WebApp do paciente do sistema FilaMed"
-              width={1920}
-              height={1080}
+              width={1440}
+              height={810}
+              fetchPriority="high"
+              decoding="async"
+              sizes="(min-width: 1280px) 1150px, (min-width: 640px) 90vw, 100vw"
               className="w-full h-auto"
             />
           </div>
