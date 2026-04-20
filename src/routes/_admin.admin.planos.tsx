@@ -126,6 +126,9 @@ function emptyForm(): FormState {
     ativo: true,
     destaque: false,
     ordem: "0",
+    gateway_price_id_mensal: "",
+    gateway_price_id_anual: "",
+    gateway_price_id_anual_oneoff: "",
   };
 }
 
