@@ -12,6 +12,7 @@ import {
   EyeOff,
   Save,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -196,6 +197,34 @@ function AdminPlanosPage() {
   const [editing, setEditing] = useState<PlanoRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<PlanoRow | null>(null);
+  const [syncing, setSyncing] = useState<string | null>(null);
+
+  async function syncStripe(p: PlanoRow) {
+    if (!p.preco_mensal_centavos || p.preco_mensal_centavos <= 0) {
+      toast.error("Defina um preço mensal antes de sincronizar");
+      return;
+    }
+    setSyncing(p.id);
+    const env = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN?.toString().startsWith("pk_test_")
+      ? "sandbox"
+      : "live";
+    const toastId = toast.loading(`Criando prices no Stripe (${env}) para ${p.nome}…`);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-plano-stripe", {
+        body: { planoId: p.id, environment: env },
+      });
+      if (error || data?.error) {
+        toast.error("Falha ao sincronizar: " + (error?.message || data?.error), { id: toastId });
+        return;
+      }
+      toast.success(`Stripe sincronizado · 3 prices criados/reutilizados`, { id: toastId });
+      await reload();
+    } catch (e: any) {
+      toast.error("Erro: " + (e.message || String(e)), { id: toastId });
+    } finally {
+      setSyncing(null);
+    }
+  }
 
   async function reload() {
     setLoading(true);
@@ -328,6 +357,19 @@ function AdminPlanosPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Sincronizar prices com Stripe (mensal, anual recorrente, anual à vista)"
+                            disabled={syncing === p.id}
+                            onClick={() => void syncStripe(p)}
+                          >
+                            {syncing === p.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
