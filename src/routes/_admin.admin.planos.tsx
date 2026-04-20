@@ -72,6 +72,9 @@ interface PlanoRow {
   ativo: boolean;
   destaque: boolean;
   ordem: number;
+  gateway_price_id_mensal: string | null;
+  gateway_price_id_anual: string | null;
+  gateway_price_id_anual_oneoff: string | null;
 }
 
 // Toggles de recursos conhecidos (mantém alinhado com /precos)
@@ -100,6 +103,9 @@ interface FormState {
   ativo: boolean;
   destaque: boolean;
   ordem: string;
+  gateway_price_id_mensal: string;
+  gateway_price_id_anual: string;
+  gateway_price_id_anual_oneoff: string;
 }
 
 function emptyForm(): FormState {
@@ -120,6 +126,9 @@ function emptyForm(): FormState {
     ativo: true,
     destaque: false,
     ordem: "0",
+    gateway_price_id_mensal: "",
+    gateway_price_id_anual: "",
+    gateway_price_id_anual_oneoff: "",
   };
 }
 
@@ -150,6 +159,9 @@ function planoToForm(p: PlanoRow): FormState {
     ativo: p.ativo,
     destaque: p.destaque,
     ordem: p.ordem.toString(),
+    gateway_price_id_mensal: p.gateway_price_id_mensal ?? "",
+    gateway_price_id_anual: p.gateway_price_id_anual ?? "",
+    gateway_price_id_anual_oneoff: p.gateway_price_id_anual_oneoff ?? "",
   };
 }
 
@@ -190,7 +202,7 @@ function AdminPlanosPage() {
     const { data, error } = await supabase
       .from("planos")
       .select(
-        "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, ativo, destaque, ordem",
+        "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, ativo, destaque, ordem, gateway_price_id_mensal, gateway_price_id_anual, gateway_price_id_anual_oneoff",
       )
       .order("ordem", { ascending: true });
     if (error) {
@@ -271,6 +283,7 @@ function AdminPlanosPage() {
                     <TableHead>Anual</TableHead>
                     <TableHead>Limites</TableHead>
                     <TableHead>Recursos</TableHead>
+                    <TableHead>Stripe Price IDs</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -307,6 +320,11 @@ function AdminPlanosPage() {
                       </TableCell>
                       <TableCell>
                         <RecursosBadges recursos={p.recursos} />
+                      </TableCell>
+                      <TableCell className="font-mono text-[10px] text-muted-foreground">
+                        <PriceIdLine label="Mensal" value={p.gateway_price_id_mensal} />
+                        <PriceIdLine label="Anual" value={p.gateway_price_id_anual} />
+                        <PriceIdLine label="À vista" value={p.gateway_price_id_anual_oneoff} highlight />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -412,6 +430,37 @@ function RecursosBadges({ recursos }: { recursos: Record<string, boolean> | null
   );
 }
 
+function PriceIdLine({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string | null;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 leading-tight">
+      <span
+        className={
+          highlight
+            ? "rounded bg-primary/10 px-1 font-sans text-[9px] font-semibold uppercase text-primary"
+            : "font-sans text-[9px] font-semibold uppercase text-muted-foreground/70"
+        }
+      >
+        {label}
+      </span>
+      {value ? (
+        <span title={value} className="max-w-[140px] truncate">
+          {value}
+        </span>
+      ) : (
+        <span className="italic text-muted-foreground/60">—</span>
+      )}
+    </div>
+  );
+}
+
 function PlanoEditorDialog({
   open,
   plano,
@@ -472,6 +521,9 @@ function PlanoEditorDialog({
       ativo: form.ativo,
       destaque: form.destaque,
       ordem,
+      gateway_price_id_mensal: form.gateway_price_id_mensal.trim() || null,
+      gateway_price_id_anual: form.gateway_price_id_anual.trim() || null,
+      gateway_price_id_anual_oneoff: form.gateway_price_id_anual_oneoff.trim() || null,
     };
 
     setSaving(true);
@@ -580,9 +632,53 @@ function PlanoEditorDialog({
                 />
               </div>
             </div>
-          </div>
 
-          {/* Limites */}
+            <div className="mt-4 border-t border-border pt-4">
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Stripe Price IDs
+              </h4>
+              <p className="mb-3 text-[11px] text-muted-foreground">
+                Cole o <code className="font-mono">price_...</code> de cada modalidade. Vazio = modalidade desativada no checkout.
+              </p>
+              <div className="grid gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_mensal" className="text-xs">Mensal (recorrente)</Label>
+                  <Input
+                    id="price_mensal"
+                    value={form.gateway_price_id_mensal}
+                    onChange={(e) => setField("gateway_price_id_mensal", e.target.value.trim())}
+                    placeholder="price_1Xxxx..."
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_anual" className="text-xs">Anual (recorrente, 12 meses)</Label>
+                  <Input
+                    id="price_anual"
+                    value={form.gateway_price_id_anual}
+                    onChange={(e) => setField("gateway_price_id_anual", e.target.value.trim())}
+                    placeholder="price_1Xxxx..."
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_anual_oneoff" className="text-xs">
+                    Anual à vista <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">one-time</span>
+                  </Label>
+                  <Input
+                    id="price_anual_oneoff"
+                    value={form.gateway_price_id_anual_oneoff}
+                    onChange={(e) => setField("gateway_price_id_anual_oneoff", e.target.value.trim())}
+                    placeholder="price_1Xxxx... (Pix/boleto/cartão à vista)"
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Habilita pagamento único de 12 meses sem renovação automática (Pix, boleto, cartão).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="rounded-lg border border-border p-4">
             <h3 className="mb-1 font-semibold text-sm">Limites</h3>
             <p className="mb-3 text-[11px] text-muted-foreground">
