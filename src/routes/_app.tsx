@@ -98,6 +98,7 @@ function getInitials(nome: string): string {
 
 function AppLayout() {
   const { profile, roles, trial, signOut } = useAuth();
+  const { plano } = usePlanoAtual(profile?.unidade_id);
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
