@@ -103,6 +103,9 @@ interface FormState {
   ativo: boolean;
   destaque: boolean;
   ordem: string;
+  gateway_price_id_mensal: string;
+  gateway_price_id_anual: string;
+  gateway_price_id_anual_oneoff: string;
 }
 
 function emptyForm(): FormState {
