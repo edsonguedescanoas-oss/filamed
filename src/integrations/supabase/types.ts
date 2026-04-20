@@ -67,10 +67,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "atendimentos_senha_id_fkey"
+            columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas_publicas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "atendimentos_unidade_id_fkey"
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
             referencedColumns: ["id"]
           },
         ]
@@ -112,10 +126,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "chamadas_senha_id_fkey"
+            columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas_publicas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "chamadas_unidade_id_fkey"
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamadas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
             referencedColumns: ["id"]
           },
         ]
@@ -168,6 +196,13 @@ export type Database = {
             referencedRelation: "unidades"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "filas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notificacoes_log: {
@@ -216,10 +251,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notificacoes_log_senha_id_fkey"
+            columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas_publicas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notificacoes_log_unidade_id_fkey"
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificacoes_log_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
             referencedColumns: ["id"]
           },
         ]
@@ -272,6 +321,13 @@ export type Database = {
             referencedRelation: "unidades"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pacientes_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -311,6 +367,13 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
             referencedColumns: ["id"]
           },
         ]
@@ -383,6 +446,13 @@ export type Database = {
             referencedRelation: "unidades"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "senhas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sinalizacao_digital: {
@@ -436,6 +506,13 @@ export type Database = {
             referencedRelation: "unidades"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sinalizacao_digital_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       unidade_voice_config: {
@@ -475,6 +552,13 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: true
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unidade_voice_config_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: true
+            referencedRelation: "unidades_publicas"
             referencedColumns: ["id"]
           },
         ]
@@ -545,11 +629,143 @@ export type Database = {
             referencedRelation: "unidades"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_roles_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      chamadas_publicas: {
+        Row: {
+          created_at: string | null
+          destino: string | null
+          id: string | null
+          senha_id: string | null
+          unidade_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          destino?: string | null
+          id?: string | null
+          senha_id?: string | null
+          unidade_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          destino?: string | null
+          id?: string | null
+          senha_id?: string | null
+          unidade_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamadas_senha_id_fkey"
+            columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamadas_senha_id_fkey"
+            columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas_publicas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamadas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamadas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      senhas_publicas: {
+        Row: {
+          codigo: string | null
+          created_at: string | null
+          fila_id: string | null
+          id: string | null
+          prioridade: Database["public"]["Enums"]["senha_prioridade"] | null
+          status: Database["public"]["Enums"]["senha_status"] | null
+          unidade_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          codigo?: string | null
+          created_at?: string | null
+          fila_id?: string | null
+          id?: string | null
+          prioridade?: Database["public"]["Enums"]["senha_prioridade"] | null
+          status?: Database["public"]["Enums"]["senha_status"] | null
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          codigo?: string | null
+          created_at?: string | null
+          fila_id?: string | null
+          id?: string | null
+          prioridade?: Database["public"]["Enums"]["senha_prioridade"] | null
+          status?: Database["public"]["Enums"]["senha_status"] | null
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "senhas_fila_id_fkey"
+            columns: ["fila_id"]
+            isOneToOne: false
+            referencedRelation: "filas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "senhas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "senhas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades_publicas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      unidades_publicas: {
+        Row: {
+          id: string | null
+          nome: string | null
+          slug: string | null
+        }
+        Insert: {
+          id?: string | null
+          nome?: string | null
+          slug?: string | null
+        }
+        Update: {
+          id?: string | null
+          nome?: string | null
+          slug?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       belongs_to_unidade: {
@@ -584,6 +800,19 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_senha_por_token: {
+        Args: { _token: string }
+        Returns: {
+          codigo: string
+          created_at: string
+          fila_id: string
+          id: string
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          status: Database["public"]["Enums"]["senha_status"]
+          unidade_id: string
+          updated_at: string
+        }[]
       }
       has_role: {
         Args: {
