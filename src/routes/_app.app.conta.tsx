@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlanoAtual } from "@/hooks/use-plano-atual";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
+import { RecursoGate } from "@/components/recurso-gate";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
