@@ -307,6 +307,39 @@ function ContaPage() {
         )}
       </Card>
 
+      {/* Renovação manual — somente para assinaturas anuais à vista (one-off) */}
+      {isAnualOneOff && plano && (
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <RefreshCw className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Sem renovação automática</p>
+                <p className="text-sm text-muted-foreground mt-1 max-w-xl">
+                  Sua assinatura anual à vista vence em{" "}
+                  <strong>{fmtData(plano.proximo_ciclo_em)}</strong>. Renove agora por mais 12 meses pagando via Pix, boleto ou cartão — sem cobrança recorrente.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="bg-gradient-primary shadow-elegant shrink-0"
+              onClick={() => {
+                if (!plano.gateway_price_id_anual_oneoff) {
+                  toast.error("Renovação indisponível no momento. Fale com o suporte.");
+                  return;
+                }
+                setRenewOpen(true);
+              }}
+              disabled={!plano.gateway_price_id_anual_oneoff}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Renovar por mais 12 meses
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Aviso de inadimplência — pagamento falhou */}
       {plano && plano.status === "inadimplente" && (
         <Card className="border-amber-500/40 bg-amber-500/5">
