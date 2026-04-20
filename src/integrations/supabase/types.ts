@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      assinaturas: {
+        Row: {
+          cancelada_em: string | null
+          cancelar_no_fim_do_ciclo: boolean
+          ciclo: Database["public"]["Enums"]["assinatura_ciclo"]
+          created_at: string
+          gateway: string | null
+          gateway_customer_id: string | null
+          gateway_subscription_id: string | null
+          id: string
+          inicio_em: string
+          metadata: Json
+          plano_id: string
+          proximo_ciclo_em: string | null
+          status: Database["public"]["Enums"]["assinatura_estado"]
+          unidade_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancelada_em?: string | null
+          cancelar_no_fim_do_ciclo?: boolean
+          ciclo?: Database["public"]["Enums"]["assinatura_ciclo"]
+          created_at?: string
+          gateway?: string | null
+          gateway_customer_id?: string | null
+          gateway_subscription_id?: string | null
+          id?: string
+          inicio_em?: string
+          metadata?: Json
+          plano_id: string
+          proximo_ciclo_em?: string | null
+          status?: Database["public"]["Enums"]["assinatura_estado"]
+          unidade_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancelada_em?: string | null
+          cancelar_no_fim_do_ciclo?: boolean
+          ciclo?: Database["public"]["Enums"]["assinatura_ciclo"]
+          created_at?: string
+          gateway?: string | null
+          gateway_customer_id?: string | null
+          gateway_subscription_id?: string | null
+          id?: string
+          inicio_em?: string
+          metadata?: Json
+          plano_id?: string
+          proximo_ciclo_em?: string | null
+          status?: Database["public"]["Enums"]["assinatura_estado"]
+          unidade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assinaturas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: true
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atendimentos: {
         Row: {
           created_at: string
@@ -113,6 +182,81 @@ export type Database = {
           },
           {
             foreignKeyName: "chamadas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faturas: {
+        Row: {
+          assinatura_id: string
+          created_at: string
+          gateway_invoice_id: string | null
+          gateway_payment_id: string | null
+          id: string
+          linha_descricao: string
+          metadata: Json
+          metodo_pagamento: string | null
+          moeda: string
+          numero: string
+          paga_em: string | null
+          status: Database["public"]["Enums"]["fatura_status"]
+          unidade_id: string
+          updated_at: string
+          url_recibo: string | null
+          valor_centavos: number
+          vencimento: string
+        }
+        Insert: {
+          assinatura_id: string
+          created_at?: string
+          gateway_invoice_id?: string | null
+          gateway_payment_id?: string | null
+          id?: string
+          linha_descricao: string
+          metadata?: Json
+          metodo_pagamento?: string | null
+          moeda?: string
+          numero: string
+          paga_em?: string | null
+          status?: Database["public"]["Enums"]["fatura_status"]
+          unidade_id: string
+          updated_at?: string
+          url_recibo?: string | null
+          valor_centavos: number
+          vencimento: string
+        }
+        Update: {
+          assinatura_id?: string
+          created_at?: string
+          gateway_invoice_id?: string | null
+          gateway_payment_id?: string | null
+          id?: string
+          linha_descricao?: string
+          metadata?: Json
+          metodo_pagamento?: string | null
+          moeda?: string
+          numero?: string
+          paga_em?: string | null
+          status?: Database["public"]["Enums"]["fatura_status"]
+          unidade_id?: string
+          updated_at?: string
+          url_recibo?: string | null
+          valor_centavos?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faturas_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faturas_unidade_id_fkey"
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
@@ -291,6 +435,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      planos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          destaque: boolean
+          gateway_price_id_anual: string | null
+          gateway_price_id_mensal: string | null
+          id: string
+          limite_atendentes: number | null
+          limite_filas: number | null
+          limite_senhas_mes: number | null
+          limite_tvs: number | null
+          moeda: string
+          nome: string
+          ordem: number
+          preco_anual_centavos: number | null
+          preco_mensal_centavos: number
+          recursos: Json
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          destaque?: boolean
+          gateway_price_id_anual?: string | null
+          gateway_price_id_mensal?: string | null
+          id?: string
+          limite_atendentes?: number | null
+          limite_filas?: number | null
+          limite_senhas_mes?: number | null
+          limite_tvs?: number | null
+          moeda?: string
+          nome: string
+          ordem?: number
+          preco_anual_centavos?: number | null
+          preco_mensal_centavos: number
+          recursos?: Json
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          destaque?: boolean
+          gateway_price_id_anual?: string | null
+          gateway_price_id_mensal?: string | null
+          id?: string
+          limite_atendentes?: number | null
+          limite_filas?: number | null
+          limite_senhas_mes?: number | null
+          limite_tvs?: number | null
+          moeda?: string
+          nome?: string
+          ordem?: number
+          preco_anual_centavos?: number | null
+          preco_mensal_centavos?: number
+          recursos?: Json
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -523,6 +733,7 @@ export type Database = {
       }
       unidades: {
         Row: {
+          assinatura_id: string | null
           ativo: boolean
           cnpj: string | null
           created_at: string
@@ -536,6 +747,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assinatura_id?: string | null
           ativo?: boolean
           cnpj?: string | null
           created_at?: string
@@ -549,6 +761,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assinatura_id?: string | null
           ativo?: boolean
           cnpj?: string | null
           created_at?: string
@@ -561,7 +774,15 @@ export type Database = {
           trial_ends_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "unidades_assinatura_id_fkey"
+            columns: ["assinatura_id"]
+            isOneToOne: false
+            referencedRelation: "assinaturas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -651,6 +872,23 @@ export type Database = {
           unidade_id: string
         }[]
       }
+      get_plano_atual: {
+        Args: { _unidade_id: string }
+        Returns: {
+          assinatura_id: string
+          ciclo: Database["public"]["Enums"]["assinatura_ciclo"]
+          limite_atendentes: number
+          limite_filas: number
+          limite_senhas_mes: number
+          limite_tvs: number
+          plano_id: string
+          plano_nome: string
+          plano_slug: string
+          proximo_ciclo_em: string
+          recursos: Json
+          status: Database["public"]["Enums"]["assinatura_estado"]
+        }[]
+      }
       get_senha_por_token: {
         Args: { _token: string }
         Returns: {
@@ -730,6 +968,10 @@ export type Database = {
         }
         Returns: string
       }
+      tem_recurso: {
+        Args: { _recurso: string; _unidade_id: string }
+        Returns: boolean
+      }
       unaccent_simple: { Args: { _text: string }; Returns: string }
       user_unidade_id: { Args: { _user_id: string }; Returns: string }
     }
@@ -741,8 +983,16 @@ export type Database = {
         | "enfermeiro"
         | "gestor"
         | "super_admin"
+      assinatura_ciclo: "mensal" | "anual"
+      assinatura_estado:
+        | "trialing"
+        | "ativa"
+        | "inadimplente"
+        | "cancelada"
+        | "pausada"
       assinatura_status: "trial" | "ativo" | "suspenso" | "cancelado"
       canal_notificacao: "whatsapp" | "sms" | "telegram" | "push" | "email"
+      fatura_status: "aberta" | "paga" | "falhou" | "reembolsada" | "cancelada"
       fila_tipo:
         | "consulta"
         | "exame"
@@ -895,8 +1145,17 @@ export const Constants = {
         "gestor",
         "super_admin",
       ],
+      assinatura_ciclo: ["mensal", "anual"],
+      assinatura_estado: [
+        "trialing",
+        "ativa",
+        "inadimplente",
+        "cancelada",
+        "pausada",
+      ],
       assinatura_status: ["trial", "ativo", "suspenso", "cancelado"],
       canal_notificacao: ["whatsapp", "sms", "telegram", "push", "email"],
+      fatura_status: ["aberta", "paga", "falhou", "reembolsada", "cancelada"],
       fila_tipo: [
         "consulta",
         "exame",
