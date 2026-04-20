@@ -694,10 +694,15 @@ function TvPage() {
 
     const codigo = senha?.codigo ?? "";
     const codigoFalado = codigo ? soletrarCodigo(codigo) : "";
+    // Regra de chamada: nome do paciente + número da senha + nome da fila.
+    // Usamos o nome da fila (resolvido via fila_id) em vez de `chamada.destino`,
+    // que é um texto livre digitado pelo operador (ex.: "Consultório 2").
+    const fila = senha?.fila_id ? filas.find((f) => f.id === senha.fila_id) ?? null : null;
+    const nomeFila = fila?.nome ?? null;
     const partes = [
       nome ? `Paciente ${nome}.` : null,
       codigoFalado ? `Senha ${codigoFalado}.` : null,
-      chamada.destino ? `Dirija-se ${formatarDestino(chamada.destino)}.` : null,
+      nomeFila ? `Fila ${nomeFila}.` : null,
     ].filter(Boolean);
     const texto = partes.join(" ").trim();
     console.info("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
