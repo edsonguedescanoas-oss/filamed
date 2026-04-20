@@ -703,6 +703,7 @@ export type Database = {
         Returns: boolean
       }
       marcar_senhas_ausentes: { Args: never; Returns: number }
+      realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
       setup_initial_unidade: {
         Args: {
           _cnpj?: string
