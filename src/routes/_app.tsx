@@ -232,6 +232,10 @@ function AppLayout() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => void navigate({ to: "/app/conta" })}>
+                <CreditCard className="h-4 w-4" />
+                <span>Minha conta</span>
+              </DropdownMenuItem>
               <DropdownMenuItem disabled>
                 <UserCircle className="h-4 w-4" />
                 <span>Meu perfil</span>
