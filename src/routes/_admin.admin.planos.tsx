@@ -632,9 +632,53 @@ function PlanoEditorDialog({
                 />
               </div>
             </div>
-          </div>
 
-          {/* Limites */}
+            <div className="mt-4 border-t border-border pt-4">
+              <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Stripe Price IDs
+              </h4>
+              <p className="mb-3 text-[11px] text-muted-foreground">
+                Cole o <code className="font-mono">price_...</code> de cada modalidade. Vazio = modalidade desativada no checkout.
+              </p>
+              <div className="grid gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_mensal" className="text-xs">Mensal (recorrente)</Label>
+                  <Input
+                    id="price_mensal"
+                    value={form.gateway_price_id_mensal}
+                    onChange={(e) => setField("gateway_price_id_mensal", e.target.value.trim())}
+                    placeholder="price_1Xxxx..."
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_anual" className="text-xs">Anual (recorrente, 12 meses)</Label>
+                  <Input
+                    id="price_anual"
+                    value={form.gateway_price_id_anual}
+                    onChange={(e) => setField("gateway_price_id_anual", e.target.value.trim())}
+                    placeholder="price_1Xxxx..."
+                    className="font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="price_anual_oneoff" className="text-xs">
+                    Anual à vista <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">one-time</span>
+                  </Label>
+                  <Input
+                    id="price_anual_oneoff"
+                    value={form.gateway_price_id_anual_oneoff}
+                    onChange={(e) => setField("gateway_price_id_anual_oneoff", e.target.value.trim())}
+                    placeholder="price_1Xxxx... (Pix/boleto/cartão à vista)"
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Habilita pagamento único de 12 meses sem renovação automática (Pix, boleto, cartão).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="rounded-lg border border-border p-4">
             <h3 className="mb-1 font-semibold text-sm">Limites</h3>
             <p className="mb-3 text-[11px] text-muted-foreground">
