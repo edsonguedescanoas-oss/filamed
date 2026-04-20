@@ -283,6 +283,7 @@ function AdminPlanosPage() {
                     <TableHead>Anual</TableHead>
                     <TableHead>Limites</TableHead>
                     <TableHead>Recursos</TableHead>
+                    <TableHead>Stripe Price IDs</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
