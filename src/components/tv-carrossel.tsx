@@ -73,7 +73,7 @@ export function TvCarrossel({ unidadeId, paused = false, className }: Props) {
     })();
 
     const ch = supabase
-      .channel(`sinalizacao-${unidadeId}`)
+      .channel(`tv:${unidadeId}:sinalizacao`)
       .on(
         "postgres_changes",
         {

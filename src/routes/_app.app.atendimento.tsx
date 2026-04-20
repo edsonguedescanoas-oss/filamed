@@ -134,7 +134,7 @@ function AtendimentoPage() {
   useEffect(() => {
     if (!profile?.unidade_id) return;
     const ch = supabase
-      .channel(`atendimento-${profile.unidade_id}`)
+      .channel(`unidade:${profile.unidade_id}:atendimento`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "senhas", filter: `unidade_id=eq.${profile.unidade_id}` },
