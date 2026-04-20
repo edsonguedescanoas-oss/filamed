@@ -202,7 +202,7 @@ function AdminPlanosPage() {
     const { data, error } = await supabase
       .from("planos")
       .select(
-        "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, ativo, destaque, ordem",
+        "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, ativo, destaque, ordem, gateway_price_id_mensal, gateway_price_id_anual, gateway_price_id_anual_oneoff",
       )
       .order("ordem", { ascending: true });
     if (error) {
