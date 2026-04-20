@@ -170,6 +170,24 @@ export type Database = {
           },
         ]
       }
+      internal_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       notificacoes_log: {
         Row: {
           canal: Database["public"]["Enums"]["canal_notificacao"]
@@ -438,6 +456,30 @@ export type Database = {
           },
         ]
       }
+      tts_cache_cleanup_log: {
+        Row: {
+          deleted: number
+          error: string | null
+          executed_at: string
+          id: string
+          scanned: number
+        }
+        Insert: {
+          deleted?: number
+          error?: string | null
+          executed_at?: string
+          id?: string
+          scanned?: number
+        }
+        Update: {
+          deleted?: number
+          error?: string | null
+          executed_at?: string
+          id?: string
+          scanned?: number
+        }
+        Relationships: []
+      }
       unidade_voice_config: {
         Row: {
           created_at: string
@@ -556,6 +598,14 @@ export type Database = {
         Args: { _unidade_id: string; _user_id: string }
         Returns: boolean
       }
+      cleanup_tts_cache: {
+        Args: { _retention_days?: number; _service_role_key: string }
+        Returns: {
+          deleted: number
+          scanned: number
+        }[]
+      }
+      cleanup_tts_cache_scheduled: { Args: never; Returns: undefined }
       gerar_senha: {
         Args: {
           _fila_id: string
