@@ -159,6 +159,9 @@ function planoToForm(p: PlanoRow): FormState {
     ativo: p.ativo,
     destaque: p.destaque,
     ordem: p.ordem.toString(),
+    gateway_price_id_mensal: p.gateway_price_id_mensal ?? "",
+    gateway_price_id_anual: p.gateway_price_id_anual ?? "",
+    gateway_price_id_anual_oneoff: p.gateway_price_id_anual_oneoff ?? "",
   };
 }
 
