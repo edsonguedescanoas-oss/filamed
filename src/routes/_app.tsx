@@ -79,6 +79,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
   medico: "Médico(a)",
   enfermeiro: "Enfermeiro(a)",
   gestor: "Gestor(a)",
+  super_admin: "Super Admin",
 };
 
 function getInitials(nome: string): string {

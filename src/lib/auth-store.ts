@@ -90,12 +90,13 @@ export function loadInitialAuth(): Promise<void> {
     const session = data.session;
 
     if (session?.user) {
-      const { profile, roles } = await fetchProfileAndRoles(session.user.id);
+      const { profile, roles, trial } = await fetchProfileAndRoles(session.user.id);
       setSnapshot({
         isAuthenticated: true,
         session,
         profile,
         roles,
+        trial,
         isLoading: false,
       });
     } else {
@@ -108,12 +109,13 @@ export function loadInitialAuth(): Promise<void> {
       supabase.auth.onAuthStateChange((_event, newSession) => {
         if (newSession?.user) {
           // Não bloqueia o callback — busca em segundo plano
-          void fetchProfileAndRoles(newSession.user.id).then(({ profile, roles }) => {
+          void fetchProfileAndRoles(newSession.user.id).then(({ profile, roles, trial }) => {
             setSnapshot({
               isAuthenticated: true,
               session: newSession,
               profile,
               roles,
+              trial,
               isLoading: false,
             });
           });
@@ -123,6 +125,7 @@ export function loadInitialAuth(): Promise<void> {
             session: null,
             profile: null,
             roles: [],
+            trial: null,
             isLoading: false,
           });
         }
@@ -140,6 +143,6 @@ export function loadInitialAuth(): Promise<void> {
 export async function refreshAuthSnapshot(): Promise<void> {
   const userId = snapshot.session?.user?.id;
   if (!userId) return;
-  const { profile, roles } = await fetchProfileAndRoles(userId);
-  setSnapshot({ profile, roles });
+  const { profile, roles, trial } = await fetchProfileAndRoles(userId);
+  setSnapshot({ profile, roles, trial });
 }
