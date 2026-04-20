@@ -712,17 +712,19 @@ function TvPage() {
 
     const codigo = senha?.codigo ?? "";
     const codigoFalado = codigo ? soletrarCodigo(codigo) : "";
-    // Regra de chamada: nome do paciente + número da senha + nome da fila.
-    // Usamos o nome da fila (resolvido via fila_id) em vez de `chamada.destino`,
-    // que é um texto livre digitado pelo operador (ex.: "Consultório 2").
+    // Regra de chamada: o admin escolhe o template em /app/voz. O nome da fila
+    // é resolvido via fila_id; o destino é o texto livre digitado pelo operador
+    // (ex.: "Consultório 2") e só aparece nos templates que incluem "destino".
     const fila = senha?.fila_id ? filas.find((f) => f.id === senha.fila_id) ?? null : null;
     const nomeFila = fila?.nome ?? null;
-    const partes = [
-      nome ? `Paciente ${nome}.` : null,
-      codigoFalado ? `Senha ${codigoFalado}.` : null,
-      nomeFila ? `Fila ${nomeFila}.` : null,
-    ].filter(Boolean);
-    const texto = partes.join(" ").trim();
+    const texto = montarTextoChamada({
+      template: cfg.template_chamada,
+      nome,
+      codigoFalado,
+      nomeFila,
+      destino: chamada.destino ?? null,
+      formatarDestino,
+    });
     console.info("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
     if (!texto) {
       setDebugInfo({
