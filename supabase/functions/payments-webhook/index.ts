@@ -104,6 +104,102 @@ async function handleSubscriptionEvent(subscription: any, env: StripeEnv) {
     .eq("id", unidadeId);
 }
 
+/**
+ * Lida com checkout.session.completed.
+ *
+ * - mode=subscription: nada a fazer aqui (subscription.created cobre).
+ * - mode=payment + metadata.tipo=anual_oneoff: cria assinatura MANUAL de 12 meses
+ *   sem renovação automática + fatura "paga" registrada.
+ */
+async function handleCheckoutCompleted(session: any, env: StripeEnv) {
+  if (session.mode !== "payment") return;
+  const meta = session.metadata || {};
+  if (meta.tipo !== "anual_oneoff") return;
+
+  const unidadeId = meta.unidadeId;
+  const priceId = meta.priceId;
+  if (!unidadeId || !priceId) {
+    console.warn("anual_oneoff sem unidadeId/priceId:", session.id);
+    return;
+  }
+
+  const lookup = await findPlanoByPriceId(priceId);
+  if (!lookup) {
+    console.warn("anual_oneoff: plano não encontrado para price", priceId);
+    return;
+  }
+
+  const agora = new Date();
+  const fim = new Date(agora);
+  fim.setUTCFullYear(fim.getUTCFullYear() + 1);
+
+  // Upsert assinatura manual (anual à vista) — 12 meses, sem renovação automática.
+  const payload = {
+    unidade_id: unidadeId,
+    plano_id: lookup.plano_id,
+    ciclo: "anual" as const,
+    status: "ativa" as const,
+    gateway: "stripe",
+    gateway_subscription_id: null,
+    gateway_customer_id: session.customer || null,
+    proximo_ciclo_em: fim.toISOString(),
+    cancelar_no_fim_do_ciclo: true, // não renova automaticamente
+    cancelada_em: null,
+    inicio_em: agora.toISOString(),
+    metadata: {
+      environment: env,
+      tipo: "anual_oneoff",
+      checkout_session_id: session.id,
+      pagamento_em: agora.toISOString(),
+    },
+  };
+
+  const { data: existing } = await supabase
+    .from("assinaturas")
+    .select("id")
+    .eq("unidade_id", unidadeId)
+    .maybeSingle();
+
+  let assinaturaId: string | null = null;
+  if (existing) {
+    await supabase.from("assinaturas").update(payload).eq("id", existing.id);
+    assinaturaId = existing.id;
+  } else {
+    const { data: inserted } = await supabase
+      .from("assinaturas")
+      .insert(payload)
+      .select("id")
+      .single();
+    assinaturaId = inserted?.id ?? null;
+  }
+
+  if (assinaturaId) {
+    await supabase
+      .from("unidades")
+      .update({ assinatura_id: assinaturaId, status_assinatura: "ativo" })
+      .eq("id", unidadeId);
+
+    // Registra fatura paga
+    const valor = session.amount_total ?? 0;
+    const moeda = (session.currency || "brl").toUpperCase();
+    await supabase.from("faturas").insert({
+      unidade_id: unidadeId,
+      assinatura_id: assinaturaId,
+      gateway_invoice_id: session.id,
+      gateway_payment_id: session.payment_intent || null,
+      numero: session.id,
+      linha_descricao: "FilaMed — Anual à vista (12 meses)",
+      valor_centavos: valor,
+      moeda,
+      status: "paga" as const,
+      paga_em: agora.toISOString(),
+      vencimento: agora.toISOString().slice(0, 10),
+      url_recibo: null,
+      metadata: { environment: env, tipo: "anual_oneoff" },
+    });
+  }
+}
+
 async function handleInvoiceEvent(invoice: any, env: StripeEnv, eventType: string) {
   const subscriptionId = invoice.subscription;
   if (!subscriptionId) return;
@@ -205,7 +301,7 @@ serve(async (req) => {
         await handleInvoiceEvent(event.data.object, env, event.type);
         break;
       case "checkout.session.completed":
-        console.log("checkout completed:", event.data.object.id);
+        await handleCheckoutCompleted(event.data.object, env);
         break;
       default:
         console.log("unhandled event:", event.type);

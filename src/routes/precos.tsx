@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckoutDialog } from "@/components/checkout-dialog";
+import { CheckoutDialog, type CheckoutCiclo } from "@/components/checkout-dialog";
 import { PaymentTestModeBanner } from "@/components/payment-test-banner";
 
 export const Route = createFileRoute("/precos")({
@@ -60,9 +60,10 @@ interface PlanoRow {
   ordem: number;
   gateway_price_id_mensal: string | null;
   gateway_price_id_anual: string | null;
+  gateway_price_id_anual_oneoff: string | null;
 }
 
-type Ciclo = "mensal" | "anual";
+type Ciclo = CheckoutCiclo;
 
 const RECURSO_LABEL: Record<string, string> = {
   whatsapp: "Notificações WhatsApp",
@@ -175,7 +176,7 @@ function PrecosPage() {
       const { data, error } = await supabase
         .from("planos")
         .select(
-          "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, destaque, ordem, gateway_price_id_mensal, gateway_price_id_anual",
+          "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, destaque, ordem, gateway_price_id_mensal, gateway_price_id_anual, gateway_price_id_anual_oneoff",
         )
         .eq("ativo", true)
         .order("ordem", { ascending: true });
@@ -194,7 +195,11 @@ function PrecosPage() {
 
   const handleAssinar = (plano: PlanoRow) => {
     const priceId =
-      ciclo === "anual" ? plano.gateway_price_id_anual : plano.gateway_price_id_mensal;
+      ciclo === "anual_oneoff"
+        ? plano.gateway_price_id_anual_oneoff
+        : ciclo === "anual"
+          ? plano.gateway_price_id_anual
+          : plano.gateway_price_id_mensal;
     if (!priceId) {
       console.error("Plano sem price_id configurado:", plano.slug, ciclo);
       return;
@@ -220,7 +225,7 @@ function PrecosPage() {
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
               Comece grátis com 14 dias de trial. Mude de plano quando quiser, sem multa.
-              No anual, ganhe 2 meses grátis.
+              No anual ganhe 2 meses grátis — ou pague tudo de uma vez no Pix/boleto.
             </p>
 
             <CicloToggle ciclo={ciclo} onChange={setCiclo} />
@@ -339,6 +344,7 @@ function PrecosPage() {
         }}
         priceId={checkoutPriceId}
         planoNome={checkoutPlano?.nome}
+        planoSlug={checkoutPlano?.slug}
         ciclo={ciclo}
       />
     </div>
@@ -346,42 +352,43 @@ function PrecosPage() {
 }
 
 function CicloToggle({ ciclo, onChange }: { ciclo: Ciclo; onChange: (c: Ciclo) => void }) {
+  const opcoes: { id: Ciclo; label: string; chip?: string }[] = [
+    { id: "mensal", label: "Mensal" },
+    { id: "anual", label: "Anual", chip: "2 meses grátis" },
+    { id: "anual_oneoff", label: "Anual à vista", chip: "Pix · boleto" },
+  ];
   return (
-    <div className="mt-10 inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
-      <button
-        type="button"
-        onClick={() => onChange("mensal")}
-        className={cn(
-          "rounded-full px-5 py-2 text-sm font-medium transition-colors",
-          ciclo === "mensal"
-            ? "bg-foreground text-background"
-            : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        Mensal
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("anual")}
-        className={cn(
-          "rounded-full px-5 py-2 text-sm font-medium transition-colors",
-          ciclo === "anual"
-            ? "bg-foreground text-background"
-            : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        Anual
-        <span
-          className={cn(
-            "ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-            ciclo === "anual"
-              ? "bg-background/20 text-background"
-              : "bg-primary/10 text-primary",
-          )}
-        >
-          2 meses grátis
-        </span>
-      </button>
+    <div className="mt-10 inline-flex flex-wrap items-center justify-center gap-1 rounded-2xl border border-border bg-card p-1 shadow-soft sm:rounded-full">
+      {opcoes.map((op) => {
+        const ativo = ciclo === op.id;
+        return (
+          <button
+            key={op.id}
+            type="button"
+            onClick={() => onChange(op.id)}
+            className={cn(
+              "rounded-full px-5 py-2 text-sm font-medium transition-colors",
+              ativo
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {op.label}
+            {op.chip && (
+              <span
+                className={cn(
+                  "ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                  ativo
+                    ? "bg-background/20 text-background"
+                    : "bg-primary/10 text-primary",
+                )}
+              >
+                {op.chip}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -397,18 +404,28 @@ function PlanoCard({
 }) {
   const features = useMemo(() => buildFeatures(plano), [plano]);
 
+  const isOneOff = ciclo === "anual_oneoff";
+  const valorAnual = plano.preco_anual_centavos;
+
+  // Display: mostra mensal-equivalente nos modos mensal/anual; valor total no à vista.
   const precoMensalEquiv =
-    ciclo === "anual" && plano.preco_anual_centavos
-      ? Math.round(plano.preco_anual_centavos / 12)
-      : plano.preco_mensal_centavos;
+    ciclo === "anual" && valorAnual
+      ? Math.round(valorAnual / 12)
+      : isOneOff && valorAnual
+        ? Math.round(valorAnual / 12)
+        : plano.preco_mensal_centavos;
 
-  const precoTotal =
-    ciclo === "anual" && plano.preco_anual_centavos
-      ? plano.preco_anual_centavos
-      : plano.preco_mensal_centavos;
+  const precoTotal = valorAnual && (ciclo === "anual" || isOneOff)
+    ? valorAnual
+    : plano.preco_mensal_centavos;
 
-  const priceConfigured =
-    ciclo === "anual" ? !!plano.gateway_price_id_anual : !!plano.gateway_price_id_mensal;
+  const priceConfigured = isOneOff
+    ? !!plano.gateway_price_id_anual_oneoff
+    : ciclo === "anual"
+      ? !!plano.gateway_price_id_anual
+      : !!plano.gateway_price_id_mensal;
+
+  const ctaLabel = isOneOff ? "Pagar com Pix ou boleto" : "Começar trial de 14 dias";
 
   return (
     <div
@@ -438,7 +455,11 @@ function PlanoCard({
             </span>
             <span className="text-sm text-muted-foreground">/mês</span>
           </div>
-          {ciclo === "anual" && plano.preco_anual_centavos ? (
+          {isOneOff && valorAnual ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {fmtMoeda(precoTotal, plano.moeda)} pagos uma vez · 12 meses · sem renovação
+            </p>
+          ) : ciclo === "anual" && valorAnual ? (
             <p className="mt-1 text-xs text-muted-foreground">
               {fmtMoeda(precoTotal, plano.moeda)}/ano · cobrado anualmente
             </p>
@@ -462,7 +483,7 @@ function PlanoCard({
       </div>
 
       <div className="mt-8">
-        {plano.slug === "enterprise" ? (
+        {plano.slug === "enterprise" && !isOneOff ? (
           <Button asChild size="lg" variant="outline" className="w-full">
             <a href="mailto:contato@filamed.app?subject=Enterprise%20FilaMed">Falar com vendas</a>
           </Button>
@@ -478,9 +499,14 @@ function PlanoCard({
             )}
             variant={plano.destaque ? "default" : "outline"}
           >
-            Começar trial de 14 dias
+            {ctaLabel}
             <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Button>
+        )}
+        {isOneOff && priceConfigured && (
+          <p className="mt-3 text-center text-[11px] text-muted-foreground">
+            Sem cartão recorrente. Avisamos antes do fim do período pra renovar manualmente.
+          </p>
         )}
       </div>
     </div>
