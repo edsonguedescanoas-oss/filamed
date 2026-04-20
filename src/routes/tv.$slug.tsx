@@ -14,7 +14,7 @@ type Senha = {
   codigo: string;
   fila_id: string;
   /** Não vem do anon; só populado se a TV rodar autenticada (futuro). */
-  paciente_id: string | null;
+  paciente_id?: string | null;
   status: SenhaStatus;
   prioridade: SenhaPrioridade;
   /** Não exposto ao anon. Mantido para compat com rotas autenticadas. */
