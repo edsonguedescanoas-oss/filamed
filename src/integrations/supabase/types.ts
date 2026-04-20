@@ -438,6 +438,30 @@ export type Database = {
           },
         ]
       }
+      tts_cache_cleanup_log: {
+        Row: {
+          deleted: number
+          error: string | null
+          executed_at: string
+          id: string
+          scanned: number
+        }
+        Insert: {
+          deleted?: number
+          error?: string | null
+          executed_at?: string
+          id?: string
+          scanned?: number
+        }
+        Update: {
+          deleted?: number
+          error?: string | null
+          executed_at?: string
+          id?: string
+          scanned?: number
+        }
+        Relationships: []
+      }
       unidade_voice_config: {
         Row: {
           created_at: string
@@ -555,6 +579,13 @@ export type Database = {
       belongs_to_unidade: {
         Args: { _unidade_id: string; _user_id: string }
         Returns: boolean
+      }
+      cleanup_tts_cache: {
+        Args: { _retention_days?: number; _service_role_key: string }
+        Returns: {
+          deleted: number
+          scanned: number
+        }[]
       }
       gerar_senha: {
         Args: {
