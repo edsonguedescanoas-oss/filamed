@@ -1,6 +1,8 @@
 import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroMockup from "@/assets/hero-mockup.jpg";
+import heroMockup from "@/assets/hero-mockup-1440.jpg";
+import heroMockup1024 from "@/assets/hero-mockup-1024.jpg";
+import heroMockup640 from "@/assets/hero-mockup-640.jpg";
 
 export function Hero() {
   return (
@@ -60,6 +62,7 @@ export function Hero() {
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-elegant">
             <img
               src={heroMockup}
+              srcSet={`${heroMockup640} 640w, ${heroMockup1024} 1024w, ${heroMockup} 1440w`}
               alt="Painel administrativo, TV de chamadas e WebApp do paciente do sistema FilaMed"
               width={1440}
               height={810}
