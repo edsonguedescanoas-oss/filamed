@@ -1056,20 +1056,40 @@ function TvPage() {
               <p className="text-slate-500 text-sm">Nenhuma chamada ainda.</p>
             ) : (
               <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {ultimasChamadas.map(({ chamada, senha }) => (
-                  <li
-                    key={chamada.id}
-                    className="rounded-2xl border border-white/10 bg-slate-800/60 p-4 text-center"
-                  >
-                    <div className="font-display text-3xl font-bold tabular-nums">{senha.codigo}</div>
-                    {senha.paciente_id && pacienteNomes[senha.paciente_id] && (
-                      <div className="mt-1 truncate text-xs font-medium text-slate-200">
-                        {pacienteNomes[senha.paciente_id]}
+                {ultimasChamadas.map(({ chamada, senha }) => {
+                  const fila = filas.find((f) => f.id === senha.fila_id);
+                  const cor = fila?.cor ?? "#3B82F6";
+                  return (
+                    <li
+                      key={chamada.id}
+                      className="overflow-hidden rounded-2xl border border-white/10 bg-slate-800/60 text-center"
+                    >
+                      <div className="h-1 w-full" style={{ backgroundColor: cor }} />
+                      <div className="p-4">
+                        <div className="font-display text-3xl font-bold tabular-nums">
+                          {senha.codigo}
+                        </div>
+                        {senha.paciente_id && pacienteNomes[senha.paciente_id] && (
+                          <div className="mt-1 truncate text-xs font-medium text-slate-200">
+                            {pacienteNomes[senha.paciente_id]}
+                          </div>
+                        )}
+                        {fila?.nome && (
+                          <div
+                            className="mt-1 truncate text-[11px] font-semibold uppercase tracking-wider"
+                            style={{ color: cor }}
+                            title={fila.nome}
+                          >
+                            {fila.nome}
+                          </div>
+                        )}
+                        <div className="mt-1 truncate text-xs text-slate-400">
+                          {chamada.destino}
+                        </div>
                       </div>
-                    )}
-                    <div className="mt-1 text-xs text-slate-400 truncate">{chamada.destino}</div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
