@@ -50,11 +50,10 @@ function PublicSenhaPage() {
   useEffect(() => {
     let mounted = true;
     void (async () => {
-      const { data, error: e } = await supabase
-        .from("senhas")
-        .select("id,codigo,status,prioridade,fila_id,unidade_id,created_at,updated_at")
-        .eq("token_publico", token)
-        .maybeSingle();
+      // RPC pública: busca a própria senha por token, sem expor a tabela inteira ao anon
+      const { data: rows, error: e } = await supabase
+        .rpc("get_senha_por_token", { _token: token });
+      const data = (rows ?? [])[0] ?? null;
       if (!mounted) return;
       if (e || !data) {
         setError("Senha não encontrada ou expirada.");
@@ -63,21 +62,20 @@ function PublicSenhaPage() {
       }
       setSenha(data as SenhaPub);
 
-      const [fRes, uRes, cRes] = await Promise.all([
+      const [fRes, uRows, cRes] = await Promise.all([
         supabase.from("filas").select("id,nome,cor").eq("id", data.fila_id).maybeSingle(),
-        supabase.from("unidades").select("id,nome,slug").eq("id", data.unidade_id).maybeSingle(),
-        supabase
-          .from("chamadas")
-          .select("id,destino,created_at")
-          .eq("senha_id", data.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+        supabase.rpc("get_unidades_publicas"),
+        // chamadas dos últimos 60s da unidade — filtramos pela senha no cliente
+        supabase.rpc("get_chamadas_recentes", { _unidade_id: data.unidade_id }),
       ]);
       if (!mounted) return;
+      const uList = (uRows.data ?? []) as UnidadePub[];
+      const u = uList.find((x) => x.id === data.unidade_id) ?? null;
+      const cList = (cRes.data ?? []) as ChamadaPub[];
+      const cMatch = cList.find((c) => (c as unknown as { senha_id: string }).senha_id === data.id) ?? null;
       setFila((fRes.data as FilaPub) ?? null);
-      setUnidade((uRes.data as UnidadePub) ?? null);
-      setChamada((cRes.data as ChamadaPub) ?? null);
+      setUnidade(u);
+      setChamada(cMatch);
       setLoading(false);
     })();
     return () => {

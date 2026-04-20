@@ -585,6 +585,58 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_chamadas_recentes: {
+        Args: { _unidade_id: string }
+        Returns: {
+          created_at: string
+          destino: string
+          id: string
+          senha_id: string
+          unidade_id: string
+        }[]
+      }
+      get_senha_por_token: {
+        Args: { _token: string }
+        Returns: {
+          codigo: string
+          created_at: string
+          fila_id: string
+          id: string
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          status: Database["public"]["Enums"]["senha_status"]
+          unidade_id: string
+          updated_at: string
+        }[]
+      }
+      get_senhas_ativas: {
+        Args: { _unidade_id: string }
+        Returns: {
+          codigo: string
+          created_at: string
+          fila_id: string
+          id: string
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          status: Database["public"]["Enums"]["senha_status"]
+          unidade_id: string
+          updated_at: string
+        }[]
+      }
+      get_unidade_publica_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          id: string
+          nome: string
+          slug: string
+        }[]
+      }
+      get_unidades_publicas: {
+        Args: never
+        Returns: {
+          id: string
+          nome: string
+          slug: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
