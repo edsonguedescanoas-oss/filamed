@@ -206,7 +206,7 @@ function TvPage() {
       // Carrega config de voz da unidade (se existir)
       const { data: cfg } = await supabase
         .from("unidade_voice_config")
-        .select("provider,voice_id,rate,pitch")
+        .select("provider,voice_id,rate,pitch,template_chamada")
         .eq("unidade_id", uni.id)
         .maybeSingle();
       if (mounted && cfg) {
@@ -215,6 +215,8 @@ function TvPage() {
           voice_id: cfg.voice_id,
           rate: Number(cfg.rate) || 0.95,
           pitch: Number(cfg.pitch) || 1,
+          template_chamada:
+            (cfg.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
         });
       }
     })();
@@ -232,13 +234,21 @@ function TvPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "unidade_voice_config", filter: `unidade_id=eq.${unidade.id}` },
         (payload) => {
-          const row = payload.new as { provider?: string; voice_id?: string | null; rate?: number; pitch?: number } | null;
+          const row = payload.new as {
+            provider?: string;
+            voice_id?: string | null;
+            rate?: number;
+            pitch?: number;
+            template_chamada?: string;
+          } | null;
           if (!row) return;
           setVoiceCfg({
             provider: (row.provider as VoiceProvider) ?? "browser",
             voice_id: row.voice_id ?? null,
             rate: Number(row.rate) || 0.95,
             pitch: Number(row.pitch) || 1,
+            template_chamada:
+              (row.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
           });
         },
       )
