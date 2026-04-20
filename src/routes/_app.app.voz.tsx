@@ -20,6 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import {
+  TEMPLATE_OPTIONS,
+  montarTextoChamada,
+  type TemplateChamada,
+} from "@/lib/voice-template";
 
 export const Route = createFileRoute("/_app/app/voz")({
   component: VozConfigPage,
@@ -32,6 +37,7 @@ interface VoiceConfig {
   voice_id: string | null;
   rate: number;
   pitch: number;
+  template_chamada: TemplateChamada;
 }
 
 interface VoiceConfigMeta {
@@ -100,6 +106,7 @@ function VozConfigPage() {
     voice_id: null,
     rate: 0.95,
     pitch: 1.0,
+    template_chamada: "paciente_senha_fila",
   });
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   // Snapshot do que está realmente salvo no banco (o que a TV está usando agora).
@@ -138,7 +145,7 @@ function VozConfigPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("unidade_voice_config")
-        .select("provider,voice_id,rate,pitch,updated_at")
+        .select("provider,voice_id,rate,pitch,template_chamada,updated_at")
         .eq("unidade_id", unidadeId)
         .maybeSingle();
       if (!mounted) return;
@@ -151,6 +158,8 @@ function VozConfigPage() {
           voice_id: data.voice_id,
           rate: Number(data.rate),
           pitch: Number(data.pitch),
+          template_chamada:
+            (data.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
         });
         setActiveMeta({
           provider: data.provider as Provider,
@@ -292,6 +301,7 @@ function VozConfigPage() {
           voice_id: config.voice_id,
           rate: config.rate,
           pitch: config.pitch,
+          template_chamada: config.template_chamada,
         },
         { onConflict: "unidade_id" },
       );
