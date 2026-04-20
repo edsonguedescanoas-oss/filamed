@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, redirect, Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Activity, LogOut, Building2, Home } from "lucide-react";
+import { Activity, LogOut, Building2, Home, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_admin")({
 
 const NAV = [
   { to: "/admin", label: "Unidades", icon: Building2, exact: true },
+  { to: "/admin/planos", label: "Planos", icon: Package, exact: false },
 ];
 
 function AdminLayout() {
