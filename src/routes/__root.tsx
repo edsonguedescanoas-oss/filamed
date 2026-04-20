@@ -64,24 +64,21 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      // Google Fonts: preload assíncrono (não bloqueia render).
-      // O <script> abaixo promove para stylesheet quando carregado.
+      // Google Fonts: carrega de forma não-bloqueante usando o padrão
+      // media="print" + onload="this.media='all'". O browser baixa o CSS
+      // sem bloquear render; quando termina, troca pra media=all e aplica.
+      // As fontes em si já vêm via preload acima — esse CSS só registra @font-face.
       // Fallback noscript no body garante fontes mesmo sem JS.
       {
-        rel: "preload",
-        as: "style",
+        rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap",
-        id: "gf-async",
+        media: "print",
+        // @ts-expect-error - onLoad em <link> é HTML válido, tipos do React não cobrem
+        onLoad: "this.media='all'",
       },
       {
         rel: "stylesheet",
         href: appCss,
-      },
-    ],
-    scripts: [
-      {
-        children:
-          "(function(){var l=document.getElementById('gf-async');if(l){l.rel='stylesheet';}})();",
       },
     ],
   }),
