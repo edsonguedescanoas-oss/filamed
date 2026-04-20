@@ -50,6 +50,7 @@ const RECURSO_LABEL: Record<string, string> = {
   whatsapp: "Notificações WhatsApp",
   voz_premium: "Voz premium (ElevenLabs/Google)",
   relatorios_avancados: "Relatórios avançados",
+  multi_unidade: "Multi-unidade",
   suporte_prioritario: "Suporte prioritário 24/7",
   sso: "Login único (SSO)",
   api: "API REST + Webhooks",
