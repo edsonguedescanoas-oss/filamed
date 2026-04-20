@@ -33,6 +33,7 @@ import { canAccessRoute } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { TrialBanner } from "@/components/trial-banner";
 import { TrialBlocked } from "@/components/trial-blocked";
+import { usePlanoAtual } from "@/hooks/use-plano-atual";
 
 export const Route = createFileRoute("/_app")({
   // Preconnect Supabase só nas rotas /app, onde realmente é usado.
