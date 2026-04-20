@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CreditCard,
   Sparkles,
@@ -11,6 +11,7 @@ import {
   Receipt,
   Building2,
   Settings,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import { usePlanoAtual } from "@/hooks/use-plano-atual";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { RecursoGate } from "@/components/recurso-gate";
+import { CheckoutDialog } from "@/components/checkout-dialog";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
