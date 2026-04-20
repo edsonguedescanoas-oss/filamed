@@ -90,7 +90,8 @@ function ContaPage() {
   const [loadingFaturas, setLoadingFaturas] = useState(true);
 
   useEffect(() => {
-    if (!profile?.unidade_id) return;
+    const unidadeId = profile?.unidade_id;
+    if (!unidadeId) return;
     let cancel = false;
     void (async () => {
       const { data, error } = await supabase
@@ -98,7 +99,7 @@ function ContaPage() {
         .select(
           "id, numero, linha_descricao, valor_centavos, moeda, status, vencimento, paga_em, url_recibo",
         )
-        .eq("unidade_id", profile.unidade_id)
+        .eq("unidade_id", unidadeId)
         .order("vencimento", { ascending: false })
         .limit(10);
       if (cancel) return;
