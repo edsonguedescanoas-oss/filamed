@@ -4,6 +4,7 @@ import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize, Volume2, 
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
+import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
@@ -111,12 +112,19 @@ function TvPage() {
 
   // Configuração de voz vinda do banco (configurada no admin)
   type VoiceProvider = "browser" | "google" | "elevenlabs";
-  type VoiceCfg = { provider: VoiceProvider; voice_id: string | null; rate: number; pitch: number };
+  type VoiceCfg = {
+    provider: VoiceProvider;
+    voice_id: string | null;
+    rate: number;
+    pitch: number;
+    template_chamada: TemplateChamada;
+  };
   const [voiceCfg, setVoiceCfg] = useState<VoiceCfg>({
     provider: "browser",
     voice_id: null,
     rate: 0.95,
     pitch: 1,
+    template_chamada: "paciente_senha_fila",
   });
 
   // Vozes pt-* disponíveis no navegador (apenas para fallback/preview local)
