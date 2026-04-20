@@ -170,6 +170,24 @@ export type Database = {
           },
         ]
       }
+      internal_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       notificacoes_log: {
         Row: {
           canal: Database["public"]["Enums"]["canal_notificacao"]
@@ -587,6 +605,7 @@ export type Database = {
           scanned: number
         }[]
       }
+      cleanup_tts_cache_scheduled: { Args: never; Returns: undefined }
       gerar_senha: {
         Args: {
           _fila_id: string
