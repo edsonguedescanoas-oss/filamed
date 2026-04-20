@@ -443,6 +443,7 @@ export type Database = {
           descricao: string | null
           destaque: boolean
           gateway_price_id_anual: string | null
+          gateway_price_id_anual_oneoff: string | null
           gateway_price_id_mensal: string | null
           id: string
           limite_atendentes: number | null
@@ -464,6 +465,7 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean
           gateway_price_id_anual?: string | null
+          gateway_price_id_anual_oneoff?: string | null
           gateway_price_id_mensal?: string | null
           id?: string
           limite_atendentes?: number | null
@@ -485,6 +487,7 @@ export type Database = {
           descricao?: string | null
           destaque?: boolean
           gateway_price_id_anual?: string | null
+          gateway_price_id_anual_oneoff?: string | null
           gateway_price_id_mensal?: string | null
           id?: string
           limite_atendentes?: number | null
