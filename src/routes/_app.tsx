@@ -29,6 +29,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { canAccessRoute } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { TrialBanner } from "@/components/trial-banner";
+import { TrialBlocked } from "@/components/trial-blocked";
 
 export const Route = createFileRoute("/_app")({
   // Preconnect Supabase só nas rotas /app, onde realmente é usado.
@@ -92,7 +94,7 @@ function getInitials(nome: string): string {
 }
 
 function AppLayout() {
-  const { profile, roles, signOut } = useAuth();
+  const { profile, roles, trial, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -120,6 +122,11 @@ function AppLayout() {
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  // Bloqueio: trial expirado, suspenso ou cancelado
+  if (trial?.expirado) {
+    return <TrialBlocked trial={trial} />;
   }
 
   const handleLogout = async () => {
@@ -260,6 +267,8 @@ function AppLayout() {
           </Sheet>
         </div>
       </header>
+
+      {trial && <TrialBanner trial={trial} />}
 
       <main>
         <Outlet />
