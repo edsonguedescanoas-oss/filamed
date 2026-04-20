@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.create-portal-session]
 verify_jwt = false
+
+[functions.sync-plano-stripe]
+verify_jwt = false
