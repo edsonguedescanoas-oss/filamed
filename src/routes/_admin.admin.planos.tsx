@@ -191,6 +191,26 @@ function fmtMoeda(centavos: number, moeda = "BRL"): string {
   }).format(centavos / 100);
 }
 
+/**
+ * Valida o formato de um Stripe Price ID.
+ * Aceita vazio (modalidade desativada) e o padrão `price_<alfanumérico>`.
+ * Retorna mensagem de erro ou `null` se ok.
+ */
+function validatePriceId(value: string): string | null {
+  const v = value.trim();
+  if (!v) return null;
+  if (!v.startsWith("price_")) {
+    return "Deve começar com 'price_' (ex.: price_1Xxx...)";
+  }
+  if (!/^price_[A-Za-z0-9]+$/.test(v)) {
+    return "Formato inválido. Use apenas letras e números após 'price_'.";
+  }
+  if (v.length < 10) {
+    return "ID muito curto — confira se você copiou o valor completo.";
+  }
+  return null;
+}
+
 function AdminPlanosPage() {
   const [planos, setPlanos] = useState<PlanoRow[]>([]);
   const [loading, setLoading] = useState(true);
