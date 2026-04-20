@@ -332,6 +332,24 @@ function AdminPlanosPage() {
     void reload();
   }, []);
 
+  // Dispara verificação de cada price ID assim que os planos carregam.
+  useEffect(() => {
+    const ids = new Set<string>();
+    for (const p of planos) {
+      for (const id of [
+        p.gateway_price_id_mensal,
+        p.gateway_price_id_anual,
+        p.gateway_price_id_anual_oneoff,
+      ]) {
+        if (id && id.trim()) ids.add(id.trim());
+      }
+    }
+    for (const id of ids) {
+      if (!priceChecks[id]) void checkPriceId(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planos]);
+
   async function toggleField(p: PlanoRow, field: "ativo" | "destaque", value: boolean) {
     const patch = { [field]: value } as { ativo?: boolean; destaque?: boolean };
     const { error } = await supabase.from("planos").update(patch).eq("id", p.id);
