@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.get-stripe-price]
 verify_jwt = false
 
+[functions.check-stripe-price]
+verify_jwt = false
+
 [functions.payments-webhook]
 verify_jwt = false
 

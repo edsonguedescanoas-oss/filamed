@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2,
   Package,
@@ -14,6 +14,8 @@ import {
   Save,
   X,
   RefreshCw,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -212,6 +214,19 @@ function validatePriceId(value: string): string | null {
   return null;
 }
 
+type PriceCheckStatus = "loading" | "ok" | "inactive" | "missing" | "invalid" | "error";
+
+interface PriceCheckResult {
+  status: PriceCheckStatus;
+  message?: string;
+}
+
+function getStripeEnvFromClientToken(): "sandbox" | "live" {
+  return import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN?.toString().startsWith("pk_test_")
+    ? "sandbox"
+    : "live";
+}
+
 function AdminPlanosPage() {
   const [planos, setPlanos] = useState<PlanoRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,6 +234,56 @@ function AdminPlanosPage() {
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<PlanoRow | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const [priceChecks, setPriceChecks] = useState<Record<string, PriceCheckResult>>({});
+
+  const checkPriceId = useCallback(async (priceId: string) => {
+    if (!priceId) return;
+    // Não recheca se já temos resultado não-erro
+    setPriceChecks((prev) => {
+      if (prev[priceId] && prev[priceId].status !== "error") return prev;
+      return { ...prev, [priceId]: { status: "loading" } };
+    });
+    // Pré-valida formato local pra evitar chamada desnecessária
+    if (validatePriceId(priceId) !== null) {
+      setPriceChecks((prev) => ({
+        ...prev,
+        [priceId]: { status: "invalid", message: "Formato inválido" },
+      }));
+      return;
+    }
+    try {
+      const env = getStripeEnvFromClientToken();
+      const { data, error } = await supabase.functions.invoke("check-stripe-price", {
+        body: { priceId, environment: env },
+      });
+      if (error) {
+        setPriceChecks((prev) => ({
+          ...prev,
+          [priceId]: { status: "error", message: error.message },
+        }));
+        return;
+      }
+      if (!data?.exists) {
+        setPriceChecks((prev) => ({
+          ...prev,
+          [priceId]: { status: "missing", message: data?.error ?? "Não encontrado no Stripe" },
+        }));
+        return;
+      }
+      setPriceChecks((prev) => ({
+        ...prev,
+        [priceId]: data.active
+          ? { status: "ok", message: "Ativo no Stripe" }
+          : { status: "inactive", message: "Existe mas está inativo" },
+      }));
+    } catch (e: any) {
+      setPriceChecks((prev) => ({
+        ...prev,
+        [priceId]: { status: "error", message: e?.message || String(e) },
+      }));
+    }
+  }, []);
+
 
   async function syncStripe(p: PlanoRow) {
     if (!p.preco_mensal_centavos || p.preco_mensal_centavos <= 0) {
@@ -239,6 +304,19 @@ function AdminPlanosPage() {
         return;
       }
       toast.success(`Stripe sincronizado · 3 prices criados/reutilizados`, { id: toastId });
+      // Limpa cache de checks dos price IDs anteriores deste plano pra forçar re-verificação
+      const oldIds = [
+        p.gateway_price_id_mensal,
+        p.gateway_price_id_anual,
+        p.gateway_price_id_anual_oneoff,
+      ].filter((x): x is string => Boolean(x));
+      if (oldIds.length > 0) {
+        setPriceChecks((prev) => {
+          const next = { ...prev };
+          for (const id of oldIds) delete next[id];
+          return next;
+        });
+      }
       await reload();
     } catch (e: any) {
       toast.error("Erro: " + (e.message || String(e)), { id: toastId });
@@ -266,6 +344,24 @@ function AdminPlanosPage() {
   useEffect(() => {
     void reload();
   }, []);
+
+  // Dispara verificação de cada price ID assim que os planos carregam.
+  useEffect(() => {
+    const ids = new Set<string>();
+    for (const p of planos) {
+      for (const id of [
+        p.gateway_price_id_mensal,
+        p.gateway_price_id_anual,
+        p.gateway_price_id_anual_oneoff,
+      ]) {
+        if (id && id.trim()) ids.add(id.trim());
+      }
+    }
+    for (const id of ids) {
+      if (!priceChecks[id]) void checkPriceId(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planos]);
 
   async function toggleField(p: PlanoRow, field: "ativo" | "destaque", value: boolean) {
     const patch = { [field]: value } as { ativo?: boolean; destaque?: boolean };
@@ -372,9 +468,37 @@ function AdminPlanosPage() {
                         <RecursosBadges recursos={p.recursos} />
                       </TableCell>
                       <TableCell className="font-mono text-[10px] text-muted-foreground">
-                        <PriceIdLine label="Mensal" value={p.gateway_price_id_mensal} />
-                        <PriceIdLine label="Anual" value={p.gateway_price_id_anual} />
-                        <PriceIdLine label="À vista" value={p.gateway_price_id_anual_oneoff} highlight />
+                        <PriceIdLine
+                          label="Mensal"
+                          value={p.gateway_price_id_mensal}
+                          check={
+                            p.gateway_price_id_mensal
+                              ? priceChecks[p.gateway_price_id_mensal]
+                              : undefined
+                          }
+                          onRecheck={checkPriceId}
+                        />
+                        <PriceIdLine
+                          label="Anual"
+                          value={p.gateway_price_id_anual}
+                          check={
+                            p.gateway_price_id_anual
+                              ? priceChecks[p.gateway_price_id_anual]
+                              : undefined
+                          }
+                          onRecheck={checkPriceId}
+                        />
+                        <PriceIdLine
+                          label="À vista"
+                          value={p.gateway_price_id_anual_oneoff}
+                          check={
+                            p.gateway_price_id_anual_oneoff
+                              ? priceChecks[p.gateway_price_id_anual_oneoff]
+                              : undefined
+                          }
+                          onRecheck={checkPriceId}
+                          highlight
+                        />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -497,10 +621,14 @@ function PriceIdLine({
   label,
   value,
   highlight,
+  check,
+  onRecheck,
 }: {
   label: string;
   value: string | null;
   highlight?: boolean;
+  check?: PriceCheckResult;
+  onRecheck?: (priceId: string) => void;
 }) {
   return (
     <div className="flex items-center gap-1.5 leading-tight">
@@ -514,13 +642,79 @@ function PriceIdLine({
         {label}
       </span>
       {value ? (
-        <span title={value} className="max-w-[140px] truncate">
-          {value}
-        </span>
+        <>
+          <span title={value} className="max-w-[140px] truncate">
+            {value}
+          </span>
+          <PriceStatusIndicator
+            status={check?.status}
+            message={check?.message}
+            onRecheck={onRecheck ? () => onRecheck(value) : undefined}
+          />
+        </>
       ) : (
         <span className="italic text-muted-foreground/60">—</span>
       )}
     </div>
+  );
+}
+
+function PriceStatusIndicator({
+  status,
+  message,
+  onRecheck,
+}: {
+  status: PriceCheckStatus | undefined;
+  message?: string;
+  onRecheck?: () => void;
+}) {
+  if (!status || status === "loading") {
+    return (
+      <Loader2
+        className="h-3 w-3 shrink-0 animate-spin text-muted-foreground/60"
+        aria-label="Verificando no Stripe…"
+      />
+    );
+  }
+  if (status === "ok") {
+    return (
+      <span
+        title={message ?? "Ativo no Stripe"}
+        aria-label="Ativo no Stripe"
+        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+      >
+        <Check className="h-2.5 w-2.5" strokeWidth={3} />
+      </span>
+    );
+  }
+  if (status === "inactive") {
+    return (
+      <span
+        title={message ?? "Existe no Stripe mas está inativo"}
+        aria-label="Inativo no Stripe"
+        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      >
+        <AlertCircle className="h-2.5 w-2.5" strokeWidth={3} />
+      </span>
+    );
+  }
+  // missing | invalid | error
+  const tooltip =
+    status === "missing"
+      ? message ?? "Não encontrado no Stripe"
+      : status === "invalid"
+        ? message ?? "Formato inválido"
+        : message ?? "Erro ao verificar";
+  return (
+    <button
+      type="button"
+      onClick={onRecheck}
+      title={onRecheck ? `${tooltip} · clique para reverificar` : tooltip}
+      aria-label={tooltip}
+      className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive transition hover:bg-destructive/25"
+    >
+      <X className="h-2.5 w-2.5" strokeWidth={3} />
+    </button>
   );
 }
 
