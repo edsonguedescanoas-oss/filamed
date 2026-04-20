@@ -360,6 +360,19 @@ function AdminPlanosPage() {
                           <Button
                             size="icon"
                             variant="ghost"
+                            title="Sincronizar prices com Stripe (mensal, anual recorrente, anual à vista)"
+                            disabled={syncing === p.id}
+                            onClick={() => void syncStripe(p)}
+                          >
+                            {syncing === p.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
                             title={p.destaque ? "Remover destaque" : "Marcar como destaque"}
                             onClick={() => void toggleField(p, "destaque", !p.destaque)}
                           >
