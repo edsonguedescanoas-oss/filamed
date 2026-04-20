@@ -621,10 +621,14 @@ function PriceIdLine({
   label,
   value,
   highlight,
+  check,
+  onRecheck,
 }: {
   label: string;
   value: string | null;
   highlight?: boolean;
+  check?: PriceCheckResult;
+  onRecheck?: (priceId: string) => void;
 }) {
   return (
     <div className="flex items-center gap-1.5 leading-tight">
@@ -638,13 +642,79 @@ function PriceIdLine({
         {label}
       </span>
       {value ? (
-        <span title={value} className="max-w-[140px] truncate">
-          {value}
-        </span>
+        <>
+          <span title={value} className="max-w-[140px] truncate">
+            {value}
+          </span>
+          <PriceStatusIndicator
+            status={check?.status}
+            message={check?.message}
+            onRecheck={onRecheck ? () => onRecheck(value) : undefined}
+          />
+        </>
       ) : (
         <span className="italic text-muted-foreground/60">—</span>
       )}
     </div>
+  );
+}
+
+function PriceStatusIndicator({
+  status,
+  message,
+  onRecheck,
+}: {
+  status: PriceCheckStatus | undefined;
+  message?: string;
+  onRecheck?: () => void;
+}) {
+  if (!status || status === "loading") {
+    return (
+      <Loader2
+        className="h-3 w-3 shrink-0 animate-spin text-muted-foreground/60"
+        aria-label="Verificando no Stripe…"
+      />
+    );
+  }
+  if (status === "ok") {
+    return (
+      <span
+        title={message ?? "Ativo no Stripe"}
+        aria-label="Ativo no Stripe"
+        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+      >
+        <Check className="h-2.5 w-2.5" strokeWidth={3} />
+      </span>
+    );
+  }
+  if (status === "inactive") {
+    return (
+      <span
+        title={message ?? "Existe no Stripe mas está inativo"}
+        aria-label="Inativo no Stripe"
+        className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400"
+      >
+        <AlertCircle className="h-2.5 w-2.5" strokeWidth={3} />
+      </span>
+    );
+  }
+  // missing | invalid | error
+  const tooltip =
+    status === "missing"
+      ? message ?? "Não encontrado no Stripe"
+      : status === "invalid"
+        ? message ?? "Formato inválido"
+        : message ?? "Erro ao verificar";
+  return (
+    <button
+      type="button"
+      onClick={onRecheck}
+      title={onRecheck ? `${tooltip} · clique para reverificar` : tooltip}
+      aria-label={tooltip}
+      className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive transition hover:bg-destructive/25"
+    >
+      <X className="h-2.5 w-2.5" strokeWidth={3} />
+    </button>
   );
 }
 
