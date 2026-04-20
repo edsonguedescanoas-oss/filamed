@@ -460,6 +460,8 @@ function PriceIdLine({
     </div>
   );
 }
+
+function PlanoEditorDialog({
   open,
   plano,
   onClose,
