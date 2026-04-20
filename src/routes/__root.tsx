@@ -64,6 +64,23 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      // Preload direto dos .woff2 críticos — encurta a cadeia HTML→CSS→font
+      // (pula a espera pelo CSS do Google Fonts pra iniciar o download da fonte).
+      // URLs com hash do Google são estáveis; se mudarem, o CSS abaixo cobre fallback.
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "preload",
+        as: "font",
+        type: "font/woff2",
+        href: "https://fonts.gstatic.com/s/sora/v17/xMQ9uFFYT72X5wkB_18qmnndmSdSnh2BAfO5mnuyOo1lfiQwV6-xo6eeIw.woff2",
+        crossOrigin: "anonymous",
+      },
       // Google Fonts: preload assíncrono (não bloqueia render).
       // O <script> abaixo promove para stylesheet quando carregado.
       // Fallback noscript no body garante fontes mesmo sem JS.
