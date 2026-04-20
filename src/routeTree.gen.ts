@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as PrecosRouteImport } from './routes/precos'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as CasosRouteImport } from './routes/casos'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TvIndexRouteImport } from './routes/tv.index'
@@ -31,9 +33,19 @@ const SetupRoute = SetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrecosRoute = PrecosRouteImport.update({
+  id: '/precos',
+  path: '/precos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasosRoute = CasosRouteImport.update({
+  id: '/casos',
+  path: '/casos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -108,7 +120,9 @@ const AppAppAtendimentoRoute = AppAppAtendimentoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/casos': typeof CasosRoute
   '/login': typeof LoginRoute
+  '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
   '/app': typeof AppAppRouteWithChildren
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
@@ -125,7 +139,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/casos': typeof CasosRoute
   '/login': typeof LoginRoute
+  '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
@@ -143,7 +159,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/casos': typeof CasosRoute
   '/login': typeof LoginRoute
+  '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
   '/_app/app': typeof AppAppRouteWithChildren
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
@@ -162,7 +180,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/casos'
     | '/login'
+    | '/precos'
     | '/setup'
     | '/app'
     | '/hooks/cleanup-tts-cache'
@@ -179,7 +199,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/casos'
     | '/login'
+    | '/precos'
     | '/setup'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
@@ -196,7 +218,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
+    | '/casos'
     | '/login'
+    | '/precos'
     | '/setup'
     | '/_app/app'
     | '/hooks/cleanup-tts-cache'
@@ -215,7 +239,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
+  CasosRoute: typeof CasosRoute
   LoginRoute: typeof LoginRoute
+  PrecosRoute: typeof PrecosRoute
   SetupRoute: typeof SetupRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
@@ -233,11 +259,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/precos': {
+      id: '/precos'
+      path: '/precos'
+      fullPath: '/precos'
+      preLoaderRoute: typeof PrecosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/casos': {
+      id: '/casos'
+      path: '/casos'
+      fullPath: '/casos'
+      preLoaderRoute: typeof CasosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -375,7 +415,9 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
+  CasosRoute: CasosRoute,
   LoginRoute: LoginRoute,
+  PrecosRoute: PrecosRoute,
   SetupRoute: SetupRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
@@ -386,3 +428,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
