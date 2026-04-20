@@ -13,6 +13,8 @@ import {
   Volume2,
   UserCircle,
   ChevronDown,
+  CreditCard,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +33,7 @@ import { canAccessRoute } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { TrialBanner } from "@/components/trial-banner";
 import { TrialBlocked } from "@/components/trial-blocked";
+import { usePlanoAtual } from "@/hooks/use-plano-atual";
 
 export const Route = createFileRoute("/_app")({
   // Preconnect Supabase só nas rotas /app, onde realmente é usado.
@@ -95,6 +98,7 @@ function getInitials(nome: string): string {
 
 function AppLayout() {
   const { profile, roles, trial, signOut } = useAuth();
+  const { plano } = usePlanoAtual(profile?.unidade_id);
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -178,6 +182,21 @@ function AppLayout() {
           {/* Spacer */}
           <div className="flex-1" />
 
+          {/* Badge do plano atual (desktop) */}
+          <Link
+            to="/app/conta"
+            className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            title="Ver detalhes da assinatura"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            {plano ? plano.plano_nome : trial?.status_assinatura === "trial" ? "Trial" : "Sem plano"}
+            {plano && (
+              <span className="text-[10px] text-muted-foreground">
+                · {plano.ciclo === "anual" ? "anual" : "mensal"}
+              </span>
+            )}
+          </Link>
+
           {/* Dropdown usuário (desktop + mobile) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -213,6 +232,10 @@ function AppLayout() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => void navigate({ to: "/app/conta" })}>
+                <CreditCard className="h-4 w-4" />
+                <span>Minha conta</span>
+              </DropdownMenuItem>
               <DropdownMenuItem disabled>
                 <UserCircle className="h-4 w-4" />
                 <span>Meu perfil</span>

@@ -28,6 +28,7 @@ import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
+import { Route as AppAppContaRouteImport } from './routes/_app.app.conta'
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 
@@ -124,6 +125,11 @@ const AppAppFilasRoute = AppAppFilasRouteImport.update({
   path: '/filas',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppContaRoute = AppAppContaRouteImport.update({
+  id: '/conta',
+  path: '/conta',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppAtendimentoRoute = AppAppAtendimentoRouteImport.update({
   id: '/atendimento',
   path: '/atendimento',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/tv/': typeof TvIndexRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
+  '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/tv': typeof TvIndexRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
+  '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/tv/': typeof TvIndexRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
+  '/_app/app/conta': typeof AppAppContaRoute
   '/_app/app/filas': typeof AppAppFilasRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/tv/'
     | '/admin/planos'
     | '/app/atendimento'
+    | '/app/conta'
     | '/app/filas'
     | '/app/pacientes'
     | '/app/recepcao'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/tv'
     | '/admin/planos'
     | '/app/atendimento'
+    | '/app/conta'
     | '/app/filas'
     | '/app/pacientes'
     | '/app/recepcao'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/tv/'
     | '/_admin/admin/planos'
     | '/_app/app/atendimento'
+    | '/_app/app/conta'
     | '/_app/app/filas'
     | '/_app/app/pacientes'
     | '/_app/app/recepcao'
@@ -417,6 +429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppFilasRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/conta': {
+      id: '/_app/app/conta'
+      path: '/conta'
+      fullPath: '/app/conta'
+      preLoaderRoute: typeof AppAppContaRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/atendimento': {
       id: '/_app/app/atendimento'
       path: '/atendimento'
@@ -458,6 +477,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppAppRouteChildren {
   AppAppAtendimentoRoute: typeof AppAppAtendimentoRoute
+  AppAppContaRoute: typeof AppAppContaRoute
   AppAppFilasRoute: typeof AppAppFilasRoute
   AppAppPacientesRoute: typeof AppAppPacientesRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
@@ -467,6 +487,7 @@ interface AppAppRouteChildren {
 
 const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppAtendimentoRoute: AppAppAtendimentoRoute,
+  AppAppContaRoute: AppAppContaRoute,
   AppAppFilasRoute: AppAppFilasRoute,
   AppAppPacientesRoute: AppAppPacientesRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
