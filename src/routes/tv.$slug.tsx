@@ -4,6 +4,7 @@ import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize, Volume2, 
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
+import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
@@ -111,12 +112,19 @@ function TvPage() {
 
   // Configuração de voz vinda do banco (configurada no admin)
   type VoiceProvider = "browser" | "google" | "elevenlabs";
-  type VoiceCfg = { provider: VoiceProvider; voice_id: string | null; rate: number; pitch: number };
+  type VoiceCfg = {
+    provider: VoiceProvider;
+    voice_id: string | null;
+    rate: number;
+    pitch: number;
+    template_chamada: TemplateChamada;
+  };
   const [voiceCfg, setVoiceCfg] = useState<VoiceCfg>({
     provider: "browser",
     voice_id: null,
     rate: 0.95,
     pitch: 1,
+    template_chamada: "paciente_senha_fila",
   });
 
   // Vozes pt-* disponíveis no navegador (apenas para fallback/preview local)
@@ -198,7 +206,7 @@ function TvPage() {
       // Carrega config de voz da unidade (se existir)
       const { data: cfg } = await supabase
         .from("unidade_voice_config")
-        .select("provider,voice_id,rate,pitch")
+        .select("provider,voice_id,rate,pitch,template_chamada")
         .eq("unidade_id", uni.id)
         .maybeSingle();
       if (mounted && cfg) {
@@ -207,6 +215,8 @@ function TvPage() {
           voice_id: cfg.voice_id,
           rate: Number(cfg.rate) || 0.95,
           pitch: Number(cfg.pitch) || 1,
+          template_chamada:
+            (cfg.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
         });
       }
     })();
@@ -224,13 +234,21 @@ function TvPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "unidade_voice_config", filter: `unidade_id=eq.${unidade.id}` },
         (payload) => {
-          const row = payload.new as { provider?: string; voice_id?: string | null; rate?: number; pitch?: number } | null;
+          const row = payload.new as {
+            provider?: string;
+            voice_id?: string | null;
+            rate?: number;
+            pitch?: number;
+            template_chamada?: string;
+          } | null;
           if (!row) return;
           setVoiceCfg({
             provider: (row.provider as VoiceProvider) ?? "browser",
             voice_id: row.voice_id ?? null,
             rate: Number(row.rate) || 0.95,
             pitch: Number(row.pitch) || 1,
+            template_chamada:
+              (row.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
           });
         },
       )
@@ -694,17 +712,19 @@ function TvPage() {
 
     const codigo = senha?.codigo ?? "";
     const codigoFalado = codigo ? soletrarCodigo(codigo) : "";
-    // Regra de chamada: nome do paciente + número da senha + nome da fila.
-    // Usamos o nome da fila (resolvido via fila_id) em vez de `chamada.destino`,
-    // que é um texto livre digitado pelo operador (ex.: "Consultório 2").
+    // Regra de chamada: o admin escolhe o template em /app/voz. O nome da fila
+    // é resolvido via fila_id; o destino é o texto livre digitado pelo operador
+    // (ex.: "Consultório 2") e só aparece nos templates que incluem "destino".
     const fila = senha?.fila_id ? filas.find((f) => f.id === senha.fila_id) ?? null : null;
     const nomeFila = fila?.nome ?? null;
-    const partes = [
-      nome ? `Paciente ${nome}.` : null,
-      codigoFalado ? `Senha ${codigoFalado}.` : null,
-      nomeFila ? `Fila ${nomeFila}.` : null,
-    ].filter(Boolean);
-    const texto = partes.join(" ").trim();
+    const texto = montarTextoChamada({
+      template: cfg.template_chamada,
+      nome,
+      codigoFalado,
+      nomeFila,
+      destino: chamada.destino ?? null,
+      formatarDestino,
+    });
     console.info("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
     if (!texto) {
       setDebugInfo({

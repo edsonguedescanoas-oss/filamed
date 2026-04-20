@@ -20,6 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import {
+  TEMPLATE_OPTIONS,
+  montarTextoChamada,
+  type TemplateChamada,
+} from "@/lib/voice-template";
 
 export const Route = createFileRoute("/_app/app/voz")({
   component: VozConfigPage,
@@ -32,6 +37,7 @@ interface VoiceConfig {
   voice_id: string | null;
   rate: number;
   pitch: number;
+  template_chamada: TemplateChamada;
 }
 
 interface VoiceConfigMeta {
@@ -100,6 +106,7 @@ function VozConfigPage() {
     voice_id: null,
     rate: 0.95,
     pitch: 1.0,
+    template_chamada: "paciente_senha_fila",
   });
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   // Snapshot do que está realmente salvo no banco (o que a TV está usando agora).
@@ -138,7 +145,7 @@ function VozConfigPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("unidade_voice_config")
-        .select("provider,voice_id,rate,pitch,updated_at")
+        .select("provider,voice_id,rate,pitch,template_chamada,updated_at")
         .eq("unidade_id", unidadeId)
         .maybeSingle();
       if (!mounted) return;
@@ -151,6 +158,8 @@ function VozConfigPage() {
           voice_id: data.voice_id,
           rate: Number(data.rate),
           pitch: Number(data.pitch),
+          template_chamada:
+            (data.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
         });
         setActiveMeta({
           provider: data.provider as Provider,
@@ -292,6 +301,7 @@ function VozConfigPage() {
           voice_id: config.voice_id,
           rate: config.rate,
           pitch: config.pitch,
+          template_chamada: config.template_chamada,
         },
         { onConflict: "unidade_id" },
       );
@@ -550,7 +560,61 @@ function VozConfigPage() {
         )}
       </section>
 
-      {/* Rate & pitch */}
+      {/* Template da chamada */}
+      <section className="space-y-3">
+        <div>
+          <Label className="text-sm font-semibold">Texto da chamada</Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Escolha como a TV vai anunciar cada senha. O destino é o texto livre
+            digitado pelo operador na hora da chamada (ex.: "Consultório 2",
+            "Guichê 01").
+          </p>
+        </div>
+        <div className="grid gap-2">
+          {TEMPLATE_OPTIONS.map((opt) => {
+            const ativo = config.template_chamada === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() =>
+                  setConfig((c) => ({ ...c, template_chamada: opt.id }))
+                }
+                className={`text-left rounded-xl border p-4 transition-all ${
+                  ativo
+                    ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex h-4 w-4 items-center justify-center rounded-full border-2 ${
+                        ativo
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground/40"
+                      }`}
+                    >
+                      {ativo && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                      )}
+                    </span>
+                    <h3 className="font-semibold text-sm">{opt.label}</h3>
+                  </div>
+                </div>
+                <p className="mt-1.5 ml-6 text-xs text-muted-foreground">
+                  {opt.description}
+                </p>
+                <div className="mt-2 ml-6 rounded-md bg-muted/60 px-3 py-2 text-xs italic text-foreground/80">
+                  🔊 “{opt.exemplo}”
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+
       <section className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="rate" className="text-sm font-semibold">

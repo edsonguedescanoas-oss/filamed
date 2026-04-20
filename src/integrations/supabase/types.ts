@@ -700,6 +700,7 @@ export type Database = {
           pitch: number
           provider: string
           rate: number
+          template_chamada: string
           unidade_id: string
           updated_at: string
           voice_id: string | null
@@ -710,6 +711,7 @@ export type Database = {
           pitch?: number
           provider?: string
           rate?: number
+          template_chamada?: string
           unidade_id: string
           updated_at?: string
           voice_id?: string | null
@@ -720,6 +722,7 @@ export type Database = {
           pitch?: number
           provider?: string
           rate?: number
+          template_chamada?: string
           unidade_id?: string
           updated_at?: string
           voice_id?: string | null
