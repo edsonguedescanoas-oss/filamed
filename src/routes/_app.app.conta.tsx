@@ -490,6 +490,18 @@ function ContaPage() {
           contato@filamed.app
         </a>
       </p>
+
+      {/* Dialog de renovação anual à vista */}
+      {plano && (
+        <CheckoutDialog
+          open={renewOpen}
+          onClose={() => setRenewOpen(false)}
+          priceId={plano.gateway_price_id_anual_oneoff}
+          planoNome={plano.plano_nome}
+          planoSlug={plano.plano_slug}
+          ciclo="anual_oneoff"
+        />
+      )}
     </div>
   );
 }
