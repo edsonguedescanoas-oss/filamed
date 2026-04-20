@@ -16,8 +16,14 @@ interface UseRealtimeTableOptions {
   enabled?: boolean;
   /** Callback chamado em cada evento (já debounced em 300ms) */
   onChange: () => void;
-  /** Identificador único do canal — default: derivado de table+filter */
-  channelKey?: string;
+  /**
+   * Identificador único do canal — OBRIGATÓRIO para passar pela RLS de
+   * `realtime.messages`. Deve seguir o padrão:
+   *  - `unidade:<unidadeId>:<feature>` para usuário autenticado
+   *  - `tv:<unidadeId>:<feature>` para painel TV anônimo
+   *  - `pub:<recurso>:<id>` para páginas públicas (paciente)
+   */
+  channelKey: string;
 }
 
 /**
@@ -29,11 +35,16 @@ interface UseRealtimeTableOptions {
  * - Reusa a referência de `onChange` via ref — você pode passar uma função
  *   inline sem causar re-subscribe.
  *
+ * IMPORTANTE: `channelKey` deve seguir o padrão de naming validado pela RLS
+ * de `realtime.messages` (ver função `realtime_topic_allowed`). Caso contrário
+ * o subscribe é silenciosamente bloqueado.
+ *
  * Uso:
  * ```ts
  * useRealtimeTable({
  *   table: "senhas",
  *   filter: `unidade_id=eq.${unidadeId}`,
+ *   channelKey: `unidade:${unidadeId}:senhas`,
  *   enabled: !!unidadeId,
  *   onChange: () => void fetchData(),
  * });
@@ -56,7 +67,7 @@ export function useRealtimeTable({
   useEffect(() => {
     if (!enabled) return;
 
-    const key = channelKey ?? `${table}-${filter ?? "all"}-${Math.random().toString(36).slice(2, 8)}`;
+    const key = channelKey;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const fire = () => {

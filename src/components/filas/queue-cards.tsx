@@ -78,6 +78,7 @@ export function QueueCards({ unidadeId, filas, canCall }: QueueCardsProps) {
   useRealtimeTable({
     table: "senhas",
     filter: unidadeId ? `unidade_id=eq.${unidadeId}` : undefined,
+    channelKey: `unidade:${unidadeId}:filas-cards`,
     enabled: !!unidadeId && filasAtivas.length > 0,
     onChange: () => void fetchStats(),
   });

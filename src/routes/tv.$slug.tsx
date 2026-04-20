@@ -219,7 +219,7 @@ function TvPage() {
   useEffect(() => {
     if (!unidade) return;
     const ch = supabase
-      .channel(`voice-cfg-${unidade.id}`)
+      .channel(`tv:${unidade.id}:voice-cfg`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "unidade_voice_config", filter: `unidade_id=eq.${unidade.id}` },
@@ -244,7 +244,7 @@ function TvPage() {
   useEffect(() => {
     if (!unidade) return;
     const channel = supabase
-      .channel(`tv-${unidade.id}`)
+      .channel(`tv:${unidade.id}:senhas-chamadas`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "senhas", filter: `unidade_id=eq.${unidade.id}` },

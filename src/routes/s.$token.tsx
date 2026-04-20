@@ -87,7 +87,7 @@ function PublicSenhaPage() {
   useEffect(() => {
     if (!senha) return;
     const ch = supabase
-      .channel(`pub-senha-${senha.id}`)
+      .channel(`pub:senha:${senha.id}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "senhas", filter: `id=eq.${senha.id}` },

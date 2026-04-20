@@ -620,7 +620,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
   // Realtime — atualiza lista e contadores quando senhas mudam
   useEffect(() => {
     const ch = supabase
-      .channel(`dashboard-atendimento-${unidadeId}`)
+      .channel(`unidade:${unidadeId}:dashboard-atendimento`)
       .on(
         "postgres_changes",
         {

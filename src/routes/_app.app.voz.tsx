@@ -165,7 +165,7 @@ function VozConfigPage() {
   useEffect(() => {
     if (!unidadeId) return;
     const ch = supabase
-      .channel(`voz-cfg-admin-${unidadeId}`)
+      .channel(`unidade:${unidadeId}:voz-cfg-admin`)
       .on(
         "postgres_changes",
         {

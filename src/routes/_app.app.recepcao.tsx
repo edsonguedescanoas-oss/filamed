@@ -146,6 +146,7 @@ function RecepcaoPage() {
   useRealtimeTable({
     table: "senhas",
     filter: unidadeId ? `unidade_id=eq.${unidadeId}` : undefined,
+    channelKey: `unidade:${unidadeId}:recepcao`,
     enabled: !!unidadeId,
     onChange: () => void fetchRecentes(),
   });
