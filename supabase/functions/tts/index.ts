@@ -257,6 +257,22 @@ Deno.serve(async (req) => {
         ? await googleTts(text, voiceId, rate, pitch)
         : await elevenLabsTts(text, voiceId, rate);
 
+    // 2a) Fallback gracioso: provider indisponível (credencial revogada, API
+    // desabilitada, cota zerada). Devolvemos 200 com audioContent: null pra
+    // que o cliente caia em Web Speech sem registrar erro 500.
+    if (!result.ok) {
+      return new Response(
+        JSON.stringify({
+          audioContent: null,
+          fallback: "browser",
+          error: "provider_unavailable",
+          provider,
+          reason: result.reason,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // 3) Cache write em background — não bloqueia a resposta
     // EdgeRuntime.waitUntil garante que a promise termine mesmo após o response
     const cachePromise = writeCache(hash, result.audioContent).catch((e) =>
@@ -266,7 +282,7 @@ Deno.serve(async (req) => {
     if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(cachePromise);
 
     return new Response(
-      JSON.stringify({ ...result, cached: false }),
+      JSON.stringify({ audioContent: result.audioContent, mime: result.mime, cached: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
