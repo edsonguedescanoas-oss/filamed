@@ -8,7 +8,16 @@ import {
   loadInitialAuth,
 } from "@/lib/auth-store";
 
-export type AppRole = "admin" | "recepcao" | "medico" | "enfermeiro" | "gestor";
+export type AppRole = "admin" | "recepcao" | "medico" | "enfermeiro" | "gestor" | "super_admin";
+
+export type AssinaturaStatus = "trial" | "ativo" | "suspenso" | "cancelado";
+
+export interface TrialStatus {
+  status_assinatura: AssinaturaStatus;
+  trial_ends_at: string;
+  dias_restantes: number;
+  expirado: boolean;
+}
 
 export interface UserProfile {
   id: string;
@@ -26,6 +35,7 @@ export interface AuthState {
   user: User | null;
   profile: UserProfile | null;
   roles: AppRole[];
+  trial: TrialStatus | null;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
   refreshProfile: () => Promise<void>;
@@ -57,9 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: snap.isAuthenticated,
     session: snap.session,
     user: snap.session?.user ?? null,
-    profile: snap.profile,
-    roles: snap.roles,
-    hasRole: (role) => snap.roles.includes(role),
+      profile: snap.profile,
+      roles: snap.roles,
+      trial: snap.trial,
+      hasRole: (role) => snap.roles.includes(role),
     hasAnyRole: (rs) => rs.some((r) => snap.roles.includes(r)),
     refreshProfile: refreshAuthSnapshot,
     signIn: async (email, password) => {

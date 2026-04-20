@@ -14,6 +14,7 @@ import { Route as PrecosRouteImport } from './routes/precos'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CasosRouteImport } from './routes/casos'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TvIndexRouteImport } from './routes/tv.index'
 import { Route as TvSlugRouteImport } from './routes/tv.$slug'
@@ -21,6 +22,7 @@ import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
 import { Route as AppAppRouteImport } from './routes/_app.app'
+import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
@@ -50,6 +52,10 @@ const CasosRoute = CasosRouteImport.update({
 } as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -86,6 +92,11 @@ const AppAppRoute = AppAppRouteImport.update({
   id: '/app',
   path: '/app',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminAdminRoute = AdminAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppAppIndexRoute = AppAppIndexRouteImport.update({
   id: '/',
@@ -124,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
+  '/admin': typeof AdminAdminRoute
   '/app': typeof AppAppRouteWithChildren
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
@@ -143,6 +155,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
+  '/admin': typeof AdminAdminRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -158,11 +171,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_admin': typeof AdminRouteWithChildren
   '/_app': typeof AppRouteWithChildren
   '/casos': typeof CasosRoute
   '/login': typeof LoginRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
+  '/_admin/admin': typeof AdminAdminRoute
   '/_app/app': typeof AppAppRouteWithChildren
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
@@ -184,6 +199,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/precos'
     | '/setup'
+    | '/admin'
     | '/app'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
@@ -203,6 +219,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/precos'
     | '/setup'
+    | '/admin'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -217,11 +234,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_admin'
     | '/_app'
     | '/casos'
     | '/login'
     | '/precos'
     | '/setup'
+    | '/_admin/admin'
     | '/_app/app'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
@@ -238,6 +257,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   CasosRoute: typeof CasosRoute
   LoginRoute: typeof LoginRoute
@@ -285,6 +305,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -336,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_admin/admin': {
+      id: '/_admin/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAdminRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_app/app/': {
       id: '/_app/app/'
       path: '/'
@@ -381,6 +415,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAdminRoute: typeof AdminAdminRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminRoute: AdminAdminRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface AppAppRouteChildren {
   AppAppAtendimentoRoute: typeof AppAppAtendimentoRoute
   AppAppFilasRoute: typeof AppAppFilasRoute
@@ -414,6 +458,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   CasosRoute: CasosRoute,
   LoginRoute: LoginRoute,

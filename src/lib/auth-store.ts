@@ -8,13 +8,14 @@
  */
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import type { AppRole, UserProfile } from "@/hooks/use-auth";
+import type { AppRole, UserProfile, TrialStatus } from "@/hooks/use-auth";
 
 export interface AuthSnapshot {
   isAuthenticated: boolean;
   session: Session | null;
   profile: UserProfile | null;
   roles: AppRole[];
+  trial: TrialStatus | null;
   /** True quando ainda não rodou loadInitialAuth (não bloqueamos UI nisso, só guards). */
   isLoading: boolean;
 }
@@ -24,6 +25,7 @@ let snapshot: AuthSnapshot = {
   session: null,
   profile: null,
   roles: [],
+  trial: null,
   isLoading: true,
 };
 
@@ -47,15 +49,24 @@ function setSnapshot(next: Partial<AuthSnapshot>) {
 async function fetchProfileAndRoles(userId: string): Promise<{
   profile: UserProfile | null;
   roles: AppRole[];
+  trial: TrialStatus | null;
 }> {
   const [profileRes, rolesRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
-  return {
-    profile: (profileRes.data as UserProfile | null) ?? null,
-    roles: ((rolesRes.data ?? []) as { role: AppRole }[]).map((r) => r.role),
-  };
+  const profile = (profileRes.data as UserProfile | null) ?? null;
+  const roles = ((rolesRes.data ?? []) as { role: AppRole }[]).map((r) => r.role);
+
+  let trial: TrialStatus | null = null;
+  if (profile?.unidade_id) {
+    const { data: trialData } = await supabase.rpc("get_unidade_trial_status", {
+      _unidade_id: profile.unidade_id,
+    });
+    trial = (trialData?.[0] as TrialStatus | undefined) ?? null;
+  }
+
+  return { profile, roles, trial };
 }
 
 let initialPromise: Promise<void> | null = null;
@@ -79,12 +90,13 @@ export function loadInitialAuth(): Promise<void> {
     const session = data.session;
 
     if (session?.user) {
-      const { profile, roles } = await fetchProfileAndRoles(session.user.id);
+      const { profile, roles, trial } = await fetchProfileAndRoles(session.user.id);
       setSnapshot({
         isAuthenticated: true,
         session,
         profile,
         roles,
+        trial,
         isLoading: false,
       });
     } else {
@@ -97,12 +109,13 @@ export function loadInitialAuth(): Promise<void> {
       supabase.auth.onAuthStateChange((_event, newSession) => {
         if (newSession?.user) {
           // Não bloqueia o callback — busca em segundo plano
-          void fetchProfileAndRoles(newSession.user.id).then(({ profile, roles }) => {
+          void fetchProfileAndRoles(newSession.user.id).then(({ profile, roles, trial }) => {
             setSnapshot({
               isAuthenticated: true,
               session: newSession,
               profile,
               roles,
+              trial,
               isLoading: false,
             });
           });
@@ -112,6 +125,7 @@ export function loadInitialAuth(): Promise<void> {
             session: null,
             profile: null,
             roles: [],
+            trial: null,
             isLoading: false,
           });
         }
@@ -129,6 +143,6 @@ export function loadInitialAuth(): Promise<void> {
 export async function refreshAuthSnapshot(): Promise<void> {
   const userId = snapshot.session?.user?.id;
   if (!userId) return;
-  const { profile, roles } = await fetchProfileAndRoles(userId);
-  setSnapshot({ profile, roles });
+  const { profile, roles, trial } = await fetchProfileAndRoles(userId);
+  setSnapshot({ profile, roles, trial });
 }

@@ -530,7 +530,9 @@ export type Database = {
           id: string
           nome: string
           slug: string
+          status_assinatura: Database["public"]["Enums"]["assinatura_status"]
           telefone: string | null
+          trial_ends_at: string
           updated_at: string
         }
         Insert: {
@@ -541,7 +543,9 @@ export type Database = {
           id?: string
           nome: string
           slug: string
+          status_assinatura?: Database["public"]["Enums"]["assinatura_status"]
           telefone?: string | null
+          trial_ends_at?: string
           updated_at?: string
         }
         Update: {
@@ -552,7 +556,9 @@ export type Database = {
           id?: string
           nome?: string
           slug?: string
+          status_assinatura?: Database["public"]["Enums"]["assinatura_status"]
           telefone?: string | null
+          trial_ends_at?: string
           updated_at?: string
         }
         Relationships: []
@@ -679,6 +685,15 @@ export type Database = {
           slug: string
         }[]
       }
+      get_unidade_trial_status: {
+        Args: { _unidade_id: string }
+        Returns: {
+          dias_restantes: number
+          expirado: boolean
+          status_assinatura: Database["public"]["Enums"]["assinatura_status"]
+          trial_ends_at: string
+        }[]
+      }
       get_unidades_publicas: {
         Args: never
         Returns: {
@@ -702,6 +717,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       marcar_senhas_ausentes: { Args: never; Returns: number }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
       setup_initial_unidade: {
@@ -718,7 +734,14 @@ export type Database = {
       user_unidade_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "recepcao" | "medico" | "enfermeiro" | "gestor"
+      app_role:
+        | "admin"
+        | "recepcao"
+        | "medico"
+        | "enfermeiro"
+        | "gestor"
+        | "super_admin"
+      assinatura_status: "trial" | "ativo" | "suspenso" | "cancelado"
       canal_notificacao: "whatsapp" | "sms" | "telegram" | "push" | "email"
       fila_tipo:
         | "consulta"
@@ -864,7 +887,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "recepcao", "medico", "enfermeiro", "gestor"],
+      app_role: [
+        "admin",
+        "recepcao",
+        "medico",
+        "enfermeiro",
+        "gestor",
+        "super_admin",
+      ],
+      assinatura_status: ["trial", "ativo", "suspenso", "cancelado"],
       canal_notificacao: ["whatsapp", "sms", "telegram", "push", "email"],
       fila_tipo: [
         "consulta",
