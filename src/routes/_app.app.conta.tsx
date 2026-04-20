@@ -286,7 +286,36 @@ function ContaPage() {
         )}
       </Card>
 
-      {/* Aviso trial expirado / inadimplência */}
+      {/* Aviso de inadimplência — pagamento falhou */}
+      {plano && plano.status === "inadimplente" && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="flex items-start gap-3 pt-6">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-700 dark:text-amber-400">
+                Pagamento pendente
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Não conseguimos processar a última cobrança da sua assinatura. Atualize seu cartão no portal seguro do Stripe para evitar a suspensão do serviço.
+              </p>
+            </div>
+            <Button
+              onClick={handleOpenPortal}
+              disabled={openingPortal}
+              className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+            >
+              {openingPortal ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CreditCard className="h-4 w-4" />
+              )}
+              Atualizar cartão
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Aviso trial expirado */}
       {trial?.expirado && (
         <Card className="border-destructive/40 bg-destructive/5">
           <CardContent className="flex items-start gap-3 pt-6">
