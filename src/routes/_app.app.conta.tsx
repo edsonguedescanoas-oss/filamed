@@ -191,11 +191,20 @@ function ContaPage() {
                   <Badge variant="secondary" className="text-xs">
                     Cobrança {plano.ciclo === "anual" ? "anual" : "mensal"}
                   </Badge>
+                  {isAnualOneOff && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-primary/40 bg-primary/5 text-primary"
+                    >
+                      Anual à vista
+                    </Badge>
+                  )}
                 </div>
                 {plano.proximo_ciclo_em && (
                   <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    Próximo ciclo em <strong>{fmtData(plano.proximo_ciclo_em)}</strong>
+                    {isAnualOneOff ? "Acesso válido até" : "Próximo ciclo em"}{" "}
+                    <strong>{fmtData(plano.proximo_ciclo_em)}</strong>
                   </p>
                 )}
               </div>
