@@ -31,6 +31,14 @@ import { canAccessRoute } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app")({
+  // Preconnect Supabase só nas rotas /app, onde realmente é usado.
+  // Mantê-lo no root marcava como "unused preconnect" na home.
+  head: () => ({
+    links: [
+      { rel: "preconnect", href: "https://bccvpirrqwhqsinlmpth.supabase.co", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "https://bccvpirrqwhqsinlmpth.supabase.co" },
+    ],
+  }),
   // Guard idiomático: roda antes de renderizar qualquer rota /app/*.
   // Sem flash de conteúdo — o redirect acontece antes do React montar.
   beforeLoad: ({ context, location }) => {

@@ -64,9 +64,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      // Reduz latência da 1ª chamada Supabase (auth, REST, realtime)
-      { rel: "preconnect", href: "https://bccvpirrqwhqsinlmpth.supabase.co", crossOrigin: "anonymous" },
-      { rel: "dns-prefetch", href: "https://bccvpirrqwhqsinlmpth.supabase.co" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap",
