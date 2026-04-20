@@ -22,11 +22,13 @@ export function getStripe(): Promise<Stripe | null> {
 export async function createCheckoutSession(opts: {
   priceId: string;
   returnUrl?: string;
+  planoSlug?: string;
 }): Promise<string> {
   const { data, error } = await supabase.functions.invoke("create-checkout", {
     body: {
       priceId: opts.priceId,
       returnUrl: opts.returnUrl,
+      planoSlug: opts.planoSlug,
       environment: getStripeEnvironment(),
     },
   });
