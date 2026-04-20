@@ -17,6 +17,7 @@ import { Route as TvIndexRouteImport } from './routes/tv.index'
 import { Route as TvSlugRouteImport } from './routes/tv.$slug'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
+import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
@@ -64,6 +65,11 @@ const HooksHealthcheckRoute = HooksHealthcheckRouteImport.update({
   path: '/hooks/healthcheck',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HooksCleanupTtsCacheRoute = HooksCleanupTtsCacheRouteImport.update({
+  id: '/hooks/cleanup-tts-cache',
+  path: '/hooks/cleanup-tts-cache',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppAppRoute = AppAppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/app': typeof AppAppRouteWithChildren
+  '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
+  '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/_app/app': typeof AppAppRouteWithChildren
+  '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/app'
+    | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
     | '/tv/$slug'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/setup'
+    | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
     | '/tv/$slug'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/_app/app'
+    | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
     | '/tv/$slug'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
+  HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
   STokenRoute: typeof STokenRoute
   TvSlugRoute: typeof TvSlugRoute
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/hooks/healthcheck'
       fullPath: '/hooks/healthcheck'
       preLoaderRoute: typeof HooksHealthcheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/cleanup-tts-cache': {
+      id: '/hooks/cleanup-tts-cache'
+      path: '/hooks/cleanup-tts-cache'
+      fullPath: '/hooks/cleanup-tts-cache'
+      preLoaderRoute: typeof HooksCleanupTtsCacheRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/app': {
@@ -357,6 +377,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
+  HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
   STokenRoute: STokenRoute,
   TvSlugRoute: TvSlugRoute,
