@@ -321,6 +321,11 @@ function AdminPlanosPage() {
                       <TableCell>
                         <RecursosBadges recursos={p.recursos} />
                       </TableCell>
+                      <TableCell className="font-mono text-[10px] text-muted-foreground">
+                        <PriceIdLine label="Mensal" value={p.gateway_price_id_mensal} />
+                        <PriceIdLine label="Anual" value={p.gateway_price_id_anual} />
+                        <PriceIdLine label="À vista" value={p.gateway_price_id_anual_oneoff} highlight />
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
