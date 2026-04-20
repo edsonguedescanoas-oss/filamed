@@ -639,34 +639,47 @@ function ProviderCard({
   title,
   description,
   badge,
+  locked = false,
 }: {
   active: boolean;
   onClick: () => void;
   title: string;
   description: string;
   badge: string;
+  locked?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`text-left rounded-xl border p-4 transition-all ${
+      className={`text-left rounded-xl border p-4 transition-all relative ${
         active
           ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-          : "border-border bg-card hover:border-primary/40"
+          : locked
+            ? "border-dashed border-border bg-muted/30 hover:border-primary/40"
+            : "border-border bg-card hover:border-primary/40"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-sm">{title}</h3>
+        <h3 className="font-semibold text-sm flex items-center gap-1.5">
+          {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+          {title}
+        </h3>
         <span
           className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
-            active ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+            active
+              ? "bg-primary/20 text-primary"
+              : locked
+                ? "bg-primary/15 text-primary"
+                : "bg-muted text-muted-foreground"
           }`}
         >
           {badge}
         </span>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{description}</p>
+      <p className={`mt-2 text-xs leading-relaxed ${locked ? "text-muted-foreground/70" : "text-muted-foreground"}`}>
+        {description}
+      </p>
     </button>
   );
 }
