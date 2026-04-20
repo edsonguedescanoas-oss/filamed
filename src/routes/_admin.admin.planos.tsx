@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   Loader2,
@@ -189,6 +190,26 @@ function fmtMoeda(centavos: number, moeda = "BRL"): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(centavos / 100);
+}
+
+/**
+ * Valida o formato de um Stripe Price ID.
+ * Aceita vazio (modalidade desativada) e o padrão `price_<alfanumérico>`.
+ * Retorna mensagem de erro ou `null` se ok.
+ */
+function validatePriceId(value: string): string | null {
+  const v = value.trim();
+  if (!v) return null;
+  if (!v.startsWith("price_")) {
+    return "Deve começar com 'price_' (ex.: price_1Xxx...)";
+  }
+  if (!/^price_[A-Za-z0-9]+$/.test(v)) {
+    return "Formato inválido. Use apenas letras e números após 'price_'.";
+  }
+  if (v.length < 10) {
+    return "ID muito curto — confira se você copiou o valor completo.";
+  }
+  return null;
 }
 
 function AdminPlanosPage() {
@@ -546,6 +567,17 @@ function PlanoEditorDialog({
     if (form.preco_anual_reais.trim() && precoAnual === null)
       return toast.error("Preço anual inválido");
 
+    // Validação inline dos Stripe Price IDs
+    const priceErrors = {
+      mensal: validatePriceId(form.gateway_price_id_mensal),
+      anual: validatePriceId(form.gateway_price_id_anual),
+      anual_oneoff: validatePriceId(form.gateway_price_id_anual_oneoff),
+    };
+    const firstErr = Object.values(priceErrors).find((e) => e !== null);
+    if (firstErr) {
+      return toast.error("Corrija os Stripe Price IDs em destaque antes de salvar");
+    }
+
     const ordem = parseLimite(form.ordem) ?? 0;
 
     const payload = {
@@ -683,41 +715,35 @@ function PlanoEditorDialog({
                 Cole o <code className="font-mono">price_...</code> de cada modalidade. Vazio = modalidade desativada no checkout.
               </p>
               <div className="grid gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="price_mensal" className="text-xs">Mensal (recorrente)</Label>
-                  <Input
-                    id="price_mensal"
-                    value={form.gateway_price_id_mensal}
-                    onChange={(e) => setField("gateway_price_id_mensal", e.target.value.trim())}
-                    placeholder="price_1Xxxx..."
-                    className="font-mono text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price_anual" className="text-xs">Anual (recorrente, 12 meses)</Label>
-                  <Input
-                    id="price_anual"
-                    value={form.gateway_price_id_anual}
-                    onChange={(e) => setField("gateway_price_id_anual", e.target.value.trim())}
-                    placeholder="price_1Xxxx..."
-                    className="font-mono text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="price_anual_oneoff" className="text-xs">
-                    Anual à vista <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">one-time</span>
-                  </Label>
-                  <Input
-                    id="price_anual_oneoff"
-                    value={form.gateway_price_id_anual_oneoff}
-                    onChange={(e) => setField("gateway_price_id_anual_oneoff", e.target.value.trim())}
-                    placeholder="price_1Xxxx... (Pix/boleto/cartão à vista)"
-                    className="font-mono text-xs"
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Habilita pagamento único de 12 meses sem renovação automática (Pix, boleto, cartão).
-                  </p>
-                </div>
+                <PriceIdField
+                  id="price_mensal"
+                  label="Mensal (recorrente)"
+                  value={form.gateway_price_id_mensal}
+                  onChange={(v) => setField("gateway_price_id_mensal", v)}
+                  placeholder="price_1Xxxx..."
+                />
+                <PriceIdField
+                  id="price_anual"
+                  label="Anual (recorrente, 12 meses)"
+                  value={form.gateway_price_id_anual}
+                  onChange={(v) => setField("gateway_price_id_anual", v)}
+                  placeholder="price_1Xxxx..."
+                />
+                <PriceIdField
+                  id="price_anual_oneoff"
+                  label={
+                    <>
+                      Anual à vista{" "}
+                      <span className="ml-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-primary">
+                        one-time
+                      </span>
+                    </>
+                  }
+                  value={form.gateway_price_id_anual_oneoff}
+                  onChange={(v) => setField("gateway_price_id_anual_oneoff", v)}
+                  placeholder="price_1Xxxx... (Pix/boleto/cartão à vista)"
+                  hint="Habilita pagamento único de 12 meses sem renovação automática (Pix, boleto, cartão)."
+                />
               </div>
             </div>
           </div>
@@ -854,6 +880,54 @@ function LimiteField({
         placeholder="ilimitado"
         inputMode="numeric"
       />
+    </div>
+  );
+}
+
+function PriceIdField({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+}: {
+  id: string;
+  label: React.ReactNode;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
+}) {
+  const error = validatePriceId(value);
+  const hasValue = value.trim().length > 0;
+  const showError = hasValue && error !== null;
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs">
+        {label}
+      </Label>
+      <Input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value.trim())}
+        placeholder={placeholder}
+        className={
+          showError
+            ? "font-mono text-xs border-destructive focus-visible:ring-destructive"
+            : "font-mono text-xs"
+        }
+        aria-invalid={showError || undefined}
+        aria-describedby={showError ? `${id}-error` : undefined}
+      />
+      {showError && (
+        <p id={`${id}-error`} className="text-[11px] font-medium text-destructive">
+          {error}
+        </p>
+      )}
+      {hint && !showError && (
+        <p className="text-[10px] text-muted-foreground">{hint}</p>
+      )}
     </div>
   );
 }
