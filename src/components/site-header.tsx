@@ -14,11 +14,11 @@ export function SiteHeader() {
             Fila<span className="text-gradient">Med</span>
           </span>
         </Link>
-        <nav className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
-          <a href="#funcionalidades" className="hover:text-foreground transition-colors">Funcionalidades</a>
-          <a href="#arquitetura" className="hover:text-foreground transition-colors">Arquitetura</a>
-          <a href="#beneficios" className="hover:text-foreground transition-colors">Benefícios</a>
-          <a href="#cta" className="hover:text-foreground transition-colors">Contato</a>
+        <nav className="hidden md:flex items-center gap-7 text-sm text-muted-foreground">
+          <Link to="/" hash="funcionalidades" className="hover:text-foreground transition-colors">Funcionalidades</Link>
+          <Link to="/precos" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground font-medium" }}>Preços</Link>
+          <Link to="/casos" className="hover:text-foreground transition-colors" activeProps={{ className: "text-foreground font-medium" }}>Casos</Link>
+          <Link to="/" hash="como-comecar" className="hover:text-foreground transition-colors">Como começar</Link>
         </nav>
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">

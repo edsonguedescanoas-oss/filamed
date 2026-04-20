@@ -1,4 +1,5 @@
 import { Activity } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export function SiteFooter() {
   return (
@@ -29,20 +30,20 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h4 className="font-semibold">Institucional</h4>
+            <h4 className="font-semibold">Produto</h4>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-foreground">Sobre</a></li>
-              <li><a href="#beneficios" className="hover:text-foreground">Benefícios</a></li>
-              <li><a href="#cta" className="hover:text-foreground">Demonstração</a></li>
+              <li><Link to="/precos" className="hover:text-foreground">Preços</Link></li>
+              <li><Link to="/casos" className="hover:text-foreground">Casos de uso</Link></li>
+              <li><Link to="/" hash="como-comecar" className="hover:text-foreground">Como começar</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold">Recursos</h4>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-foreground">Segurança & LGPD</a></li>
-              <li><a href="#" className="hover:text-foreground">API Docs</a></li>
-              <li><a href="#arquitetura" className="hover:text-foreground">Arquitetura</a></li>
+              <li><Link to="/" hash="arquitetura" className="hover:text-foreground">Arquitetura</Link></li>
+              <li><Link to="/" hash="beneficios" className="hover:text-foreground">Benefícios</Link></li>
+              <li><Link to="/login" className="hover:text-foreground">Entrar no painel</Link></li>
             </ul>
           </div>
         </div>
