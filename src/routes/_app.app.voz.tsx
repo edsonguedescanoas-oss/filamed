@@ -560,7 +560,61 @@ function VozConfigPage() {
         )}
       </section>
 
-      {/* Rate & pitch */}
+      {/* Template da chamada */}
+      <section className="space-y-3">
+        <div>
+          <Label className="text-sm font-semibold">Texto da chamada</Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Escolha como a TV vai anunciar cada senha. O destino é o texto livre
+            digitado pelo operador na hora da chamada (ex.: "Consultório 2",
+            "Guichê 01").
+          </p>
+        </div>
+        <div className="grid gap-2">
+          {TEMPLATE_OPTIONS.map((opt) => {
+            const ativo = config.template_chamada === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() =>
+                  setConfig((c) => ({ ...c, template_chamada: opt.id }))
+                }
+                className={`text-left rounded-xl border p-4 transition-all ${
+                  ativo
+                    ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex h-4 w-4 items-center justify-center rounded-full border-2 ${
+                        ativo
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground/40"
+                      }`}
+                    >
+                      {ativo && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+                      )}
+                    </span>
+                    <h3 className="font-semibold text-sm">{opt.label}</h3>
+                  </div>
+                </div>
+                <p className="mt-1.5 ml-6 text-xs text-muted-foreground">
+                  {opt.description}
+                </p>
+                <div className="mt-2 ml-6 rounded-md bg-muted/60 px-3 py-2 text-xs italic text-foreground/80">
+                  🔊 “{opt.exemplo}”
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+
       <section className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="rate" className="text-sm font-semibold">
