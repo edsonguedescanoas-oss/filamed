@@ -10,7 +10,9 @@ import {
   Loader2,
   Receipt,
   Building2,
+  Settings,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlanoAtual } from "@/hooks/use-plano-atual";
 import { supabase } from "@/integrations/supabase/client";
+import { getStripeEnvironment } from "@/lib/stripe";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +91,27 @@ function ContaPage() {
   const { plano, loading: loadingPlano } = usePlanoAtual(profile?.unidade_id);
   const [faturas, setFaturas] = useState<FaturaRow[]>([]);
   const [loadingFaturas, setLoadingFaturas] = useState(true);
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  const handleOpenPortal = async () => {
+    setOpeningPortal(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-portal-session", {
+        body: {
+          environment: getStripeEnvironment(),
+          returnUrl: `${window.location.origin}/app/conta`,
+        },
+      });
+      if (error || !data?.url) {
+        throw new Error(error?.message || "Falha ao abrir o portal");
+      }
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      toast.error(e.message || "Não foi possível abrir o portal de gerenciamento.");
+    } finally {
+      setOpeningPortal(false);
+    }
+  };
 
   useEffect(() => {
     const unidadeId = profile?.unidade_id;
@@ -162,14 +186,29 @@ function ContaPage() {
                 )}
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
-                <Button asChild size="lg" className="bg-gradient-primary shadow-elegant">
-                  <Link to="/precos">
-                    Trocar de plano
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <p className="text-[11px] text-muted-foreground text-right max-w-[200px]">
-                  Sem fidelidade. Mude ou cancele a qualquer momento.
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleOpenPortal}
+                    disabled={openingPortal}
+                  >
+                    {openingPortal ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Settings className="h-4 w-4" />
+                    )}
+                    Gerenciar assinatura
+                  </Button>
+                  <Button asChild size="lg" className="bg-gradient-primary shadow-elegant">
+                    <Link to="/precos">
+                      Trocar de plano
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground text-right max-w-[260px]">
+                  Cancele, troque o cartão ou baixe faturas no portal seguro do Stripe.
                 </p>
               </div>
             </div>
