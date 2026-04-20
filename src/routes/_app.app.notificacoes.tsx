@@ -164,7 +164,7 @@ function TemplatePreview({
           Ativo
         </Badge>
       </div>
-      <div className="mt-3 rounded-md bg-emerald-500/5 border border-emerald-500/20 px-3 py-2 text-sm">
+      <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
         {mensagem}
       </div>
     </div>

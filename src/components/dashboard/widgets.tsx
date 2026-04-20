@@ -1366,7 +1366,42 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
           </div>
         </div>
       </div>
+
+      <RelatoriosAvancadosSection unidadeId={unidadeId} />
     </div>
+  );
+}
+
+/**
+ * Card de "Relatórios avançados" — recurso premium.
+ * Quando o plano libera, mostra um placeholder pra futuros relatórios;
+ * quando bloqueado, o RecursoGate mostra upsell pra /precos.
+ */
+function RelatoriosAvancadosSection({ unidadeId: _unidadeId }: { unidadeId: string }) {
+  return (
+    <RecursoGate
+      recurso="relatorios_avancados"
+      titulo="Relatórios avançados"
+      descricao="Exporte CSV/PDF de atendimentos, tempos médios por médico e por hora do dia, taxa de ausência e produtividade da equipe."
+      beneficios={[
+        "Exportação CSV/PDF de atendimentos do mês",
+        "Tempo médio por médico, fila e hora do dia",
+        "Taxa de ausência e no-show por turno",
+        "Comparativo mensal e gráficos de tendência",
+      ]}
+    >
+      <div className="rounded-2xl border border-border bg-card p-8 shadow-soft">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <TrendingUp className="h-5 w-5" />
+          </div>
+          <div>
+            <SectionTitle>Relatórios avançados</SectionTitle>
+            <p className="text-sm text-muted-foreground">Em construção — em breve neste painel.</p>
+          </div>
+        </div>
+      </div>
+    </RecursoGate>
   );
 }
 
