@@ -55,6 +55,7 @@ export function usePlanoAtual(unidadeId: string | null | undefined) {
             ? {
                 ...row,
                 recursos: (row.recursos as Record<string, boolean> | null) ?? null,
+                metadata: (row.metadata as Record<string, unknown> | null) ?? null,
               }
             : null,
         );
