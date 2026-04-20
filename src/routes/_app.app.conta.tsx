@@ -96,6 +96,16 @@ function ContaPage() {
   const [faturas, setFaturas] = useState<FaturaRow[]>([]);
   const [loadingFaturas, setLoadingFaturas] = useState(true);
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [renewOpen, setRenewOpen] = useState(false);
+
+  // Detecta assinatura anual à vista (one-off): metadata.tipo === 'anual_oneoff'
+  // ou heurística pelo cancelar_no_fim_do_ciclo + ciclo anual (sem auto-renovação)
+  const isAnualOneOff = useMemo(() => {
+    if (!plano) return false;
+    const tipo = (plano.metadata as { tipo?: string } | null)?.tipo;
+    if (tipo === "anual_oneoff") return true;
+    return plano.ciclo === "anual" && plano.cancelar_no_fim_do_ciclo === true;
+  }, [plano]);
 
   const handleOpenPortal = async () => {
     setOpeningPortal(true);
