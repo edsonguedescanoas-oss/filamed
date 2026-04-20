@@ -430,7 +430,36 @@ function RecursosBadges({ recursos }: { recursos: Record<string, boolean> | null
   );
 }
 
-function PlanoEditorDialog({
+function PriceIdLine({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string | null;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 leading-tight">
+      <span
+        className={
+          highlight
+            ? "rounded bg-primary/10 px-1 font-sans text-[9px] font-semibold uppercase text-primary"
+            : "font-sans text-[9px] font-semibold uppercase text-muted-foreground/70"
+        }
+      >
+        {label}
+      </span>
+      {value ? (
+        <span title={value} className="max-w-[140px] truncate">
+          {value}
+        </span>
+      ) : (
+        <span className="italic text-muted-foreground/60">—</span>
+      )}
+    </div>
+  );
+}
   open,
   plano,
   onClose,
