@@ -11,6 +11,7 @@ import {
   Stethoscope,
   Headphones,
   Volume2,
+  MessageCircle,
   UserCircle,
   ChevronDown,
   CreditCard,
@@ -76,6 +77,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/filas", label: "Filas", icon: Headphones },
   { to: "/app/pacientes", label: "Pacientes", icon: Users },
   { to: "/app/voz", label: "Voz", icon: Volume2 },
+  { to: "/app/notificacoes", label: "Notificações", icon: MessageCircle },
 ];
 
 const ROLE_LABELS: Record<AppRole, string> = {
