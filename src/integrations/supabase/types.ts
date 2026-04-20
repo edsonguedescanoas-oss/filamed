@@ -718,7 +718,13 @@ export type Database = {
       user_unidade_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "recepcao" | "medico" | "enfermeiro" | "gestor"
+      app_role:
+        | "admin"
+        | "recepcao"
+        | "medico"
+        | "enfermeiro"
+        | "gestor"
+        | "super_admin"
       canal_notificacao: "whatsapp" | "sms" | "telegram" | "push" | "email"
       fila_tipo:
         | "consulta"
@@ -864,7 +870,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "recepcao", "medico", "enfermeiro", "gestor"],
+      app_role: [
+        "admin",
+        "recepcao",
+        "medico",
+        "enfermeiro",
+        "gestor",
+        "super_admin",
+      ],
       canal_notificacao: ["whatsapp", "sms", "telegram", "push", "email"],
       fila_tipo: [
         "consulta",
