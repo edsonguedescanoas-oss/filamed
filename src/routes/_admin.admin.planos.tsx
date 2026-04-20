@@ -882,3 +882,51 @@ function LimiteField({
     </div>
   );
 }
+
+function PriceIdField({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+}: {
+  id: string;
+  label: React.ReactNode;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
+}) {
+  const error = validatePriceId(value);
+  const hasValue = value.trim().length > 0;
+  const showError = hasValue && error !== null;
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs">
+        {label}
+      </Label>
+      <Input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value.trim())}
+        placeholder={placeholder}
+        className={
+          showError
+            ? "font-mono text-xs border-destructive focus-visible:ring-destructive"
+            : "font-mono text-xs"
+        }
+        aria-invalid={showError || undefined}
+        aria-describedby={showError ? `${id}-error` : undefined}
+      />
+      {showError && (
+        <p id={`${id}-error`} className="text-[11px] font-medium text-destructive">
+          {error}
+        </p>
+      )}
+      {hint && !showError && (
+        <p className="text-[10px] text-muted-foreground">{hint}</p>
+      )}
+    </div>
+  );
+}
