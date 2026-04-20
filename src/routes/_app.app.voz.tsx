@@ -12,10 +12,13 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecurso } from "@/hooks/use-recurso";
 import { useVoiceHealth } from "@/hooks/use-voice-health";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Lock } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/app/voz")({
@@ -87,6 +90,7 @@ function VozConfigPage() {
   const { profile, roles } = useAuth();
   const isAdmin = roles.includes("admin");
   const unidadeId = profile?.unidade_id ?? null;
+  const { liberado: vozPremiumLiberada, planoNome } = useRecurso("voz_premium");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -205,6 +209,20 @@ function VozConfigPage() {
   }, [config.provider, browserVoices]);
 
   const handleProviderChange = (p: Provider) => {
+    if ((p === "google" || p === "elevenlabs") && !vozPremiumLiberada) {
+      toast.error("Voz premium não está no seu plano", {
+        description: planoNome
+          ? `Plano atual: ${planoNome}. Faça upgrade para liberar Google TTS e ElevenLabs.`
+          : "Faça upgrade para liberar Google TTS e ElevenLabs.",
+        action: {
+          label: "Ver planos",
+          onClick: () => {
+            window.location.href = "/precos";
+          },
+        },
+      });
+      return;
+    }
     setConfig((c) => ({ ...c, provider: p, voice_id: null }));
   };
 
@@ -466,7 +484,18 @@ function VozConfigPage() {
 
 
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">Provedor de voz</Label>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <Label className="text-sm font-semibold">Provedor de voz</Label>
+          {!vozPremiumLiberada && (
+            <Link
+              to="/precos"
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+            >
+              <Lock className="h-3 w-3" />
+              Voz premium não inclusa — fazer upgrade
+            </Link>
+          )}
+        </div>
         <div className="grid gap-3 md:grid-cols-3">
           <ProviderCard
             active={config.provider === "browser"}
@@ -480,14 +509,16 @@ function VozConfigPage() {
             onClick={() => handleProviderChange("google")}
             title="Google Cloud TTS"
             description="Vozes Neural2 e Wavenet em pt-BR. Requer chave da API."
-            badge="API key"
+            badge={vozPremiumLiberada ? "API key" : "Premium"}
+            locked={!vozPremiumLiberada}
           />
           <ProviderCard
             active={config.provider === "elevenlabs"}
             onClick={() => handleProviderChange("elevenlabs")}
             title="ElevenLabs"
             description="Vozes ultra realistas multilíngues. Requer chave da API."
-            badge="API key"
+            badge={vozPremiumLiberada ? "API key" : "Premium"}
+            locked={!vozPremiumLiberada}
           />
         </div>
       </section>
@@ -608,34 +639,47 @@ function ProviderCard({
   title,
   description,
   badge,
+  locked = false,
 }: {
   active: boolean;
   onClick: () => void;
   title: string;
   description: string;
   badge: string;
+  locked?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`text-left rounded-xl border p-4 transition-all ${
+      className={`text-left rounded-xl border p-4 transition-all relative ${
         active
           ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-          : "border-border bg-card hover:border-primary/40"
+          : locked
+            ? "border-dashed border-border bg-muted/30 hover:border-primary/40"
+            : "border-border bg-card hover:border-primary/40"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-sm">{title}</h3>
+        <h3 className="font-semibold text-sm flex items-center gap-1.5">
+          {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+          {title}
+        </h3>
         <span
           className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${
-            active ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+            active
+              ? "bg-primary/20 text-primary"
+              : locked
+                ? "bg-primary/15 text-primary"
+                : "bg-muted text-muted-foreground"
           }`}
         >
           {badge}
         </span>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{description}</p>
+      <p className={`mt-2 text-xs leading-relaxed ${locked ? "text-muted-foreground/70" : "text-muted-foreground"}`}>
+        {description}
+      </p>
     </button>
   );
 }
