@@ -57,14 +57,32 @@ serve(async (req) => {
     const isRecurring = stripePrice.type === "recurring";
     const origin = req.headers.get("origin") || "https://filamed.com.br";
 
+    // Pix e boleto NÃO suportam assinaturas recorrentes nem trial no Stripe.
+    // Para assinaturas, apenas cartão é aceito. Para pagamentos avulsos (BRL),
+    // habilitamos card + pix + boleto para aumentar a conversão no Brasil.
+    const paymentMethodTypes = isRecurring
+      ? ["card"]
+      : ["card", "boleto", "pix"];
+
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: stripePrice.id, quantity: 1 }],
       mode: isRecurring ? "subscription" : "payment",
       ui_mode: "embedded",
+      payment_method_types: paymentMethodTypes as any,
       return_url:
         returnUrl ||
         `${origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}`,
       ...(customerEmail && { customer_email: customerEmail }),
+      ...(!isRecurring && {
+        payment_method_options: {
+          boleto: {
+            expires_after_days: 3,
+          },
+          pix: {
+            expires_after_seconds: 3600, // 1h para pagar
+          },
+        },
+      }),
       ...(isRecurring && {
         subscription_data: {
           trial_period_days: 14,
