@@ -6,7 +6,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { priceId, returnUrl, environment } = await req.json();
+    const { priceId, returnUrl, environment, planoSlug } = await req.json();
 
     if (!priceId || typeof priceId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(priceId)) {
       return new Response(JSON.stringify({ error: "Invalid priceId" }), {
@@ -57,12 +57,24 @@ serve(async (req) => {
     const isRecurring = stripePrice.type === "recurring";
     const origin = req.headers.get("origin") || "https://filamed.com.br";
 
+    // Detecta o "anual à vista": price one-time cujo lookup_key termina em _yearly_oneoff.
+    // Esse fluxo libera card+pix+boleto SEM trial; o webhook cria assinatura manual de 12 meses.
+    const isAnnualOneOff = !isRecurring && /_yearly_oneoff$/.test(priceId);
+
     // Pix e boleto NÃO suportam assinaturas recorrentes nem trial no Stripe.
-    // Para assinaturas, apenas cartão é aceito. Para pagamentos avulsos (BRL),
-    // habilitamos card + pix + boleto para aumentar a conversão no Brasil.
+    // Em assinaturas mensais/anuais recorrentes, só cartão. Em one-time (anual à vista
+    // ou pagamentos avulsos), habilitamos card+pix+boleto pra maximizar conversão BR.
     const paymentMethodTypes = isRecurring
       ? ["card"]
       : ["card", "boleto", "pix"];
+
+    const sharedMetadata: Record<string, string> = {
+      ...(userId && { userId }),
+      ...(unidadeId && { unidadeId }),
+      ...(planoSlug && { planoSlug }),
+      priceId,
+      ...(isAnnualOneOff && { tipo: "anual_oneoff" }),
+    };
 
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: stripePrice.id, quantity: 1 }],
@@ -75,29 +87,24 @@ serve(async (req) => {
       ...(customerEmail && { customer_email: customerEmail }),
       ...(!isRecurring && {
         payment_method_options: {
-          boleto: {
-            expires_after_days: 3,
-          },
-          pix: {
-            expires_after_seconds: 3600, // 1h para pagar
-          },
+          boleto: { expires_after_days: 3 },
+          pix: { expires_after_seconds: 3600 },
         },
       }),
       ...(isRecurring && {
         subscription_data: {
           trial_period_days: 14,
-          metadata: {
-            ...(userId && { userId }),
-            ...(unidadeId && { unidadeId }),
-            priceId,
-          },
+          metadata: sharedMetadata,
         },
       }),
-      metadata: {
-        ...(userId && { userId }),
-        ...(unidadeId && { unidadeId }),
-        priceId,
-      },
+      ...(isAnnualOneOff && {
+        // Cria customer dedicado pra atrelar a assinatura manual depois
+        customer_creation: "always" as const,
+        payment_intent_data: {
+          metadata: sharedMetadata,
+        },
+      }),
+      metadata: sharedMetadata,
     });
 
     return new Response(JSON.stringify({ clientSecret: session.client_secret }), {
