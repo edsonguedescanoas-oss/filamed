@@ -1,6 +1,8 @@
 import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroMockup from "@/assets/hero-mockup.jpg";
+import heroMockupWebp from "@/assets/hero-mockup.webp";
+import heroMockupAvif from "@/assets/hero-mockup.avif";
 
 export function Hero() {
   return (
@@ -58,16 +60,20 @@ export function Hero() {
         <div className="relative mt-16 sm:mt-20 mx-auto max-w-6xl animate-scale-in">
           <div className="absolute -inset-6 bg-gradient-primary opacity-20 blur-3xl rounded-[2rem]" />
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-elegant">
-            <img
-              src={heroMockup}
-              alt="Painel administrativo, TV de chamadas e WebApp do paciente do sistema FilaMed"
-              width={1376}
-              height={768}
-              fetchPriority="high"
-              decoding="async"
-              sizes="(min-width: 1280px) 1150px, (min-width: 640px) 90vw, 100vw"
-              className="w-full h-auto"
-            />
+            <picture>
+              <source type="image/avif" srcSet={heroMockupAvif} />
+              <source type="image/webp" srcSet={heroMockupWebp} />
+              <img
+                src={heroMockup}
+                alt="Painel administrativo, TV de chamadas e WebApp do paciente do sistema FilaMed"
+                width={1376}
+                height={768}
+                fetchPriority="high"
+                decoding="async"
+                sizes="(min-width: 1280px) 1150px, (min-width: 640px) 90vw, 100vw"
+                className="w-full h-auto"
+              />
+            </picture>
           </div>
         </div>
       </div>
