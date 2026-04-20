@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CreditCard,
   Sparkles,
@@ -11,6 +11,7 @@ import {
   Receipt,
   Building2,
   Settings,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import { usePlanoAtual } from "@/hooks/use-plano-atual";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { RecursoGate } from "@/components/recurso-gate";
+import { CheckoutDialog } from "@/components/checkout-dialog";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -94,6 +96,16 @@ function ContaPage() {
   const [faturas, setFaturas] = useState<FaturaRow[]>([]);
   const [loadingFaturas, setLoadingFaturas] = useState(true);
   const [openingPortal, setOpeningPortal] = useState(false);
+  const [renewOpen, setRenewOpen] = useState(false);
+
+  // Detecta assinatura anual à vista (one-off): metadata.tipo === 'anual_oneoff'
+  // ou heurística pelo cancelar_no_fim_do_ciclo + ciclo anual (sem auto-renovação)
+  const isAnualOneOff = useMemo(() => {
+    if (!plano) return false;
+    const tipo = (plano.metadata as { tipo?: string } | null)?.tipo;
+    if (tipo === "anual_oneoff") return true;
+    return plano.ciclo === "anual" && plano.cancelar_no_fim_do_ciclo === true;
+  }, [plano]);
 
   const handleOpenPortal = async () => {
     setOpeningPortal(true);
@@ -179,11 +191,20 @@ function ContaPage() {
                   <Badge variant="secondary" className="text-xs">
                     Cobrança {plano.ciclo === "anual" ? "anual" : "mensal"}
                   </Badge>
+                  {isAnualOneOff && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-primary/40 bg-primary/5 text-primary"
+                    >
+                      Anual à vista
+                    </Badge>
+                  )}
                 </div>
                 {plano.proximo_ciclo_em && (
                   <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    Próximo ciclo em <strong>{fmtData(plano.proximo_ciclo_em)}</strong>
+                    {isAnualOneOff ? "Acesso válido até" : "Próximo ciclo em"}{" "}
+                    <strong>{fmtData(plano.proximo_ciclo_em)}</strong>
                   </p>
                 )}
               </div>
@@ -285,6 +306,39 @@ function ContaPage() {
           </CardContent>
         )}
       </Card>
+
+      {/* Renovação manual — somente para assinaturas anuais à vista (one-off) */}
+      {isAnualOneOff && plano && (
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <RefreshCw className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Sem renovação automática</p>
+                <p className="text-sm text-muted-foreground mt-1 max-w-xl">
+                  Sua assinatura anual à vista vence em{" "}
+                  <strong>{fmtData(plano.proximo_ciclo_em)}</strong>. Renove agora por mais 12 meses pagando via Pix, boleto ou cartão — sem cobrança recorrente.
+                </p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="bg-gradient-primary shadow-elegant shrink-0"
+              onClick={() => {
+                if (!plano.gateway_price_id_anual_oneoff) {
+                  toast.error("Renovação indisponível no momento. Fale com o suporte.");
+                  return;
+                }
+                setRenewOpen(true);
+              }}
+              disabled={!plano.gateway_price_id_anual_oneoff}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Renovar por mais 12 meses
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Aviso de inadimplência — pagamento falhou */}
       {plano && plano.status === "inadimplente" && (
@@ -436,6 +490,18 @@ function ContaPage() {
           contato@filamed.app
         </a>
       </p>
+
+      {/* Dialog de renovação anual à vista */}
+      {plano && (
+        <CheckoutDialog
+          open={renewOpen}
+          onClose={() => setRenewOpen(false)}
+          priceId={plano.gateway_price_id_anual_oneoff}
+          planoNome={plano.plano_nome}
+          planoSlug={plano.plano_slug}
+          ciclo="anual_oneoff"
+        />
+      )}
     </div>
   );
 }

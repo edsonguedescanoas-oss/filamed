@@ -18,6 +18,9 @@ export interface PlanoAtual {
   limite_atendentes: number | null;
   limite_tvs: number | null;
   limite_senhas_mes: number | null;
+  metadata: Record<string, unknown> | null;
+  cancelar_no_fim_do_ciclo: boolean;
+  gateway_price_id_anual_oneoff: string | null;
 }
 
 /**
@@ -52,6 +55,7 @@ export function usePlanoAtual(unidadeId: string | null | undefined) {
             ? {
                 ...row,
                 recursos: (row.recursos as Record<string, boolean> | null) ?? null,
+                metadata: (row.metadata as Record<string, unknown> | null) ?? null,
               }
             : null,
         );
