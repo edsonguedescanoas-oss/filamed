@@ -72,6 +72,9 @@ interface PlanoRow {
   ativo: boolean;
   destaque: boolean;
   ordem: number;
+  gateway_price_id_mensal: string | null;
+  gateway_price_id_anual: string | null;
+  gateway_price_id_anual_oneoff: string | null;
 }
 
 // Toggles de recursos conhecidos (mantém alinhado com /precos)
