@@ -12,10 +12,13 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useRecurso } from "@/hooks/use-recurso";
 import { useVoiceHealth } from "@/hooks/use-voice-health";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Lock } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/app/voz")({
@@ -87,6 +90,7 @@ function VozConfigPage() {
   const { profile, roles } = useAuth();
   const isAdmin = roles.includes("admin");
   const unidadeId = profile?.unidade_id ?? null;
+  const { liberado: vozPremiumLiberada, planoNome } = useRecurso("voz_premium");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -205,6 +209,20 @@ function VozConfigPage() {
   }, [config.provider, browserVoices]);
 
   const handleProviderChange = (p: Provider) => {
+    if ((p === "google" || p === "elevenlabs") && !vozPremiumLiberada) {
+      toast.error("Voz premium não está no seu plano", {
+        description: planoNome
+          ? `Plano atual: ${planoNome}. Faça upgrade para liberar Google TTS e ElevenLabs.`
+          : "Faça upgrade para liberar Google TTS e ElevenLabs.",
+        action: {
+          label: "Ver planos",
+          onClick: () => {
+            window.location.href = "/precos";
+          },
+        },
+      });
+      return;
+    }
     setConfig((c) => ({ ...c, provider: p, voice_id: null }));
   };
 
@@ -466,7 +484,18 @@ function VozConfigPage() {
 
 
       <section className="space-y-3">
-        <Label className="text-sm font-semibold">Provedor de voz</Label>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <Label className="text-sm font-semibold">Provedor de voz</Label>
+          {!vozPremiumLiberada && (
+            <Link
+              to="/precos"
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+            >
+              <Lock className="h-3 w-3" />
+              Voz premium não inclusa — fazer upgrade
+            </Link>
+          )}
+        </div>
         <div className="grid gap-3 md:grid-cols-3">
           <ProviderCard
             active={config.provider === "browser"}
@@ -480,14 +509,16 @@ function VozConfigPage() {
             onClick={() => handleProviderChange("google")}
             title="Google Cloud TTS"
             description="Vozes Neural2 e Wavenet em pt-BR. Requer chave da API."
-            badge="API key"
+            badge={vozPremiumLiberada ? "API key" : "Premium"}
+            locked={!vozPremiumLiberada}
           />
           <ProviderCard
             active={config.provider === "elevenlabs"}
             onClick={() => handleProviderChange("elevenlabs")}
             title="ElevenLabs"
             description="Vozes ultra realistas multilíngues. Requer chave da API."
-            badge="API key"
+            badge={vozPremiumLiberada ? "API key" : "Premium"}
+            locked={!vozPremiumLiberada}
           />
         </div>
       </section>
