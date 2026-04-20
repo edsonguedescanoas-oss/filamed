@@ -9,6 +9,7 @@ import { Architecture } from "@/components/sections/architecture";
 import { Flow } from "@/components/sections/flow";
 import { Benefits } from "@/components/sections/benefits";
 import { Differentials } from "@/components/sections/differentials";
+import { ComoComecar } from "@/components/sections/como-comecar";
 import { CTA } from "@/components/sections/cta";
 import { useReveal } from "@/hooks/use-reveal";
 
@@ -47,6 +48,7 @@ function LandingPage() {
         <Flow />
         <Benefits />
         <Differentials />
+        <ComoComecar />
         <CTA />
       </main>
       <SiteFooter />
