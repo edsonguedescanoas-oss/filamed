@@ -79,6 +79,7 @@ const RECURSOS_DISPONIVEIS: { key: string; label: string }[] = [
   { key: "whatsapp", label: "Notificações WhatsApp" },
   { key: "voz_premium", label: "Voz premium (ElevenLabs/Google)" },
   { key: "relatorios_avancados", label: "Relatórios avançados" },
+  { key: "multi_unidade", label: "Multi-unidade" },
   { key: "suporte_prioritario", label: "Suporte prioritário 24/7" },
   { key: "sso", label: "Login único (SSO)" },
   { key: "api", label: "API REST + Webhooks" },

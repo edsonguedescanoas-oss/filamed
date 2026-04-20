@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlanoAtual } from "@/hooks/use-plano-atual";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
+import { RecursoGate } from "@/components/recurso-gate";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ const RECURSO_LABEL: Record<string, string> = {
   whatsapp: "Notificações WhatsApp",
   voz_premium: "Voz premium (ElevenLabs/Google)",
   relatorios_avancados: "Relatórios avançados",
+  multi_unidade: "Multi-unidade",
   suporte_prioritario: "Suporte prioritário 24/7",
   sso: "Login único (SSO)",
   api: "API REST + Webhooks",
@@ -305,6 +307,38 @@ function ContaPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Multi-unidade (recurso premium) */}
+      <RecursoGate
+        recurso="multi_unidade"
+        modo="card"
+        titulo="Gerencie várias unidades"
+        descricao="Opere uma rede inteira a partir de um único painel — adicione filiais, troque entre elas com um clique e tenha visão consolidada do gestor."
+        beneficios={[
+          "Cadastre quantas unidades quiser",
+          "Painel de gestor consolida indicadores de toda a rede",
+          "Permissões por unidade — cada equipe vê só a sua",
+          "Faturamento unificado em uma assinatura",
+        ]}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Minhas unidades
+            </CardTitle>
+            <CardDescription>
+              Adicione novas filiais e alterne entre elas. Em construção — em breve neste painel.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button disabled variant="outline">
+              <Building2 className="h-4 w-4" />
+              Adicionar nova unidade
+            </Button>
+          </CardContent>
+        </Card>
+      </RecursoGate>
 
       {/* Faturas */}
       <Card>

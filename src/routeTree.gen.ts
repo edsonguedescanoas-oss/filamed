@@ -28,6 +28,7 @@ import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
+import { Route as AppAppNotificacoesRouteImport } from './routes/_app.app.notificacoes'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
 import { Route as AppAppContaRouteImport } from './routes/_app.app.conta'
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
@@ -126,6 +127,11 @@ const AppAppPacientesRoute = AppAppPacientesRouteImport.update({
   path: '/pacientes',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppNotificacoesRoute = AppAppNotificacoesRouteImport.update({
+  id: '/notificacoes',
+  path: '/notificacoes',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppFilasRoute = AppAppFilasRouteImport.update({
   id: '/filas',
   path: '/filas',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
+  '/app/notificacoes': typeof AppAppNotificacoesRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/voz': typeof AppAppVozRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
+  '/app/notificacoes': typeof AppAppNotificacoesRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/voz': typeof AppAppVozRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
   '/_app/app/conta': typeof AppAppContaRoute
   '/_app/app/filas': typeof AppAppFilasRoute
+  '/_app/app/notificacoes': typeof AppAppNotificacoesRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
   '/_app/app/voz': typeof AppAppVozRoute
@@ -238,6 +247,7 @@ export interface FileRouteTypes {
     | '/app/atendimento'
     | '/app/conta'
     | '/app/filas'
+    | '/app/notificacoes'
     | '/app/pacientes'
     | '/app/recepcao'
     | '/app/voz'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/app/atendimento'
     | '/app/conta'
     | '/app/filas'
+    | '/app/notificacoes'
     | '/app/pacientes'
     | '/app/recepcao'
     | '/app/voz'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/_app/app/atendimento'
     | '/_app/app/conta'
     | '/_app/app/filas'
+    | '/_app/app/notificacoes'
     | '/_app/app/pacientes'
     | '/_app/app/recepcao'
     | '/_app/app/voz'
@@ -442,6 +454,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppPacientesRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/notificacoes': {
+      id: '/_app/app/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/app/notificacoes'
+      preLoaderRoute: typeof AppAppNotificacoesRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/filas': {
       id: '/_app/app/filas'
       path: '/filas'
@@ -499,6 +518,7 @@ interface AppAppRouteChildren {
   AppAppAtendimentoRoute: typeof AppAppAtendimentoRoute
   AppAppContaRoute: typeof AppAppContaRoute
   AppAppFilasRoute: typeof AppAppFilasRoute
+  AppAppNotificacoesRoute: typeof AppAppNotificacoesRoute
   AppAppPacientesRoute: typeof AppAppPacientesRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
   AppAppVozRoute: typeof AppAppVozRoute
@@ -509,6 +529,7 @@ const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppAtendimentoRoute: AppAppAtendimentoRoute,
   AppAppContaRoute: AppAppContaRoute,
   AppAppFilasRoute: AppAppFilasRoute,
+  AppAppNotificacoesRoute: AppAppNotificacoesRoute,
   AppAppPacientesRoute: AppAppPacientesRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
   AppAppVozRoute: AppAppVozRoute,
