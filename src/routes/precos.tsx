@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, ArrowRight, Sparkles, MessageCircle, Building2, Mic2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Check,
+  ArrowRight,
+  Sparkles,
+  MessageCircle,
+  Building2,
+  Mic2,
+  Loader2,
+} from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
@@ -9,6 +18,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/precos")({
   head: () => ({
@@ -17,29 +28,46 @@ export const Route = createFileRoute("/precos")({
       {
         name: "description",
         content:
-          "Comece com R$249/mês por unidade. Add-ons sob demanda: WhatsApp, multi-unidade, voz premium. Sem fidelidade, sem instalação complexa.",
+          "Planos a partir de R$99/mês por unidade. Mensal ou anual com 2 meses grátis. Sem fidelidade, sem instalação complexa.",
       },
-      { property: "og:title", content: "Preços simples e por unidade — FilaMed" },
+      { property: "og:title", content: "Planos e preços — FilaMed" },
       {
         property: "og:description",
         content:
-          "R$249/mês por unidade com tudo essencial. Pague apenas pelos extras que usar.",
+          "Starter, Pro e Enterprise. Pague mensal ou anual com desconto. Cancelamento a qualquer momento.",
       },
     ],
   }),
   component: PrecosPage,
 });
 
-const baseFeatures = [
-  "Filas ilimitadas e senhas ilimitadas/dia",
-  "Painel de TV (1 tela inclusa por unidade)",
-  "Chamadas por voz (browser TTS)",
-  "WebApp do paciente com QR Code",
-  "Dashboard em tempo real",
-  "Relatórios de atendimento",
-  "Multi-perfil (admin, recepção, médico, gestor)",
-  "Suporte por e-mail em horário comercial",
-];
+interface PlanoRow {
+  id: string;
+  slug: string;
+  nome: string;
+  descricao: string | null;
+  preco_mensal_centavos: number;
+  preco_anual_centavos: number | null;
+  moeda: string;
+  limite_filas: number | null;
+  limite_atendentes: number | null;
+  limite_tvs: number | null;
+  limite_senhas_mes: number | null;
+  recursos: Record<string, boolean> | null;
+  destaque: boolean;
+  ordem: number;
+}
+
+type Ciclo = "mensal" | "anual";
+
+const RECURSO_LABEL: Record<string, string> = {
+  whatsapp: "Notificações WhatsApp",
+  voz_premium: "Voz premium (ElevenLabs/Google)",
+  relatorios_avancados: "Relatórios avançados",
+  suporte_prioritario: "Suporte prioritário 24/7",
+  sso: "Login único (SSO)",
+  api: "API REST + Webhooks",
+};
 
 const addOns = [
   {
@@ -68,7 +96,7 @@ const addOns = [
 const faqs = [
   {
     q: "Tem fidelidade ou multa por cancelamento?",
-    a: "Não. Cobrança mensal, cancelamento a qualquer momento. Você só paga pelo mês em curso.",
+    a: "Não. Cobrança mensal ou anual à sua escolha, cancelamento a qualquer momento. No anual, devolvemos os meses não utilizados pro-rata.",
   },
   {
     q: "Quanto tempo leva pra colocar no ar?",
@@ -87,83 +115,118 @@ const faqs = [
     a: "Não. Funciona em qualquer Smart TV com navegador, Chromecast, Fire TV ou um PC antigo ligado a uma TV. Senha é texto, não exige impressora térmica (mas suportamos se quiser).",
   },
   {
-    q: "E se eu tiver uma rede com 10+ unidades?",
-    a: "Acima de 5 unidades temos plano Enterprise com desconto progressivo, SLA dedicado e suporte 24/7. Fale com a gente.",
+    q: "Posso mudar de plano depois?",
+    a: "Sim. Faz upgrade ou downgrade a qualquer momento pelo painel — a cobrança é ajustada pro-rata no ciclo seguinte.",
   },
 ];
 
+function fmtMoeda(centavos: number, moeda = "BRL"): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: moeda,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(centavos / 100);
+}
+
+function buildFeatures(plano: PlanoRow): string[] {
+  const out: string[] = [];
+
+  out.push(plano.limite_filas === null ? "Filas ilimitadas" : `Até ${plano.limite_filas} filas`);
+  out.push(
+    plano.limite_atendentes === null
+      ? "Atendentes ilimitados"
+      : `Até ${plano.limite_atendentes} atendentes`,
+  );
+  out.push(
+    plano.limite_tvs === null
+      ? "Painéis de TV ilimitados"
+      : `${plano.limite_tvs} ${plano.limite_tvs === 1 ? "painel" : "painéis"} de TV`,
+  );
+  out.push(
+    plano.limite_senhas_mes === null
+      ? "Senhas ilimitadas/mês"
+      : `${plano.limite_senhas_mes.toLocaleString("pt-BR")} senhas/mês`,
+  );
+
+  // Recursos do JSON
+  const recursos = plano.recursos ?? {};
+  for (const [chave, ativo] of Object.entries(recursos)) {
+    if (ativo && RECURSO_LABEL[chave]) out.push(RECURSO_LABEL[chave]);
+  }
+
+  return out;
+}
+
 function PrecosPage() {
+  const [planos, setPlanos] = useState<PlanoRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [ciclo, setCiclo] = useState<Ciclo>("mensal");
+
+  useEffect(() => {
+    let cancel = false;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("planos")
+        .select(
+          "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, destaque, ordem",
+        )
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (cancel) return;
+      if (error) {
+        console.error("Erro ao carregar planos:", error);
+      } else {
+        setPlanos((data ?? []) as PlanoRow[]);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="pt-32 pb-24">
         {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-mesh pb-16">
+        <section className="relative overflow-hidden bg-gradient-mesh pb-12">
           <div className="mx-auto max-w-5xl px-6 text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
-              Preço simples, sem surpresa no boleto
+              Sem fidelidade. Cancele quando quiser.
             </span>
             <h1 className="mt-6 font-display text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              Pague <span className="text-gradient">por unidade</span>, ative só o que usar
+              Escolha o plano <span className="text-gradient">da sua clínica</span>
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
-              Tudo essencial já vem incluso. Notificação por WhatsApp, multi-unidade e voz premium
-              entram quando você quiser — sem renegociar contrato.
+              Comece grátis com 14 dias de trial. Mude de plano quando quiser, sem multa.
+              No anual, ganhe 2 meses grátis.
             </p>
+
+            {/* Toggle mensal/anual */}
+            <CicloToggle ciclo={ciclo} onChange={setCiclo} />
           </div>
         </section>
 
-        {/* Plano base */}
-        <section className="mx-auto max-w-5xl px-6 -mt-4">
-          <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-card p-8 sm:p-12 shadow-elegant">
-            <div
-              aria-hidden
-              className="absolute -top-24 right-0 h-64 w-64 rounded-full opacity-20 blur-3xl"
-              style={{ background: "var(--gradient-primary)" }}
-            />
-            <div className="relative grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:items-center">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                  Plano FilaMed
-                </p>
-                <h2 className="mt-2 font-display text-3xl font-bold sm:text-4xl">
-                  R$ 249
-                  <span className="text-lg font-medium text-muted-foreground">
-                    {" "}
-                    /mês por unidade
-                  </span>
-                </h2>
-                <p className="mt-3 text-muted-foreground">
-                  Tudo que você precisa pra tirar a fila do papel e colocar a clínica em tempo real.
-                  Sem limite de senhas, sem limite de usuários da equipe.
-                </p>
-                <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                  <Button asChild size="lg" className="bg-gradient-primary shadow-elegant group">
-                    <a href="mailto:contato@filamed.app?subject=Quero%20come%C3%A7ar%20com%20o%20FilaMed">
-                      Começar agora
-                      <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                    </a>
-                  </Button>
-                  <Button asChild size="lg" variant="outline">
-                    <Link to="/" hash="cta">
-                      Agendar demonstração
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                {baseFeatures.map((f) => (
-                  <li key={f} className="flex items-start gap-3 text-sm">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <Check className="h-3 w-3" strokeWidth={3} />
-                    </span>
-                    <span className="text-foreground/90">{f}</span>
-                  </li>
-                ))}
-              </ul>
+        {/* Cards de planos */}
+        <section className="mx-auto max-w-6xl px-6 -mt-2">
+          {loading ? (
+            <div className="flex items-center justify-center py-20 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          </div>
+          ) : planos.length === 0 ? (
+            <div className="py-20 text-center text-muted-foreground">
+              Nenhum plano disponível no momento.
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {planos.map((p) => (
+                <PlanoCard key={p.id} plano={p} ciclo={ciclo} />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Add-ons */}
@@ -196,27 +259,6 @@ function PrecosPage() {
                 </div>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* Enterprise */}
-        <section className="mx-auto max-w-5xl px-6 mt-20">
-          <div className="rounded-3xl border border-border bg-card p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                Enterprise
-              </p>
-              <h3 className="mt-2 font-display text-2xl font-bold">
-                Redes com 5+ unidades, hospitais e operadoras
-              </h3>
-              <p className="mt-2 max-w-2xl text-muted-foreground">
-                Desconto progressivo por unidade, SLA dedicado, integração com prontuário eletrônico
-                (Tasy, Soul MV, Pixeon), SSO e suporte 24/7.
-              </p>
-            </div>
-            <Button asChild size="lg" variant="outline" className="shrink-0">
-              <a href="mailto:contato@filamed.app?subject=Enterprise%20FilaMed">Falar com vendas</a>
-            </Button>
           </div>
         </section>
 
@@ -271,6 +313,138 @@ function PrecosPage() {
         </section>
       </main>
       <SiteFooter />
+    </div>
+  );
+}
+
+function CicloToggle({ ciclo, onChange }: { ciclo: Ciclo; onChange: (c: Ciclo) => void }) {
+  return (
+    <div className="mt-10 inline-flex items-center gap-1 rounded-full border border-border bg-card p-1 shadow-soft">
+      <button
+        type="button"
+        onClick={() => onChange("mensal")}
+        className={cn(
+          "rounded-full px-5 py-2 text-sm font-medium transition-colors",
+          ciclo === "mensal"
+            ? "bg-foreground text-background"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        Mensal
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("anual")}
+        className={cn(
+          "rounded-full px-5 py-2 text-sm font-medium transition-colors",
+          ciclo === "anual"
+            ? "bg-foreground text-background"
+            : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        Anual
+        <span
+          className={cn(
+            "ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+            ciclo === "anual"
+              ? "bg-background/20 text-background"
+              : "bg-primary/10 text-primary",
+          )}
+        >
+          2 meses grátis
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function PlanoCard({ plano, ciclo }: { plano: PlanoRow; ciclo: Ciclo }) {
+  const features = useMemo(() => buildFeatures(plano), [plano]);
+
+  // Preço exibido: para anual mostramos o equivalente mensal (anual / 12)
+  const precoMensalEquiv =
+    ciclo === "anual" && plano.preco_anual_centavos
+      ? Math.round(plano.preco_anual_centavos / 12)
+      : plano.preco_mensal_centavos;
+
+  const precoTotal =
+    ciclo === "anual" && plano.preco_anual_centavos
+      ? plano.preco_anual_centavos
+      : plano.preco_mensal_centavos;
+
+  return (
+    <div
+      className={cn(
+        "relative flex flex-col rounded-3xl border bg-card p-8 transition",
+        plano.destaque
+          ? "border-primary/50 shadow-elegant ring-1 ring-primary/30"
+          : "border-border hover:border-primary/30 hover:shadow-soft",
+      )}
+    >
+      {plano.destaque && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-soft">
+          Mais popular
+        </span>
+      )}
+
+      <div className="flex-1">
+        <h3 className="font-display text-2xl font-bold">{plano.nome}</h3>
+        {plano.descricao && (
+          <p className="mt-2 text-sm text-muted-foreground">{plano.descricao}</p>
+        )}
+
+        <div className="mt-6">
+          <div className="flex items-baseline gap-1">
+            <span className="font-display text-4xl font-bold">
+              {fmtMoeda(precoMensalEquiv, plano.moeda)}
+            </span>
+            <span className="text-sm text-muted-foreground">/mês</span>
+          </div>
+          {ciclo === "anual" && plano.preco_anual_centavos ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {fmtMoeda(precoTotal, plano.moeda)}/ano · cobrado anualmente
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              cobrado mensalmente por unidade
+            </p>
+          )}
+        </div>
+
+        <ul className="mt-6 space-y-3">
+          {features.map((f) => (
+            <li key={f} className="flex items-start gap-3 text-sm">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+              <span className="text-foreground/90">{f}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-8">
+        {plano.slug === "enterprise" ? (
+          <Button asChild size="lg" variant="outline" className="w-full">
+            <a href="mailto:contato@filamed.app?subject=Enterprise%20FilaMed">Falar com vendas</a>
+          </Button>
+        ) : (
+          <Button
+            asChild
+            size="lg"
+            className={cn(
+              "w-full group",
+              plano.destaque && "bg-gradient-primary shadow-elegant",
+            )}
+            variant={plano.destaque ? "default" : "outline"}
+          >
+            <Link to="/login">
+              Começar trial de 14 dias
+              <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
