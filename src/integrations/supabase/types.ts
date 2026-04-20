@@ -909,11 +909,14 @@ export type Database = {
         Args: { _unidade_id: string }
         Returns: {
           assinatura_id: string
+          cancelar_no_fim_do_ciclo: boolean
           ciclo: Database["public"]["Enums"]["assinatura_ciclo"]
+          gateway_price_id_anual_oneoff: string
           limite_atendentes: number
           limite_filas: number
           limite_senhas_mes: number
           limite_tvs: number
+          metadata: Json
           plano_id: string
           plano_nome: string
           plano_slug: string
