@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { CheckoutDialog } from "@/components/checkout-dialog";
+import { PaymentTestModeBanner } from "@/components/payment-test-banner";
 
 export const Route = createFileRoute("/precos")({
   head: () => ({
@@ -56,6 +58,8 @@ interface PlanoRow {
   recursos: Record<string, boolean> | null;
   destaque: boolean;
   ordem: number;
+  gateway_price_id_mensal: string | null;
+  gateway_price_id_anual: string | null;
 }
 
 type Ciclo = "mensal" | "anual";
@@ -149,7 +153,6 @@ function buildFeatures(plano: PlanoRow): string[] {
       : `${plano.limite_senhas_mes.toLocaleString("pt-BR")} senhas/mês`,
   );
 
-  // Recursos do JSON
   const recursos = plano.recursos ?? {};
   for (const [chave, ativo] of Object.entries(recursos)) {
     if (ativo && RECURSO_LABEL[chave]) out.push(RECURSO_LABEL[chave]);
@@ -162,6 +165,8 @@ function PrecosPage() {
   const [planos, setPlanos] = useState<PlanoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [ciclo, setCiclo] = useState<Ciclo>("mensal");
+  const [checkoutPriceId, setCheckoutPriceId] = useState<string | null>(null);
+  const [checkoutPlano, setCheckoutPlano] = useState<PlanoRow | null>(null);
 
   useEffect(() => {
     let cancel = false;
@@ -169,7 +174,7 @@ function PrecosPage() {
       const { data, error } = await supabase
         .from("planos")
         .select(
-          "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, destaque, ordem",
+          "id, slug, nome, descricao, preco_mensal_centavos, preco_anual_centavos, moeda, limite_filas, limite_atendentes, limite_tvs, limite_senhas_mes, recursos, destaque, ordem, gateway_price_id_mensal, gateway_price_id_anual",
         )
         .eq("ativo", true)
         .order("ordem", { ascending: true });
@@ -186,8 +191,20 @@ function PrecosPage() {
     };
   }, []);
 
+  const handleAssinar = (plano: PlanoRow) => {
+    const priceId =
+      ciclo === "anual" ? plano.gateway_price_id_anual : plano.gateway_price_id_mensal;
+    if (!priceId) {
+      console.error("Plano sem price_id configurado:", plano.slug, ciclo);
+      return;
+    }
+    setCheckoutPlano(plano);
+    setCheckoutPriceId(priceId);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <PaymentTestModeBanner />
       <SiteHeader />
       <main className="pt-32 pb-24">
         {/* Hero */}
@@ -205,7 +222,6 @@ function PrecosPage() {
               No anual, ganhe 2 meses grátis.
             </p>
 
-            {/* Toggle mensal/anual */}
             <CicloToggle ciclo={ciclo} onChange={setCiclo} />
           </div>
         </section>
@@ -223,7 +239,7 @@ function PrecosPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {planos.map((p) => (
-                <PlanoCard key={p.id} plano={p} ciclo={ciclo} />
+                <PlanoCard key={p.id} plano={p} ciclo={ciclo} onAssinar={handleAssinar} />
               ))}
             </div>
           )}
@@ -313,6 +329,17 @@ function PrecosPage() {
         </section>
       </main>
       <SiteFooter />
+
+      <CheckoutDialog
+        open={!!checkoutPriceId}
+        onClose={() => {
+          setCheckoutPriceId(null);
+          setCheckoutPlano(null);
+        }}
+        priceId={checkoutPriceId}
+        planoNome={checkoutPlano?.nome}
+        ciclo={ciclo}
+      />
     </div>
   );
 }
@@ -358,10 +385,17 @@ function CicloToggle({ ciclo, onChange }: { ciclo: Ciclo; onChange: (c: Ciclo) =
   );
 }
 
-function PlanoCard({ plano, ciclo }: { plano: PlanoRow; ciclo: Ciclo }) {
+function PlanoCard({
+  plano,
+  ciclo,
+  onAssinar,
+}: {
+  plano: PlanoRow;
+  ciclo: Ciclo;
+  onAssinar: (p: PlanoRow) => void;
+}) {
   const features = useMemo(() => buildFeatures(plano), [plano]);
 
-  // Preço exibido: para anual mostramos o equivalente mensal (anual / 12)
   const precoMensalEquiv =
     ciclo === "anual" && plano.preco_anual_centavos
       ? Math.round(plano.preco_anual_centavos / 12)
@@ -371,6 +405,9 @@ function PlanoCard({ plano, ciclo }: { plano: PlanoRow; ciclo: Ciclo }) {
     ciclo === "anual" && plano.preco_anual_centavos
       ? plano.preco_anual_centavos
       : plano.preco_mensal_centavos;
+
+  const priceConfigured =
+    ciclo === "anual" ? !!plano.gateway_price_id_anual : !!plano.gateway_price_id_mensal;
 
   return (
     <div
@@ -430,18 +467,18 @@ function PlanoCard({ plano, ciclo }: { plano: PlanoRow; ciclo: Ciclo }) {
           </Button>
         ) : (
           <Button
-            asChild
+            type="button"
             size="lg"
+            disabled={!priceConfigured}
+            onClick={() => onAssinar(plano)}
             className={cn(
               "w-full group",
               plano.destaque && "bg-gradient-primary shadow-elegant",
             )}
             variant={plano.destaque ? "default" : "outline"}
           >
-            <Link to="/login">
-              Começar trial de 14 dias
-              <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            Começar trial de 14 dias
+            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Button>
         )}
       </div>

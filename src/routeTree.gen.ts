@@ -21,6 +21,7 @@ import { Route as TvSlugRouteImport } from './routes/tv.$slug'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
+import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
@@ -90,6 +91,11 @@ const HooksCleanupTtsCacheRoute = HooksCleanupTtsCacheRouteImport.update({
   path: '/hooks/cleanup-tts-cache',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
+  id: '/checkout/return',
+  path: '/checkout/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppAppRoute = AppAppRouteImport.update({
   id: '/app',
   path: '/app',
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
   '/app': typeof AppAppRouteWithChildren
+  '/checkout/return': typeof CheckoutReturnRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
+  '/checkout/return': typeof CheckoutReturnRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_app/app': typeof AppAppRouteWithChildren
+  '/checkout/return': typeof CheckoutReturnRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/admin'
     | '/app'
+    | '/checkout/return'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -240,6 +250,7 @@ export interface FileRouteTypes {
     | '/precos'
     | '/setup'
     | '/admin'
+    | '/checkout/return'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -264,6 +275,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/_admin/admin'
     | '/_app/app'
+    | '/checkout/return'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -287,6 +299,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PrecosRoute: typeof PrecosRoute
   SetupRoute: typeof SetupRoute
+  CheckoutReturnRoute: typeof CheckoutReturnRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
   STokenRoute: typeof STokenRoute
@@ -378,6 +391,13 @@ declare module '@tanstack/react-router' {
       path: '/hooks/cleanup-tts-cache'
       fullPath: '/hooks/cleanup-tts-cache'
       preLoaderRoute: typeof HooksCleanupTtsCacheRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/return': {
+      id: '/checkout/return'
+      path: '/checkout/return'
+      fullPath: '/checkout/return'
+      preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/app': {
@@ -516,6 +536,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PrecosRoute: PrecosRoute,
   SetupRoute: SetupRoute,
+  CheckoutReturnRoute: CheckoutReturnRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
   STokenRoute: STokenRoute,
@@ -525,13 +546,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
