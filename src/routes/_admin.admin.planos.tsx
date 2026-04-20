@@ -566,6 +566,17 @@ function PlanoEditorDialog({
     if (form.preco_anual_reais.trim() && precoAnual === null)
       return toast.error("Preço anual inválido");
 
+    // Validação inline dos Stripe Price IDs
+    const priceErrors = {
+      mensal: validatePriceId(form.gateway_price_id_mensal),
+      anual: validatePriceId(form.gateway_price_id_anual),
+      anual_oneoff: validatePriceId(form.gateway_price_id_anual_oneoff),
+    };
+    const firstErr = Object.values(priceErrors).find((e) => e !== null);
+    if (firstErr) {
+      return toast.error("Corrija os Stripe Price IDs em destaque antes de salvar");
+    }
+
     const ordem = parseLimite(form.ordem) ?? 0;
 
     const payload = {
