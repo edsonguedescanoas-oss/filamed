@@ -468,9 +468,37 @@ function AdminPlanosPage() {
                         <RecursosBadges recursos={p.recursos} />
                       </TableCell>
                       <TableCell className="font-mono text-[10px] text-muted-foreground">
-                        <PriceIdLine label="Mensal" value={p.gateway_price_id_mensal} />
-                        <PriceIdLine label="Anual" value={p.gateway_price_id_anual} />
-                        <PriceIdLine label="À vista" value={p.gateway_price_id_anual_oneoff} highlight />
+                        <PriceIdLine
+                          label="Mensal"
+                          value={p.gateway_price_id_mensal}
+                          check={
+                            p.gateway_price_id_mensal
+                              ? priceChecks[p.gateway_price_id_mensal]
+                              : undefined
+                          }
+                          onRecheck={checkPriceId}
+                        />
+                        <PriceIdLine
+                          label="Anual"
+                          value={p.gateway_price_id_anual}
+                          check={
+                            p.gateway_price_id_anual
+                              ? priceChecks[p.gateway_price_id_anual]
+                              : undefined
+                          }
+                          onRecheck={checkPriceId}
+                        />
+                        <PriceIdLine
+                          label="À vista"
+                          value={p.gateway_price_id_anual_oneoff}
+                          check={
+                            p.gateway_price_id_anual_oneoff
+                              ? priceChecks[p.gateway_price_id_anual_oneoff]
+                              : undefined
+                          }
+                          onRecheck={checkPriceId}
+                          highlight
+                        />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
