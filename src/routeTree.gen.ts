@@ -29,6 +29,7 @@ import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
+import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -128,6 +129,11 @@ const AppAppAtendimentoRoute = AppAppAtendimentoRouteImport.update({
   path: '/atendimento',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AdminAdminPlanosRoute = AdminAdminPlanosRouteImport.update({
+  id: '/planos',
+  path: '/planos',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -135,13 +141,14 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
-  '/admin': typeof AdminAdminRoute
+  '/admin': typeof AdminAdminRouteWithChildren
   '/app': typeof AppAppRouteWithChildren
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
@@ -155,12 +162,13 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
-  '/admin': typeof AdminAdminRoute
+  '/admin': typeof AdminAdminRouteWithChildren
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv': typeof TvIndexRoute
+  '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/pacientes': typeof AppAppPacientesRoute
@@ -177,13 +185,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
-  '/_admin/admin': typeof AdminAdminRoute
+  '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_app/app': typeof AppAppRouteWithChildren
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/_admin/admin/planos': typeof AdminAdminPlanosRoute
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
   '/_app/app/filas': typeof AppAppFilasRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
@@ -206,6 +215,7 @@ export interface FileRouteTypes {
     | '/s/$token'
     | '/tv/$slug'
     | '/tv/'
+    | '/admin/planos'
     | '/app/atendimento'
     | '/app/filas'
     | '/app/pacientes'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/s/$token'
     | '/tv/$slug'
     | '/tv'
+    | '/admin/planos'
     | '/app/atendimento'
     | '/app/filas'
     | '/app/pacientes'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/s/$token'
     | '/tv/$slug'
     | '/tv/'
+    | '/_admin/admin/planos'
     | '/_app/app/atendimento'
     | '/_app/app/filas'
     | '/_app/app/pacientes'
@@ -412,15 +424,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppAtendimentoRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_admin/admin/planos': {
+      id: '/_admin/admin/planos'
+      path: '/planos'
+      fullPath: '/admin/planos'
+      preLoaderRoute: typeof AdminAdminPlanosRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
   }
 }
 
+interface AdminAdminRouteChildren {
+  AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
+}
+
+const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+  AdminAdminPlanosRoute: AdminAdminPlanosRoute,
+}
+
+const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
+  AdminAdminRouteChildren,
+)
+
 interface AdminRouteChildren {
-  AdminAdminRoute: typeof AdminAdminRoute
+  AdminAdminRoute: typeof AdminAdminRouteWithChildren
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminAdminRoute: AdminAdminRoute,
+  AdminAdminRoute: AdminAdminRouteWithChildren,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

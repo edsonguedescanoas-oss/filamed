@@ -205,7 +205,8 @@ function AdminPlanosPage() {
   }, []);
 
   async function toggleField(p: PlanoRow, field: "ativo" | "destaque", value: boolean) {
-    const { error } = await supabase.from("planos").update({ [field]: value }).eq("id", p.id);
+    const patch = { [field]: value } as { ativo?: boolean; destaque?: boolean };
+    const { error } = await supabase.from("planos").update(patch).eq("id", p.id);
     if (error) {
       toast.error("Falha ao atualizar: " + error.message);
       return;
