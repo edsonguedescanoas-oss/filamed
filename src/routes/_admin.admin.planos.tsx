@@ -304,6 +304,19 @@ function AdminPlanosPage() {
         return;
       }
       toast.success(`Stripe sincronizado · 3 prices criados/reutilizados`, { id: toastId });
+      // Limpa cache de checks dos price IDs anteriores deste plano pra forçar re-verificação
+      const oldIds = [
+        p.gateway_price_id_mensal,
+        p.gateway_price_id_anual,
+        p.gateway_price_id_anual_oneoff,
+      ].filter((x): x is string => Boolean(x));
+      if (oldIds.length > 0) {
+        setPriceChecks((prev) => {
+          const next = { ...prev };
+          for (const id of oldIds) delete next[id];
+          return next;
+        });
+      }
       await reload();
     } catch (e: any) {
       toast.error("Erro: " + (e.message || String(e)), { id: toastId });
