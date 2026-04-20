@@ -10,6 +10,7 @@ import {
   GestorWidgets,
   EmptyDashboard,
 } from "@/components/dashboard/widgets";
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 
 export const Route = createFileRoute("/_app/app/")({
   head: () => ({ meta: [{ title: "Dashboard — FilaMed" }] }),
@@ -19,15 +20,19 @@ export const Route = createFileRoute("/_app/app/")({
 function DashboardPage() {
   const { profile, roles } = useAuth();
   const [unidadeNome, setUnidadeNome] = useState<string | null>(null);
+  const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.unidade_id) return;
     void supabase
       .from("unidades")
-      .select("nome")
+      .select("nome, slug")
       .eq("id", profile.unidade_id)
       .maybeSingle()
-      .then(({ data }) => setUnidadeNome(data?.nome ?? null));
+      .then(({ data }) => {
+        setUnidadeNome(data?.nome ?? null);
+        setUnidadeSlug(data?.slug ?? null);
+      });
   }, [profile?.unidade_id]);
 
   const unidadeId = profile?.unidade_id ?? null;
@@ -65,6 +70,12 @@ function DashboardPage() {
           )}
         </div>
       </div>
+
+      {unidadeId && roles.includes("admin") && (
+        <div className="mt-8">
+          <OnboardingChecklist unidadeId={unidadeId} unidadeSlug={unidadeSlug} />
+        </div>
+      )}
 
       <div className="mt-10">{renderWidgets()}</div>
     </div>
