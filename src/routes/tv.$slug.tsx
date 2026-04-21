@@ -7,6 +7,7 @@ import { TvCarrossel } from "@/components/tv-carrossel";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
 import { useLocalZoom } from "@/hooks/use-local-zoom";
+import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
 import { TvZoomControl } from "@/components/tv-zoom-control";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -70,7 +71,7 @@ function formatarDestino(destino: string): string {
   return `ao ${d}`;
 }
 
-type TvSearch = { kiosk?: boolean; preview?: boolean };
+type TvSearch = { kiosk?: boolean };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearch => ({
@@ -79,11 +80,6 @@ export const Route = createFileRoute("/tv/$slug")({
       search.kiosk === 1 ||
       search.kiosk === "1" ||
       search.kiosk === "true",
-    preview:
-      search.preview === true ||
-      search.preview === 1 ||
-      search.preview === "1" ||
-      search.preview === "true",
   }),
   head: ({ params }) => ({
     meta: [
@@ -96,7 +92,7 @@ export const Route = createFileRoute("/tv/$slug")({
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
-  const { kiosk, preview } = useSearch({ from: "/tv/$slug" });
+  const { kiosk } = useSearch({ from: "/tv/$slug" });
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
@@ -104,31 +100,17 @@ function TvPage() {
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   // Configuração visual (cores, logo, fundo, escala, resolução)
-  const { config: dbVisual } = useTvVisualConfig(unidade?.id);
-  // Override de preview: o formulário de aparência envia config via
-  // postMessage para esta rota quando carregada em iframe com ?preview=1.
-  // Permite ver mudanças não salvas em tempo real.
-  const [previewOverride, setPreviewOverride] = useState<Partial<typeof dbVisual> | null>(null);
-  useEffect(() => {
-    if (!preview || typeof window === "undefined") return;
-    const onMsg = (e: MessageEvent) => {
-      const data = e.data as { type?: string; config?: Partial<typeof dbVisual> } | null;
-      if (!data || data.type !== "tv-visual-preview" || !data.config) return;
-      setPreviewOverride(data.config);
-    };
-    window.addEventListener("message", onMsg);
-    // Sinaliza ao parent que o iframe está pronto
-    window.parent?.postMessage({ type: "tv-preview-ready" }, "*");
-    return () => window.removeEventListener("message", onMsg);
-  }, [preview]);
-  const visual = previewOverride ? { ...dbVisual, ...previewOverride } : dbVisual;
+  const { config: visual } = useTvVisualConfig(unidade?.id);
   const baseScale = RESOLUCAO_PRESETS[visual.resolucao_preset]?.baseScale ?? 1;
   // Zoom local por dispositivo (persistido no próprio aparelho via
   // localStorage). Permite calibrar cada TV/Firestick individualmente sem
-  // afetar a configuração global da unidade. Em preview, ignoramos.
+  // afetar a configuração global da unidade.
   const { zoom: localZoom, inc, dec, reset } = useLocalZoom(slug);
-  const effectiveLocalZoom = preview ? 1 : localZoom;
-  const scale = baseScale * visual.escala_fonte * effectiveLocalZoom;
+  const scale = baseScale * visual.escala_fonte * localZoom;
+  // Detecta suporte a CSS `zoom`. Em ambientes sem suporte (Firefox antigo,
+  // alguns WebViews de TV/Firestick) caímos para `transform: scale()` com
+  // compensação de tamanho, garantindo que a escala sempre seja aplicada.
+  const zoomSupported = useZoomSupport();
   const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
@@ -1180,11 +1162,12 @@ function TvPage() {
           backgroundColor: visual.cor_fundo,
           color: visual.cor_texto,
           ["--tv-primary" as string]: visual.cor_primaria,
-          // `zoom` escala TUDO proporcionalmente (fontes, paddings, gaps,
-          // larguras de cards) — funciona em Chromium (TVs/Firestick), WebKit
-          // e Firefox 126+. É o que faz o ajuste de "tamanho da fonte" e o
-          // preset de resolução realmente terem efeito visual no painel.
-          zoom: scale,
+          // Escala TUDO proporcionalmente (fontes, paddings, gaps, larguras
+          // de cards). Tenta usar CSS `zoom` (ideal — Chromium/WebKit/Firefox
+          // 126+) e cai pra `transform: scale()` com compensação quando o
+          // ambiente não suporta zoom (Firefox antigo, WebViews de TV/Firestick
+          // antigos). O efeito visual final é idêntico nos dois caminhos.
+          ...buildScaleStyle(scale, zoomSupported),
         } as React.CSSProperties
       }
     >
@@ -1503,15 +1486,13 @@ function TvPage() {
 
       </div>
     </div>
-    {!preview && (
-      <TvZoomControl
-        zoom={localZoom}
-        onInc={inc}
-        onDec={dec}
-        onReset={reset}
-        autoHide={kiosk}
-      />
-    )}
+    <TvZoomControl
+      zoom={localZoom}
+      onInc={inc}
+      onDec={dec}
+      onReset={reset}
+      autoHide={kiosk}
+    />
     </>
   );
 }
