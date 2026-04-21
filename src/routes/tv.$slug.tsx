@@ -1480,6 +1480,14 @@ function TvPage() {
 
       </div>
     </div>
+    <TvZoomControl
+      zoom={localZoom}
+      onInc={inc}
+      onDec={dec}
+      onReset={reset}
+      autoHide={kiosk}
+    />
+    </>
   );
 }
 
