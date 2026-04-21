@@ -1149,6 +1149,7 @@ function TvPage() {
   }
 
   return (
+    <>
     <div
       className="min-h-screen selection:bg-primary/40 relative"
       style={
