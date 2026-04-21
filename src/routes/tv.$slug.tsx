@@ -163,17 +163,21 @@ function TvPage() {
 
   // Carregamento inicial
   useEffect(() => {
+    if (!slug) return;
     let mounted = true;
     void (async () => {
       try {
-        // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone)
+        console.log("[TV] carregando unidade:", slug);
+        // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone).
+        // A RPC agora é case-insensitive, mas garantimos o trim() no slug.
         const { data: uniRows, error: uniErr } = await supabase
-          .rpc("get_unidade_publica_by_slug", { _slug: slug });
+          .rpc("get_unidade_publica_by_slug", { _slug: slug.trim() });
         
         const uni = (uniRows ?? [])[0] ?? null;
         if (!mounted) return;
         if (uniErr || !uni) {
-          setError("Unidade não encontrada");
+          console.warn("[TV] unidade não encontrada:", slug, uniErr);
+          setError("Unidade não encontrada ou inativa");
           return;
         }
         setUnidade(uni as Unidade);
