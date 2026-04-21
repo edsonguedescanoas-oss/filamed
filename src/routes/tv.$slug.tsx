@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
+import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
