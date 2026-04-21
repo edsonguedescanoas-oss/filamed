@@ -70,7 +70,7 @@ function formatarDestino(destino: string): string {
   return `ao ${d}`;
 }
 
-type TvSearch = { kiosk?: boolean };
+type TvSearch = { kiosk?: boolean; preview?: boolean };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearch => ({
@@ -79,6 +79,11 @@ export const Route = createFileRoute("/tv/$slug")({
       search.kiosk === 1 ||
       search.kiosk === "1" ||
       search.kiosk === "true",
+    preview:
+      search.preview === true ||
+      search.preview === 1 ||
+      search.preview === "1" ||
+      search.preview === "true",
   }),
   head: ({ params }) => ({
     meta: [
@@ -91,7 +96,7 @@ export const Route = createFileRoute("/tv/$slug")({
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
-  const { kiosk } = useSearch({ from: "/tv/$slug" });
+  const { kiosk, preview } = useSearch({ from: "/tv/$slug" });
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
