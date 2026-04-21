@@ -1369,6 +1369,8 @@ function TvPage() {
               tvTexto={visual.cor_texto}
               contraste={visual.contraste_chamadas}
               escala={visual.escala_chamadas}
+            />
+          ) : (
             <div
               className="flex items-center justify-center rounded-lg border-2 border-dashed py-12 text-center"
               style={{ borderColor: `color-mix(in srgb, ${visual.cor_texto} 15%, transparent)` }}
@@ -1399,6 +1401,8 @@ function TvPage() {
                 tvTexto={visual.cor_texto}
                 contraste={visual.contraste_chamadas}
                 escala={visual.escala_chamadas}
+              />
+            ))}
             {tabelaChamadas.length <= 1 && (
               <p className="rounded-lg border border-dashed border-white/10 p-3 text-center text-xs opacity-40">
                 Sem chamadas anteriores.
