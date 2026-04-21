@@ -481,6 +481,45 @@ function TvPage() {
     primeRemoteAudio();
   };
 
+  const testVoiceNow = async () => {
+    const cfg = voiceCfgRef.current;
+    const frase = "Teste de voz. Se você está ouvindo esta mensagem, o áudio está funcionando corretamente.";
+    const browserUtterance = cfg.provider === "browser" ? createPreparedUtterance() : null;
+
+    handleEnableSound();
+    console.log("[TV] 🧪 teste manual de voz →", { provider: cfg.provider, voiceId: cfg.voice_id });
+    setDebugInfo({
+      text: frase,
+      voice: cfg.provider,
+      status: "falando",
+      at: new Date(),
+    });
+
+    try {
+      if (cfg.provider === "browser") {
+        if (!browserUtterance) {
+          throw new Error("speechSynthesis indisponível neste dispositivo");
+        }
+        browserUtterance.text = frase;
+        speakUtterance(browserUtterance);
+        return;
+      }
+
+      // Reforça o unlock do mesmo elemento <audio> no clique do usuário.
+      primeRemoteAudio();
+      await playRemoteTts(frase, cfg);
+    } catch (err) {
+      console.error("[TV] teste de voz falhou:", err);
+      setDebugInfo({
+        text: frase,
+        voice: cfg.provider,
+        status: "erro",
+        at: new Date(),
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
   // Tenta destravar áudio automaticamente. Se o browser bloquear (autoplay policy),
   // sinaliza audioBlocked=true para mostrar overlay pedindo 1 clique do operador.
   useEffect(() => {
@@ -1295,34 +1334,10 @@ function TvPage() {
           onde o overlay de autoplay nem sempre aparece) */}
       <button
         type="button"
-        onClick={async () => {
-          handleEnableSound();
-          const cfg = voiceCfgRef.current;
-          const frase = "Teste de voz. Se você está ouvindo esta mensagem, o áudio está funcionando corretamente.";
-          console.log("[TV] 🧪 teste manual de voz →", { provider: cfg.provider, voiceId: cfg.voice_id });
-          setDebugInfo({ text: frase, voice: cfg.provider, status: "falando", at: new Date() });
-          try {
-            if (cfg.provider === "browser") {
-              const u = createPreparedUtterance();
-              if (u) {
-                u.text = frase;
-                speakUtterance(u);
-              }
-            } else {
-              await playRemoteTts(frase, cfg);
-            }
-          } catch (err) {
-            console.error("[TV] teste de voz falhou:", err);
-            setDebugInfo({
-              text: frase,
-              voice: cfg.provider,
-              status: "erro",
-              at: new Date(),
-              error: err instanceof Error ? err.message : String(err),
-            });
-          }
+        onClick={() => {
+          void testVoiceNow();
         }}
-        className="fixed top-3 right-3 z-50 inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-lg backdrop-blur transition"
+        className="fixed top-3 right-3 z-[70] inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-lg backdrop-blur transition"
         title="Disparar uma frase de teste pela voz configurada"
       >
         <Volume2 className="h-4 w-4" />
@@ -1357,37 +1372,8 @@ function TvPage() {
             </button>
             <button
               type="button"
-              onClick={async () => {
-                handleEnableSound();
-                const cfg = voiceCfgRef.current;
-                const frase = "Teste de voz. Se você está ouvindo esta mensagem, o áudio está funcionando corretamente.";
-                console.log("[TV] 🧪 teste manual de voz →", { provider: cfg.provider, voiceId: cfg.voice_id });
-                setDebugInfo({
-                  text: frase,
-                  voice: cfg.provider,
-                  status: "falando",
-                  at: new Date(),
-                });
-                try {
-                  if (cfg.provider === "browser") {
-                    const u = createPreparedUtterance();
-                    if (u) {
-                      u.text = frase;
-                      speakUtterance(u);
-                    }
-                  } else {
-                    await playRemoteTts(frase, cfg);
-                  }
-                } catch (err) {
-                  console.error("[TV] teste de voz falhou:", err);
-                  setDebugInfo({
-                    text: frase,
-                    voice: cfg.provider,
-                    status: "erro",
-                    at: new Date(),
-                    error: err instanceof Error ? err.message : String(err),
-                  });
-                }
+              onClick={() => {
+                void testVoiceNow();
               }}
               className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-base font-semibold text-white hover:bg-white/20 transition"
             >
