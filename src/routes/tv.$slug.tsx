@@ -1212,29 +1212,7 @@ function TvPage() {
                 </div>
               </div>
             </div>
-            {/* Seletor de voz pt-BR (só aparece se houver vozes disponíveis) */}
-            {ptVoices.length > 0 && (
-              <label
-                className="hidden md:flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium hover:bg-white/10 transition-colors cursor-pointer"
-                title="Voz usada para anunciar as chamadas"
-              >
-                <Mic className="h-4 w-4 text-slate-400" />
-                <select
-                  value={selectedVoiceURI ?? ""}
-                  onChange={(e) => handleSelectVoice(e.target.value)}
-                  className="bg-transparent border-0 outline-none text-sm font-medium text-slate-200 max-w-[180px] truncate cursor-pointer focus:ring-0"
-                >
-                  <option value="" className="bg-slate-900">
-                    Voz automática
-                  </option>
-                  {ptVoices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI} className="bg-slate-900">
-                      {v.name} ({v.lang})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
+            {/* Seletor de voz removido — a TV usa sempre a voz configurada em /app/voz */}
             <button
               onClick={toggleFullscreen}
               className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors"
