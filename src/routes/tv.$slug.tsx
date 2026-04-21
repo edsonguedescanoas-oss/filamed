@@ -74,7 +74,7 @@ function formatarDestino(destino: string): string {
   return `ao ${d}`;
 }
 
-type TvSearch = { kiosk?: boolean };
+type TvSearch = { kiosk?: boolean; test?: boolean };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearch => ({
@@ -83,6 +83,11 @@ export const Route = createFileRoute("/tv/$slug")({
       search.kiosk === 1 ||
       search.kiosk === "1" ||
       search.kiosk === "true",
+    test:
+      search.test === true ||
+      search.test === 1 ||
+      search.test === "1" ||
+      search.test === "true",
   }),
   head: ({ params }) => ({
     meta: [
