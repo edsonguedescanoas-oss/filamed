@@ -195,6 +195,11 @@ function TvPage() {
           supabase.rpc("get_chamadas_recentes", { _unidade_id: uni.id }),
         ]);
         if (!mounted) return;
+
+        if (filasRes.error) console.error("[TV] erro ao carregar filas:", filasRes.error);
+        if (senhasRes.error) console.error("[TV] erro ao carregar senhas:", senhasRes.error);
+        if (chamadasRes.error) console.error("[TV] erro ao carregar chamadas:", chamadasRes.error);
+
         setFilas((filasRes.data ?? []) as Fila[]);
         setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
         setChamadas((chamadasRes.data ?? []) as Chamada[]);
