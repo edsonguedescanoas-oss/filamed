@@ -761,7 +761,36 @@ function VozConfigPage() {
           </div>
         </div>
       )}
+      </div>
+      )}
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors -mb-px ${
+        active
+          ? "text-foreground border-b-2 border-primary"
+          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
 
