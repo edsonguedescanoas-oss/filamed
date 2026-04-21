@@ -1158,8 +1158,8 @@ function TvPage() {
       for (const p of lista) {
         if (idsFaltando.has(p.paciente_id)) {
           const nome = primeiroEUltimoNome(p.nome_completo);
-          novosNomes[p.id || p.paciente_id] = nome;
-          pacienteCacheRef.current.set(p.id || p.paciente_id, nome);
+          novosNomes[p.paciente_id] = nome;
+          pacienteCacheRef.current.set(p.paciente_id, nome);
           changed = true;
         }
       }
