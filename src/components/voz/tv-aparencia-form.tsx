@@ -12,6 +12,7 @@ import {
   type ResolucaoPreset,
   type TvVisualConfig,
 } from "@/hooks/use-tv-visual-config";
+import { SinalizacaoManager } from "@/components/voz/sinalizacao-manager";
 
 interface Props {
   unidadeId: string;
@@ -29,7 +30,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -44,6 +45,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           resolucao_preset: (data.resolucao_preset as ResolucaoPreset) ?? "fhd",
           escala_fonte: Number(data.escala_fonte) || 1,
           densidade: (data.densidade as Densidade) ?? "normal",
+          mensagem_rodape: data.mensagem_rodape ?? null,
         });
       }
       setLoading(false);
@@ -226,7 +228,27 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
         </p>
       </section>
 
-      {/* Ações */}
+      {/* Mensagem do rodapé */}
+      <section className="space-y-2">
+        <Label htmlFor="mensagem_rodape" className="text-sm font-semibold">
+          Mensagem do rodapé (opcional)
+        </Label>
+        <Input
+          id="mensagem_rodape"
+          type="text"
+          maxLength={140}
+          placeholder="Ex.: Bem-vindo à Clínica X — Wi-Fi: clinica2024"
+          value={cfg.mensagem_rodape ?? ""}
+          onChange={(e) => update("mensagem_rodape", e.target.value || null)}
+        />
+        <p className="text-[11px] text-muted-foreground">
+          Aparece na faixa inferior do painel, ao lado do logo. Até 140 caracteres.
+        </p>
+      </section>
+
+      {/* Mídias do carrossel (imagem / vídeo / YouTube) */}
+      <SinalizacaoManager unidadeId={unidadeId} />
+
       <section className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
         <Button onClick={handleSave} disabled={saving} className="gap-2">
           {saving ? (

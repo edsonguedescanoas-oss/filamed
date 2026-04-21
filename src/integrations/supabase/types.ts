@@ -704,6 +704,7 @@ export type Database = {
           fundo_url: string | null
           id: string
           logo_url: string | null
+          mensagem_rodape: string | null
           resolucao_preset: string
           unidade_id: string
           updated_at: string
@@ -718,6 +719,7 @@ export type Database = {
           fundo_url?: string | null
           id?: string
           logo_url?: string | null
+          mensagem_rodape?: string | null
           resolucao_preset?: string
           unidade_id: string
           updated_at?: string
@@ -732,6 +734,7 @@ export type Database = {
           fundo_url?: string | null
           id?: string
           logo_url?: string | null
+          mensagem_rodape?: string | null
           resolucao_preset?: string
           unidade_id?: string
           updated_at?: string
