@@ -8,6 +8,7 @@ import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
 import { useLocalZoom } from "@/hooks/use-local-zoom";
 import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
+import { useWakeLock } from "@/hooks/use-wake-lock";
 import { TvZoomControl } from "@/components/tv-zoom-control";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -111,6 +112,9 @@ function TvPage() {
   // alguns WebViews de TV/Firestick) caímos para `transform: scale()` com
   // compensação de tamanho, garantindo que a escala sempre seja aplicada.
   const zoomSupported = useZoomSupport();
+  // Mantém a TV sempre acordada (Wake Lock + fallback de vídeo invisível
+  // em loop pra Firestick/Smart TVs sem suporte a Wake Lock).
+  useWakeLock(true);
   const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
