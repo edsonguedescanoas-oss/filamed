@@ -1452,47 +1452,10 @@ function TvPage() {
         FilaMed · Atualização em tempo real
       </footer>
 
-      {/* Overlay quando áudio está bloqueado pelo browser (autoplay policy).
-          Um único toque/clique destrava e nunca mais aparece. */}
-      {audioBlocked && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-slate-950/85 backdrop-blur-sm text-white"
-        >
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/20 ring-4 ring-primary/40 animate-pulse">
-            <Volume2 className="h-12 w-12 text-primary" />
-          </div>
-          <div className="text-center max-w-md px-6">
-            <p className="font-display text-3xl font-bold">Toque para ativar o som</p>
-            <p className="mt-2 text-sm text-slate-300">
-              O navegador exige uma interação para iniciar o áudio. Depois disso, o painel anuncia automaticamente.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <button
-              type="button"
-              onClick={handleEnableSound}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-3 text-base font-semibold text-primary-foreground shadow-lg hover:opacity-90 transition"
-            >
-              <Volume2 className="h-5 w-5" />
-              Ativar som
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void testVoiceNow();
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-base font-semibold text-white hover:bg-white/20 transition"
-            >
-              🧪 Testar voz agora
-            </button>
-          </div>
-          <p className="text-xs text-slate-400 max-w-sm text-center px-6">
-            Use "Testar voz" para confirmar que a voz (ElevenLabs/Google) está funcionando antes da primeira chamada real.
-          </p>
-        </div>
-      )}
+      {/* Overlay de "ativar som" foi removido por requisito: na TV / Firestick
+          o áudio deve subir sozinho. Continuamos tentando destravar via
+          AudioContext.resume() + listeners globais de clique/toque/tecla,
+          mas nunca bloqueamos a tela esperando o operador clicar. */}
 
     </div>
   );
