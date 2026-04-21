@@ -1286,16 +1286,29 @@ function TvPage() {
         }
       >
         {/* Coluna esquerda: destaque + últimas chamadas */}
-        <section className="space-y-6">
+        <section className={isCompact ? "space-y-3" : "space-y-5"}>
           <div
-            className={`relative overflow-hidden rounded-3xl border p-10 ${
+            className={`relative overflow-hidden rounded-2xl border ${
+              isCompact ? "p-5" : "p-8"
+            } ${
               destaque
-                ? "border-primary/40 bg-gradient-to-br from-primary/20 via-slate-900 to-slate-900 shadow-glow animate-pulse-soft"
-                : "border-white/10 bg-slate-900"
+                ? "shadow-glow animate-pulse-soft"
+                : "border-white/10"
             }`}
+            style={{
+              backgroundColor: destaque
+                ? `color-mix(in srgb, ${visual.cor_primaria} 15%, ${visual.cor_fundo})`
+                : `color-mix(in srgb, white 4%, ${visual.cor_fundo})`,
+              borderColor: destaque
+                ? `color-mix(in srgb, ${visual.cor_primaria} 50%, transparent)`
+                : undefined,
+            }}
           >
             <div className="flex items-center gap-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
+              <div
+                className="text-xs font-semibold uppercase tracking-[0.3em] opacity-80"
+                style={{ color: visual.cor_primaria }}
+              >
                 Senha chamada
               </div>
               {destaque && rechamadasAtivas.has(destaque.senha.id) && (
@@ -1306,32 +1319,44 @@ function TvPage() {
             </div>
             {destaque ? (
               <>
-                <div className="mt-4 flex items-end gap-4 flex-wrap">
-                  <div className="font-display text-[10rem] font-black leading-none tracking-tight tabular-nums">
+                <div className="mt-3 flex items-end gap-4 flex-wrap">
+                  <div
+                    className="font-display font-black leading-none tracking-tight tabular-nums"
+                    style={{ fontSize: isCompact ? "5rem" : "7rem" }}
+                  >
                     {destaque.senha.codigo}
                   </div>
                   <PrioridadeTag prioridade={destaque.senha.prioridade} big />
                 </div>
                 {destaque.senha.paciente_id && pacienteNomes[destaque.senha.paciente_id] && (
-                  <div className="mt-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+                  <div className={isCompact ? "mt-2" : "mt-3"}>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.25em] opacity-60">
                       Paciente
                     </div>
-                    <div className="mt-1 font-display text-3xl font-bold text-white">
+                    <div
+                      className="mt-1 font-display font-bold"
+                      style={{ fontSize: isCompact ? "1.5rem" : "2rem" }}
+                    >
                       {pacienteNomes[destaque.senha.paciente_id]}
                     </div>
                   </div>
                 )}
-                <div className="mt-6 flex items-end justify-between gap-4 flex-wrap">
+                <div className={`${isCompact ? "mt-3" : "mt-5"} flex items-end justify-between gap-4 flex-wrap`}>
                   <div>
-                    <div className="text-sm text-slate-400">Dirija-se a</div>
-                    <div className="font-display text-4xl font-bold text-primary">
+                    <div className="text-sm opacity-60">Dirija-se a</div>
+                    <div
+                      className="font-display font-bold"
+                      style={{
+                        color: visual.cor_primaria,
+                        fontSize: isCompact ? "1.75rem" : "2.5rem",
+                      }}
+                    >
                       {destaque.chamada.destino}
                     </div>
                   </div>
-                  <div className="text-right text-sm text-slate-400">
+                  <div className="text-right text-sm opacity-60">
                     Fila:{" "}
-                    <span className="text-white font-medium">
+                    <span className="font-medium" style={{ color: visual.cor_texto }}>
                       {filasMap.get(destaque.senha.fila_id)?.nome ?? "—"}
                     </span>
                   </div>
