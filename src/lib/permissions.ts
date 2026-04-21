@@ -8,7 +8,7 @@ import type { AppRole } from "@/hooks/use-auth";
  * - gestor: visão de gestão (filas + pacientes), sem operar atendimento
  */
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
-  admin: ["/app", "/app/recepcao", "/app/atendimento", "/app/filas", "/app/pacientes", "/app/voz", "/app/notificacoes"],
+  admin: ["/app", "/app/recepcao", "/app/atendimento", "/app/filas", "/app/pacientes", "/app/voz", "/app/tv", "/app/notificacoes"],
   recepcao: ["/app", "/app/recepcao", "/app/filas", "/app/pacientes", "/app/notificacoes"],
   medico: ["/app", "/app/atendimento", "/app/pacientes"],
   enfermeiro: ["/app", "/app/atendimento", "/app/pacientes"],

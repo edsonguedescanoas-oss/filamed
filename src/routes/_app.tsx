@@ -16,6 +16,7 @@ import {
   ChevronDown,
   CreditCard,
   Sparkles,
+  Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,6 +78,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/filas", label: "Filas", icon: Headphones },
   { to: "/app/pacientes", label: "Pacientes", icon: Users },
   { to: "/app/voz", label: "Voz", icon: Volume2 },
+  { to: "/app/tv", label: "TV / Painel", icon: Monitor },
   { to: "/app/notificacoes", label: "Notificações", icon: MessageCircle },
 ];
 
