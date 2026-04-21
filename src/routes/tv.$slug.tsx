@@ -640,7 +640,8 @@ function TvPage() {
       // navegador como "autoplay sem gesto".
       const audio = ensureRemoteAudio();
       if (!audio) throw new Error("Elemento <audio> indisponível");
-      audio.src = `data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`;
+      const mime = data.mime ?? "audio/mpeg";
+      audio.src = base64ToObjectUrl(data.audioContent, mime);
       audio.onended = () => {
         setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
       };
@@ -654,6 +655,13 @@ function TvPage() {
         };
         const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
         console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
+        const utterance = createPreparedUtterance();
+        if (utterance) {
+          console.warn(`[TV] fallback local após falha de reprodução remota (${reason})`);
+          utterance.text = text;
+          speakUtterance(utterance);
+          return;
+        }
         setDebugInfo({
           text,
           voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
@@ -668,6 +676,13 @@ function TvPage() {
         const name = playErr instanceof Error ? playErr.name : "Error";
         const msg = playErr instanceof Error ? playErr.message : String(playErr);
         console.error("[TV] audio.play() rejeitado:", name, msg);
+        const utterance = createPreparedUtterance();
+        if (utterance) {
+          console.warn(`[TV] fallback local após play() rejeitado (${name})`);
+          utterance.text = text;
+          speakUtterance(utterance);
+          return;
+        }
         if (name === "NotAllowedError") {
           // Autoplay bloqueado — pede o clique do operador novamente
           setAudioBlocked(true);
