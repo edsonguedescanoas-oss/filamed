@@ -1075,18 +1075,30 @@ function TvPage() {
 
   // Derivações
   const filasMap = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
-  const senhasMap = useMemo(() => new Map(senhas.map((s) => [s.id, s])), [senhas]);
+  // Injeta a chamada simulada (modo teste) no topo das listas, sem persistir.
+  const senhasComSim = useMemo(
+    () => (simulado ? [simulado.senha, ...senhas] : senhas),
+    [simulado, senhas],
+  );
+  const chamadasComSim = useMemo(
+    () => (simulado ? [simulado.chamada, ...chamadas] : chamadas),
+    [simulado, chamadas],
+  );
+  const senhasMap = useMemo(
+    () => new Map(senhasComSim.map((s) => [s.id, s])),
+    [senhasComSim],
+  );
 
   // Senha em destaque = última chamada ainda ativa
   const destaque = useMemo(() => {
-    for (const c of chamadas) {
+    for (const c of chamadasComSim) {
       const s = senhasMap.get(c.senha_id);
       if (s && (s.status === "chamada" || s.status === "em_atendimento")) {
         return { senha: s, chamada: c };
       }
     }
     return null;
-  }, [chamadas, senhasMap]);
+  }, [chamadasComSim, senhasMap]);
 
   const ultimasChamadas = useMemo(() => {
     const seen = new Set<string>();
