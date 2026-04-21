@@ -499,7 +499,22 @@ function TvPage() {
         },
       });
       if (error) throw error;
-      if (!data?.audioContent) throw new Error("Sem áudio retornado");
+
+      // Provider indisponível (ex: API key revogada/cota zerada). A edge function
+      // devolve 200 com audioContent: null e fallback: "browser" — caímos no
+      // Web Speech ao invés de ficar muda. Ver supabase/functions/tts/index.ts.
+      if (!data?.audioContent) {
+        if (data?.fallback === "browser") {
+          console.warn(`[TV] ${cfg.provider} indisponível (${data.reason ?? "?"}), usando Web Speech`);
+          const utterance = createPreparedUtterance();
+          if (utterance) {
+            utterance.text = text;
+            speakUtterance(utterance);
+          }
+          return;
+        }
+        throw new Error("Sem áudio retornado");
+      }
 
       setDebugInfo({
         text,

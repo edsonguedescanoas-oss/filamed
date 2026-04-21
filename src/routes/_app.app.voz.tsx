@@ -274,9 +274,21 @@ function VozConfigPage() {
           throw new Error(detail);
         }
         if (!data?.audioContent) {
-          throw new Error("A edge function não retornou áudio.");
+          // Provider indisponível com fallback gracioso — não bloqueia o save,
+          // mas avisa o admin que a TV vai usar voz do navegador.
+          if (data?.fallback === "browser") {
+            toast.dismiss(toastId);
+            toast.warning(
+              `${providerLabel(config.provider)} indisponível (${data.reason ?? "erro"}). ` +
+                `Configuração salva — a TV vai usar voz do navegador como fallback.`,
+              { duration: 8000 },
+            );
+          } else {
+            throw new Error("A edge function não retornou áudio.");
+          }
+        } else {
+          toast.dismiss(toastId);
         }
-        toast.dismiss(toastId);
       } catch (err) {
         toast.dismiss(toastId);
         setSaving(false);
@@ -352,7 +364,26 @@ function VozConfigPage() {
       });
 
       if (error) throw error;
-      if (!data?.audioContent) throw new Error("Sem áudio retornado");
+      if (!data?.audioContent) {
+        // Fallback gracioso — provider indisponível, demonstra com Web Speech
+        if (data?.fallback === "browser") {
+          toast.warning(
+            `${providerLabel(config.provider)} indisponível. Tocando preview com voz do navegador.`,
+            { duration: 5000 },
+          );
+          const synth = window.speechSynthesis;
+          synth.cancel();
+          const u = new SpeechSynthesisUtterance(SAMPLE_TEXT);
+          u.lang = "pt-BR";
+          u.rate = config.rate;
+          u.pitch = config.pitch;
+          u.onend = () => setPreviewing(false);
+          u.onerror = () => setPreviewing(false);
+          synth.speak(u);
+          return;
+        }
+        throw new Error("Sem áudio retornado");
+      }
 
       const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`);
       audio.onended = () => setPreviewing(false);
