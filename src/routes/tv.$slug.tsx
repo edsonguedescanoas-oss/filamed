@@ -716,60 +716,61 @@ function TvPage() {
         const name = playErr instanceof Error ? playErr.name : "Error";
         const msg = playErr instanceof Error ? playErr.message : String(playErr);
         console.warn("[TV] play via AudioContext falhou, tentando <audio>:", name, msg);
-        const audio = ensureRemoteAudio();
-        if (!audio) throw new Error("Elemento <audio> indisponível");
-        audio.src = base64ToObjectUrl(data.audioContent, mime);
-        audio.onended = () => {
-          setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
-        };
-        audio.onerror = () => {
-          const mediaErr = audio.error;
-          const codeMap: Record<number, string> = {
-            1: "MEDIA_ERR_ABORTED",
-            2: "MEDIA_ERR_NETWORK",
-            3: "MEDIA_ERR_DECODE",
-            4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
+        try {
+          const audio = ensureRemoteAudio();
+          if (!audio) throw new Error("Elemento <audio> indisponível");
+          audio.src = base64ToObjectUrl(data.audioContent, mime);
+          audio.onended = () => {
+            setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
           };
-          const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
-          console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
+          audio.onerror = () => {
+            const mediaErr = audio.error;
+            const codeMap: Record<number, string> = {
+              1: "MEDIA_ERR_ABORTED",
+              2: "MEDIA_ERR_NETWORK",
+              3: "MEDIA_ERR_DECODE",
+              4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
+            };
+            const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
+            console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
+            const utterance = createPreparedUtterance();
+            if (utterance) {
+              console.warn(`[TV] fallback local após falha de reprodução remota (${reason})`);
+              utterance.text = text;
+              speakUtterance(utterance);
+              return;
+            }
+            setDebugInfo({
+              text,
+              voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+              status: "erro",
+              at: new Date(),
+              error: `Falha ao reproduzir áudio (${reason})`,
+            });
+          };
+          await audio.play();
+        } catch (fallbackErr) {
+          const fname = fallbackErr instanceof Error ? fallbackErr.name : "Error";
+          const fmsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          console.error("[TV] playback remoto falhou:", fname, fmsg);
           const utterance = createPreparedUtterance();
           if (utterance) {
-            console.warn(`[TV] fallback local após falha de reprodução remota (${reason})`);
+            console.warn(`[TV] fallback local após falha de playback remoto (${fname})`);
             utterance.text = text;
             speakUtterance(utterance);
             return;
+          }
+          if (fname === "NotAllowedError") {
+            setAudioBlocked(true);
           }
           setDebugInfo({
             text,
             voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
             status: "erro",
             at: new Date(),
-            error: `Falha ao reproduzir áudio (${reason})`,
+            error: `Playback remoto falhou: ${fname} — ${fmsg}`,
           });
-        };
-        await audio.play();
-      } catch (fallbackErr) {
-        const name = fallbackErr instanceof Error ? fallbackErr.name : "Error";
-        const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-        console.error("[TV] playback remoto falhou:", name, msg);
-        const utterance = createPreparedUtterance();
-        if (utterance) {
-          console.warn(`[TV] fallback local após falha de playback remoto (${name})`);
-          utterance.text = text;
-          speakUtterance(utterance);
-          return;
         }
-        if (name === "NotAllowedError") {
-          // Autoplay bloqueado — pede o clique do operador novamente
-          setAudioBlocked(true);
-        }
-        setDebugInfo({
-          text,
-          voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
-          status: "erro",
-          at: new Date(),
-          error: `Playback remoto falhou: ${name} — ${msg}`,
-        });
       }
     } catch (err) {
       console.error("[TV] erro TTS remoto:", err);
