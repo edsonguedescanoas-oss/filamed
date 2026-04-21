@@ -92,7 +92,20 @@ export function useVoiceHealth({
         }
         throw new Error(detail);
       }
-      if (!data?.audioContent) throw new Error("Sem áudio retornado");
+      // Provider indisponível com fallback gracioso — não é "erro" do app:
+      // a TV continua falando via Web Speech. Reportamos como OK com aviso.
+      if (!data?.audioContent) {
+        if (data?.fallback === "browser") {
+          setState({
+            status: "ok",
+            message: `${provider} indisponível — usando voz do navegador (${data.reason ?? "fallback"})`,
+            latencyMs: Math.round(performance.now() - t0),
+            lastCheckedAt: new Date(),
+          });
+          return;
+        }
+        throw new Error("Sem áudio retornado");
+      }
 
       setState({
         status: "ok",
