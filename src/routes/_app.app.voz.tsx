@@ -438,21 +438,6 @@ function VozConfigPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
-        <TabButton active={tab === "voz"} onClick={() => setTab("voz")} icon={<Volume2 className="h-4 w-4" />}>
-          Voz
-        </TabButton>
-        <TabButton active={tab === "tv"} onClick={() => setTab("tv")} icon={<Monitor className="h-4 w-4" />}>
-          TV / Painel
-        </TabButton>
-      </div>
-
-      {tab === "tv" && unidadeId && (
-        <TvAparenciaForm unidadeId={unidadeId} unidadeSlug={unidadeSlug} />
-      )}
-
-      {tab === "voz" && (
       <div className="space-y-8">
       <header>
         <div className="flex items-center gap-3">
