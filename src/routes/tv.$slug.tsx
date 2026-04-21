@@ -1140,14 +1140,14 @@ function TvPage() {
       if (!pacienteNomes[id]) idsFaltando.add(id);
     }
 
-    if (idsFaltando.size === 0) return;
+    if (idsFaltando.size === 0 || !unidade?.id) return;
 
     let mounted = true;
     void (async () => {
       // Usamos a RPC `get_pacientes_publicos_ativos` pois o acesso direto à tabela 
       // `pacientes` é bloqueado para usuários anônimos (painel TV).
       const { data, error } = await supabase
-        .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade?.id ?? "" });
+        .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade.id });
 
       if (!mounted) return;
       if (error) {
