@@ -955,6 +955,7 @@ export type Database = {
           created_at: string
           fila_id: string
           id: string
+          paciente_id: string
           prioridade: Database["public"]["Enums"]["senha_prioridade"]
           status: Database["public"]["Enums"]["senha_status"]
           unidade_id: string
