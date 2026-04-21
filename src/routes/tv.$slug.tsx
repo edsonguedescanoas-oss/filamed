@@ -303,7 +303,12 @@ function TvPage() {
     return () => clearInterval(t);
   }, []);
 
-  // Fullscreen — controle e auto-ativação no modo kiosk
+  // Fullscreen — controle e auto-ativação no modo kiosk.
+  // IMPORTANTE: chamamos requestFullscreen no wrapper externo (sem zoom/
+  // transform). Aplicar Fullscreen num elemento que tem `transform: scale()`
+  // quebra o layout em vários browsers (cria novo containing block e o
+  // pseudo-classe :fullscreen passa a ocupar só o tamanho escalado).
+  const fullscreenRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -314,7 +319,7 @@ function TvPage() {
   const requestFullscreen = async () => {
     if (typeof document === "undefined") return;
     try {
-      const el = document.documentElement as HTMLElement & {
+      const el = (fullscreenRef.current ?? document.documentElement) as HTMLElement & {
         webkitRequestFullscreen?: () => Promise<void>;
       };
       if (document.fullscreenElement) return;
@@ -1160,6 +1165,11 @@ function TvPage() {
   return (
     <>
     <div
+      ref={fullscreenRef}
+      className="min-h-screen relative"
+      style={{ backgroundColor: visual.cor_fundo }}
+    >
+    <div
       className="min-h-screen selection:bg-primary/40 relative"
       style={
         {
@@ -1489,6 +1499,7 @@ function TvPage() {
           mas nunca bloqueamos a tela esperando o operador clicar. */}
 
       </div>
+    </div>
     </div>
     <TvZoomControl
       zoom={localZoom}
