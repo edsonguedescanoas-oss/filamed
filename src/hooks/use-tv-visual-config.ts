@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ResolucaoPreset = "hd" | "fhd" | "uhd" | "ultrawide";
 export type Densidade = "compacto" | "normal";
+export type ContrasteChamadas = "normal" | "alto" | "maximo";
 
 export interface TvVisualConfig {
   cor_primaria: string;
@@ -15,6 +16,10 @@ export interface TvVisualConfig {
   densidade: Densidade;
   /** Mensagem fixa exibida na faixa inferior do painel (ao lado do logo). */
   mensagem_rodape: string | null;
+  /** Nível de contraste aplicado na área de chamadas (tabela + modal). */
+  contraste_chamadas: ContrasteChamadas;
+  /** Multiplicador (0.6–2.5) das fontes da área de chamadas. */
+  escala_chamadas: number;
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
@@ -27,6 +32,8 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   escala_fonte: 1,
   densidade: "normal",
   mensagem_rodape: null,
+  contraste_chamadas: "normal",
+  escala_chamadas: 1,
 };
 
 export const RESOLUCAO_PRESETS: Record<
@@ -57,7 +64,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -73,6 +80,9 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           escala_fonte: Number(data.escala_fonte) || 1,
           densidade: (data.densidade as Densidade) ?? "normal",
           mensagem_rodape: data.mensagem_rodape ?? null,
+          contraste_chamadas:
+            (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
+          escala_chamadas: Number(data.escala_chamadas) || 1,
         });
       }
       setLoading(false);
@@ -81,7 +91,6 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
       mounted = false;
     };
   }, [unidadeId]);
-
   // Realtime
   useEffect(() => {
     if (!unidadeId) return;

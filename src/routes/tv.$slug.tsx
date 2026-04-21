@@ -1367,6 +1367,8 @@ function TvPage() {
               tvPrimaria={visual.cor_primaria}
               tvFundo={visual.cor_fundo}
               tvTexto={visual.cor_texto}
+              contraste={visual.contraste_chamadas}
+              escala={visual.escala_chamadas}
             />
           ) : (
             <div
@@ -1397,6 +1399,8 @@ function TvPage() {
                 tvPrimaria={visual.cor_primaria}
                 tvFundo={visual.cor_fundo}
                 tvTexto={visual.cor_texto}
+                contraste={visual.contraste_chamadas}
+                escala={visual.escala_chamadas}
               />
             ))}
             {tabelaChamadas.length <= 1 && (

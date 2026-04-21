@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   DEFAULT_TV_VISUAL,
   RESOLUCAO_PRESETS,
+  type ContrasteChamadas,
   type Densidade,
   type ResolucaoPreset,
   type TvVisualConfig,
@@ -30,7 +31,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -46,6 +47,9 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           escala_fonte: Number(data.escala_fonte) || 1,
           densidade: (data.densidade as Densidade) ?? "normal",
           mensagem_rodape: data.mensagem_rodape ?? null,
+          contraste_chamadas:
+            (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
+          escala_chamadas: Number(data.escala_chamadas) || 1,
         });
       }
       setLoading(false);
@@ -168,6 +172,66 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
               </button>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Legibilidade da área de chamadas */}
+      <section className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
+        <div>
+          <Label className="text-sm font-semibold">
+            Legibilidade da área de chamadas
+          </Label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Para TVs em recepções com luz forte ou janelas grandes — aumenta o
+            contraste e o tamanho das fontes só do painel de chamadas (não
+            mexe nas mídias do carrossel).
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Nível de contraste</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                { v: "normal", titulo: "Normal", desc: "Usa o tema da TV" },
+                { v: "alto", titulo: "Alto", desc: "Fundo escuro + texto claro" },
+                { v: "maximo", titulo: "Máximo", desc: "Preto/branco + amarelo" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.v}
+                type="button"
+                onClick={() => update("contraste_chamadas", opt.v)}
+                className={`rounded-lg border p-3 text-left transition-all ${
+                  cfg.contraste_chamadas === opt.v
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <div className="text-sm font-semibold">{opt.titulo}</div>
+                <div className="text-[11px] text-muted-foreground">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="escala_chamadas" className="text-xs font-medium">
+            Tamanho das fontes da chamada ({Math.round(cfg.escala_chamadas * 100)}%)
+          </Label>
+          <Input
+            id="escala_chamadas"
+            type="range"
+            min={0.6}
+            max={2.5}
+            step={0.05}
+            value={cfg.escala_chamadas}
+            onChange={(e) => update("escala_chamadas", Number(e.target.value))}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Aumente para que o paciente leia a senha de longe ou em ambientes
+            muito iluminados.
+          </p>
         </div>
       </section>
 
