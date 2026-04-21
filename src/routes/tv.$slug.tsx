@@ -481,6 +481,45 @@ function TvPage() {
     primeRemoteAudio();
   };
 
+  const testVoiceNow = async () => {
+    const cfg = voiceCfgRef.current;
+    const frase = "Teste de voz. Se você está ouvindo esta mensagem, o áudio está funcionando corretamente.";
+    const browserUtterance = cfg.provider === "browser" ? createPreparedUtterance() : null;
+
+    handleEnableSound();
+    console.log("[TV] 🧪 teste manual de voz →", { provider: cfg.provider, voiceId: cfg.voice_id });
+    setDebugInfo({
+      text: frase,
+      voice: cfg.provider,
+      status: "falando",
+      at: new Date(),
+    });
+
+    try {
+      if (cfg.provider === "browser") {
+        if (!browserUtterance) {
+          throw new Error("speechSynthesis indisponível neste dispositivo");
+        }
+        browserUtterance.text = frase;
+        speakUtterance(browserUtterance);
+        return;
+      }
+
+      // Reforça o unlock do mesmo elemento <audio> no clique do usuário.
+      primeRemoteAudio();
+      await playRemoteTts(frase, cfg);
+    } catch (err) {
+      console.error("[TV] teste de voz falhou:", err);
+      setDebugInfo({
+        text: frase,
+        voice: cfg.provider,
+        status: "erro",
+        at: new Date(),
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
   // Tenta destravar áudio automaticamente. Se o browser bloquear (autoplay policy),
   // sinaliza audioBlocked=true para mostrar overlay pedindo 1 clique do operador.
   useEffect(() => {
