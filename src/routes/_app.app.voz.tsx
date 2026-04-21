@@ -99,6 +99,25 @@ function VozConfigPage() {
   const isAdmin = roles.includes("admin");
   const unidadeId = profile?.unidade_id ?? null;
   const { liberado: vozPremiumLiberada, planoNome } = useRecurso("voz_premium");
+  const [tab, setTab] = useState<"voz" | "tv">("voz");
+  const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
+
+  // Busca slug da unidade pra abrir o painel da TV no preview da aba "TV"
+  useEffect(() => {
+    if (!unidadeId) return;
+    let mounted = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("unidades")
+        .select("slug")
+        .eq("id", unidadeId)
+        .maybeSingle();
+      if (mounted && data?.slug) setUnidadeSlug(data.slug);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [unidadeId]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
