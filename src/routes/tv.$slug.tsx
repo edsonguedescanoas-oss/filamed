@@ -10,6 +10,7 @@ import { useLocalZoom } from "@/hooks/use-local-zoom";
 import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { TvZoomControl } from "@/components/tv-zoom-control";
+import { NoMediaFallback, CallRow, CallModal } from "@/components/tv/call-display";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
