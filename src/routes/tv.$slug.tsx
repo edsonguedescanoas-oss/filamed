@@ -96,6 +96,11 @@ function TvPage() {
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+  // Configuração visual (cores, logo, fundo, escala, resolução)
+  const { config: visual } = useTvVisualConfig(unidade?.id);
+  const baseScale = RESOLUCAO_PRESETS[visual.resolucao_preset]?.baseScale ?? 1;
+  const scale = baseScale * visual.escala_fonte;
+  const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [debugInfo, setDebugInfo] = useState<{
