@@ -70,7 +70,7 @@ function formatarDestino(destino: string): string {
   return `ao ${d}`;
 }
 
-type TvSearch = { kiosk?: boolean };
+type TvSearch = { kiosk?: boolean; preview?: boolean };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearch => ({
@@ -79,6 +79,11 @@ export const Route = createFileRoute("/tv/$slug")({
       search.kiosk === 1 ||
       search.kiosk === "1" ||
       search.kiosk === "true",
+    preview:
+      search.preview === true ||
+      search.preview === 1 ||
+      search.preview === "1" ||
+      search.preview === "true",
   }),
   head: ({ params }) => ({
     meta: [
@@ -91,7 +96,7 @@ export const Route = createFileRoute("/tv/$slug")({
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
-  const { kiosk } = useSearch({ from: "/tv/$slug" });
+  const { kiosk, preview } = useSearch({ from: "/tv/$slug" });
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
@@ -99,13 +104,31 @@ function TvPage() {
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   // Configuração visual (cores, logo, fundo, escala, resolução)
-  const { config: visual } = useTvVisualConfig(unidade?.id);
+  const { config: dbVisual } = useTvVisualConfig(unidade?.id);
+  // Override de preview: o formulário de aparência envia config via
+  // postMessage para esta rota quando carregada em iframe com ?preview=1.
+  // Permite ver mudanças não salvas em tempo real.
+  const [previewOverride, setPreviewOverride] = useState<Partial<typeof dbVisual> | null>(null);
+  useEffect(() => {
+    if (!preview || typeof window === "undefined") return;
+    const onMsg = (e: MessageEvent) => {
+      const data = e.data as { type?: string; config?: Partial<typeof dbVisual> } | null;
+      if (!data || data.type !== "tv-visual-preview" || !data.config) return;
+      setPreviewOverride(data.config);
+    };
+    window.addEventListener("message", onMsg);
+    // Sinaliza ao parent que o iframe está pronto
+    window.parent?.postMessage({ type: "tv-preview-ready" }, "*");
+    return () => window.removeEventListener("message", onMsg);
+  }, [preview]);
+  const visual = previewOverride ? { ...dbVisual, ...previewOverride } : dbVisual;
   const baseScale = RESOLUCAO_PRESETS[visual.resolucao_preset]?.baseScale ?? 1;
   // Zoom local por dispositivo (persistido no próprio aparelho via
   // localStorage). Permite calibrar cada TV/Firestick individualmente sem
-  // afetar a configuração global da unidade.
+  // afetar a configuração global da unidade. Em preview, ignoramos.
   const { zoom: localZoom, inc, dec, reset } = useLocalZoom(slug);
-  const scale = baseScale * visual.escala_fonte * localZoom;
+  const effectiveLocalZoom = preview ? 1 : localZoom;
+  const scale = baseScale * visual.escala_fonte * effectiveLocalZoom;
   const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
@@ -1480,13 +1503,15 @@ function TvPage() {
 
       </div>
     </div>
-    <TvZoomControl
-      zoom={localZoom}
-      onInc={inc}
-      onDec={dec}
-      onReset={reset}
-      autoHide={kiosk}
-    />
+    {!preview && (
+      <TvZoomControl
+        zoom={localZoom}
+        onInc={inc}
+        onDec={dec}
+        onReset={reset}
+        autoHide={kiosk}
+      />
+    )}
     </>
   );
 }

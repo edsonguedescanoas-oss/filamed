@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Monitor, Save, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       </header>
 
       {/* Preview */}
-      <PreviewCard cfg={cfg} />
+      <LivePreviewCard cfg={cfg} unidadeSlug={unidadeSlug} />
 
       {/* Resolução / Escala / Densidade */}
       <section className="space-y-3">
@@ -282,221 +282,157 @@ function ColorField({
   );
 }
 
-function PreviewCard({ cfg }: { cfg: TvVisualConfig }) {
-  // Escala combinando preset de resolução + ajuste fino
-  const baseScale = RESOLUCAO_PRESETS[cfg.resolucao_preset].baseScale;
-  const scale = cfg.escala_fonte * baseScale;
-  const compact = cfg.densidade === "compacto";
+/**
+ * Preview ao vivo: carrega a rota real /tv/{slug} em iframe (modo preview),
+ * envia a config atual via postMessage e escala visualmente para caber na
+ * moldura. Mostra exatamente como a TV ficará — com cores, logo, fundo,
+ * densidade e escala aplicados — antes de salvar.
+ */
+function LivePreviewCard({
+  cfg,
+  unidadeSlug,
+}: {
+  cfg: TvVisualConfig;
+  unidadeSlug: string | null;
+}) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
+  const preset = RESOLUCAO_PRESETS[cfg.resolucao_preset];
 
-  // Dados mock só pro preview (não bate no banco)
-  const senhaAtual = { codigo: "A045", destino: "Consultório 02" };
-  const proximas = [
-    { codigo: "A046", fila: "Consulta", cor: cfg.cor_primaria },
-    { codigo: "P012", fila: "Preferencial", cor: "#F59E0B" },
-    { codigo: "E008", fila: "Exames", cor: "#10B981" },
-    { codigo: "A047", fila: "Consulta", cor: cfg.cor_primaria },
-  ];
-  const ultimas = [
-    { codigo: "A044", destino: "Cons. 01" },
-    { codigo: "A043", destino: "Cons. 03" },
-    { codigo: "P011", destino: "Cons. 02" },
-  ];
-
-  // Aspect ratio do preset (só visual — o preview ocupa largura total disponível)
+  // Aspect ratio da resolução escolhida
   const aspect =
-    cfg.resolucao_preset === "ultrawide"
-      ? "21 / 9"
-      : cfg.resolucao_preset === "uhd"
-        ? "16 / 9"
-        : "16 / 9";
+    cfg.resolucao_preset === "ultrawide" ? 21 / 9 : 16 / 9;
+  const nativeWidth = preset.width;
+  const nativeHeight = Math.round(nativeWidth / aspect);
+
+  // Escuta o "ready" do iframe
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onMsg = (e: MessageEvent) => {
+      const data = e.data as { type?: string } | null;
+      if (data?.type === "tv-preview-ready") setIframeReady(true);
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+
+  // Envia config atual sempre que mudar (e quando o iframe estiver pronto)
+  useEffect(() => {
+    if (!iframeReady) return;
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    win.postMessage({ type: "tv-visual-preview", config: cfg }, "*");
+  }, [cfg, iframeReady]);
+
+  if (!unidadeSlug) {
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
+        <Monitor className="mx-auto mb-2 h-8 w-8 text-muted-foreground/60" />
+        <p className="text-sm text-muted-foreground">
+          O preview ao vivo aparece quando a unidade tiver um slug definido.
+        </p>
+      </div>
+    );
+  }
+
+  const src = `/tv/${unidadeSlug}?kiosk=1&preview=1`;
 
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-muted/20">
       <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-2">
         <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-          Preview ao vivo
+          Preview ao vivo (painel real)
         </div>
         <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
-          <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-          {RESOLUCAO_PRESETS[cfg.resolucao_preset].label.split(" ")[0]} ·{" "}
+          <span
+            className={`inline-flex h-1.5 w-1.5 rounded-full ${
+              iframeReady ? "animate-pulse bg-emerald-500" : "bg-amber-500"
+            }`}
+          />
+          {preset.label.split(" ")[0]} · {nativeWidth}×{nativeHeight} ·{" "}
           {Math.round(cfg.escala_fonte * 100)}% · {cfg.densidade}
         </div>
       </div>
 
-      {/* Moldura "TV" com aspect ratio do preset */}
+      {/* Moldura "TV" — escalamos o iframe nativo para caber na largura disponível */}
       <div className="bg-neutral-900 p-3 sm:p-4">
-        <div
-          className="relative w-full overflow-hidden rounded-lg shadow-2xl ring-1 ring-white/5"
-          style={{ aspectRatio: aspect }}
-        >
-          {/* Tela em si */}
-          <div
-            className="absolute inset-0 flex flex-col"
-            style={{
-              backgroundColor: cfg.cor_fundo,
-              backgroundImage: cfg.fundo_url ? `url(${cfg.fundo_url})` : undefined,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              color: cfg.cor_texto,
-            }}
-          >
-            {cfg.fundo_url && (
-              <div className="absolute inset-0 bg-black/45 pointer-events-none" />
-            )}
-
-            {/* Header */}
-            <div
-              className="relative flex items-center justify-between border-b border-white/10"
-              style={{
-                padding: `${(compact ? 6 : 10) * scale}px ${(compact ? 12 : 16) * scale}px`,
-              }}
-            >
-              <div className="flex items-center" style={{ gap: `${8 * scale}px` }}>
-                {cfg.logo_url ? (
-                  <img
-                    src={cfg.logo_url}
-                    alt="logo"
-                    className="object-contain"
-                    style={{ height: `${22 * scale}px`, width: `${22 * scale}px` }}
-                  />
-                ) : (
-                  <div
-                    className="rounded"
-                    style={{
-                      backgroundColor: cfg.cor_primaria,
-                      height: `${22 * scale}px`,
-                      width: `${22 * scale}px`,
-                    }}
-                  />
-                )}
-                <div
-                  className="font-bold uppercase tracking-[0.25em]"
-                  style={{ fontSize: `${8 * scale}px`, color: cfg.cor_primaria }}
-                >
-                  Painel · Sua Clínica
-                </div>
-              </div>
-              <div
-                className="font-mono tabular-nums opacity-70"
-                style={{ fontSize: `${10 * scale}px` }}
-              >
-                14:32
-              </div>
-            </div>
-
-            {/* Corpo: senha em destaque + lateral */}
-            <div
-              className="relative flex flex-1 min-h-0"
-              style={{ padding: `${(compact ? 8 : 14) * scale}px` }}
-            >
-              {/* Senha chamada */}
-              <div className="flex flex-1 flex-col justify-center">
-                <div
-                  className="font-bold uppercase tracking-[0.3em] opacity-70"
-                  style={{ fontSize: `${8 * scale}px`, color: cfg.cor_primaria }}
-                >
-                  Senha chamada
-                </div>
-                <div
-                  className="font-display font-black leading-none tabular-nums"
-                  style={{ fontSize: `${64 * scale}px`, marginTop: `${4 * scale}px` }}
-                >
-                  {senhaAtual.codigo}
-                </div>
-                <div
-                  className="font-bold"
-                  style={{
-                    fontSize: `${16 * scale}px`,
-                    marginTop: `${6 * scale}px`,
-                    color: cfg.cor_primaria,
-                  }}
-                >
-                  Dirija-se ao {senhaAtual.destino}
-                </div>
-
-                {/* Últimas chamadas */}
-                <div style={{ marginTop: `${(compact ? 8 : 12) * scale}px` }}>
-                  <div
-                    className="font-bold uppercase tracking-[0.25em] opacity-50"
-                    style={{ fontSize: `${7 * scale}px` }}
-                  >
-                    Últimas chamadas
-                  </div>
-                  <div
-                    className="flex flex-wrap"
-                    style={{ gap: `${6 * scale}px`, marginTop: `${4 * scale}px` }}
-                  >
-                    {ultimas.map((u) => (
-                      <div
-                        key={u.codigo}
-                        className="rounded font-mono tabular-nums"
-                        style={{
-                          padding: `${3 * scale}px ${6 * scale}px`,
-                          fontSize: `${9 * scale}px`,
-                          backgroundColor: `${cfg.cor_primaria}22`,
-                          color: cfg.cor_texto,
-                        }}
-                      >
-                        {u.codigo}
-                        <span className="opacity-60"> · {u.destino}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Lateral: aguardando */}
-              <div
-                className="flex flex-col rounded border border-white/10 bg-black/20 backdrop-blur-sm"
-                style={{
-                  width: `${130 * scale}px`,
-                  marginLeft: `${10 * scale}px`,
-                  padding: `${8 * scale}px`,
-                }}
-              >
-                <div
-                  className="font-bold uppercase tracking-[0.25em] opacity-70"
-                  style={{ fontSize: `${7 * scale}px`, color: cfg.cor_primaria }}
-                >
-                  Aguardando
-                </div>
-                <div
-                  className="flex flex-col"
-                  style={{ gap: `${4 * scale}px`, marginTop: `${5 * scale}px` }}
-                >
-                  {proximas.map((p) => (
-                    <div
-                      key={p.codigo}
-                      className="flex items-center justify-between rounded"
-                      style={{
-                        padding: `${3 * scale}px ${5 * scale}px`,
-                        backgroundColor: `${p.cor}1f`,
-                        borderLeft: `${2 * scale}px solid ${p.cor}`,
-                      }}
-                    >
-                      <span
-                        className="font-mono font-bold tabular-nums"
-                        style={{ fontSize: `${10 * scale}px` }}
-                      >
-                        {p.codigo}
-                      </span>
-                      <span
-                        className="opacity-60"
-                        style={{ fontSize: `${7 * scale}px` }}
-                      >
-                        {p.fila}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pé da moldura — like a TV stand */}
+        <ScaledIframe
+          src={src}
+          iframeRef={iframeRef}
+          nativeWidth={nativeWidth}
+          nativeHeight={nativeHeight}
+          ready={iframeReady}
+        />
         <div className="mx-auto mt-2 h-1.5 w-1/4 rounded-b-lg bg-neutral-800" />
+        <p className="mt-3 text-center text-[10px] text-muted-foreground">
+          Mudanças aparecem aqui em tempo real. Clique em <strong>Salvar</strong> para aplicar nas TVs ao vivo.
+        </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Renderiza um iframe na resolução nativa do preset, escalado via CSS
+ * transform para caber na largura disponível mantendo o aspect ratio.
+ * Isso preserva o layout exato do painel (mesmo número de pixels que a TV
+ * real renderizará).
+ */
+function ScaledIframe({
+  src,
+  iframeRef,
+  nativeWidth,
+  nativeHeight,
+  ready,
+}: {
+  src: string;
+  iframeRef: React.MutableRefObject<HTMLIFrameElement | null>;
+  nativeWidth: number;
+  nativeHeight: number;
+  ready: boolean;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    setContainerWidth(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, []);
+
+  const scale = containerWidth > 0 ? containerWidth / nativeWidth : 1;
+  const scaledHeight = nativeHeight * scale;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full overflow-hidden rounded-lg shadow-2xl ring-1 ring-white/5 bg-black"
+      style={{ height: containerWidth > 0 ? `${scaledHeight}px` : undefined }}
+    >
+      {!ready && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60">
+          <Loader2 className="h-6 w-6 animate-spin text-white/70" />
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        src={src}
+        title="Preview da TV"
+        className="absolute left-0 top-0 origin-top-left border-0"
+        style={{
+          width: `${nativeWidth}px`,
+          height: `${nativeHeight}px`,
+          transform: `scale(${scale})`,
+        }}
+      />
     </div>
   );
 }
