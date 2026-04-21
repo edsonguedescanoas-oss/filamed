@@ -1103,7 +1103,7 @@ function TvPage() {
   const ultimasChamadas = useMemo(() => {
     const seen = new Set<string>();
     const list: Array<{ chamada: Chamada; senha: Senha }> = [];
-    for (const c of chamadas) {
+    for (const c of chamadasComSim) {
       if (seen.has(c.senha_id)) continue;
       const s = senhasMap.get(c.senha_id);
       if (!s) continue;
@@ -1112,7 +1112,7 @@ function TvPage() {
       if (list.length >= 5) break;
     }
     return list;
-  }, [chamadas, senhasMap]);
+  }, [chamadasComSim, senhasMap]);
 
   // Pré-carrega nomes dos pacientes das senhas visíveis (destaque + últimas chamadas)
   useEffect(() => {
