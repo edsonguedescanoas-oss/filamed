@@ -1189,17 +1189,62 @@ function TvPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/40">
+    <div
+      className="min-h-screen selection:bg-primary/40 relative"
+      style={
+        {
+          backgroundColor: visual.cor_fundo,
+          color: visual.cor_texto,
+          ["--tv-primary" as string]: visual.cor_primaria,
+          fontSize: `${scale}rem`,
+        } as React.CSSProperties
+      }
+    >
+      {/* Imagem de fundo (se configurada) */}
+      {visual.fundo_url && (
+        <>
+          <div
+            className="fixed inset-0 bg-cover bg-center pointer-events-none"
+            style={{ backgroundImage: `url(${visual.fundo_url})` }}
+          />
+          <div className="fixed inset-0 bg-black/55 pointer-events-none" />
+        </>
+      )}
+
+      <div className="relative">
       {/* Header — oculto em modo kiosk */}
       {!kiosk && (
-      <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-8 py-4">
+      <header
+        className="border-b border-white/10 backdrop-blur"
+        style={{ backgroundColor: `${visual.cor_fundo}cc` }}
+      >
+        <div
+          className={`mx-auto flex max-w-[1600px] items-center justify-between gap-4 ${
+            isCompact ? "px-5 py-2" : "px-8 py-4"
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
-              <Activity className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
-            </div>
+            {visual.logo_url ? (
+              <img
+                src={visual.logo_url}
+                alt={unidade.nome}
+                className={isCompact ? "h-8 w-auto" : "h-11 w-auto"}
+              />
+            ) : (
+              <div
+                className={`flex items-center justify-center rounded-xl shadow-glow ${
+                  isCompact ? "h-9 w-9" : "h-11 w-11"
+                }`}
+                style={{ backgroundColor: visual.cor_primaria }}
+              >
+                <Activity className="h-6 w-6 text-white" strokeWidth={2.5} />
+              </div>
+            )}
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-primary">
+              <p
+                className="text-[10px] font-semibold uppercase tracking-[0.3em]"
+                style={{ color: visual.cor_primaria }}
+              >
                 FilaMed Painel
               </p>
               <h1 className="font-display text-xl font-bold">{unidade.nome}</h1>
