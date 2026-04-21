@@ -937,9 +937,10 @@ function TvPage() {
     return nome;
   };
 
-  const announceChamada = async (chamada: Chamada) => {
+  const announceChamada = async (chamada: Chamada, opts: { isRechamada?: boolean } = {}) => {
     const cfg = voiceCfgRef.current;
-    console.log("[TV] announceChamada start →", { chamadaId: chamada.id, provider: cfg.provider, voiceId: cfg.voice_id });
+    const { isRechamada = false } = opts;
+    console.log("[TV] announceChamada start →", { chamadaId: chamada.id, provider: cfg.provider, voiceId: cfg.voice_id, isRechamada });
     const usingBrowser = cfg.provider === "browser";
     if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) {
       console.warn("[TV] abortando: provider=browser mas speechSynthesis indisponível");
