@@ -1143,6 +1143,25 @@ function TvPage() {
     return groups;
   }, [senhas]);
 
+  // Modal de destaque: aberto apenas quando a chamada atual é urgente ou
+  // preferencial. Para chamadas normais, fica só o "flash" no card lateral.
+  const showCallModal = Boolean(
+    destaque && (destaque.senha.prioridade === "urgente" || destaque.senha.prioridade === "preferencial"),
+  );
+  // Flash pra chamadas normais — pisca o card da senha atual por 6s.
+  const [normalFlash, setNormalFlash] = useState(false);
+  useEffect(() => {
+    if (!destaque) {
+      setNormalFlash(false);
+      return;
+    }
+    if (destaque.senha.prioridade === "normal") {
+      setNormalFlash(true);
+      const t = setTimeout(() => setNormalFlash(false), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [destaque?.chamada.id, destaque?.senha.prioridade]);
+
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
@@ -1166,25 +1185,6 @@ function TvPage() {
   // Senhas chamadas recentes (já calculadas em ultimasChamadas) — vou montar
   // uma lista enxuta pra tabela lateral: senha atual no topo + 3 anteriores.
   const tabelaChamadas = ultimasChamadas.slice(0, 4);
-
-  // Modal de destaque: aberto apenas quando a chamada atual é urgente ou
-  // preferencial. Para chamadas normais, fica só o "flash" no card lateral.
-  const showCallModal = Boolean(
-    destaque && (destaque.senha.prioridade === "urgente" || destaque.senha.prioridade === "preferencial"),
-  );
-  // Flash pra chamadas normais — pisca o card da senha atual por 6s.
-  const [normalFlash, setNormalFlash] = useState(false);
-  useEffect(() => {
-    if (!destaque) {
-      setNormalFlash(false);
-      return;
-    }
-    if (destaque.senha.prioridade === "normal") {
-      setNormalFlash(true);
-      const t = setTimeout(() => setNormalFlash(false), 6000);
-      return () => clearTimeout(t);
-    }
-  }, [destaque?.chamada.id, destaque?.senha.prioridade]);
 
   return (
     <>
