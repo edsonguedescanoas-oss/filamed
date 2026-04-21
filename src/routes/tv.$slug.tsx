@@ -571,20 +571,52 @@ function TvPage() {
         at: new Date(),
       });
 
-      const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`);
+      // Reusa o elemento <audio> que foi destravado no gesto inicial
+      // (handleEnableSound → primeRemoteAudio). Criar um new Audio() aqui
+      // dentro de um handler de realtime quase sempre é bloqueado pelo
+      // navegador como "autoplay sem gesto".
+      const audio = ensureRemoteAudio();
+      if (!audio) throw new Error("Elemento <audio> indisponível");
+      audio.src = `data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`;
       audio.onended = () => {
         setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
       };
       audio.onerror = () => {
+        const mediaErr = audio.error;
+        const codeMap: Record<number, string> = {
+          1: "MEDIA_ERR_ABORTED",
+          2: "MEDIA_ERR_NETWORK",
+          3: "MEDIA_ERR_DECODE",
+          4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
+        };
+        const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
+        console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
         setDebugInfo({
           text,
           voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
           status: "erro",
           at: new Date(),
-          error: "Falha ao reproduzir áudio",
+          error: `Falha ao reproduzir áudio (${reason})`,
         });
       };
-      await audio.play();
+      try {
+        await audio.play();
+      } catch (playErr) {
+        const name = playErr instanceof Error ? playErr.name : "Error";
+        const msg = playErr instanceof Error ? playErr.message : String(playErr);
+        console.error("[TV] audio.play() rejeitado:", name, msg);
+        if (name === "NotAllowedError") {
+          // Autoplay bloqueado — pede o clique do operador novamente
+          setAudioBlocked(true);
+        }
+        setDebugInfo({
+          text,
+          voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+          status: "erro",
+          at: new Date(),
+          error: `play() falhou: ${name} — ${msg}`,
+        });
+      }
     } catch (err) {
       console.error("[TV] erro TTS remoto:", err);
       setDebugInfo({
