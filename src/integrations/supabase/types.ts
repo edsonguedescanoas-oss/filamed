@@ -908,6 +908,13 @@ export type Database = {
           unidade_id: string
         }[]
       }
+      get_pacientes_publicos_ativos: {
+        Args: { _unidade_id: string }
+        Returns: {
+          nome_completo: string
+          paciente_id: string
+        }[]
+      }
       get_plano_atual: {
         Args: { _unidade_id: string }
         Returns: {
