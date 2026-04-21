@@ -1121,40 +1121,57 @@ function TvPage() {
     return list;
   }, [chamadasComSim, senhasMap]);
 
-  // Pré-carrega nomes dos pacientes das senhas visíveis (destaque + últimas chamadas)
+  // Pré-carrega nomes dos pacientes das senhas visíveis (destaque + últimas chamadas).
+  // Usa a RPC pública `get_pacientes_publicos_ativos` para evitar erros de permissão.
   useEffect(() => {
-    const idsParaBuscar = new Set<string>();
-    if (destaque?.senha.paciente_id && !pacienteNomes[destaque.senha.paciente_id]) {
-      idsParaBuscar.add(destaque.senha.paciente_id);
-    }
+    const idsFaltando = new Set<string>();
+    const idsVisiveis = new Set<string>();
+    
+    if (destaque?.senha.paciente_id) idsVisiveis.add(destaque.senha.paciente_id);
     for (const { senha } of ultimasChamadas) {
-      if (senha.paciente_id && !pacienteNomes[senha.paciente_id]) {
-        idsParaBuscar.add(senha.paciente_id);
-      }
+      if (senha.paciente_id) idsVisiveis.add(senha.paciente_id);
     }
-    if (idsParaBuscar.size === 0) return;
+
+    for (const id of idsVisiveis) {
+      if (!pacienteNomes[id]) idsFaltando.add(id);
+    }
+
+    if (idsFaltando.size === 0) return;
 
     let mounted = true;
     void (async () => {
+      // Usamos a RPC `get_pacientes_publicos_ativos` pois o acesso direto à tabela 
+      // `pacientes` é bloqueado para usuários anônimos (painel TV).
       const { data, error } = await supabase
-        .from("pacientes")
-        .select("id,nome_completo")
-        .in("id", Array.from(idsParaBuscar));
-      if (!mounted || error || !data) return;
-      setPacienteNomes((prev) => {
-        const next = { ...prev };
-        for (const p of data as { id: string; nome_completo: string }[]) {
+        .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade?.id ?? "" });
+
+      if (!mounted) return;
+      if (error) {
+        console.warn("[TV] falha ao buscar nomes de pacientes via RPC:", error.message);
+        return;
+      }
+
+      const lista = (data ?? []) as Array<{ paciente_id: string; nome_completo: string }>;
+      const novosNomes: Record<string, string> = {};
+      let changed = false;
+
+      for (const p of lista) {
+        if (idsFaltando.has(p.paciente_id)) {
           const nome = primeiroEUltimoNome(p.nome_completo);
-          next[p.id] = nome;
-          pacienteCacheRef.current.set(p.id, nome);
+          novosNomes[p.id || p.paciente_id] = nome;
+          pacienteCacheRef.current.set(p.id || p.paciente_id, nome);
+          changed = true;
         }
-        return next;
-      });
+      }
+
+      if (changed) {
+        setPacienteNomes((prev) => ({ ...prev, ...novosNomes }));
+      }
     })();
     return () => {
       mounted = false;
     };
-  }, [destaque, ultimasChamadas, pacienteNomes]);
+  }, [destaque?.senha.id, ultimasChamadas.length, unidade?.id]);
 
   const aguardandoPorFila = useMemo(() => {
     const groups = new Map<string, Senha[]>();
