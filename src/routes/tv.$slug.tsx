@@ -1,4 +1,4 @@
-import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { TvZoomControl } from "@/components/tv-zoom-control";
 import { NoMediaFallback, CallRow, CallModal } from "@/components/tv/call-display";
+import { TestModePanel } from "@/components/tv/test-mode-panel";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
