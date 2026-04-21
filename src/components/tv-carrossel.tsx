@@ -63,8 +63,14 @@ function isYoutube(item: SinalizacaoItem): boolean {
  *  - apenas o ID (11 chars alfanuméricos)
  *  - ID de playlist (começa com PL/UU/RD/OL e tem >13 chars)
  */
-function parseYoutube(url: string): { videoId?: string; playlistId?: string } {
+function parseYoutube(url: string): { videoId?: string; playlistId?: string; isHandle?: boolean } {
   const trimmed = url.trim();
+  
+  // Detecta handle (@nome) - embeds do YouTube não suportam handles diretamente
+  if (trimmed.includes("/@") || trimmed.startsWith("@")) {
+    return { isHandle: true };
+  }
+
   // Playlist explícita
   const listMatch = trimmed.match(/[?&]list=([A-Za-z0-9_-]+)/);
   const playlistId = listMatch?.[1];
