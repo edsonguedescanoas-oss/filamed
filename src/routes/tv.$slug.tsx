@@ -1265,8 +1265,15 @@ function TvPage() {
                 : "border-white/10 bg-slate-900"
             }`}
           >
-            <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
-              Senha chamada
+            <div className="flex items-center gap-3">
+              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
+                Senha chamada
+              </div>
+              {destaque && rechamadasAtivas.has(destaque.senha.id) && (
+                <span className="inline-flex items-center rounded-md bg-red-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-lg ring-2 ring-red-500/40 animate-pulse">
+                  Rechamada
+                </span>
+              )}
             </div>
             {destaque ? (
               <>
