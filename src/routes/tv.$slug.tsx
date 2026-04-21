@@ -1488,6 +1488,7 @@ function TvPage() {
           AudioContext.resume() + listeners globais de clique/toque/tecla,
           mas nunca bloqueamos a tela esperando o operador clicar. */}
 
+      </div>
     </div>
   );
 }
