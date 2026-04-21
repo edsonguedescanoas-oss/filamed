@@ -1162,6 +1162,29 @@ function TvPage() {
     );
   }
 
+  // Senhas chamadas recentes (já calculadas em ultimasChamadas) — vou montar
+  // uma lista enxuta pra tabela lateral: senha atual no topo + 3 anteriores.
+  const tabelaChamadas = ultimasChamadas.slice(0, 4);
+
+  // Modal de destaque: aberto apenas quando a chamada atual é urgente ou
+  // preferencial. Para chamadas normais, fica só o "flash" no card lateral.
+  const showCallModal = Boolean(
+    destaque && (destaque.senha.prioridade === "urgente" || destaque.senha.prioridade === "preferencial"),
+  );
+  // Flash pra chamadas normais — pisca o card da senha atual por 6s.
+  const [normalFlash, setNormalFlash] = useState(false);
+  useEffect(() => {
+    if (!destaque) {
+      setNormalFlash(false);
+      return;
+    }
+    if (destaque.senha.prioridade === "normal") {
+      setNormalFlash(true);
+      const t = setTimeout(() => setNormalFlash(false), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [destaque?.chamada.id, destaque?.senha.prioridade]);
+
   return (
     <>
     <div
@@ -1170,17 +1193,12 @@ function TvPage() {
       style={{ backgroundColor: visual.cor_fundo }}
     >
     <div
-      className="min-h-screen selection:bg-primary/40 relative"
+      className="min-h-screen flex flex-col selection:bg-primary/40 relative"
       style={
         {
           backgroundColor: visual.cor_fundo,
           color: visual.cor_texto,
           ["--tv-primary" as string]: visual.cor_primaria,
-          // Escala TUDO proporcionalmente (fontes, paddings, gaps, larguras
-          // de cards). Tenta usar CSS `zoom` (ideal — Chromium/WebKit/Firefox
-          // 126+) e cai pra `transform: scale()` com compensação quando o
-          // ambiente não suporta zoom (Firefox antigo, WebViews de TV/Firestick
-          // antigos). O efeito visual final é idêntico nos dois caminhos.
           ...buildScaleStyle(scale, zoomSupported),
         } as React.CSSProperties
       }
@@ -1196,16 +1214,15 @@ function TvPage() {
         </>
       )}
 
-      <div className="relative">
-      {/* Header — oculto em modo kiosk */}
-      {!kiosk && (
+      <div className="relative flex flex-1 flex-col">
+      {/* Header compacto — relógio + data sempre visível, fullscreen só fora do kiosk */}
       <header
         className="border-b border-white/10 backdrop-blur"
         style={{ backgroundColor: `${visual.cor_fundo}cc` }}
       >
         <div
-          className={`mx-auto flex max-w-[1600px] items-center justify-between gap-4 ${
-            isCompact ? "px-5 py-2" : "px-8 py-4"
+          className={`mx-auto flex max-w-[1920px] items-center justify-between gap-4 ${
+            isCompact ? "px-4 py-1.5" : "px-6 py-2.5"
           }`}
         >
           <div className="flex items-center gap-3">
@@ -1213,293 +1230,237 @@ function TvPage() {
               <img
                 src={visual.logo_url}
                 alt={unidade.nome}
-                className={isCompact ? "h-8 w-auto" : "h-11 w-auto"}
+                className={isCompact ? "h-7 w-auto" : "h-9 w-auto"}
               />
             ) : (
               <div
-                className={`flex items-center justify-center rounded-xl shadow-glow ${
-                  isCompact ? "h-9 w-9" : "h-11 w-11"
+                className={`flex items-center justify-center rounded-lg shadow-glow ${
+                  isCompact ? "h-8 w-8" : "h-10 w-10"
                 }`}
                 style={{ backgroundColor: visual.cor_primaria }}
               >
-                <Activity className="h-6 w-6 text-white" strokeWidth={2.5} />
+                <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
               </div>
             )}
-            <div>
-              <p
-                className="text-[10px] font-semibold uppercase tracking-[0.3em]"
-                style={{ color: visual.cor_primaria }}
-              >
-                FilaMed Painel
-              </p>
-              <h1 className="font-display text-xl font-bold">{unidade.nome}</h1>
-            </div>
+            <h1 className="font-display text-lg font-bold leading-none">{unidade.nome}</h1>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-2 text-slate-300">
-              <Clock className="h-5 w-5" />
-              <div className="leading-tight text-right">
-                <div className="font-mono text-xl font-bold tabular-nums">
-                  {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                </div>
-                <div className="text-xs text-slate-400 capitalize">
-                  {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
-                </div>
-              </div>
-            </div>
-            {/* Seletor de voz removido — a TV usa sempre a voz configurada em /app/voz */}
+          {/* Relógio central estilo "barra LED" */}
+          <div
+            className="flex items-center gap-3 rounded-md border px-4 py-1.5"
+            style={{
+              borderColor: `color-mix(in srgb, ${visual.cor_primaria} 35%, transparent)`,
+              backgroundColor: `color-mix(in srgb, ${visual.cor_primaria} 8%, ${visual.cor_fundo})`,
+            }}
+          >
+            <Clock
+              className="h-4 w-4"
+              style={{ color: visual.cor_primaria }}
+            />
+            <span className="font-mono text-base font-bold tabular-nums">
+              {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </span>
+            <span className="opacity-30">|</span>
+            <span className="text-sm font-medium capitalize opacity-80">
+              {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
+            </span>
+          </div>
+
+          {!kiosk && (
             <button
               onClick={toggleFullscreen}
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/10 transition-colors"
               title={isFullscreen ? "Sair de tela cheia" : "Entrar em tela cheia"}
             >
               {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
               <span className="hidden lg:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
             </button>
-          </div>
+          )}
+          {kiosk && <div className="w-8" />}
         </div>
       </header>
-      )}
 
-      {/* Conteúdo */}
+      {/* Corpo: split 60% mídia | 40% tabela de senhas */}
       <main
         className={
           isCompact || kiosk
-            ? "mx-auto max-w-[1600px] grid gap-3 px-3 py-3 grid-cols-[1.4fr_1fr]"
-            : "mx-auto max-w-[1600px] grid gap-5 px-5 py-5 grid-cols-[1.5fr_1fr]"
+            ? "mx-auto w-full max-w-[1920px] grid flex-1 gap-3 px-3 py-3 grid-cols-[1.5fr_1fr]"
+            : "mx-auto w-full max-w-[1920px] grid flex-1 gap-4 px-4 py-4 grid-cols-[1.5fr_1fr]"
         }
       >
-        {/* Coluna esquerda: destaque + últimas chamadas */}
-        <section className={isCompact ? "space-y-3" : "space-y-5"}>
-          <div
-            className={`relative overflow-hidden rounded-2xl border ${
-              isCompact ? "p-5" : "p-8"
-            } ${
-              destaque
-                ? "shadow-glow animate-pulse-soft"
-                : "border-white/10"
-            }`}
-            style={{
-              backgroundColor: destaque
-                ? `color-mix(in srgb, ${visual.cor_primaria} 15%, ${visual.cor_fundo})`
-                : `color-mix(in srgb, white 4%, ${visual.cor_fundo})`,
-              borderColor: destaque
-                ? `color-mix(in srgb, ${visual.cor_primaria} 50%, transparent)`
-                : undefined,
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="text-xs font-semibold uppercase tracking-[0.3em] opacity-80"
-                style={{ color: visual.cor_primaria }}
-              >
-                Senha chamada
-              </div>
-              {destaque && rechamadasAtivas.has(destaque.senha.id) && (
-                <span className="inline-flex items-center rounded-md bg-red-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-lg ring-2 ring-red-500/40 animate-pulse">
-                  Rechamada
-                </span>
-              )}
-            </div>
-            {destaque ? (
-              <>
-                <div className="mt-3 flex items-end gap-4 flex-wrap">
-                  <div
-                    className="font-display font-black leading-none tracking-tight tabular-nums"
-                    style={{ fontSize: isCompact ? "5rem" : "7rem" }}
-                  >
-                    {destaque.senha.codigo}
-                  </div>
-                  <PrioridadeTag prioridade={destaque.senha.prioridade} big />
-                </div>
-                {destaque.senha.paciente_id && pacienteNomes[destaque.senha.paciente_id] && (
-                  <div className={isCompact ? "mt-2" : "mt-3"}>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.25em] opacity-60">
-                      Paciente
-                    </div>
-                    <div
-                      className="mt-1 font-display font-bold"
-                      style={{ fontSize: isCompact ? "1.5rem" : "2rem" }}
-                    >
-                      {pacienteNomes[destaque.senha.paciente_id]}
-                    </div>
-                  </div>
-                )}
-                <div className={`${isCompact ? "mt-3" : "mt-5"} flex items-end justify-between gap-4 flex-wrap`}>
-                  <div>
-                    <div className="text-sm opacity-60">Dirija-se a</div>
-                    <div
-                      className="font-display font-bold"
-                      style={{
-                        color: visual.cor_primaria,
-                        fontSize: isCompact ? "1.75rem" : "2.5rem",
-                      }}
-                    >
-                      {destaque.chamada.destino}
-                    </div>
-                  </div>
-                  <div className="text-right text-sm opacity-60">
-                    Fila:{" "}
-                    <span className="font-medium" style={{ color: visual.cor_texto }}>
-                      {filasMap.get(destaque.senha.fila_id)?.nome ?? "—"}
-                    </span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="mt-10 flex flex-col items-center justify-center py-16 text-center text-slate-400">
-                <Megaphone className="h-16 w-16 mb-4 opacity-50" />
-                <p className="font-display text-2xl">Aguardando próxima chamada…</p>
-              </div>
-            )}
-
-            {/* QR Code discreto no canto: paciente acompanha pelo celular */}
-            {destaque?.senha.token_publico && (
-              <div className="absolute bottom-5 right-5 flex flex-col items-center opacity-90 transition-opacity hover:opacity-100">
-                <QrCode
-                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/s/${destaque.senha.token_publico}`}
-                  size={kiosk ? 110 : 96}
-                />
-                <div className="mt-1 text-center text-[10px] font-medium uppercase tracking-wider text-slate-300">
-                  Acompanhe no celular
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Últimas chamadas */}
-          <div className="rounded-3xl border border-white/10 bg-slate-900 p-6">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-4">
-              Últimas chamadas
-            </h2>
-            {ultimasChamadas.length === 0 ? (
-              <p className="text-slate-500 text-sm">Nenhuma chamada ainda.</p>
-            ) : (
-              <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {ultimasChamadas.map(({ chamada, senha }) => {
-                  const fila = filas.find((f) => f.id === senha.fila_id);
-                  const cor = fila?.cor ?? "#3B82F6";
-                  return (
-                    <li
-                      key={chamada.id}
-                      className="overflow-hidden rounded-2xl border border-white/10 bg-slate-800/60 text-center"
-                    >
-                      <div className="h-1 w-full" style={{ backgroundColor: cor }} />
-                      <div className="p-4">
-                        <div className="font-display text-3xl font-bold tabular-nums">
-                          {senha.codigo}
-                        </div>
-                        {senha.paciente_id && pacienteNomes[senha.paciente_id] && (
-                          <div className="mt-1 truncate text-xs font-medium text-slate-200">
-                            {pacienteNomes[senha.paciente_id]}
-                          </div>
-                        )}
-                        {fila?.nome && (
-                          <div
-                            className="mt-1 truncate text-[11px] font-semibold uppercase tracking-wider"
-                            style={{ color: cor }}
-                            title={fila.nome}
-                          >
-                            {fila.nome}
-                          </div>
-                        )}
-                        <div className="mt-1 truncate text-xs text-slate-400">
-                          {chamada.destino}
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          {/* Carrossel de mídia (sinalização digital) — pausa enquanto há chamada destacada */}
+        {/* ─── Esquerda: painel de mídia (carrossel + fallback logo) ─── */}
+        <section className="flex min-h-0">
           {unidade && (
-            <TvCarrossel
-              unidadeId={unidade.id}
-              paused={Boolean(destaque)}
-            />
+            <div className="flex w-full">
+              <TvCarrossel
+                unidadeId={unidade.id}
+                paused={showCallModal}
+                className="w-full"
+                minimalChrome
+              />
+            </div>
           )}
+          {/* Fallback se carrossel não tem itens — mostra logo da clínica grande */}
+          <NoMediaFallback visual={visual} unidadeNome={unidade.nome} />
         </section>
 
-        {/* Coluna direita: aguardando por fila */}
-        <aside className="space-y-4">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 px-1">
-            Aguardando atendimento
-          </h2>
-          {filas.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-slate-900 p-6 text-slate-500 text-sm">
-              Nenhuma fila configurada.
-            </div>
+        {/* ─── Direita: tabela de senhas ─── */}
+        <aside className="flex min-h-0 flex-col gap-3">
+          {/* Cabeçalho da tabela: Paciente · Senha · Destino */}
+          <div
+            className="grid grid-cols-[1fr_auto_1fr_auto] gap-3 rounded-lg border px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] opacity-80"
+            style={{
+              color: visual.cor_primaria,
+              borderColor: `color-mix(in srgb, ${visual.cor_primaria} 35%, transparent)`,
+              backgroundColor: `color-mix(in srgb, ${visual.cor_primaria} 6%, ${visual.cor_fundo})`,
+            }}
+          >
+            <span>Paciente</span>
+            <span>Senha</span>
+            <span>Dirija-se a</span>
+            <span>Hora</span>
+          </div>
+
+          {/* Senha atual em destaque (linha vermelha estilo "ATUAL") */}
+          {destaque ? (
+            <CallRow
+              codigo={destaque.senha.codigo}
+              destino={destaque.chamada.destino}
+              paciente={
+                destaque.senha.paciente_id
+                  ? pacienteNomes[destaque.senha.paciente_id] ?? null
+                  : null
+              }
+              hora={destaque.chamada.created_at}
+              prioridade={destaque.senha.prioridade}
+              filaCor={filasMap.get(destaque.senha.fila_id)?.cor ?? visual.cor_primaria}
+              filaNome={filasMap.get(destaque.senha.fila_id)?.nome ?? ""}
+              isAtual
+              flash={normalFlash}
+              tvPrimaria={visual.cor_primaria}
+              tvFundo={visual.cor_fundo}
+              tvTexto={visual.cor_texto}
+            />
           ) : (
-            filas.map((f) => {
-              const arr = aguardandoPorFila.get(f.id) ?? [];
-              return (
-                <div key={f.id} className="rounded-2xl border border-white/10 bg-slate-900 overflow-hidden">
-                  <div
-                    className="flex items-center justify-between px-5 py-3 border-b border-white/10"
-                    style={{
-                      background: `linear-gradient(90deg, ${f.cor ?? "#3B82F6"}33, transparent)`,
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: f.cor ?? "#3B82F6" }}
-                      />
-                      <span className="font-display font-semibold">{f.nome}</span>
-                    </div>
-                    <span className="text-xs font-mono text-slate-400">
-                      {arr.length} na fila
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    {arr.length === 0 ? (
-                      <p className="text-xs text-slate-500">Vazia</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {arr.slice(0, 12).map((s) => (
-                          <span
-                            key={s.id}
-                            className={`px-3 py-1.5 rounded-lg font-mono font-semibold text-sm tabular-nums border ${
-                              s.prioridade === "urgente"
-                                ? "border-red-500/40 bg-red-500/10 text-red-200"
-                                : s.prioridade === "preferencial"
-                                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                                  : "border-white/10 bg-white/5 text-slate-200"
-                            }`}
-                          >
-                            {s.codigo}
-                          </span>
-                        ))}
-                        {arr.length > 12 && (
-                          <span className="px-3 py-1.5 rounded-lg text-xs text-slate-500">
-                            +{arr.length - 12}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+            <div
+              className="flex items-center justify-center rounded-lg border-2 border-dashed py-12 text-center"
+              style={{ borderColor: `color-mix(in srgb, ${visual.cor_texto} 15%, transparent)` }}
+            >
+              <div>
+                <Megaphone className="mx-auto mb-2 h-10 w-10 opacity-40" />
+                <p className="font-display text-lg opacity-60">Aguardando chamada…</p>
+              </div>
+            </div>
           )}
+
+          {/* Histórico — 3 chamadas anteriores */}
+          <div className="flex flex-col gap-2">
+            {tabelaChamadas.slice(1).map(({ chamada, senha }) => (
+              <CallRow
+                key={chamada.id}
+                codigo={senha.codigo}
+                destino={chamada.destino}
+                paciente={
+                  senha.paciente_id ? pacienteNomes[senha.paciente_id] ?? null : null
+                }
+                hora={chamada.created_at}
+                prioridade={senha.prioridade}
+                filaCor={filasMap.get(senha.fila_id)?.cor ?? visual.cor_primaria}
+                filaNome={filasMap.get(senha.fila_id)?.nome ?? ""}
+                tvPrimaria={visual.cor_primaria}
+                tvFundo={visual.cor_fundo}
+                tvTexto={visual.cor_texto}
+              />
+            ))}
+            {tabelaChamadas.length <= 1 && (
+              <p className="rounded-lg border border-dashed border-white/10 p-3 text-center text-xs opacity-40">
+                Sem chamadas anteriores.
+              </p>
+            )}
+          </div>
+
+          {/* Mini-resumo de fila */}
+          <div className="mt-auto rounded-lg border border-white/10 bg-black/20 px-4 py-2.5">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
+              Aguardando atendimento
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+              {filas.length === 0 ? (
+                <span className="opacity-50">Nenhuma fila configurada.</span>
+              ) : (
+                filas.map((f) => {
+                  const arr = aguardandoPorFila.get(f.id) ?? [];
+                  return (
+                    <div key={f.id} className="flex items-center gap-1.5">
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: f.cor ?? visual.cor_primaria }}
+                      />
+                      <span className="font-medium">{f.nome}:</span>
+                      <span className="font-mono font-bold tabular-nums">{arr.length}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </aside>
       </main>
 
-      <footer className="border-t border-white/5 py-3 text-center text-[10px] uppercase tracking-[0.3em] text-slate-600">
-        FilaMed · Atualização em tempo real
-      </footer>
+      {/* Rodapé: mensagem configurável + logo */}
+      {(visual.mensagem_rodape || visual.logo_url) && (
+        <footer
+          className="border-t border-white/10 flex items-center gap-4 px-6 py-3"
+          style={{
+            backgroundColor: `color-mix(in srgb, black 35%, ${visual.cor_fundo})`,
+          }}
+        >
+          {visual.logo_url && (
+            <img
+              src={visual.logo_url}
+              alt={unidade.nome}
+              className="h-7 w-auto opacity-90"
+            />
+          )}
+          {visual.mensagem_rodape && (
+            <p
+              className="flex-1 truncate font-display text-base font-semibold"
+              title={visual.mensagem_rodape}
+            >
+              {visual.mensagem_rodape}
+            </p>
+          )}
+        </footer>
+      )}
 
-      {/* Overlay de "ativar som" foi removido por requisito: na TV / Firestick
-          o áudio deve subir sozinho. Continuamos tentando destravar via
-          AudioContext.resume() + listeners globais de clique/toque/tecla,
-          mas nunca bloqueamos a tela esperando o operador clicar. */}
+      {/* QR code discreto — fixo no canto inferior direito enquanto há senha */}
+      {destaque?.senha.token_publico && !showCallModal && (
+        <div className="absolute bottom-3 right-3 flex flex-col items-center rounded-lg bg-white/95 px-2 py-1.5 shadow-xl">
+          <QrCode
+            value={`${typeof window !== "undefined" ? window.location.origin : ""}/s/${destaque.senha.token_publico}`}
+            size={70}
+          />
+          <div className="mt-0.5 text-center text-[8px] font-bold uppercase tracking-wider text-slate-700">
+            Acompanhe
+          </div>
+        </div>
+      )}
 
       </div>
     </div>
+
+    {/* ─── Modal de chamada destacada (urgente/preferencial) ─── */}
+    {showCallModal && destaque && (
+      <CallModal
+        codigo={destaque.senha.codigo}
+        destino={destaque.chamada.destino}
+        paciente={
+          destaque.senha.paciente_id ? pacienteNomes[destaque.senha.paciente_id] ?? null : null
+        }
+        prioridade={destaque.senha.prioridade}
+        visual={visual}
+      />
+    )}
     </div>
     <TvZoomControl
       zoom={localZoom}
