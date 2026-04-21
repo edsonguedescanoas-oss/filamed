@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Loader2,
   Mic,
+  Monitor,
   Play,
   RefreshCw,
   Save,
@@ -25,6 +26,7 @@ import {
   montarTextoChamada,
   type TemplateChamada,
 } from "@/lib/voice-template";
+import { TvAparenciaForm } from "@/components/voz/tv-aparencia-form";
 
 export const Route = createFileRoute("/_app/app/voz")({
   component: VozConfigPage,
@@ -97,6 +99,25 @@ function VozConfigPage() {
   const isAdmin = roles.includes("admin");
   const unidadeId = profile?.unidade_id ?? null;
   const { liberado: vozPremiumLiberada, planoNome } = useRecurso("voz_premium");
+  const [tab, setTab] = useState<"voz" | "tv">("voz");
+  const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
+
+  // Busca slug da unidade pra abrir o painel da TV no preview da aba "TV"
+  useEffect(() => {
+    if (!unidadeId) return;
+    let mounted = true;
+    void (async () => {
+      const { data } = await supabase
+        .from("unidades")
+        .select("slug")
+        .eq("id", unidadeId)
+        .maybeSingle();
+      if (mounted && data?.slug) setUnidadeSlug(data.slug);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [unidadeId]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -416,7 +437,23 @@ function VozConfigPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10 space-y-8">
+    <div className="mx-auto max-w-3xl px-6 py-10 space-y-6">
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border">
+        <TabButton active={tab === "voz"} onClick={() => setTab("voz")} icon={<Volume2 className="h-4 w-4" />}>
+          Voz
+        </TabButton>
+        <TabButton active={tab === "tv"} onClick={() => setTab("tv")} icon={<Monitor className="h-4 w-4" />}>
+          TV / Painel
+        </TabButton>
+      </div>
+
+      {tab === "tv" && unidadeId && (
+        <TvAparenciaForm unidadeId={unidadeId} unidadeSlug={unidadeSlug} />
+      )}
+
+      {tab === "voz" && (
+      <div className="space-y-8">
       <header>
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
@@ -724,7 +761,36 @@ function VozConfigPage() {
           </div>
         </div>
       )}
+      </div>
+      )}
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors -mb-px ${
+        active
+          ? "text-foreground border-b-2 border-primary"
+          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
 

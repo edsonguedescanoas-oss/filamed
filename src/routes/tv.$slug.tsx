@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
+import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
@@ -95,6 +96,11 @@ function TvPage() {
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+  // Configuração visual (cores, logo, fundo, escala, resolução)
+  const { config: visual } = useTvVisualConfig(unidade?.id);
+  const baseScale = RESOLUCAO_PRESETS[visual.resolucao_preset]?.baseScale ?? 1;
+  const scale = baseScale * visual.escala_fonte;
+  const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [debugInfo, setDebugInfo] = useState<{
@@ -1183,17 +1189,62 @@ function TvPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/40">
+    <div
+      className="min-h-screen selection:bg-primary/40 relative"
+      style={
+        {
+          backgroundColor: visual.cor_fundo,
+          color: visual.cor_texto,
+          ["--tv-primary" as string]: visual.cor_primaria,
+          fontSize: `${scale}rem`,
+        } as React.CSSProperties
+      }
+    >
+      {/* Imagem de fundo (se configurada) */}
+      {visual.fundo_url && (
+        <>
+          <div
+            className="fixed inset-0 bg-cover bg-center pointer-events-none"
+            style={{ backgroundImage: `url(${visual.fundo_url})` }}
+          />
+          <div className="fixed inset-0 bg-black/55 pointer-events-none" />
+        </>
+      )}
+
+      <div className="relative">
       {/* Header — oculto em modo kiosk */}
       {!kiosk && (
-      <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-8 py-4">
+      <header
+        className="border-b border-white/10 backdrop-blur"
+        style={{ backgroundColor: `${visual.cor_fundo}cc` }}
+      >
+        <div
+          className={`mx-auto flex max-w-[1600px] items-center justify-between gap-4 ${
+            isCompact ? "px-5 py-2" : "px-8 py-4"
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary shadow-glow">
-              <Activity className="h-6 w-6 text-primary-foreground" strokeWidth={2.5} />
-            </div>
+            {visual.logo_url ? (
+              <img
+                src={visual.logo_url}
+                alt={unidade.nome}
+                className={isCompact ? "h-8 w-auto" : "h-11 w-auto"}
+              />
+            ) : (
+              <div
+                className={`flex items-center justify-center rounded-xl shadow-glow ${
+                  isCompact ? "h-9 w-9" : "h-11 w-11"
+                }`}
+                style={{ backgroundColor: visual.cor_primaria }}
+              >
+                <Activity className="h-6 w-6 text-white" strokeWidth={2.5} />
+              </div>
+            )}
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-primary">
+              <p
+                className="text-[10px] font-semibold uppercase tracking-[0.3em]"
+                style={{ color: visual.cor_primaria }}
+              >
                 FilaMed Painel
               </p>
               <h1 className="font-display text-xl font-bold">{unidade.nome}</h1>
@@ -1229,22 +1280,35 @@ function TvPage() {
       {/* Conteúdo */}
       <main
         className={
-          kiosk
-            ? "mx-auto max-w-[1600px] grid gap-4 px-4 py-4 grid-cols-[1.4fr_1fr]"
-            : "mx-auto max-w-[1600px] grid gap-6 px-6 py-6 grid-cols-[1.5fr_1fr]"
+          isCompact || kiosk
+            ? "mx-auto max-w-[1600px] grid gap-3 px-3 py-3 grid-cols-[1.4fr_1fr]"
+            : "mx-auto max-w-[1600px] grid gap-5 px-5 py-5 grid-cols-[1.5fr_1fr]"
         }
       >
         {/* Coluna esquerda: destaque + últimas chamadas */}
-        <section className="space-y-6">
+        <section className={isCompact ? "space-y-3" : "space-y-5"}>
           <div
-            className={`relative overflow-hidden rounded-3xl border p-10 ${
+            className={`relative overflow-hidden rounded-2xl border ${
+              isCompact ? "p-5" : "p-8"
+            } ${
               destaque
-                ? "border-primary/40 bg-gradient-to-br from-primary/20 via-slate-900 to-slate-900 shadow-glow animate-pulse-soft"
-                : "border-white/10 bg-slate-900"
+                ? "shadow-glow animate-pulse-soft"
+                : "border-white/10"
             }`}
+            style={{
+              backgroundColor: destaque
+                ? `color-mix(in srgb, ${visual.cor_primaria} 15%, ${visual.cor_fundo})`
+                : `color-mix(in srgb, white 4%, ${visual.cor_fundo})`,
+              borderColor: destaque
+                ? `color-mix(in srgb, ${visual.cor_primaria} 50%, transparent)`
+                : undefined,
+            }}
           >
             <div className="flex items-center gap-3">
-              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
+              <div
+                className="text-xs font-semibold uppercase tracking-[0.3em] opacity-80"
+                style={{ color: visual.cor_primaria }}
+              >
                 Senha chamada
               </div>
               {destaque && rechamadasAtivas.has(destaque.senha.id) && (
@@ -1255,32 +1319,44 @@ function TvPage() {
             </div>
             {destaque ? (
               <>
-                <div className="mt-4 flex items-end gap-4 flex-wrap">
-                  <div className="font-display text-[10rem] font-black leading-none tracking-tight tabular-nums">
+                <div className="mt-3 flex items-end gap-4 flex-wrap">
+                  <div
+                    className="font-display font-black leading-none tracking-tight tabular-nums"
+                    style={{ fontSize: isCompact ? "5rem" : "7rem" }}
+                  >
                     {destaque.senha.codigo}
                   </div>
                   <PrioridadeTag prioridade={destaque.senha.prioridade} big />
                 </div>
                 {destaque.senha.paciente_id && pacienteNomes[destaque.senha.paciente_id] && (
-                  <div className="mt-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+                  <div className={isCompact ? "mt-2" : "mt-3"}>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.25em] opacity-60">
                       Paciente
                     </div>
-                    <div className="mt-1 font-display text-3xl font-bold text-white">
+                    <div
+                      className="mt-1 font-display font-bold"
+                      style={{ fontSize: isCompact ? "1.5rem" : "2rem" }}
+                    >
                       {pacienteNomes[destaque.senha.paciente_id]}
                     </div>
                   </div>
                 )}
-                <div className="mt-6 flex items-end justify-between gap-4 flex-wrap">
+                <div className={`${isCompact ? "mt-3" : "mt-5"} flex items-end justify-between gap-4 flex-wrap`}>
                   <div>
-                    <div className="text-sm text-slate-400">Dirija-se a</div>
-                    <div className="font-display text-4xl font-bold text-primary">
+                    <div className="text-sm opacity-60">Dirija-se a</div>
+                    <div
+                      className="font-display font-bold"
+                      style={{
+                        color: visual.cor_primaria,
+                        fontSize: isCompact ? "1.75rem" : "2.5rem",
+                      }}
+                    >
                       {destaque.chamada.destino}
                     </div>
                   </div>
-                  <div className="text-right text-sm text-slate-400">
+                  <div className="text-right text-sm opacity-60">
                     Fila:{" "}
-                    <span className="text-white font-medium">
+                    <span className="font-medium" style={{ color: visual.cor_texto }}>
                       {filasMap.get(destaque.senha.fila_id)?.nome ?? "—"}
                     </span>
                   </div>
@@ -1437,6 +1513,7 @@ function TvPage() {
           AudioContext.resume() + listeners globais de clique/toque/tecla,
           mas nunca bloqueamos a tela esperando o operador clicar. */}
 
+      </div>
     </div>
   );
 }

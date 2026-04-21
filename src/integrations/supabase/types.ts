@@ -693,6 +693,59 @@ export type Database = {
         }
         Relationships: []
       }
+      tv_visual_config: {
+        Row: {
+          cor_fundo: string
+          cor_primaria: string
+          cor_texto: string
+          created_at: string
+          densidade: string
+          escala_fonte: number
+          fundo_url: string | null
+          id: string
+          logo_url: string | null
+          resolucao_preset: string
+          unidade_id: string
+          updated_at: string
+        }
+        Insert: {
+          cor_fundo?: string
+          cor_primaria?: string
+          cor_texto?: string
+          created_at?: string
+          densidade?: string
+          escala_fonte?: number
+          fundo_url?: string | null
+          id?: string
+          logo_url?: string | null
+          resolucao_preset?: string
+          unidade_id: string
+          updated_at?: string
+        }
+        Update: {
+          cor_fundo?: string
+          cor_primaria?: string
+          cor_texto?: string
+          created_at?: string
+          densidade?: string
+          escala_fonte?: number
+          fundo_url?: string | null
+          id?: string
+          logo_url?: string | null
+          resolucao_preset?: string
+          unidade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tv_visual_config_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: true
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidade_voice_config: {
         Row: {
           created_at: string
