@@ -28,7 +28,7 @@ export const securityHeadersMiddleware = createMiddleware({ type: "request" }).s
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
-      "media-src 'self' blob: https:",
+      "media-src 'self' data: blob: https:",
       `connect-src 'self' ${SUPABASE} ${SUPABASE_WS} https://fonts.googleapis.com https://fonts.gstatic.com`,
       "frame-ancestors 'none'",
       "base-uri 'self'",
