@@ -387,6 +387,50 @@ function TvPage() {
   useEffect(() => {
     soundOnRef.current = soundOn;
   }, [soundOn]);
+
+  // Elemento <audio> reutilizado para tocar TTS de Google/ElevenLabs.
+  // Chrome/Safari/iOS exigem que play() seja consequência de um gesto do
+  // usuário. Criamos uma única instância e a "aquecemos" no primeiro clique
+  // (com um MP3 silencioso) pra que chamadas .play() subsequentes em handlers
+  // de realtime não sejam bloqueadas pela autoplay policy.
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const remoteAudioPrimedRef = useRef(false);
+  // ~0.1s de MP3 silencioso (44.1kHz mono, ID3 v2 + frame MPEG válido)
+  const SILENT_MP3 =
+    "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAAAAAOTGF2YzU4LjEzAAAAAAAAAAAAAAAA//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVV";
+  const ensureRemoteAudio = (): HTMLAudioElement | null => {
+    if (typeof window === "undefined") return null;
+    if (!remoteAudioRef.current) {
+      const el = new Audio();
+      el.preload = "auto";
+      remoteAudioRef.current = el;
+    }
+    return remoteAudioRef.current;
+  };
+  const primeRemoteAudio = () => {
+    const el = ensureRemoteAudio();
+    if (!el || remoteAudioPrimedRef.current) return;
+    try {
+      el.src = SILENT_MP3;
+      el.muted = true;
+      el.volume = 0;
+      const p = el.play();
+      if (p && typeof p.then === "function") {
+        void p
+          .then(() => {
+            remoteAudioPrimedRef.current = true;
+            el.pause();
+            el.muted = false;
+            el.volume = 1;
+          })
+          .catch(() => {
+            /* navegador ainda não liberou — tentaremos no próximo gesto */
+          });
+      }
+    } catch {
+      /* ignora */
+    }
+  };
   const playDing = () => {
     try {
       let ctx = audioCtxRef.current;
