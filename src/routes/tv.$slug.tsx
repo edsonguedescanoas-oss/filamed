@@ -994,7 +994,17 @@ function TvPage() {
       destino: chamada.destino ?? null,
       formatarDestino,
     });
-    console.log("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
+    console.log("[TV] 🗣️ partes da chamada:", {
+      template: cfg.template_chamada,
+      nome,
+      codigo,
+      codigoFalado,
+      nomeFila,
+      destino: chamada.destino,
+      filasCarregadas: filas.length,
+      textoFinal: texto,
+      provider: cfg.provider,
+    });
     if (!texto) {
       setDebugInfo({
         text: "<vazio>",
