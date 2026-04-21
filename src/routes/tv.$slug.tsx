@@ -387,6 +387,50 @@ function TvPage() {
   useEffect(() => {
     soundOnRef.current = soundOn;
   }, [soundOn]);
+
+  // Elemento <audio> reutilizado para tocar TTS de Google/ElevenLabs.
+  // Chrome/Safari/iOS exigem que play() seja consequência de um gesto do
+  // usuário. Criamos uma única instância e a "aquecemos" no primeiro clique
+  // (com um MP3 silencioso) pra que chamadas .play() subsequentes em handlers
+  // de realtime não sejam bloqueadas pela autoplay policy.
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const remoteAudioPrimedRef = useRef(false);
+  // ~0.1s de MP3 silencioso (44.1kHz mono, ID3 v2 + frame MPEG válido)
+  const SILENT_MP3 =
+    "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAAAAAOTGF2YzU4LjEzAAAAAAAAAAAAAAAA//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVV";
+  const ensureRemoteAudio = (): HTMLAudioElement | null => {
+    if (typeof window === "undefined") return null;
+    if (!remoteAudioRef.current) {
+      const el = new Audio();
+      el.preload = "auto";
+      remoteAudioRef.current = el;
+    }
+    return remoteAudioRef.current;
+  };
+  const primeRemoteAudio = () => {
+    const el = ensureRemoteAudio();
+    if (!el || remoteAudioPrimedRef.current) return;
+    try {
+      el.src = SILENT_MP3;
+      el.muted = true;
+      el.volume = 0;
+      const p = el.play();
+      if (p && typeof p.then === "function") {
+        void p
+          .then(() => {
+            remoteAudioPrimedRef.current = true;
+            el.pause();
+            el.muted = false;
+            el.volume = 1;
+          })
+          .catch(() => {
+            /* navegador ainda não liberou — tentaremos no próximo gesto */
+          });
+      }
+    } catch {
+      /* ignora */
+    }
+  };
   const playDing = () => {
     try {
       let ctx = audioCtxRef.current;
@@ -422,6 +466,10 @@ function TvPage() {
     playDing();
     // Também "aquece" a Web Speech API com uma fala silenciosa
     primeSpeech();
+    // E pré-aquece o elemento <audio> que será usado por Google/ElevenLabs:
+    // tocamos um MP3 silencioso pra que o navegador associe o gesto a esse
+    // elemento e libere autoplay nas próximas .play() (Chrome/Safari/iOS).
+    primeRemoteAudio();
   };
 
   // Tenta destravar áudio automaticamente. Se o browser bloquear (autoplay policy),
@@ -523,20 +571,52 @@ function TvPage() {
         at: new Date(),
       });
 
-      const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`);
+      // Reusa o elemento <audio> que foi destravado no gesto inicial
+      // (handleEnableSound → primeRemoteAudio). Criar um new Audio() aqui
+      // dentro de um handler de realtime quase sempre é bloqueado pelo
+      // navegador como "autoplay sem gesto".
+      const audio = ensureRemoteAudio();
+      if (!audio) throw new Error("Elemento <audio> indisponível");
+      audio.src = `data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`;
       audio.onended = () => {
         setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
       };
       audio.onerror = () => {
+        const mediaErr = audio.error;
+        const codeMap: Record<number, string> = {
+          1: "MEDIA_ERR_ABORTED",
+          2: "MEDIA_ERR_NETWORK",
+          3: "MEDIA_ERR_DECODE",
+          4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
+        };
+        const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
+        console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
         setDebugInfo({
           text,
           voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
           status: "erro",
           at: new Date(),
-          error: "Falha ao reproduzir áudio",
+          error: `Falha ao reproduzir áudio (${reason})`,
         });
       };
-      await audio.play();
+      try {
+        await audio.play();
+      } catch (playErr) {
+        const name = playErr instanceof Error ? playErr.name : "Error";
+        const msg = playErr instanceof Error ? playErr.message : String(playErr);
+        console.error("[TV] audio.play() rejeitado:", name, msg);
+        if (name === "NotAllowedError") {
+          // Autoplay bloqueado — pede o clique do operador novamente
+          setAudioBlocked(true);
+        }
+        setDebugInfo({
+          text,
+          voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+          status: "erro",
+          at: new Date(),
+          error: `play() falhou: ${name} — ${msg}`,
+        });
+      }
     } catch (err) {
       console.error("[TV] erro TTS remoto:", err);
       setDebugInfo({
