@@ -1500,6 +1500,7 @@ function TvPage() {
 
       </div>
     </div>
+    </div>
     <TvZoomControl
       zoom={localZoom}
       onInc={inc}
