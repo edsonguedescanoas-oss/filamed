@@ -187,7 +187,6 @@ function TvPage() {
           return;
         }
         setUnidade(uni as Unidade);
-        setFetchStatus("success");
         setLastFetchError(null);
 
         const [filasRes, senhasRes, chamadasRes] = await Promise.all([
@@ -211,6 +210,7 @@ function TvPage() {
         setFilas((filasRes.data ?? []) as Fila[]);
         setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
         setChamadas((chamadasRes.data ?? []) as Chamada[]);
+        setFetchStatus("success");
 
         // Carrega config de voz da unidade (se existir)
         const { data: cfg } = await supabase
