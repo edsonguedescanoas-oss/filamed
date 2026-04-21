@@ -1291,6 +1291,44 @@ function TvPage() {
         FilaMed · Atualização em tempo real
       </footer>
 
+      {/* Botão fixo "Testar voz" sempre visível (útil em Smart TV/Firestick
+          onde o overlay de autoplay nem sempre aparece) */}
+      <button
+        type="button"
+        onClick={async () => {
+          handleEnableSound();
+          const cfg = voiceCfgRef.current;
+          const frase = "Teste de voz. Se você está ouvindo esta mensagem, o áudio está funcionando corretamente.";
+          console.log("[TV] 🧪 teste manual de voz →", { provider: cfg.provider, voiceId: cfg.voice_id });
+          setDebugInfo({ text: frase, voice: cfg.provider, status: "falando", at: new Date() });
+          try {
+            if (cfg.provider === "browser") {
+              const u = createPreparedUtterance();
+              if (u) {
+                u.text = frase;
+                speakUtterance(u);
+              }
+            } else {
+              await playRemoteTts(frase, cfg);
+            }
+          } catch (err) {
+            console.error("[TV] teste de voz falhou:", err);
+            setDebugInfo({
+              text: frase,
+              voice: cfg.provider,
+              status: "erro",
+              at: new Date(),
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }}
+        className="fixed top-3 right-3 z-50 inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-lg backdrop-blur transition"
+        title="Disparar uma frase de teste pela voz configurada"
+      >
+        <Volume2 className="h-4 w-4" />
+        Testar voz
+      </button>
+
       {/* Overlay quando áudio está bloqueado pelo browser (autoplay policy).
           Um único toque/clique destrava e nunca mais aparece. */}
       {audioBlocked && (
