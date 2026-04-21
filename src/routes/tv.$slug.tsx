@@ -298,11 +298,20 @@ function TvPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `unidade_id=eq.${unidade.id}` },
         (payload) => {
           const nova = payload.new as Chamada;
-          console.info("[TV] 📣 chamada recebida via realtime:", nova, "soundOn:", soundOnRef.current);
+          console.log("[TV] 📣 chamada recebida via realtime:", nova, "soundOn:", soundOnRef.current, "provider:", voiceCfgRef.current.provider);
           setChamadas((prev) => [nova, ...prev].slice(0, 10));
           if (soundOnRef.current) {
             playDing();
-            void announceChamada(nova);
+            void announceChamada(nova).catch((err) => {
+              console.error("[TV] announceChamada falhou:", err);
+              setDebugInfo({
+                text: "(erro)",
+                voice: voiceCfgRef.current.provider,
+                status: "erro",
+                at: new Date(),
+                error: `announceChamada: ${err instanceof Error ? err.message : String(err)}`,
+              });
+            });
             agendarRechamadas(nova);
           } else {
             console.warn("[TV] som desativado — clique em 'Ativar som' no painel");
