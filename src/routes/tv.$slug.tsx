@@ -6,6 +6,8 @@ import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
+import { useLocalZoom } from "@/hooks/use-local-zoom";
+import { TvZoomControl } from "@/components/tv-zoom-control";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
@@ -99,7 +101,11 @@ function TvPage() {
   // Configuração visual (cores, logo, fundo, escala, resolução)
   const { config: visual } = useTvVisualConfig(unidade?.id);
   const baseScale = RESOLUCAO_PRESETS[visual.resolucao_preset]?.baseScale ?? 1;
-  const scale = baseScale * visual.escala_fonte;
+  // Zoom local por dispositivo (persistido no próprio aparelho via
+  // localStorage). Permite calibrar cada TV/Firestick individualmente sem
+  // afetar a configuração global da unidade.
+  const { zoom: localZoom, inc, dec, reset } = useLocalZoom(slug);
+  const scale = baseScale * visual.escala_fonte * localZoom;
   const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
@@ -1143,6 +1149,7 @@ function TvPage() {
   }
 
   return (
+    <>
     <div
       className="min-h-screen selection:bg-primary/40 relative"
       style={
@@ -1473,6 +1480,14 @@ function TvPage() {
 
       </div>
     </div>
+    <TvZoomControl
+      zoom={localZoom}
+      onInc={inc}
+      onDec={dec}
+      onReset={reset}
+      autoHide={kiosk}
+    />
+    </>
   );
 }
 
