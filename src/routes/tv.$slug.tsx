@@ -1150,7 +1150,11 @@ function TvPage() {
           backgroundColor: visual.cor_fundo,
           color: visual.cor_texto,
           ["--tv-primary" as string]: visual.cor_primaria,
-          fontSize: `${scale}rem`,
+          // `zoom` escala TUDO proporcionalmente (fontes, paddings, gaps,
+          // larguras de cards) — funciona em Chromium (TVs/Firestick), WebKit
+          // e Firefox 126+. É o que faz o ajuste de "tamanho da fonte" e o
+          // preset de resolução realmente terem efeito visual no painel.
+          zoom: scale,
         } as React.CSSProperties
       }
     >
