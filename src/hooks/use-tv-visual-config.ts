@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ResolucaoPreset = "hd" | "fhd" | "uhd" | "ultrawide";
 export type Densidade = "compacto" | "normal";
+export type ContrasteChamadas = "normal" | "alto" | "maximo";
 
 export interface TvVisualConfig {
   cor_primaria: string;
@@ -15,6 +16,10 @@ export interface TvVisualConfig {
   densidade: Densidade;
   /** Mensagem fixa exibida na faixa inferior do painel (ao lado do logo). */
   mensagem_rodape: string | null;
+  /** Nível de contraste aplicado na área de chamadas (tabela + modal). */
+  contraste_chamadas: ContrasteChamadas;
+  /** Multiplicador (0.6–2.5) das fontes da área de chamadas. */
+  escala_chamadas: number;
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
@@ -27,6 +32,8 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   escala_fonte: 1,
   densidade: "normal",
   mensagem_rodape: null,
+  contraste_chamadas: "normal",
+  escala_chamadas: 1,
 };
 
 export const RESOLUCAO_PRESETS: Record<
