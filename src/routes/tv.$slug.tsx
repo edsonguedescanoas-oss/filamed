@@ -446,13 +446,17 @@ function TvPage() {
             el.pause();
             el.muted = false;
             el.volume = 1;
+            setAudioBlocked(false);
+            console.log("[TV] remote audio primed");
           })
-          .catch(() => {
-            /* navegador ainda não liberou — tentaremos no próximo gesto */
+          .catch((err) => {
+            console.warn("[TV] primeRemoteAudio bloqueado:", err);
+            setAudioBlocked(true);
           });
       }
-    } catch {
-      /* ignora */
+    } catch (err) {
+      console.warn("[TV] primeRemoteAudio falhou:", err);
+      setAudioBlocked(true);
     }
   };
   const playDing = () => {
