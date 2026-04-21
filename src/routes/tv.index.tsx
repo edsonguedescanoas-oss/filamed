@@ -17,14 +17,22 @@ export const Route = createFileRoute("/tv/")({
 
 function TvIndexPage() {
   const [unidades, setUnidades] = useState<Unidade[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
-      // RPC pública: lista só id/nome/slug, sem cnpj/endereço/telefone
-      const { data } = await supabase.rpc("get_unidades_publicas");
-      setUnidades((data ?? []) as Unidade[]);
+      try {
+        const { data, error: rpcError } = await supabase.rpc("get_unidades_publicas");
+        if (rpcError) throw rpcError;
+        setUnidades((data ?? []) as Unidade[]);
+      } catch (err) {
+        console.error("[TV Index] falha ao carregar unidades:", err);
+        setError("Não foi possível carregar as unidades. Tente novamente mais tarde.");
+        setUnidades([]);
+      }
     })();
   }, []);
+
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
