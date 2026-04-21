@@ -937,9 +937,10 @@ function TvPage() {
     return nome;
   };
 
-  const announceChamada = async (chamada: Chamada) => {
+  const announceChamada = async (chamada: Chamada, opts: { isRechamada?: boolean } = {}) => {
     const cfg = voiceCfgRef.current;
-    console.log("[TV] announceChamada start →", { chamadaId: chamada.id, provider: cfg.provider, voiceId: cfg.voice_id });
+    const { isRechamada = false } = opts;
+    console.log("[TV] announceChamada start →", { chamadaId: chamada.id, provider: cfg.provider, voiceId: cfg.voice_id, isRechamada });
     const usingBrowser = cfg.provider === "browser";
     if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) {
       console.warn("[TV] abortando: provider=browser mas speechSynthesis indisponível");
@@ -973,16 +974,24 @@ function TvPage() {
     // (ex.: "Consultório 2") e só aparece nos templates que incluem "destino".
     const fila = senha?.fila_id ? filas.find((f) => f.id === senha.fila_id) ?? null : null;
     const nomeFila = fila?.nome ?? null;
-    const texto = montarTextoChamada({
-      template: cfg.template_chamada,
+    // Rechamada: força o template padrão (paciente + senha + fila), sem destino,
+    // e prefixa "Rechamada." no início. Nunca colocar "Rechamada" antes do
+    // "Dirija-se" — por isso forçamos o template sem destino.
+    const templateUsado: TemplateChamada = isRechamada
+      ? "paciente_senha_fila"
+      : cfg.template_chamada;
+    const textoBase = montarTextoChamada({
+      template: templateUsado,
       nome,
       codigoFalado,
       nomeFila,
-      destino: chamada.destino ?? null,
+      destino: isRechamada ? null : (chamada.destino ?? null),
       formatarDestino,
     });
+    const texto = isRechamada && textoBase ? `Rechamada. ${textoBase}` : textoBase;
     console.log("[TV] 🗣️ partes da chamada:", {
-      template: cfg.template_chamada,
+      template: templateUsado,
+      isRechamada,
       nome,
       codigo,
       codigoFalado,
@@ -1016,12 +1025,21 @@ function TvPage() {
   // Para cada chamada, mantém os timers de até 2 repetições.
   // Se o status da senha sair de "chamada", cancela.
   const rechamadasRef = useRef<Map<string, ReturnType<typeof setTimeout>[]>>(new Map());
+  // IDs de senhas que estão sendo rechamadas (para exibir badge "Rechamada")
+  const [rechamadasAtivas, setRechamadasAtivas] = useState<Set<string>>(new Set());
 
   const cancelRechamadas = (senhaId: string) => {
     const timers = rechamadasRef.current.get(senhaId);
-    if (!timers) return;
-    for (const t of timers) clearTimeout(t);
-    rechamadasRef.current.delete(senhaId);
+    if (timers) {
+      for (const t of timers) clearTimeout(t);
+      rechamadasRef.current.delete(senhaId);
+    }
+    setRechamadasAtivas((prev) => {
+      if (!prev.has(senhaId)) return prev;
+      const next = new Set(prev);
+      next.delete(senhaId);
+      return next;
+    });
   };
 
   const cancelAllRechamadas = () => {
@@ -1029,6 +1047,7 @@ function TvPage() {
       for (const t of timers) clearTimeout(t);
     }
     rechamadasRef.current.clear();
+    setRechamadasAtivas(new Set());
   };
 
   const agendarRechamadas = (chamada: Chamada) => {
@@ -1042,8 +1061,15 @@ function TvPage() {
         cancelRechamadas(chamada.senha_id);
         return;
       }
+      // Marca como rechamada (badge vermelho na UI + prefixo "Rechamada." no áudio)
+      setRechamadasAtivas((prev) => {
+        if (prev.has(chamada.senha_id)) return prev;
+        const next = new Set(prev);
+        next.add(chamada.senha_id);
+        return next;
+      });
       playDing();
-      await announceChamada(chamada);
+      await announceChamada(chamada, { isRechamada: true });
     };
 
     const t1 = setTimeout(() => void tentar(), 30_000);
@@ -1239,8 +1265,15 @@ function TvPage() {
                 : "border-white/10 bg-slate-900"
             }`}
           >
-            <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
-              Senha chamada
+            <div className="flex items-center gap-3">
+              <div className="text-xs font-semibold uppercase tracking-[0.3em] text-primary/80">
+                Senha chamada
+              </div>
+              {destaque && rechamadasAtivas.has(destaque.senha.id) && (
+                <span className="inline-flex items-center rounded-md bg-red-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-lg ring-2 ring-red-500/40 animate-pulse">
+                  Rechamada
+                </span>
+              )}
             </div>
             {destaque ? (
               <>
