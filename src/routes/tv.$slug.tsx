@@ -7,6 +7,7 @@ import { TvCarrossel } from "@/components/tv-carrossel";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
 import { useLocalZoom } from "@/hooks/use-local-zoom";
+import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
 import { TvZoomControl } from "@/components/tv-zoom-control";
 
 type Unidade = { id: string; nome: string; slug: string };
@@ -106,6 +107,10 @@ function TvPage() {
   // afetar a configuração global da unidade.
   const { zoom: localZoom, inc, dec, reset } = useLocalZoom(slug);
   const scale = baseScale * visual.escala_fonte * localZoom;
+  // Detecta suporte a CSS `zoom`. Em ambientes sem suporte (Firefox antigo,
+  // alguns WebViews de TV/Firestick) caímos para `transform: scale()` com
+  // compensação de tamanho, garantindo que a escala sempre seja aplicada.
+  const zoomSupported = useZoomSupport();
   const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
@@ -1157,11 +1162,12 @@ function TvPage() {
           backgroundColor: visual.cor_fundo,
           color: visual.cor_texto,
           ["--tv-primary" as string]: visual.cor_primaria,
-          // `zoom` escala TUDO proporcionalmente (fontes, paddings, gaps,
-          // larguras de cards) — funciona em Chromium (TVs/Firestick), WebKit
-          // e Firefox 126+. É o que faz o ajuste de "tamanho da fonte" e o
-          // preset de resolução realmente terem efeito visual no painel.
-          zoom: scale,
+          // Escala TUDO proporcionalmente (fontes, paddings, gaps, larguras
+          // de cards). Tenta usar CSS `zoom` (ideal — Chromium/WebKit/Firefox
+          // 126+) e cai pra `transform: scale()` com compensação quando o
+          // ambiente não suporta zoom (Firefox antigo, WebViews de TV/Firestick
+          // antigos). O efeito visual final é idêntico nos dois caminhos.
+          ...buildScaleStyle(scale, zoomSupported),
         } as React.CSSProperties
       }
     >
