@@ -422,6 +422,10 @@ function TvPage() {
     playDing();
     // Também "aquece" a Web Speech API com uma fala silenciosa
     primeSpeech();
+    // E pré-aquece o elemento <audio> que será usado por Google/ElevenLabs:
+    // tocamos um MP3 silencioso pra que o navegador associe o gesto a esse
+    // elemento e libere autoplay nas próximas .play() (Chrome/Safari/iOS).
+    primeRemoteAudio();
   };
 
   // Tenta destravar áudio automaticamente. Se o browser bloquear (autoplay policy),
