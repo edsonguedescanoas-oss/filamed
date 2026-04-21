@@ -413,7 +413,6 @@ function TvPage() {
     if (!remoteAudioRef.current) {
       const el = new Audio();
       el.preload = "auto";
-      el.playsInline = true;
       remoteAudioRef.current = el;
     }
     return remoteAudioRef.current;
@@ -533,8 +532,10 @@ function TvPage() {
         return;
       }
 
-      // Reforça o unlock do mesmo elemento <audio> no clique do usuário.
-      primeRemoteAudio();
+      const primed = await primeRemoteAudio();
+      if (!primed) {
+        throw new Error("Áudio remoto ainda bloqueado pelo navegador");
+      }
       await playRemoteTts(frase, cfg);
     } catch (err) {
       console.error("[TV] teste de voz falhou:", err);
