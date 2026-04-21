@@ -406,6 +406,7 @@ function TvPage() {
   const remoteAudioPrimedRef = useRef(false);
   const remoteAudioPrimingRef = useRef<Promise<boolean> | null>(null);
   const remoteAudioObjectUrlRef = useRef<string | null>(null);
+  const remoteBufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const SILENT_WAV =
     "data:audio/wav;base64,UklGRtAUAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YawUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
   const ensureRemoteAudio = (): HTMLAudioElement | null => {
@@ -422,14 +423,74 @@ function TvPage() {
     URL.revokeObjectURL(remoteAudioObjectUrlRef.current);
     remoteAudioObjectUrlRef.current = null;
   };
-  const base64ToObjectUrl = (base64: string, mime: string) => {
+  const base64ToBytes = (base64: string) => {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  };
+  const base64ToObjectUrl = (base64: string, mime: string) => {
+    const bytes = base64ToBytes(base64);
     releaseRemoteAudioObjectUrl();
     const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
     remoteAudioObjectUrlRef.current = url;
     return url;
+  };
+  const ensureAudioContextReady = async () => {
+    if (typeof window === "undefined") return null;
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return null;
+
+    let ctx = audioCtxRef.current;
+    if (!ctx) {
+      ctx = new Ctor();
+      audioCtxRef.current = ctx;
+    }
+    if (ctx.state === "suspended") {
+      await ctx.resume();
+    }
+    return ctx;
+  };
+  const stopRemoteBufferPlayback = () => {
+    const source = remoteBufferSourceRef.current;
+    if (!source) return;
+    source.onended = null;
+    try {
+      source.stop();
+    } catch {
+      /* ignora */
+    }
+    source.disconnect();
+    remoteBufferSourceRef.current = null;
+  };
+  const playRemoteBuffer = async (base64: string, text: string) => {
+    const ctx = await ensureAudioContextReady();
+    if (!ctx) throw new Error("AudioContext indisponível para TTS remoto");
+
+    const bytes = base64ToBytes(base64);
+    const audioBuffer = await ctx.decodeAudioData(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    );
+
+    stopRemoteBufferPlayback();
+
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    gain.gain.value = 1;
+    source.buffer = audioBuffer;
+    source.connect(gain).connect(ctx.destination);
+    source.onended = () => {
+      if (remoteBufferSourceRef.current === source) {
+        remoteBufferSourceRef.current = null;
+      }
+      setDebugInfo((prev) =>
+        prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev,
+      );
+    };
+    remoteBufferSourceRef.current = source;
+    source.start(0);
   };
   const primeRemoteAudio = () => {
     if (remoteAudioPrimedRef.current) return Promise.resolve(true);
@@ -648,51 +709,52 @@ function TvPage() {
         at: new Date(),
       });
 
-      // Reusa o elemento <audio> que foi destravado no gesto inicial
-      // (handleEnableSound → primeRemoteAudio). Criar um new Audio() aqui
-      // dentro de um handler de realtime quase sempre é bloqueado pelo
-      // navegador como "autoplay sem gesto".
-      const audio = ensureRemoteAudio();
-      if (!audio) throw new Error("Elemento <audio> indisponível");
       const mime = data.mime ?? "audio/mpeg";
-      audio.src = base64ToObjectUrl(data.audioContent, mime);
-      audio.onended = () => {
-        setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
-      };
-      audio.onerror = () => {
-        const mediaErr = audio.error;
-        const codeMap: Record<number, string> = {
-          1: "MEDIA_ERR_ABORTED",
-          2: "MEDIA_ERR_NETWORK",
-          3: "MEDIA_ERR_DECODE",
-          4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
-        };
-        const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
-        console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
-        const utterance = createPreparedUtterance();
-        if (utterance) {
-          console.warn(`[TV] fallback local após falha de reprodução remota (${reason})`);
-          utterance.text = text;
-          speakUtterance(utterance);
-          return;
-        }
-        setDebugInfo({
-          text,
-          voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
-          status: "erro",
-          at: new Date(),
-          error: `Falha ao reproduzir áudio (${reason})`,
-        });
-      };
       try {
-        await audio.play();
+        await playRemoteBuffer(data.audioContent, text);
       } catch (playErr) {
         const name = playErr instanceof Error ? playErr.name : "Error";
         const msg = playErr instanceof Error ? playErr.message : String(playErr);
-        console.error("[TV] audio.play() rejeitado:", name, msg);
+        console.warn("[TV] play via AudioContext falhou, tentando <audio>:", name, msg);
+        const audio = ensureRemoteAudio();
+        if (!audio) throw new Error("Elemento <audio> indisponível");
+        audio.src = base64ToObjectUrl(data.audioContent, mime);
+        audio.onended = () => {
+          setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
+        };
+        audio.onerror = () => {
+          const mediaErr = audio.error;
+          const codeMap: Record<number, string> = {
+            1: "MEDIA_ERR_ABORTED",
+            2: "MEDIA_ERR_NETWORK",
+            3: "MEDIA_ERR_DECODE",
+            4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
+          };
+          const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
+          console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
+          const utterance = createPreparedUtterance();
+          if (utterance) {
+            console.warn(`[TV] fallback local após falha de reprodução remota (${reason})`);
+            utterance.text = text;
+            speakUtterance(utterance);
+            return;
+          }
+          setDebugInfo({
+            text,
+            voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
+            status: "erro",
+            at: new Date(),
+            error: `Falha ao reproduzir áudio (${reason})`,
+          });
+        };
+        await audio.play();
+      } catch (fallbackErr) {
+        const name = fallbackErr instanceof Error ? fallbackErr.name : "Error";
+        const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+        console.error("[TV] playback remoto falhou:", name, msg);
         const utterance = createPreparedUtterance();
         if (utterance) {
-          console.warn(`[TV] fallback local após play() rejeitado (${name})`);
+          console.warn(`[TV] fallback local após falha de playback remoto (${name})`);
           utterance.text = text;
           speakUtterance(utterance);
           return;
@@ -706,7 +768,7 @@ function TvPage() {
           voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
           status: "erro",
           at: new Date(),
-          error: `play() falhou: ${name} — ${msg}`,
+          error: `Playback remoto falhou: ${name} — ${msg}`,
         });
       }
     } catch (err) {
