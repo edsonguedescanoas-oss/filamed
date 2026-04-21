@@ -163,17 +163,21 @@ function TvPage() {
 
   // Carregamento inicial
   useEffect(() => {
+    if (!slug) return;
     let mounted = true;
     void (async () => {
       try {
-        // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone)
+        console.log("[TV] carregando unidade:", slug);
+        // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone).
+        // A RPC agora é case-insensitive, mas garantimos o trim() no slug.
         const { data: uniRows, error: uniErr } = await supabase
-          .rpc("get_unidade_publica_by_slug", { _slug: slug });
+          .rpc("get_unidade_publica_by_slug", { _slug: slug.trim() });
         
         const uni = (uniRows ?? [])[0] ?? null;
         if (!mounted) return;
         if (uniErr || !uni) {
-          setError("Unidade não encontrada");
+          console.warn("[TV] unidade não encontrada:", slug, uniErr);
+          setError("Unidade não encontrada ou inativa");
           return;
         }
         setUnidade(uni as Unidade);
@@ -191,6 +195,11 @@ function TvPage() {
           supabase.rpc("get_chamadas_recentes", { _unidade_id: uni.id }),
         ]);
         if (!mounted) return;
+
+        if (filasRes.error) console.error("[TV] erro ao carregar filas:", filasRes.error);
+        if (senhasRes.error) console.error("[TV] erro ao carregar senhas:", senhasRes.error);
+        if (chamadasRes.error) console.error("[TV] erro ao carregar chamadas:", chamadasRes.error);
+
         setFilas((filasRes.data ?? []) as Fila[]);
         setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
         setChamadas((chamadasRes.data ?? []) as Chamada[]);
@@ -915,8 +924,10 @@ function TvPage() {
     // Usa RPC pública: a tabela `pacientes` tem RLS que bloqueia anon (TV
     // Firestick não autenticada). A RPC devolve apenas o nome dos pacientes
     // ligados a senhas ativas — sem CPF, telefone, email, prontuário, etc.
+    if (!unidade?.id) return null;
+    
     const { data, error } = await supabase
-      .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade?.id ?? "" });
+      .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade.id });
 
     if (error) {
       console.warn("[TV] não foi possível carregar pacientes públicos:", error.message);
@@ -1136,14 +1147,14 @@ function TvPage() {
       if (!pacienteNomes[id]) idsFaltando.add(id);
     }
 
-    if (idsFaltando.size === 0) return;
+    if (idsFaltando.size === 0 || !unidade?.id) return;
 
     let mounted = true;
     void (async () => {
       // Usamos a RPC `get_pacientes_publicos_ativos` pois o acesso direto à tabela 
       // `pacientes` é bloqueado para usuários anônimos (painel TV).
       const { data, error } = await supabase
-        .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade?.id ?? "" });
+        .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade.id });
 
       if (!mounted) return;
       if (error) {
