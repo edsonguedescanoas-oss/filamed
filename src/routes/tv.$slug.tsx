@@ -404,6 +404,7 @@ function TvPage() {
   // de realtime não sejam bloqueadas pela autoplay policy.
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteAudioPrimedRef = useRef(false);
+  const remoteAudioObjectUrlRef = useRef<string | null>(null);
   // ~0.1s de MP3 silencioso (44.1kHz mono, ID3 v2 + frame MPEG válido)
   const SILENT_MP3 =
     "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAAAAAOTGF2YzU4LjEzAAAAAAAAAAAAAAAA//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVV";
@@ -415,6 +416,20 @@ function TvPage() {
       remoteAudioRef.current = el;
     }
     return remoteAudioRef.current;
+  };
+  const releaseRemoteAudioObjectUrl = () => {
+    if (!remoteAudioObjectUrlRef.current) return;
+    URL.revokeObjectURL(remoteAudioObjectUrlRef.current);
+    remoteAudioObjectUrlRef.current = null;
+  };
+  const base64ToObjectUrl = (base64: string, mime: string) => {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    releaseRemoteAudioObjectUrl();
+    const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+    remoteAudioObjectUrlRef.current = url;
+    return url;
   };
   const primeRemoteAudio = () => {
     const el = ensureRemoteAudio();
@@ -625,7 +640,8 @@ function TvPage() {
       // navegador como "autoplay sem gesto".
       const audio = ensureRemoteAudio();
       if (!audio) throw new Error("Elemento <audio> indisponível");
-      audio.src = `data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`;
+      const mime = data.mime ?? "audio/mpeg";
+      audio.src = base64ToObjectUrl(data.audioContent, mime);
       audio.onended = () => {
         setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
       };
@@ -639,6 +655,13 @@ function TvPage() {
         };
         const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
         console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
+        const utterance = createPreparedUtterance();
+        if (utterance) {
+          console.warn(`[TV] fallback local após falha de reprodução remota (${reason})`);
+          utterance.text = text;
+          speakUtterance(utterance);
+          return;
+        }
         setDebugInfo({
           text,
           voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
@@ -653,6 +676,13 @@ function TvPage() {
         const name = playErr instanceof Error ? playErr.name : "Error";
         const msg = playErr instanceof Error ? playErr.message : String(playErr);
         console.error("[TV] audio.play() rejeitado:", name, msg);
+        const utterance = createPreparedUtterance();
+        if (utterance) {
+          console.warn(`[TV] fallback local após play() rejeitado (${name})`);
+          utterance.text = text;
+          speakUtterance(utterance);
+          return;
+        }
         if (name === "NotAllowedError") {
           // Autoplay bloqueado — pede o clique do operador novamente
           setAudioBlocked(true);
