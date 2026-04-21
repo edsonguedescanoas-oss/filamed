@@ -1165,6 +1165,11 @@ function TvPage() {
   return (
     <>
     <div
+      ref={fullscreenRef}
+      className="min-h-screen relative"
+      style={{ backgroundColor: visual.cor_fundo }}
+    >
+    <div
       className="min-h-screen selection:bg-primary/40 relative"
       style={
         {
