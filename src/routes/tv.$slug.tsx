@@ -919,8 +919,10 @@ function TvPage() {
     // Usa RPC pública: a tabela `pacientes` tem RLS que bloqueia anon (TV
     // Firestick não autenticada). A RPC devolve apenas o nome dos pacientes
     // ligados a senhas ativas — sem CPF, telefone, email, prontuário, etc.
+    if (!unidade?.id) return null;
+    
     const { data, error } = await supabase
-      .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade?.id ?? "" });
+      .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade.id });
 
     if (error) {
       console.warn("[TV] não foi possível carregar pacientes públicos:", error.message);
