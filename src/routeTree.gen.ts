@@ -26,6 +26,7 @@ import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
+import { Route as AppAppTvRouteImport } from './routes/_app.app.tv'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
 import { Route as AppAppNotificacoesRouteImport } from './routes/_app.app.notificacoes'
@@ -117,6 +118,11 @@ const AppAppVozRoute = AppAppVozRouteImport.update({
   path: '/voz',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppTvRoute = AppAppTvRouteImport.update({
+  id: '/tv',
+  path: '/tv',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppRecepcaoRoute = AppAppRecepcaoRouteImport.update({
   id: '/recepcao',
   path: '/recepcao',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/app/notificacoes': typeof AppAppNotificacoesRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
+  '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app/': typeof AppAppIndexRoute
 }
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/app/notificacoes': typeof AppAppNotificacoesRoute
   '/app/pacientes': typeof AppAppPacientesRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
+  '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app': typeof AppAppIndexRoute
 }
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/_app/app/notificacoes': typeof AppAppNotificacoesRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
+  '/_app/app/tv': typeof AppAppTvRoute
   '/_app/app/voz': typeof AppAppVozRoute
   '/_app/app/': typeof AppAppIndexRoute
 }
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/app/notificacoes'
     | '/app/pacientes'
     | '/app/recepcao'
+    | '/app/tv'
     | '/app/voz'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/app/notificacoes'
     | '/app/pacientes'
     | '/app/recepcao'
+    | '/app/tv'
     | '/app/voz'
     | '/app'
   id:
@@ -299,6 +310,7 @@ export interface FileRouteTypes {
     | '/_app/app/notificacoes'
     | '/_app/app/pacientes'
     | '/_app/app/recepcao'
+    | '/_app/app/tv'
     | '/_app/app/voz'
     | '/_app/app/'
   fileRoutesById: FileRoutesById
@@ -440,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppVozRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/tv': {
+      id: '/_app/app/tv'
+      path: '/tv'
+      fullPath: '/app/tv'
+      preLoaderRoute: typeof AppAppTvRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/recepcao': {
       id: '/_app/app/recepcao'
       path: '/recepcao'
@@ -521,6 +540,7 @@ interface AppAppRouteChildren {
   AppAppNotificacoesRoute: typeof AppAppNotificacoesRoute
   AppAppPacientesRoute: typeof AppAppPacientesRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
+  AppAppTvRoute: typeof AppAppTvRoute
   AppAppVozRoute: typeof AppAppVozRoute
   AppAppIndexRoute: typeof AppAppIndexRoute
 }
@@ -532,6 +552,7 @@ const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppNotificacoesRoute: AppAppNotificacoesRoute,
   AppAppPacientesRoute: AppAppPacientesRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
+  AppAppTvRoute: AppAppTvRoute,
   AppAppVozRoute: AppAppVozRoute,
   AppAppIndexRoute: AppAppIndexRoute,
 }
