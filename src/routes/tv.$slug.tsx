@@ -8,6 +8,7 @@ import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
 import { useLocalZoom } from "@/hooks/use-local-zoom";
 import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
+import { useWakeLock } from "@/hooks/use-wake-lock";
 import { TvZoomControl } from "@/components/tv-zoom-control";
 
 type Unidade = { id: string; nome: string; slug: string };
