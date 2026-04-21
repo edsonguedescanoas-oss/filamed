@@ -1247,10 +1247,12 @@ function TvPage() {
     );
   }
 
-  if (!unidade) {
+  if (!unidade && !error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white p-6 text-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-slate-400 font-medium">Carregando painel...</p>
+        <p className="text-slate-600 text-xs mt-2 font-mono">Slug: {slug}</p>
       </div>
     );
   }
