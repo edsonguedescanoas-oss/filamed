@@ -1327,7 +1327,7 @@ function TvPage() {
                 setDebugInfo({
                   text: frase,
                   voice: cfg.provider,
-                  status: "testando",
+                  status: "falando",
                   at: new Date(),
                 });
                 try {
