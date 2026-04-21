@@ -112,6 +112,9 @@ function TvPage() {
   // alguns WebViews de TV/Firestick) caímos para `transform: scale()` com
   // compensação de tamanho, garantindo que a escala sempre seja aplicada.
   const zoomSupported = useZoomSupport();
+  // Mantém a TV sempre acordada (Wake Lock + fallback de vídeo invisível
+  // em loop pra Firestick/Smart TVs sem suporte a Wake Lock).
+  useWakeLock(true);
   const isCompact = visual.densidade === "compacto";
   // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
