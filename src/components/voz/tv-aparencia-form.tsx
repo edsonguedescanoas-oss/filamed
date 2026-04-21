@@ -29,7 +29,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -44,6 +44,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           resolucao_preset: (data.resolucao_preset as ResolucaoPreset) ?? "fhd",
           escala_fonte: Number(data.escala_fonte) || 1,
           densidade: (data.densidade as Densidade) ?? "normal",
+          mensagem_rodape: data.mensagem_rodape ?? null,
         });
       }
       setLoading(false);
