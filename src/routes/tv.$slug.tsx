@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize } from "lucide-react";
+import { Activity, Clock, Database, Info, Loader2, Maximize, Megaphone, Mic, Minimize, Wifi, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
@@ -160,12 +160,16 @@ function TvPage() {
     pitch: 1,
     template_chamada: "paciente_senha_fila",
   });
+  const [fetchStatus, setFetchStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [lastFetchError, setLastFetchError] = useState<string | null>(null);
+
 
   // Carregamento inicial
   useEffect(() => {
     if (!slug) return;
     let mounted = true;
     void (async () => {
+      setFetchStatus("loading");
       try {
         console.log("[TV] carregando unidade:", slug);
         // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone).
@@ -178,9 +182,12 @@ function TvPage() {
         if (uniErr || !uni) {
           console.warn("[TV] unidade não encontrada:", slug, uniErr);
           setError("Unidade não encontrada ou inativa");
+          setFetchStatus("error");
+          setLastFetchError("Unidade não encontrada ou inativa no banco");
           return;
         }
         setUnidade(uni as Unidade);
+        setLastFetchError(null);
 
         const [filasRes, senhasRes, chamadasRes] = await Promise.all([
           supabase
@@ -203,6 +210,7 @@ function TvPage() {
         setFilas((filasRes.data ?? []) as Fila[]);
         setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
         setChamadas((chamadasRes.data ?? []) as Chamada[]);
+        setFetchStatus("success");
 
         // Carrega config de voz da unidade (se existir)
         const { data: cfg } = await supabase
@@ -222,7 +230,11 @@ function TvPage() {
         }
       } catch (err) {
         console.error("[TV] erro fatal no mount:", err);
-        if (mounted) setError("Erro ao carregar o painel");
+        if (mounted) {
+          setError("Erro ao carregar o painel");
+          setFetchStatus("error");
+          setLastFetchError(err instanceof Error ? err.message : String(err));
+        }
       }
     })();
     return () => {
@@ -1597,6 +1609,54 @@ function TvPage() {
         }}
       />
     )}
+
+      {/* Painel de Debug / Status da Conexão */}
+      <div className="fixed bottom-3 left-3 z-[9999] pointer-events-none">
+        <div className={`flex flex-col gap-1 rounded-md border p-2 text-[10px] font-mono shadow-2xl backdrop-blur-md transition-all duration-300 ${
+          fetchStatus === 'error' || error 
+            ? 'bg-red-950/90 border-red-500/50 text-red-100 opacity-100 translate-y-0' 
+            : 'bg-black/60 border-white/10 text-white/40 opacity-20 hover:opacity-100 hover:translate-y-[-4px] pointer-events-auto'
+        }`}>
+          <div className="flex items-center gap-2 border-b border-white/10 pb-1 mb-1 font-bold uppercase tracking-wider">
+            {fetchStatus === 'loading' && <Loader2 className="h-3 w-3 animate-spin" />}
+            {fetchStatus === 'success' && <Wifi className="h-3 w-3 text-green-400" />}
+            {fetchStatus === 'error' && <WifiOff className="h-3 w-3 text-red-400" />}
+            <span>Status da TV</span>
+          </div>
+          
+          <div className="flex gap-2 justify-between">
+            <span className="opacity-60">Unidade:</span>
+            <span className="font-bold">{slug}</span>
+          </div>
+          
+          <div className="flex gap-2 justify-between">
+            <span className="opacity-60">ID:</span>
+            <span className="truncate max-w-[80px]">{unidade?.id || '---'}</span>
+          </div>
+          
+          <div className="flex gap-2 justify-between">
+            <span className="opacity-60">Fetch:</span>
+            <span className={
+              fetchStatus === 'success' ? 'text-green-400' : 
+              fetchStatus === 'loading' ? 'text-amber-400' : 'text-red-400'
+            }>{fetchStatus.toUpperCase()}</span>
+          </div>
+
+          {(lastFetchError || error) && (
+            <div className="mt-1 pt-1 border-t border-white/10 text-red-300 max-w-[200px] break-words leading-tight">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Info className="h-3 w-3" />
+                <span className="font-bold uppercase text-[9px]">Último Erro:</span>
+              </div>
+              {lastFetchError || error}
+            </div>
+          )}
+          
+          <div className="mt-1 text-[8px] opacity-40 text-right">
+            {now.toLocaleTimeString()}
+          </div>
+        </div>
+      </div>
     </>
   );
 }
