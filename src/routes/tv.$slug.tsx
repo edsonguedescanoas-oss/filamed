@@ -1452,20 +1452,6 @@ function TvPage() {
         FilaMed · Atualização em tempo real
       </footer>
 
-      {/* Botão fixo "Testar voz" sempre visível (útil em Smart TV/Firestick
-          onde o overlay de autoplay nem sempre aparece) */}
-      <button
-        type="button"
-        onClick={() => {
-          void testVoiceNow();
-        }}
-        className="fixed top-3 right-3 z-[70] inline-flex items-center gap-2 rounded-full bg-primary/90 hover:bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-lg backdrop-blur transition"
-        title="Disparar uma frase de teste pela voz configurada"
-      >
-        <Volume2 className="h-4 w-4" />
-        Testar voz
-      </button>
-
       {/* Overlay quando áudio está bloqueado pelo browser (autoplay policy).
           Um único toque/clique destrava e nunca mais aparece. */}
       {audioBlocked && (
