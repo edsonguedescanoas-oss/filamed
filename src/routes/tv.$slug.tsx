@@ -1,4 +1,4 @@
-import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
 import { useWakeLock } from "@/hooks/use-wake-lock";
 import { TvZoomControl } from "@/components/tv-zoom-control";
 import { NoMediaFallback, CallRow, CallModal } from "@/components/tv/call-display";
+import { TestModePanel } from "@/components/tv/test-mode-panel";
 
 type Unidade = { id: string; nome: string; slug: string };
 type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
@@ -73,7 +74,7 @@ function formatarDestino(destino: string): string {
   return `ao ${d}`;
 }
 
-type TvSearch = { kiosk?: boolean };
+type TvSearch = { kiosk?: boolean; test?: boolean };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearch => ({
@@ -82,6 +83,11 @@ export const Route = createFileRoute("/tv/$slug")({
       search.kiosk === 1 ||
       search.kiosk === "1" ||
       search.kiosk === "true",
+    test:
+      search.test === true ||
+      search.test === 1 ||
+      search.test === "1" ||
+      search.test === "true",
   }),
   head: ({ params }) => ({
     meta: [
@@ -94,7 +100,15 @@ export const Route = createFileRoute("/tv/$slug")({
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
-  const { kiosk } = useSearch({ from: "/tv/$slug" });
+  const { kiosk, test } = useSearch({ from: "/tv/$slug" });
+  const navigate = useNavigate();
+  // Estado da chamada simulada (apenas em modo teste). Quando definido,
+  // injetamos uma senha + chamada fake nas listas pra disparar o destaque
+  // sem tocar no banco.
+  const [simulado, setSimulado] = useState<{
+    senha: Senha;
+    chamada: Chamada;
+  } | null>(null);
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
@@ -1061,23 +1075,35 @@ function TvPage() {
 
   // Derivações
   const filasMap = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
-  const senhasMap = useMemo(() => new Map(senhas.map((s) => [s.id, s])), [senhas]);
+  // Injeta a chamada simulada (modo teste) no topo das listas, sem persistir.
+  const senhasComSim = useMemo(
+    () => (simulado ? [simulado.senha, ...senhas] : senhas),
+    [simulado, senhas],
+  );
+  const chamadasComSim = useMemo(
+    () => (simulado ? [simulado.chamada, ...chamadas] : chamadas),
+    [simulado, chamadas],
+  );
+  const senhasMap = useMemo(
+    () => new Map(senhasComSim.map((s) => [s.id, s])),
+    [senhasComSim],
+  );
 
   // Senha em destaque = última chamada ainda ativa
   const destaque = useMemo(() => {
-    for (const c of chamadas) {
+    for (const c of chamadasComSim) {
       const s = senhasMap.get(c.senha_id);
       if (s && (s.status === "chamada" || s.status === "em_atendimento")) {
         return { senha: s, chamada: c };
       }
     }
     return null;
-  }, [chamadas, senhasMap]);
+  }, [chamadasComSim, senhasMap]);
 
   const ultimasChamadas = useMemo(() => {
     const seen = new Set<string>();
     const list: Array<{ chamada: Chamada; senha: Senha }> = [];
-    for (const c of chamadas) {
+    for (const c of chamadasComSim) {
       if (seen.has(c.senha_id)) continue;
       const s = senhasMap.get(c.senha_id);
       if (!s) continue;
@@ -1086,7 +1112,7 @@ function TvPage() {
       if (list.length >= 5) break;
     }
     return list;
-  }, [chamadas, senhasMap]);
+  }, [chamadasComSim, senhasMap]);
 
   // Pré-carrega nomes dos pacientes das senhas visíveis (destaque + últimas chamadas)
   useEffect(() => {
@@ -1470,6 +1496,68 @@ function TvPage() {
       onReset={reset}
       autoHide={kiosk}
     />
+    {test && (
+      <TestModePanel
+        carrosselPaused={showCallModal}
+        onSimularNormal={() => {
+          const id = `sim-${Date.now()}`;
+          const filaId = filas[0]?.id ?? "sim-fila";
+          const agora = new Date().toISOString();
+          setSimulado({
+            senha: {
+              id,
+              codigo: "T999",
+              fila_id: filaId,
+              paciente_id: null,
+              status: "chamada",
+              prioridade: "normal",
+              token_publico: "",
+              created_at: agora,
+              updated_at: agora,
+            },
+            chamada: {
+              id: `cham-${id}`,
+              senha_id: id,
+              destino: "Consultório TESTE",
+              created_at: agora,
+            },
+          });
+        }}
+        onSimularDestaque={() => {
+          const id = `sim-${Date.now()}`;
+          const filaId = filas[0]?.id ?? "sim-fila";
+          const agora = new Date().toISOString();
+          setSimulado({
+            senha: {
+              id,
+              codigo: "U777",
+              fila_id: filaId,
+              paciente_id: null,
+              status: "chamada",
+              prioridade: "urgente",
+              token_publico: "",
+              created_at: agora,
+              updated_at: agora,
+            },
+            chamada: {
+              id: `cham-${id}`,
+              senha_id: id,
+              destino: "Sala URGÊNCIA",
+              created_at: agora,
+            },
+          });
+        }}
+        onLimpar={() => setSimulado(null)}
+        onFechar={() => {
+          setSimulado(null);
+          void navigate({
+            to: "/tv/$slug",
+            params: { slug },
+            search: kiosk ? { kiosk: true } : {},
+          });
+        }}
+      />
+    )}
     </>
   );
 }
