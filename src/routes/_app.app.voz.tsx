@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Loader2,
   Mic,
-  Monitor,
   Play,
   RefreshCw,
   Save,
@@ -26,7 +25,6 @@ import {
   montarTextoChamada,
   type TemplateChamada,
 } from "@/lib/voice-template";
-import { TvAparenciaForm } from "@/components/voz/tv-aparencia-form";
 
 export const Route = createFileRoute("/_app/app/voz")({
   component: VozConfigPage,
@@ -99,25 +97,6 @@ function VozConfigPage() {
   const isAdmin = roles.includes("admin");
   const unidadeId = profile?.unidade_id ?? null;
   const { liberado: vozPremiumLiberada, planoNome } = useRecurso("voz_premium");
-  const [tab, setTab] = useState<"voz" | "tv">("voz");
-  const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
-
-  // Busca slug da unidade pra abrir o painel da TV no preview da aba "TV"
-  useEffect(() => {
-    if (!unidadeId) return;
-    let mounted = true;
-    void (async () => {
-      const { data } = await supabase
-        .from("unidades")
-        .select("slug")
-        .eq("id", unidadeId)
-        .maybeSingle();
-      if (mounted && data?.slug) setUnidadeSlug(data.slug);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [unidadeId]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -751,32 +730,6 @@ function VozConfigPage() {
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  icon,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors -mb-px ${
-        active
-          ? "text-foreground border-b-2 border-primary"
-          : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
-      }`}
-    >
-      {icon}
-      {children}
-    </button>
-  );
-}
 
 function ProviderCard({
   active,
