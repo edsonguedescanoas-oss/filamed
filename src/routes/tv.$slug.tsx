@@ -100,7 +100,15 @@ export const Route = createFileRoute("/tv/$slug")({
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
-  const { kiosk } = useSearch({ from: "/tv/$slug" });
+  const { kiosk, test } = useSearch({ from: "/tv/$slug" });
+  const navigate = useNavigate();
+  // Estado da chamada simulada (apenas em modo teste). Quando definido,
+  // injetamos uma senha + chamada fake nas listas pra disparar o destaque
+  // sem tocar no banco.
+  const [simulado, setSimulado] = useState<{
+    senha: Senha;
+    chamada: Chamada;
+  } | null>(null);
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
