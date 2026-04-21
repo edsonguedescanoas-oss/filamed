@@ -398,21 +398,22 @@ function TvPage() {
   }, [soundOn]);
 
   // Elemento <audio> reutilizado para tocar TTS de Google/ElevenLabs.
-  // Chrome/Safari/iOS exigem que play() seja consequência de um gesto do
+  // Chrome/Safari/iOS/Firestick exigem que play() seja consequência de um gesto do
   // usuário. Criamos uma única instância e a "aquecemos" no primeiro clique
-  // (com um MP3 silencioso) pra que chamadas .play() subsequentes em handlers
-  // de realtime não sejam bloqueadas pela autoplay policy.
+  // com um WAV silencioso válido, para liberar reproduções futuras do mesmo
+  // elemento mesmo quando o áudio real chegar depois via fetch.
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const remoteAudioPrimedRef = useRef(false);
+  const remoteAudioPrimingRef = useRef<Promise<boolean> | null>(null);
   const remoteAudioObjectUrlRef = useRef<string | null>(null);
-  // ~0.1s de MP3 silencioso (44.1kHz mono, ID3 v2 + frame MPEG válido)
-  const SILENT_MP3 =
-    "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAAAAAOTGF2YzU4LjEzAAAAAAAAAAAAAAAA//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVV";
+  const SILENT_WAV =
+    "data:audio/wav;base64,UklGRtAUAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YawUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
   const ensureRemoteAudio = (): HTMLAudioElement | null => {
     if (typeof window === "undefined") return null;
     if (!remoteAudioRef.current) {
       const el = new Audio();
       el.preload = "auto";
+      el.playsInline = true;
       remoteAudioRef.current = el;
     }
     return remoteAudioRef.current;
@@ -432,32 +433,40 @@ function TvPage() {
     return url;
   };
   const primeRemoteAudio = () => {
+    if (remoteAudioPrimedRef.current) return Promise.resolve(true);
+    if (remoteAudioPrimingRef.current) return remoteAudioPrimingRef.current;
+
     const el = ensureRemoteAudio();
-    if (!el || remoteAudioPrimedRef.current) return;
-    try {
-      el.src = SILENT_MP3;
-      el.muted = true;
-      el.volume = 0;
-      const p = el.play();
-      if (p && typeof p.then === "function") {
-        void p
-          .then(() => {
-            remoteAudioPrimedRef.current = true;
-            el.pause();
-            el.muted = false;
-            el.volume = 1;
-            setAudioBlocked(false);
-            console.log("[TV] remote audio primed");
-          })
-          .catch((err) => {
-            console.warn("[TV] primeRemoteAudio bloqueado:", err);
-            setAudioBlocked(true);
-          });
+    if (!el) return Promise.resolve(false);
+
+    remoteAudioPrimingRef.current = (async () => {
+      try {
+        el.pause();
+        el.removeAttribute("src");
+        el.load();
+        el.src = SILENT_WAV;
+        el.currentTime = 0;
+        el.muted = true;
+        el.volume = 0;
+        await el.play();
+        remoteAudioPrimedRef.current = true;
+        el.pause();
+        el.currentTime = 0;
+        el.muted = false;
+        el.volume = 1;
+        setAudioBlocked(false);
+        console.log("[TV] remote audio primed");
+        return true;
+      } catch (err) {
+        console.warn("[TV] primeRemoteAudio bloqueado:", err);
+        setAudioBlocked(true);
+        return false;
+      } finally {
+        remoteAudioPrimingRef.current = null;
       }
-    } catch (err) {
-      console.warn("[TV] primeRemoteAudio falhou:", err);
-      setAudioBlocked(true);
-    }
+    })();
+
+    return remoteAudioPrimingRef.current;
   };
   const playDing = () => {
     try {
