@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize, Volume2, VolumeX } from "lucide-react";
+import { Activity, Clock, Loader2, Maximize, Megaphone, Mic, Minimize } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
@@ -95,9 +95,7 @@ function TvPage() {
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [now, setNow] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
-  // O painel TV nunca deve ficar mudo. Tentamos manter o som sempre ativo;
-  // se o browser bloquear (autoplay policy), mostramos overlay pedindo 1 clique.
-  const [soundOn, setSoundOn] = useState(true);
+  // O painel TV sempre tenta iniciar o áudio automaticamente.
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [debugInfo, setDebugInfo] = useState<{
     text: string;
@@ -298,24 +296,20 @@ function TvPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `unidade_id=eq.${unidade.id}` },
         (payload) => {
           const nova = payload.new as Chamada;
-          console.log("[TV] 📣 chamada recebida via realtime:", nova, "soundOn:", soundOnRef.current, "provider:", voiceCfgRef.current.provider);
+          console.log("[TV] 📣 chamada recebida via realtime:", nova, "provider:", voiceCfgRef.current.provider);
           setChamadas((prev) => [nova, ...prev].slice(0, 10));
-          if (soundOnRef.current) {
-            playDing();
-            void announceChamada(nova).catch((err) => {
-              console.error("[TV] announceChamada falhou:", err);
-              setDebugInfo({
-                text: "(erro)",
-                voice: voiceCfgRef.current.provider,
-                status: "erro",
-                at: new Date(),
-                error: `announceChamada: ${err instanceof Error ? err.message : String(err)}`,
-              });
+          playDing();
+          void announceChamada(nova).catch((err) => {
+            console.error("[TV] announceChamada falhou:", err);
+            setDebugInfo({
+              text: "(erro)",
+              voice: voiceCfgRef.current.provider,
+              status: "erro",
+              at: new Date(),
+              error: `announceChamada: ${err instanceof Error ? err.message : String(err)}`,
             });
-            agendarRechamadas(nova);
-          } else {
-            console.warn("[TV] som desativado — clique em 'Ativar som' no painel");
-          }
+          });
+          agendarRechamadas(nova);
         },
       )
       .subscribe();
@@ -392,10 +386,6 @@ function TvPage() {
 
   // Som
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const soundOnRef = useRef(false);
-  useEffect(() => {
-    soundOnRef.current = soundOn;
-  }, [soundOn]);
 
   // Elemento <audio> reutilizado para tocar TTS de Google/ElevenLabs.
   // Chrome/Safari/iOS/Firestick exigem que play() seja consequência de um gesto do
@@ -556,17 +546,11 @@ function TvPage() {
       /* ignora */
     }
   };
-  const handleEnableSound = () => {
-    setSoundOn(true);
+  const warmAudio = () => {
     setAudioBlocked(false);
-    // gesto do usuário desbloqueia AudioContext
     playDing();
-    // Também "aquece" a Web Speech API com uma fala silenciosa
     primeSpeech();
-    // E pré-aquece o elemento <audio> que será usado por Google/ElevenLabs:
-    // tocamos um MP3 silencioso pra que o navegador associe o gesto a esse
-    // elemento e libere autoplay nas próximas .play() (Chrome/Safari/iOS).
-    primeRemoteAudio();
+    void primeRemoteAudio();
   };
 
   const testVoiceNow = async () => {
@@ -574,7 +558,7 @@ function TvPage() {
     const frase = "Teste de voz. Se você está ouvindo esta mensagem, o áudio está funcionando corretamente.";
     const browserUtterance = cfg.provider === "browser" ? createPreparedUtterance() : null;
 
-    handleEnableSound();
+    warmAudio();
     console.log("[TV] 🧪 teste manual de voz →", { provider: cfg.provider, voiceId: cfg.voice_id });
     setDebugInfo({
       text: frase,
@@ -640,21 +624,24 @@ function TvPage() {
       }
     };
     void tryUnlock();
-    // Qualquer interação do usuário destrava: clique, toque, tecla
+    // Se houver qualquer interação inicial, destrava em background sem UI adicional.
     const onInteract = () => {
-      handleEnableSound();
-      window.removeEventListener("click", onInteract);
-      window.removeEventListener("touchstart", onInteract);
-      window.removeEventListener("keydown", onInteract);
+      warmAudio();
+      window.removeEventListener("click", onInteract, true);
+      window.removeEventListener("touchstart", onInteract, true);
+      window.removeEventListener("keydown", onInteract, true);
+      window.removeEventListener("pointerdown", onInteract, true);
     };
-    window.addEventListener("click", onInteract);
-    window.addEventListener("touchstart", onInteract);
-    window.addEventListener("keydown", onInteract);
+    window.addEventListener("click", onInteract, true);
+    window.addEventListener("touchstart", onInteract, true);
+    window.addEventListener("keydown", onInteract, true);
+    window.addEventListener("pointerdown", onInteract, true);
     return () => {
       cancelled = true;
-      window.removeEventListener("click", onInteract);
-      window.removeEventListener("touchstart", onInteract);
-      window.removeEventListener("keydown", onInteract);
+      window.removeEventListener("click", onInteract, true);
+      window.removeEventListener("touchstart", onInteract, true);
+      window.removeEventListener("keydown", onInteract, true);
+      window.removeEventListener("pointerdown", onInteract, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1049,8 +1036,7 @@ function TvPage() {
     cancelRechamadas(chamada.senha_id);
 
     const tentar = async () => {
-      // Só repete se a senha ainda estiver com status "chamada" e o som estiver ligado
-      if (!soundOnRef.current) return;
+      // Só repete se a senha ainda estiver com status "chamada".
       const atual = senhasMapRef.current.get(chamada.senha_id);
       if (!atual || atual.status !== "chamada") {
         cancelRechamadas(chamada.senha_id);
@@ -1223,14 +1209,6 @@ function TvPage() {
                 </select>
               </label>
             )}
-            <div
-              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200"
-              title="Som sempre ativo"
-            >
-              <Volume2 className="h-4 w-4 text-primary" />
-              <span className="hidden sm:inline">Som ativo</span>
-            </div>
-
             <button
               onClick={toggleFullscreen}
               className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors"
