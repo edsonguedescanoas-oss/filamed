@@ -1257,6 +1257,8 @@ function TvPage() {
     );
   }
 
+  if (!unidade) return null; // Fallback de segurança para o TS
+
   // Senhas chamadas recentes (já calculadas em ultimasChamadas) — vou montar
   // uma lista enxuta pra tabela lateral: senha atual no topo + 3 anteriores.
   const tabelaChamadas = ultimasChamadas.slice(0, 4);
