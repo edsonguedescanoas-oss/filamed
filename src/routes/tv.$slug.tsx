@@ -164,22 +164,25 @@ function TvPage() {
   // Carregamento inicial
   useEffect(() => {
     let mounted = true;
-    console.log("[TV] carregando unidade para slug:", slug);
     void (async () => {
-      // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone)
-      const { data: uniRows, error: uniErr } = await supabase
-        .rpc("get_unidade_publica_by_slug", { _slug: slug });
-      
-      console.log("[TV] resultado get_unidade_publica_by_slug:", { uniRows, uniErr });
-      
-      const uni = (uniRows ?? [])[0] ?? null;
-      if (!mounted) return;
-      if (uniErr || !uni) {
-        console.error("[TV] unidade não encontrada ou erro:", { uniErr, slug });
-        setError("Unidade não encontrada");
-        return;
+      try {
+        // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone)
+        const { data: uniRows, error: uniErr } = await supabase
+          .rpc("get_unidade_publica_by_slug", { _slug: slug });
+        
+        const uni = (uniRows ?? [])[0] ?? null;
+        if (!mounted) return;
+        if (uniErr || !uni) {
+          setError("Unidade não encontrada");
+          return;
+        }
+        setUnidade(uni as Unidade);
+      } catch (err) {
+        console.error("[TV] erro fatal no mount:", err);
+        if (mounted) setError("Erro ao carregar o painel");
       }
-      setUnidade(uni as Unidade);
+    })();
+
 
 
       const [filasRes, senhasRes, chamadasRes] = await Promise.all([
