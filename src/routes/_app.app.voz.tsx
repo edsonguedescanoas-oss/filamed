@@ -762,7 +762,6 @@ function VozConfigPage() {
         </div>
       )}
       </div>
-      )}
     </div>
   );
 }
