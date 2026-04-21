@@ -20,9 +20,11 @@ function TvIndexPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("[TV Index] iniciando carregamento de unidades...");
     void (async () => {
       try {
         const { data, error: rpcError } = await supabase.rpc("get_unidades_publicas");
+        console.log("[TV Index] resultado rpc:", { data, rpcError });
         if (rpcError) throw rpcError;
         setUnidades((data ?? []) as Unidade[]);
       } catch (err) {
@@ -32,6 +34,7 @@ function TvIndexPage() {
       }
     })();
   }, []);
+
 
 
   return (
