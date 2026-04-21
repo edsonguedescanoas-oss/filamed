@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Loader2,
   Mic,
+  Monitor,
   Play,
   RefreshCw,
   Save,
@@ -25,6 +26,7 @@ import {
   montarTextoChamada,
   type TemplateChamada,
 } from "@/lib/voice-template";
+import { TvAparenciaForm } from "@/components/voz/tv-aparencia-form";
 
 export const Route = createFileRoute("/_app/app/voz")({
   component: VozConfigPage,
