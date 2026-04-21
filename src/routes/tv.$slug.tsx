@@ -1224,22 +1224,13 @@ function TvPage() {
               </label>
             )}
             <div
-              className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium ${
-                audioBlocked
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                  : "border-white/10 bg-white/5 text-slate-200"
-              }`}
-              title={audioBlocked ? "Áudio bloqueado pelo navegador — clique na tela" : "Som sempre ativo"}
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200"
+              title="Som sempre ativo"
             >
-              {audioBlocked ? (
-                <VolumeX className="h-4 w-4" />
-              ) : (
-                <Volume2 className="h-4 w-4 text-primary" />
-              )}
-              <span className="hidden sm:inline">
-                {audioBlocked ? "Toque a tela" : "Som ativo"}
-              </span>
+              <Volume2 className="h-4 w-4 text-primary" />
+              <span className="hidden sm:inline">Som ativo</span>
             </div>
+
             <button
               onClick={toggleFullscreen}
               className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors"
