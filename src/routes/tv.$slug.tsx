@@ -1280,9 +1280,9 @@ function TvPage() {
       {/* Conteúdo */}
       <main
         className={
-          kiosk
-            ? "mx-auto max-w-[1600px] grid gap-4 px-4 py-4 grid-cols-[1.4fr_1fr]"
-            : "mx-auto max-w-[1600px] grid gap-6 px-6 py-6 grid-cols-[1.5fr_1fr]"
+          isCompact || kiosk
+            ? "mx-auto max-w-[1600px] grid gap-3 px-3 py-3 grid-cols-[1.4fr_1fr]"
+            : "mx-auto max-w-[1600px] grid gap-5 px-5 py-5 grid-cols-[1.5fr_1fr]"
         }
       >
         {/* Coluna esquerda: destaque + últimas chamadas */}
