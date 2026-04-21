@@ -177,52 +177,50 @@ function TvPage() {
           return;
         }
         setUnidade(uni as Unidade);
+
+        const [filasRes, senhasRes, chamadasRes] = await Promise.all([
+          supabase
+            .from("filas")
+            .select("id,nome,prefixo_senha,cor,ordem")
+            .eq("unidade_id", uni.id)
+            .eq("ativa", true)
+            .order("ordem"),
+          // RPC pública: senhas ativas SEM paciente_id e SEM token_publico
+          supabase.rpc("get_senhas_ativas", { _unidade_id: uni.id }),
+          // RPC pública: apenas chamadas dos últimos 60s (basta para piscar a TV)
+          supabase.rpc("get_chamadas_recentes", { _unidade_id: uni.id }),
+        ]);
+        if (!mounted) return;
+        setFilas((filasRes.data ?? []) as Fila[]);
+        setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
+        setChamadas((chamadasRes.data ?? []) as Chamada[]);
+
+        // Carrega config de voz da unidade (se existir)
+        const { data: cfg } = await supabase
+          .from("unidade_voice_config")
+          .select("provider,voice_id,rate,pitch,template_chamada")
+          .eq("unidade_id", uni.id)
+          .maybeSingle();
+        if (mounted && cfg) {
+          setVoiceCfg({
+            provider: (cfg.provider as VoiceProvider) ?? "browser",
+            voice_id: cfg.voice_id,
+            rate: Number(cfg.rate) || 0.95,
+            pitch: Number(cfg.pitch) || 1,
+            template_chamada:
+              (cfg.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
+          });
+        }
       } catch (err) {
         console.error("[TV] erro fatal no mount:", err);
         if (mounted) setError("Erro ao carregar o painel");
-      }
-    })();
-
-
-
-      const [filasRes, senhasRes, chamadasRes] = await Promise.all([
-        supabase
-          .from("filas")
-          .select("id,nome,prefixo_senha,cor,ordem")
-          .eq("unidade_id", uni.id)
-          .eq("ativa", true)
-          .order("ordem"),
-        // RPC pública: senhas ativas SEM paciente_id e SEM token_publico
-        supabase.rpc("get_senhas_ativas", { _unidade_id: uni.id }),
-        // RPC pública: apenas chamadas dos últimos 60s (basta para piscar a TV)
-        supabase.rpc("get_chamadas_recentes", { _unidade_id: uni.id }),
-      ]);
-      if (!mounted) return;
-      setFilas((filasRes.data ?? []) as Fila[]);
-      setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
-      setChamadas((chamadasRes.data ?? []) as Chamada[]);
-
-      // Carrega config de voz da unidade (se existir)
-      const { data: cfg } = await supabase
-        .from("unidade_voice_config")
-        .select("provider,voice_id,rate,pitch,template_chamada")
-        .eq("unidade_id", uni.id)
-        .maybeSingle();
-      if (mounted && cfg) {
-        setVoiceCfg({
-          provider: (cfg.provider as VoiceProvider) ?? "browser",
-          voice_id: cfg.voice_id,
-          rate: Number(cfg.rate) || 0.95,
-          pitch: Number(cfg.pitch) || 1,
-          template_chamada:
-            (cfg.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
-        });
       }
     })();
     return () => {
       mounted = false;
     };
   }, [slug]);
+
 
   // Realtime: assina mudanças na config de voz da unidade
   useEffect(() => {
