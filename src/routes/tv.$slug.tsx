@@ -923,19 +923,24 @@ function TvPage() {
     const cached = pacienteCacheRef.current.get(senha.paciente_id);
     if (cached) return cached;
 
+    // Usa RPC pública: a tabela `pacientes` tem RLS que bloqueia anon (TV
+    // Firestick não autenticada). A RPC devolve apenas o nome dos pacientes
+    // ligados a senhas ativas — sem CPF, telefone, email, prontuário, etc.
     const { data, error } = await supabase
-      .from("pacientes")
-      .select("nome_completo")
-      .eq("id", senha.paciente_id)
-      .maybeSingle();
+      .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade?.id ?? "" });
 
     if (error) {
-      console.warn("[TV] não foi possível carregar paciente da senha:", senha.id, error.message);
+      console.warn("[TV] não foi possível carregar pacientes públicos:", error.message);
       return null;
     }
 
-    const raw = (data as { nome_completo?: string } | null)?.nome_completo?.trim();
-    if (!raw) return null;
+    const lista = (data ?? []) as Array<{ paciente_id: string; nome_completo: string }>;
+    const found = lista.find((p) => p.paciente_id === senha.paciente_id);
+    const raw = found?.nome_completo?.trim();
+    if (!raw) {
+      console.warn("[TV] paciente não encontrado na lista pública:", senha.paciente_id);
+      return null;
+    }
 
     const nome = primeiroEUltimoNome(raw);
     pacienteCacheRef.current.set(senha.paciente_id, nome);
