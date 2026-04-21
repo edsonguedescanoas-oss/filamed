@@ -801,11 +801,25 @@ function TvPage() {
 
   const announceChamada = async (chamada: Chamada) => {
     const cfg = voiceCfgRef.current;
+    console.log("[TV] announceChamada start →", { chamadaId: chamada.id, provider: cfg.provider, voiceId: cfg.voice_id });
     const usingBrowser = cfg.provider === "browser";
-    if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) return;
+    if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) {
+      console.warn("[TV] abortando: provider=browser mas speechSynthesis indisponível");
+      setDebugInfo({
+        text: "(abortado)",
+        voice: "browser",
+        status: "erro",
+        at: new Date(),
+        error: "speechSynthesis não suportado neste navegador",
+      });
+      return;
+    }
 
     const utterance = usingBrowser ? createPreparedUtterance() : null;
-    if (usingBrowser && !utterance) return;
+    if (usingBrowser && !utterance) {
+      console.warn("[TV] abortando: não consegui criar utterance");
+      return;
+    }
 
     const senha = await resolveDadosDaSenha(chamada.senha_id);
 
@@ -829,7 +843,7 @@ function TvPage() {
       destino: chamada.destino ?? null,
       formatarDestino,
     });
-    console.info("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
+    console.log("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
     if (!texto) {
       setDebugInfo({
         text: "<vazio>",
@@ -845,6 +859,7 @@ function TvPage() {
       utterance.text = texto;
       speakUtterance(utterance);
     } else {
+      console.log("[TV] chamando playRemoteTts →", { provider: cfg.provider, voiceId: cfg.voice_id, textLen: texto.length });
       await playRemoteTts(texto, cfg);
     }
   };
