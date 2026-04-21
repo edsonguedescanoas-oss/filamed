@@ -298,11 +298,20 @@ function TvPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `unidade_id=eq.${unidade.id}` },
         (payload) => {
           const nova = payload.new as Chamada;
-          console.info("[TV] 📣 chamada recebida via realtime:", nova, "soundOn:", soundOnRef.current);
+          console.log("[TV] 📣 chamada recebida via realtime:", nova, "soundOn:", soundOnRef.current, "provider:", voiceCfgRef.current.provider);
           setChamadas((prev) => [nova, ...prev].slice(0, 10));
           if (soundOnRef.current) {
             playDing();
-            void announceChamada(nova);
+            void announceChamada(nova).catch((err) => {
+              console.error("[TV] announceChamada falhou:", err);
+              setDebugInfo({
+                text: "(erro)",
+                voice: voiceCfgRef.current.provider,
+                status: "erro",
+                at: new Date(),
+                error: `announceChamada: ${err instanceof Error ? err.message : String(err)}`,
+              });
+            });
             agendarRechamadas(nova);
           } else {
             console.warn("[TV] som desativado — clique em 'Ativar som' no painel");
@@ -792,11 +801,25 @@ function TvPage() {
 
   const announceChamada = async (chamada: Chamada) => {
     const cfg = voiceCfgRef.current;
+    console.log("[TV] announceChamada start →", { chamadaId: chamada.id, provider: cfg.provider, voiceId: cfg.voice_id });
     const usingBrowser = cfg.provider === "browser";
-    if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) return;
+    if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) {
+      console.warn("[TV] abortando: provider=browser mas speechSynthesis indisponível");
+      setDebugInfo({
+        text: "(abortado)",
+        voice: "browser",
+        status: "erro",
+        at: new Date(),
+        error: "speechSynthesis não suportado neste navegador",
+      });
+      return;
+    }
 
     const utterance = usingBrowser ? createPreparedUtterance() : null;
-    if (usingBrowser && !utterance) return;
+    if (usingBrowser && !utterance) {
+      console.warn("[TV] abortando: não consegui criar utterance");
+      return;
+    }
 
     const senha = await resolveDadosDaSenha(chamada.senha_id);
 
@@ -820,7 +843,7 @@ function TvPage() {
       destino: chamada.destino ?? null,
       formatarDestino,
     });
-    console.info("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
+    console.log("[TV] texto final da chamada:", texto || "<vazio>", "provider:", cfg.provider);
     if (!texto) {
       setDebugInfo({
         text: "<vazio>",
@@ -836,6 +859,7 @@ function TvPage() {
       utterance.text = texto;
       speakUtterance(utterance);
     } else {
+      console.log("[TV] chamando playRemoteTts →", { provider: cfg.provider, voiceId: cfg.voice_id, textLen: texto.length });
       await playRemoteTts(texto, cfg);
     }
   };
