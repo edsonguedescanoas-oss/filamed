@@ -1025,12 +1025,21 @@ function TvPage() {
   // Para cada chamada, mantém os timers de até 2 repetições.
   // Se o status da senha sair de "chamada", cancela.
   const rechamadasRef = useRef<Map<string, ReturnType<typeof setTimeout>[]>>(new Map());
+  // IDs de senhas que estão sendo rechamadas (para exibir badge "Rechamada")
+  const [rechamadasAtivas, setRechamadasAtivas] = useState<Set<string>>(new Set());
 
   const cancelRechamadas = (senhaId: string) => {
     const timers = rechamadasRef.current.get(senhaId);
-    if (!timers) return;
-    for (const t of timers) clearTimeout(t);
-    rechamadasRef.current.delete(senhaId);
+    if (timers) {
+      for (const t of timers) clearTimeout(t);
+      rechamadasRef.current.delete(senhaId);
+    }
+    setRechamadasAtivas((prev) => {
+      if (!prev.has(senhaId)) return prev;
+      const next = new Set(prev);
+      next.delete(senhaId);
+      return next;
+    });
   };
 
   const cancelAllRechamadas = () => {
@@ -1038,6 +1047,7 @@ function TvPage() {
       for (const t of timers) clearTimeout(t);
     }
     rechamadasRef.current.clear();
+    setRechamadasAtivas(new Set());
   };
 
   const agendarRechamadas = (chamada: Chamada) => {
@@ -1051,8 +1061,15 @@ function TvPage() {
         cancelRechamadas(chamada.senha_id);
         return;
       }
+      // Marca como rechamada (badge vermelho na UI + prefixo "Rechamada." no áudio)
+      setRechamadasAtivas((prev) => {
+        if (prev.has(chamada.senha_id)) return prev;
+        const next = new Set(prev);
+        next.add(chamada.senha_id);
+        return next;
+      });
       playDing();
-      await announceChamada(chamada);
+      await announceChamada(chamada, { isRechamada: true });
     };
 
     const t1 = setTimeout(() => void tentar(), 30_000);
