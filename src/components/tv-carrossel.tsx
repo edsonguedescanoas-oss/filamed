@@ -338,7 +338,12 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
             ) : (
               <>
                 <ImageOff className="h-10 w-10 text-slate-500" />
-                <p className="text-sm text-slate-400">Mídia indisponível</p>
+                <p className="text-sm text-slate-400 font-medium">Mídia indisponível</p>
+                {parseYoutube(atual.url_midia).isHandle && (
+                  <p className="text-[10px] text-slate-500 max-w-[280px] mt-1">
+                    URLs de canais (@nome) não são suportadas. Use a URL de um vídeo ou playlist específica.
+                  </p>
+                )}
               </>
             )}
           </div>
