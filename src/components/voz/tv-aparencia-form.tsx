@@ -12,6 +12,7 @@ import {
   type ResolucaoPreset,
   type TvVisualConfig,
 } from "@/hooks/use-tv-visual-config";
+import { SinalizacaoManager } from "@/components/voz/sinalizacao-manager";
 
 interface Props {
   unidadeId: string;
