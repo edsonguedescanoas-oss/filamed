@@ -1496,6 +1496,68 @@ function TvPage() {
       onReset={reset}
       autoHide={kiosk}
     />
+    {test && (
+      <TestModePanel
+        carrosselPaused={showCallModal}
+        onSimularNormal={() => {
+          const id = `sim-${Date.now()}`;
+          const filaId = filas[0]?.id ?? "sim-fila";
+          const agora = new Date().toISOString();
+          setSimulado({
+            senha: {
+              id,
+              codigo: "T999",
+              fila_id: filaId,
+              paciente_id: null,
+              status: "chamada",
+              prioridade: "normal",
+              token_publico: "",
+              created_at: agora,
+              updated_at: agora,
+            },
+            chamada: {
+              id: `cham-${id}`,
+              senha_id: id,
+              destino: "Consultório TESTE",
+              created_at: agora,
+            },
+          });
+        }}
+        onSimularDestaque={() => {
+          const id = `sim-${Date.now()}`;
+          const filaId = filas[0]?.id ?? "sim-fila";
+          const agora = new Date().toISOString();
+          setSimulado({
+            senha: {
+              id,
+              codigo: "U777",
+              fila_id: filaId,
+              paciente_id: null,
+              status: "chamada",
+              prioridade: "urgente",
+              token_publico: "",
+              created_at: agora,
+              updated_at: agora,
+            },
+            chamada: {
+              id: `cham-${id}`,
+              senha_id: id,
+              destino: "Sala URGÊNCIA",
+              created_at: agora,
+            },
+          });
+        }}
+        onLimpar={() => setSimulado(null)}
+        onFechar={() => {
+          setSimulado(null);
+          void navigate({
+            to: "/tv/$slug",
+            params: { slug },
+            search: kiosk ? { kiosk: true } : {},
+          });
+        }}
+      />
+    )}
     </>
   );
 }
