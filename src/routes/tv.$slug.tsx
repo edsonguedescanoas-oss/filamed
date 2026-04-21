@@ -974,16 +974,24 @@ function TvPage() {
     // (ex.: "Consultório 2") e só aparece nos templates que incluem "destino".
     const fila = senha?.fila_id ? filas.find((f) => f.id === senha.fila_id) ?? null : null;
     const nomeFila = fila?.nome ?? null;
-    const texto = montarTextoChamada({
-      template: cfg.template_chamada,
+    // Rechamada: força o template padrão (paciente + senha + fila), sem destino,
+    // e prefixa "Rechamada." no início. Nunca colocar "Rechamada" antes do
+    // "Dirija-se" — por isso forçamos o template sem destino.
+    const templateUsado: TemplateChamada = isRechamada
+      ? "paciente_senha_fila"
+      : cfg.template_chamada;
+    const textoBase = montarTextoChamada({
+      template: templateUsado,
       nome,
       codigoFalado,
       nomeFila,
-      destino: chamada.destino ?? null,
+      destino: isRechamada ? null : (chamada.destino ?? null),
       formatarDestino,
     });
+    const texto = isRechamada && textoBase ? `Rechamada. ${textoBase}` : textoBase;
     console.log("[TV] 🗣️ partes da chamada:", {
-      template: cfg.template_chamada,
+      template: templateUsado,
+      isRechamada,
       nome,
       codigo,
       codigoFalado,
