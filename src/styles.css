@@ -144,7 +144,10 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    font-size: 93.75%; /* Reduz a escala geral (16px -> 15px) */
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
