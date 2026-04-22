@@ -240,12 +240,11 @@ function TvPage() {
 
       synth.cancel();
       const utterance = createUtterance(texto);
-      setTimeout(() => {
-        if (synth) {
-          synth.resume();
-          synth.speak(utterance);
-        }
-      }, 200);
+      // Removido o delay fixo de 200ms para o synth nativo do navegador (notebook)
+      if (synth) {
+        synth.resume();
+        synth.speak(utterance);
+      }
     } else {
       // Provedor Cloud (ElevenLabs / Google)
       try {
