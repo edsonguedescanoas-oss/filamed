@@ -739,6 +739,8 @@ export type Database = {
           densidade: string
           escala_chamadas: number
           escala_fonte: number
+          escala_header: number | null
+          escala_rodape: number | null
           fundo_url: string | null
           historico_limite: number | null
           historico_quebrar_texto: boolean | null
@@ -762,6 +764,8 @@ export type Database = {
           densidade?: string
           escala_chamadas?: number
           escala_fonte?: number
+          escala_header?: number | null
+          escala_rodape?: number | null
           fundo_url?: string | null
           historico_limite?: number | null
           historico_quebrar_texto?: boolean | null
@@ -785,6 +789,8 @@ export type Database = {
           densidade?: string
           escala_chamadas?: number
           escala_fonte?: number
+          escala_header?: number | null
+          escala_rodape?: number | null
           fundo_url?: string | null
           historico_limite?: number | null
           historico_quebrar_texto?: boolean | null
