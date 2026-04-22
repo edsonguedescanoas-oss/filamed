@@ -270,7 +270,7 @@ function TvPage() {
           // Usa o ref se estiver disponível, senão cria um novo temporário
           // Algumas TVs preferem novos elementos se o anterior "engasgou"
           const audio = voiceAudioRef.current || new Audio();
-          audio.src = audioData;
+          audio.src = audioSrc;
           audio.onended = finalize;
           audio.onerror = (e) => {
             console.error("[TV] Erro no carregamento do áudio cloud, fallback browser:", e);
