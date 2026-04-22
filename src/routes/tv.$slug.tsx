@@ -262,11 +262,11 @@ function TvPage() {
 
         if (error) throw error;
         
-        const audioData = data?.audioContent 
+        const audioSrc = data?.audioUrl || (data?.audioContent 
           ? `data:${data.mime || "audio/mpeg"};base64,${data.audioContent}`
-          : null;
+          : null);
 
-        if (audioData) {
+        if (audioSrc) {
           // Usa o ref se estiver disponível, senão cria um novo temporário
           // Algumas TVs preferem novos elementos se o anterior "engasgou"
           const audio = voiceAudioRef.current || new Audio();
