@@ -53,6 +53,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           layout_grid_cols: Number(data.layout_grid_cols) || 12,
           layout_grid_rows: Number(data.layout_grid_rows) || 6,
           layout_items: (data.layout_items as any) || DEFAULT_TV_VISUAL.layout_items,
+          auto_ajuste: !!data.auto_ajuste,
         });
       }
       setLoading(false);
