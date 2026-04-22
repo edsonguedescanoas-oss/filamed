@@ -757,44 +757,82 @@ function TvPage() {
             return (
               <div 
                 key={`item-${idx}`}
-                className="flex flex-col bg-black/10 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
+                className="@container flex flex-col bg-black/10 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
                 style={{
                   gridColumn: `span ${item.col_span}`,
                   gridRow: `span ${item.row_span}`,
+                  containerType: "size",
                 }}
               >
-                <div className="p-4 border-b border-white/10 bg-white/5">
-                  <h2 className="text-lg font-bold uppercase tracking-widest opacity-80 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
+                <div
+                  className="border-b border-white/10 bg-white/5 flex items-center"
+                  style={{ padding: "clamp(0.5rem, 3cqmin, 1rem)" }}
+                >
+                  <h2
+                    className="font-bold uppercase tracking-widest opacity-80 flex items-center gap-2"
+                    style={{ fontSize: "clamp(0.75rem, 4cqmin, 1.125rem)" }}
+                  >
+                    <Clock style={{ width: "1em", height: "1em" }} className="text-primary" />
                     Histórico
                   </h2>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
+                <div
+                  className="flex-1 overflow-hidden"
+                  style={{
+                    padding: "clamp(0.25rem, 1.5cqmin, 0.5rem)",
+                    display: "grid",
+                    gridTemplateRows: `repeat(${Math.max(historico.length, 1)}, minmax(0, 1fr))`,
+                    gap: "clamp(0.25rem, 1.5cqmin, 0.5rem)",
+                  }}
+                >
                   {historico.length > 0 ? (
                     historico.map((chamada, hIdx) => (
                       <div 
                         key={chamada.id}
-                        className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-4 py-2.5 animate-in slide-in-from-right duration-300"
-                        style={{ animationDelay: `${hIdx * 100}ms` }}
+                        className="@container flex items-center justify-between rounded-xl border border-white/5 bg-white/5 animate-in slide-in-from-right duration-300 min-h-0 overflow-hidden"
+                        style={{
+                          animationDelay: `${hIdx * 100}ms`,
+                          paddingInline: "clamp(0.5rem, 3cqmin, 1rem)",
+                          paddingBlock: "clamp(0.25rem, 2cqmin, 0.625rem)",
+                          gap: "clamp(0.5rem, 3cqmin, 1rem)",
+                          containerType: "inline-size",
+                        }}
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="text-xl font-bold text-primary leading-tight">{chamada.senha?.codigo}</p>
-                          <p className={`text-[10px] font-medium opacity-50 uppercase ${visual.historico_quebrar_texto ? "" : "truncate"}`}>
+                          <p
+                            className="font-bold text-primary leading-tight truncate"
+                            style={{ fontSize: "clamp(0.875rem, 7cqi, 1.5rem)" }}
+                          >
+                            {chamada.senha?.codigo}
+                          </p>
+                          <p
+                            className="font-medium opacity-50 uppercase truncate leading-snug"
+                            style={{ fontSize: "clamp(0.5rem, 2.5cqi, 0.75rem)" }}
+                          >
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                             {chamada.senha?.fila_nome || "Geral"}
                           </p>
                         </div>
-                        <div className="text-right ml-4 shrink-0 max-w-[40%]">
-                          <p className={`text-base font-bold opacity-90 leading-tight ${visual.historico_quebrar_texto ? "" : "truncate"}`}>{chamada.destino}</p>
-                          <p className="text-[9px] font-mono opacity-30">
+                        <div className="text-right shrink-0 min-w-0 max-w-[55%]">
+                          <p
+                            className="font-bold opacity-90 leading-tight truncate"
+                            style={{ fontSize: "clamp(0.6875rem, 4.5cqi, 1rem)" }}
+                            title={chamada.destino}
+                          >
+                            {chamada.destino}
+                          </p>
+                          <p
+                            className="font-mono opacity-30"
+                            style={{ fontSize: "clamp(0.5rem, 2.2cqi, 0.6875rem)" }}
+                          >
                             {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="flex h-full items-center justify-center opacity-20 italic text-sm">
+                    <div className="flex h-full items-center justify-center opacity-20 italic" style={{ fontSize: "clamp(0.75rem, 3cqmin, 1rem)" }}>
                       Nenhum histórico
                     </div>
                   )}
