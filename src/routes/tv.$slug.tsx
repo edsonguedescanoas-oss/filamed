@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { Clock, Users, Activity, Volume2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
