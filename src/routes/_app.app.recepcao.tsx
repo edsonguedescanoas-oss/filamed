@@ -107,6 +107,7 @@ function RecepcaoPage() {
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
   // cadastro rápido de paciente
   const [novoOpen, setNovoOpen] = useState(false);
   const [novoNome, setNovoNome] = useState("");
