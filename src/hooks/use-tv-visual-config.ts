@@ -147,7 +147,10 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           setConfig((prev) => ({
             ...prev,
             ...row,
-            escala_fonte: Number(row.escala_fonte) || prev.escala_fonte,
+            escala_fonte: row.escala_fonte !== undefined ? Number(row.escala_fonte) : prev.escala_fonte,
+            escala_chamadas: row.escala_chamadas !== undefined ? Number(row.escala_chamadas) : prev.escala_chamadas,
+            escala_header: row.escala_header !== undefined ? Number(row.escala_header) : prev.escala_header,
+            escala_rodape: row.escala_rodape !== undefined ? Number(row.escala_rodape) : prev.escala_rodape,
           }));
         },
       )
