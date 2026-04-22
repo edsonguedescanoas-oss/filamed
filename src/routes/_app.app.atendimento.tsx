@@ -506,7 +506,7 @@ function AtendimentoPage() {
             {chamadasAtivas.map((s) => (
               <div
                 key={s.id}
-                className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-center justify-between gap-3"
+                className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-center justify-between gap-3 animate-fade-up transition-all hover:border-amber-500/60 hover:shadow-soft"
               >
                 <div>
                   <div className="font-display text-2xl font-bold tabular-nums">{s.codigo}</div>
