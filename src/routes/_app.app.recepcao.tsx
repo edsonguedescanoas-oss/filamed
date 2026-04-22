@@ -140,6 +140,16 @@ function RecepcaoPage() {
   useEffect(() => {
     void fetchFilas();
     void fetchRecentes();
+    if (unidadeId) {
+      void (async () => {
+        const { data } = await supabase
+          .from("unidades")
+          .select("slug")
+          .eq("id", unidadeId)
+          .maybeSingle();
+        setUnidadeSlug(data?.slug ?? null);
+      })();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId]);
 
