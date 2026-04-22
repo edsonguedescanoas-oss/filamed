@@ -69,7 +69,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
     setSaving(true);
     const { error } = await supabase
       .from("tv_visual_config")
-      .upsert({ unidade_id: unidadeId, ...cfg }, { onConflict: "unidade_id" });
+      .upsert({ unidade_id: unidadeId, ...cfg } as any, { onConflict: "unidade_id" });
     setSaving(false);
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
