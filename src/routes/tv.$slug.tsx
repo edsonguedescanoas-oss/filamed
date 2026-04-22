@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Clock, Users, Activity, Loader2, Volume2 } from "lucide-react";
+import { Clock, Users, Activity, Volume2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
-import { cn } from "@/lib/utils";
 
 // Tipagens básicas
 type Senha = {
@@ -35,7 +34,6 @@ export const Route = createFileRoute("/tv/$slug")({
     };
   },
   loader: async ({ params: { slug } }) => {
-    console.log("TV: Loader iniciado para slug:", slug);
     const { data: uniData, error: uniError } = await supabase
       .rpc("get_unidade_publica_by_slug", { _slug: slug });
 
@@ -59,15 +57,13 @@ export const Route = createFileRoute("/tv/$slug")({
       }
     }));
 
-    return { unidade, chamadas: chamadas as Chamada[] };
+    return { unidade, initialChamadas: chamadas as Chamada[] };
   },
   component: TvPage,
 });
 
 function TvPage() {
-  const { slug } = Route.useParams();
-  const search = Route.useSearch();
-  const { unidade, chamadas: initialChamadas } = Route.useLoaderData();
+  const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
   const [now, setNow] = useState(new Date());
   
@@ -79,7 +75,6 @@ function TvPage() {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
 
   // Realtime para novas chamadas
   useEffect(() => {
@@ -98,7 +93,7 @@ function TvPage() {
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
           
-          // Busca detalhes da senha para a nova chamada (mantido simples por enquanto)
+          // Busca detalhes da senha para a nova chamada
           const { data: senhaData } = await supabase
             .from("senhas")
             .select("id, codigo, status, filas(nome)")
@@ -127,91 +122,6 @@ function TvPage() {
       supabase.removeChannel(channel);
     };
   }, [unidade?.id]);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white p-6 sm:p-10 text-center overflow-auto">
-        <Activity className="h-16 w-16 text-destructive mb-6 opacity-50 shrink-0" />
-        <h2 className="text-3xl font-bold mb-2">Ops! Algo deu errado.</h2>
-        <p className="text-xl text-slate-400 max-w-md mb-4">{error}</p>
-        
-        {search.debug && errorDetails && (
-          <div className="mt-6 w-full max-w-3xl rounded-xl bg-black/50 p-6 text-left font-mono text-sm border border-white/10 overflow-x-auto">
-            <p className="text-primary mb-2 font-bold uppercase tracking-wider">Debug Info:</p>
-            <div className="space-y-4">
-              <div>
-                <p className="text-slate-500 underline decoration-slate-700 underline-offset-4">Error Message:</p>
-                <p className="text-red-400 break-words">{errorDetails.message || String(errorDetails)}</p>
-              </div>
-              
-              {errorDetails.code && (
-                <div>
-                  <p className="text-slate-500 underline decoration-slate-700 underline-offset-4">Error Code:</p>
-                  <p className="text-blue-400">{errorDetails.code}</p>
-                </div>
-              )}
-
-              {errorDetails.hint && (
-                <div>
-                  <p className="text-slate-500 underline decoration-slate-700 underline-offset-4">Hint:</p>
-                  <p className="text-yellow-400">{errorDetails.hint}</p>
-                </div>
-              )}
-
-              {errorDetails.stack && (
-                <div>
-                  <p className="text-slate-500 underline decoration-slate-700 underline-offset-4 mb-2">Stack Trace:</p>
-                  <pre className="text-slate-400 whitespace-pre-wrap break-words text-xs leading-relaxed bg-white/5 p-4 rounded-lg border border-white/5 max-h-[40vh] overflow-y-auto">
-                    {errorDetails.stack}
-                  </pre>
-                </div>
-              )}
-
-              <div className="pt-4 border-t border-white/10">
-                <p className="text-slate-500 text-xs italic">
-                  Endpoint: {window.location.origin}/api (Supabase RPC)
-                  <br />
-                  Route: {window.location.pathname}
-                  <br />
-                  Time: {new Date().toISOString()}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors font-semibold"
-          >
-            Tentar Novamente
-          </button>
-          
-          {!search.debug && (
-            <button 
-              onClick={() => {
-                const url = new URL(window.location.href);
-                url.searchParams.set("debug", "true");
-                window.location.href = url.toString();
-              }}
-              className="px-6 py-3 bg-primary/20 hover:bg-primary/30 text-primary-foreground rounded-xl transition-colors font-semibold"
-            >
-              Ativar Modo Debug
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, 6);
