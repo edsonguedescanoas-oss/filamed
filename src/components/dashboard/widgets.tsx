@@ -34,7 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { RecursoGate } from "@/components/recurso-gate";
+
 
 /* ──────────────────────────────────────────────────────────
  * Helpers compartilhados
