@@ -497,7 +497,10 @@ function TvPage() {
   }, [visual.auto_ajuste, visual.escala_fonte, visual.aspect_ratio]);
 
   const ultimaChamada = chamadas[0];
-  const historico = chamadas.slice(1, (visual.historico_limite || 8) + 1);
+  // Limita o histórico a no máximo 5 itens (independente do que estiver configurado),
+  // pra garantir que cada linha tenha espaço suficiente para mostrar o texto completo.
+  const HISTORICO_MAX = 5;
+  const historico = chamadas.slice(1, Math.min((visual.historico_limite || 5), HISTORICO_MAX) + 1);
 
   if (needsInteraction) {
     return (
