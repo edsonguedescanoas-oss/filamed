@@ -437,46 +437,53 @@ function TvPage() {
         <button
           onClick={() => {
             console.log("[TV] Iniciando painel e destravando áudio...");
-            // Destravamento robusto de áudio
+            // Destravamento robusto de áudio para TV Firestick e outros dispositivos
             const BEEP_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+            
             const audioBeep = new Audio(BEEP_URL);
             audioBeep.volume = 0.01;
-            audioBeep.play().then(() => {
-              console.log("[TV] Beep destravado");
-              audioBeep.pause();
-              audioBeep.volume = 1;
-              beepRef.current = audioBeep;
-            }).catch(e => {
-              console.warn("Falha ao destravar beep, mas continuando:", e);
-              // Mesmo se falhar o play, tenta manter o ref se o browser permitir
-              beepRef.current = audioBeep;
-            });
-
-            // "Destrava" o áudio da voz (importante para ElevenLabs/Google)
-            const audioVoice = new Audio();
+            
+            const audioVoice = new Audio(BEEP_URL); // Usa o mesmo beep para destravar com som real
             audioVoice.volume = 0.01;
-            // Play de um buffer de silêncio ou arquivo curto para garantir "interaction"
-            audioVoice.play().then(() => {
-              console.log("[TV] Voz (Audio) destravada");
-              audioVoice.pause();
-              audioVoice.volume = 1;
-              voiceAudioRef.current = audioVoice;
-            }).catch(e => {
-              console.warn("Falha ao destravar voz (Audio), mas continuando:", e);
-              voiceAudioRef.current = audioVoice;
-            });
 
-            // "Destrava" a voz nativa (SpeechSynthesis)
-            if (typeof window !== "undefined" && window.speechSynthesis) {
-              const synth = window.speechSynthesis;
-              synth.cancel();
-              const u = new SpeechSynthesisUtterance("");
-              u.volume = 0;
-              synth.speak(u);
-              console.log("[TV] SpeechSynthesis destravado");
-            }
+            const unlock = async () => {
+              try {
+                await audioBeep.play();
+                audioBeep.pause();
+                audioBeep.volume = 1;
+                beepRef.current = audioBeep;
+                console.log("[TV] Beep destravado");
+              } catch (e) {
+                console.warn("Falha ao destravar beep:", e);
+                beepRef.current = audioBeep;
+              }
 
-            setNeedsInteraction(false);
+              try {
+                await audioVoice.play();
+                audioVoice.pause();
+                audioVoice.volume = 1;
+                audioVoice.src = ""; // Limpa o src do beep para receber a voz depois
+                voiceAudioRef.current = audioVoice;
+                console.log("[TV] Voz (Audio) destravada");
+              } catch (e) {
+                console.warn("Falha ao destravar voz (Audio):", e);
+                voiceAudioRef.current = audioVoice;
+              }
+
+              // "Destrava" a voz nativa (SpeechSynthesis)
+              if (typeof window !== "undefined" && window.speechSynthesis) {
+                const synth = window.speechSynthesis;
+                synth.cancel();
+                const u = new SpeechSynthesisUtterance(" ");
+                u.volume = 0;
+                synth.speak(u);
+                console.log("[TV] SpeechSynthesis destravado");
+              }
+              
+              setNeedsInteraction(false);
+            };
+
+            void unlock();
           }}
           className="rounded-full bg-primary px-10 py-4 font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105 active:scale-95"
         >
