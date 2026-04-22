@@ -706,6 +706,7 @@ export type Database = {
           escala_fonte: number
           fundo_url: string | null
           historico_limite: number | null
+          historico_quebrar_texto: boolean | null
           id: string
           layout_grid_cols: number | null
           layout_grid_rows: number | null
@@ -728,6 +729,7 @@ export type Database = {
           escala_fonte?: number
           fundo_url?: string | null
           historico_limite?: number | null
+          historico_quebrar_texto?: boolean | null
           id?: string
           layout_grid_cols?: number | null
           layout_grid_rows?: number | null
@@ -750,6 +752,7 @@ export type Database = {
           escala_fonte?: number
           fundo_url?: string | null
           historico_limite?: number | null
+          historico_quebrar_texto?: boolean | null
           id?: string
           layout_grid_cols?: number | null
           layout_grid_rows?: number | null
