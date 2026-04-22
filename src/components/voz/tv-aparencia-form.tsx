@@ -109,8 +109,8 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
     const { error } = await supabase.from("tv_layout_profiles").insert({
       unidade_id: unidadeId,
       nome: profileName,
-      config: cfg,
-    });
+      config: cfg as any,
+    } as any);
     if (error) {
       toast.error("Erro ao salvar perfil");
       return;
