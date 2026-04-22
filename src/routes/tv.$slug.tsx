@@ -4,6 +4,7 @@ import { Clock, Users, Activity, Volume2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
 import { TvCarrossel } from "@/components/tv-carrossel";
+import { TvZoomControl } from "@/components/tv-zoom-control";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 
 // Tipagens básicas
@@ -106,7 +107,19 @@ function TvPage() {
 
   
   // Hook de configuração visual (cores, logo, etc)
-  const { config: visual } = useTvVisualConfig(unidade?.id);
+  const { config: visual, setConfig } = useTvVisualConfig(unidade?.id);
+
+  // Zoom local (salvo no localStorage deste dispositivo)
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    return Number(localStorage.getItem(`tv-zoom-${unidade?.id}`)) || 1;
+  });
+
+  const updateZoom = (newZoom: number) => {
+    const z = Math.max(0.2, Math.min(3, newZoom));
+    setZoom(z);
+    localStorage.setItem(`tv-zoom-${unidade?.id}`, String(z));
+  };
 
   // Carrega configuração de voz
   useEffect(() => {
@@ -527,14 +540,16 @@ function TvPage() {
 
   return (
     <div 
-      className="flex h-screen flex-col overflow-hidden font-sans transition-all duration-500"
+      className="flex h-screen w-screen flex-col overflow-hidden font-sans transition-all duration-500 relative"
       style={{ 
         backgroundColor: visual.cor_fundo, 
         color: visual.cor_texto,
         backgroundImage: visual.fundo_url ? `url(${visual.fundo_url})` : undefined,
-        fontSize: visual.auto_ajuste ? `${autoStyles.scale}rem` : `${visual.escala_fonte}rem`,
+        fontSize: visual.auto_ajuste ? `${autoStyles.scale * zoom}rem` : `${visual.escala_fonte * zoom}rem`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        // Se for 4:3 num monitor widescreen, centralizamos com barras pretas se desejado
+        // Mas o pedido é "ajustar automaticamente sem distorcer", então apenas mudar a escala basta.
       }}
     >
       {/* Overlay se tiver imagem de fundo */}
@@ -759,6 +774,32 @@ function TvPage() {
           animation: marquee 30s linear infinite;
         }
       `}</style>
+
+      <TvZoomControl
+        zoom={zoom}
+        onInc={() => updateZoom(zoom + 0.05)}
+        onDec={() => updateZoom(zoom - 0.05)}
+        onReset={() => updateZoom(1)}
+        aspectRatio={visual.aspect_ratio}
+        onAspectRatioChange={async (ratio) => {
+          // Atualiza o estado visual IMEDIATAMENTE (localmente)
+          setConfig(prev => ({ ...prev, aspect_ratio: ratio }));
+          
+          // Tenta persistir no banco se for admin, mas aqui na TV é mais pra ajuste local rápido
+          // Como o useTvVisualConfig assina realtime, se mudarmos no banco muda em todas as TVs.
+          // Se o usuário quer mudar SÓ NESTA TV, talvez precisássemos de um state local.
+          // O pedido fala em "selecionar o formato", então vou persistir pra ser o padrão da unidade.
+          try {
+            await supabase
+              .from("tv_visual_config")
+              .update({ aspect_ratio: ratio } as any)
+              .eq("unidade_id", unidade.id);
+          } catch (e) {
+            console.error("Erro ao salvar ratio:", e);
+          }
+        }}
+        autoHide
+      />
     </div>
   );
 }
