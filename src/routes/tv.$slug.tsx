@@ -658,16 +658,16 @@ function TvPage() {
                   gridColumn: `span ${item.col_span}`,
                   gridRow: `span ${item.row_span}`,
                   containerType: "size",
-                  padding: "clamp(0.5rem, 2cqmin, 1.5rem)",
+                  padding: "clamp(0.25rem, 0.8cqmin, 0.6rem)",
                 }}
               >
                 {ultimaChamada ? (
                   <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 text-center">
                     <div 
-                      className="inline-flex items-center gap-2 rounded-full bg-primary/20 text-primary border border-primary/30"
+                      className="inline-flex items-center gap-2 rounded-full bg-red-600/20 text-red-500 border border-red-500/40"
                       style={{
-                        padding: `clamp(0.15rem, 0.8cqmin, 0.4rem) clamp(0.5rem, 1.5cqmin, 1rem)`,
-                        marginBottom: `clamp(0.25rem, 1cqmin, 0.75rem)`,
+                        padding: `clamp(0.1rem, 0.6cqmin, 0.35rem) clamp(0.4rem, 1.2cqmin, 0.9rem)`,
+                        marginBottom: `clamp(0.15rem, 0.6cqmin, 0.5rem)`,
                       }}
                     >
                       <Volume2 
