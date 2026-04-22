@@ -221,7 +221,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
                 <Button
                   key={v}
                   type="button"
-                  variant={cfg.escala_fonte === v ? "default" : "outline"}
+                  variant={Math.round(cfg.escala_fonte * 100) === Math.round(v * 100) ? "default" : "outline"}
                   size="sm"
                   className="h-7 px-2 text-[10px]"
                   onClick={() => update("escala_fonte", v)}
