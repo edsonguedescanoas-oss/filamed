@@ -190,7 +190,7 @@ export function SinalizacaoManager({ unidadeId }: Props) {
               id="nova-url"
               placeholder={
                 novoTipo === "youtube"
-                  ? "https://youtube.com/watch?v=... ou https://youtube.com/playlist?list=..."
+                   ? "https://youtube.com/watch?v=... ou https://youtube.com/shorts/... ou ID"
                   : "https://..."
               }
               value={novaUrl}

@@ -67,8 +67,8 @@ function parseYoutube(url: string | null | undefined): { videoId?: string; playl
   if (!url) return {};
   const trimmed = url.trim();
   
-  // Detecta handle (@nome) - embeds do YouTube não suportam handles diretamente
-  if (trimmed.includes("/@") || trimmed.startsWith("@")) {
+  // Detecta URLs de canais/handles (não suportados diretamente no embed de vídeo)
+  if (trimmed.includes("/@") || trimmed.startsWith("@") || trimmed.includes("/c/") || trimmed.includes("/channel/") || trimmed.includes("/user/")) {
     return { isHandle: true };
   }
 
@@ -82,10 +82,15 @@ function parseYoutube(url: string | null | undefined): { videoId?: string; playl
   const shortMatch = trimmed.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
   const embedMatch = trimmed.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/);
   const liveMatch = trimmed.match(/youtube\.com\/live\/([A-Za-z0-9_-]{11})/);
+  const shortsMatch = trimmed.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/);
+  const vMatch = trimmed.match(/youtube\.com\/v\/([A-Za-z0-9_-]{11})/);
+
   if (watchMatch) videoId = watchMatch[1];
   else if (shortMatch) videoId = shortMatch[1];
   else if (embedMatch) videoId = embedMatch[1];
   else if (liveMatch) videoId = liveMatch[1];
+  else if (shortsMatch) videoId = shortsMatch[1];
+  else if (vMatch) videoId = vMatch[1];
   else if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) videoId = trimmed;
   else if (/^(PL|UU|RD|OL|FL|LL)[A-Za-z0-9_-]{10,}$/.test(trimmed)) {
     // ID de playlist solto
@@ -103,7 +108,7 @@ function buildYoutubeEmbed(url: string): string | null {
   const { videoId, playlistId } = parseYoutube(url);
   // Origem é exigida pelo YouTube IFrame API quando enablejsapi=1
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const base = "https://www.youtube-nocookie.com/embed";
+  const base = "https://www.youtube.com/embed";
   const common = [
     "autoplay=1",
     "mute=1",
@@ -323,7 +328,7 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
             title={atual.titulo}
             className="absolute inset-0 h-full w-full border-0"
             // `allow` precisa autoplay + encrypted-media pra YouTube tocar sozinho.
-            allow="autoplay; encrypted-media; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             // `sandbox` é omitido de propósito — o YouTube embed precisa de
             // origem confiável pra player rodar.
             referrerPolicy="strict-origin-when-cross-origin"

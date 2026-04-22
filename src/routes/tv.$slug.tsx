@@ -102,6 +102,7 @@ function TvPage() {
   const [needsInteraction, setNeedsInteraction] = useState(true);
   const audioQueue = useRef<string[]>([]);
   const isSpeaking = useRef(false);
+  const [isSpeakingState, setIsSpeakingState] = useState(false);
   const beepRef = useRef<HTMLAudioElement | null>(null);
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -247,9 +248,11 @@ function TvPage() {
 
     console.log("[TV] Tentando falar:", texto, "Provider:", voiceConfig.provider);
     isSpeaking.current = true;
+    setIsSpeakingState(true);
 
     const finalize = () => {
       isSpeaking.current = false;
+      setIsSpeakingState(false);
       console.log("[TV] Finalizou processo de fala.");
     };
 
@@ -810,6 +813,7 @@ function TvPage() {
                 <TvCarrossel 
                   unidadeId={unidade.id} 
                   minimalChrome 
+                  paused={isSpeakingState}
                   className="h-full border-0 rounded-none" 
                 />
               </div>
