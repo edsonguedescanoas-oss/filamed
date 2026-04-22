@@ -638,19 +638,19 @@ function TvPage() {
               historico.map((chamada, idx) => (
                 <div 
                   key={chamada.id}
-                  className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-6 animate-in slide-in-from-right duration-300"
+                  className={`flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 animate-in slide-in-from-right duration-300 ${visual.densidade === 'compacto' ? 'p-4' : 'p-6'}`}
                   style={{ animationDelay: `${idx * 100}ms` }}
                 >
                   <div>
-                    <p className="text-4xl font-bold text-primary">{chamada.senha?.codigo}</p>
-                    <p className="text-sm font-medium opacity-40 uppercase">
+                    <p className="font-bold text-primary" style={{ fontSize: `${2.25 * visual.escala_chamadas}rem` }}>{chamada.senha?.codigo}</p>
+                    <p className="font-medium opacity-40 uppercase" style={{ fontSize: `${0.875 * visual.escala_chamadas}rem` }}>
                       {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                       {chamada.senha?.fila_nome || "Geral"}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold opacity-80">{chamada.destino}</p>
-                    <p className="text-xs font-mono opacity-30">
+                    <p className="font-bold opacity-80" style={{ fontSize: `${1.5 * visual.escala_chamadas}rem` }}>{chamada.destino}</p>
+                    <p className="font-mono opacity-30" style={{ fontSize: `${0.75 * visual.escala_chamadas}rem` }}>
                       {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
