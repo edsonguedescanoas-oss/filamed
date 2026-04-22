@@ -21,12 +21,18 @@ type Chamada = {
   senha_id: string;
   destino: string;
   created_at: string;
+  observacao?: string | null;
   senha?: Senha;
   // Campos vindos da nova RPC
   senha_codigo?: string;
   fila_nome?: string;
   paciente_nome?: string;
 };
+
+/** Detecta se uma chamada é uma rechamada (manual ou automática). */
+function isRechamada(c: Pick<Chamada, "observacao">): boolean {
+  return (c.observacao ?? "").trim().toLowerCase() === "rechamada";
+}
 
 interface VoiceConfig {
   provider: "browser" | "google" | "elevenlabs";
