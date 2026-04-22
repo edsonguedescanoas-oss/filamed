@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ImageOff, Volume2 } from "lucide-react";
+import { ImageOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SinalizacaoItem = {
@@ -210,7 +210,6 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
   const [items, setItems] = useState<SinalizacaoItem[]>([]);
   const [index, setIndex] = useState(0);
   const [now, setNow] = useState(() => new Date());
-  const [youtubeAudioHintVisible, setYoutubeAudioHintVisible] = useState(false);
   const [youtubeLoadTick, setYoutubeLoadTick] = useState(0);
 
   // Carrega itens ativos da unidade + assina realtime
@@ -346,38 +345,19 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
   }, [paused, atual?.id]);
 
   // YouTube: tenta liberar o áudio algumas vezes após o player carregar.
-  // Em navegadores com política restritiva, exibimos um CTA para ativação manual.
   useEffect(() => {
-    if (!atual || !isYoutube(atual)) return;
-    if (paused) {
-      setYoutubeAudioHintVisible(false);
-      return;
-    }
-
-    setYoutubeAudioHintVisible(false);
+    if (!atual || !isYoutube(atual) || paused) return;
 
     const attempts = [600, 1500, 2600].map((delay) =>
       setTimeout(() => {
         tryEnableYoutubeAudio(youtubeIframeRef.current, 40);
       }, delay),
     );
-    const hintTimer = setTimeout(() => {
-      setYoutubeAudioHintVisible(true);
-    }, 3400);
 
     return () => {
       attempts.forEach((timer) => clearTimeout(timer));
-      clearTimeout(hintTimer);
     };
   }, [atual?.id, paused, youtubeLoadTick]);
-
-  const handleYoutubeAudioUnlock = () => {
-    tryEnableYoutubeAudio(youtubeIframeRef.current, 40);
-    setYoutubeAudioHintVisible(false);
-    window.setTimeout(() => {
-      tryEnableYoutubeAudio(youtubeIframeRef.current, 40);
-    }, 180);
-  };
 
   if (elegiveis.length === 0 || !atual) return null;
 
@@ -428,7 +408,6 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
               title={atual.titulo}
               className="absolute inset-0 h-full w-full border-0"
               onLoad={() => {
-                setYoutubeAudioHintVisible(false);
                 setYoutubeLoadTick((tick) => tick + 1);
               }}
               // `allow` precisa autoplay + encrypted-media pra YouTube tocar sozinho.
@@ -438,29 +417,6 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
               referrerPolicy="strict-origin-when-cross-origin"
             />
 
-            {youtubeAudioHintVisible && !paused && (
-              <div className="absolute bottom-4 right-4 z-10 max-w-[320px] rounded-xl border border-white/15 bg-black/75 p-3 text-white shadow-lg backdrop-blur-sm animate-fade-in">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-full bg-white/10 p-2">
-                    <Volume2 className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">Áudio do YouTube bloqueado pelo navegador</p>
-                    <p className="mt-1 text-xs text-white/75">
-                      Alguns navegadores só liberam som após interação. Toque no botão abaixo para tentar ativar em 40%.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleYoutubeAudioUnlock}
-                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/15"
-                    >
-                      <Volume2 className="h-4 w-4" />
-                      Ativar áudio
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </>
         )}
 
