@@ -650,6 +650,45 @@ function TvPage() {
             );
           }
 
+          if (item.type === "midia") {
+            return (
+              <div 
+                key={`item-${idx}`}
+                className="overflow-hidden rounded-2xl border border-white/10"
+                style={{
+                  gridColumn: `span ${item.col_span}`,
+                  gridRow: `span ${item.row_span}`,
+                }}
+              >
+                <TvCarrossel 
+                  unidadeId={unidade.id} 
+                  minimalChrome 
+                  className="h-full border-0 rounded-none" 
+                />
+              </div>
+            );
+          }
+
+          if (item.type === "relogio") {
+            return (
+              <div 
+                key={`item-${idx}`}
+                className="flex flex-col items-center justify-center border border-white/10 bg-black/20 backdrop-blur-md rounded-2xl p-6"
+                style={{
+                  gridColumn: `span ${item.col_span}`,
+                  gridRow: `span ${item.row_span}`,
+                }}
+              >
+                <p className="text-[6rem] font-mono font-bold leading-none">
+                  {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+                <p className="text-2xl font-medium opacity-60 mt-2">
+                  {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              </div>
+            );
+          }
+
           return null;
         })}
       </main>
