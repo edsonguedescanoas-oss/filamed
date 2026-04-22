@@ -90,7 +90,13 @@ function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
   const [now, setNow] = useState(new Date());
-  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
+  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
+    provider: "browser",
+    voice_id: null,
+    rate: 1,
+    pitch: 1,
+    template_chamada: "paciente_senha_fila_destino",
+  });
   const [needsInteraction, setNeedsInteraction] = useState(true);
   const audioQueue = useRef<string[]>([]);
   const isSpeaking = useRef(false);
@@ -112,12 +118,14 @@ function TvPage() {
       
       if (data) {
         setVoiceConfig({
-          provider: data.provider as any,
+          provider: (data.provider as any) || "browser",
           voice_id: data.voice_id,
           rate: Number(data.rate) || 1,
           pitch: Number(data.pitch) || 1,
           template_chamada: (data.template_chamada as TemplateChamada) || "paciente_senha_fila_destino",
         });
+      } else {
+        console.log("[TV] Usando configuração de voz padrão (navegador)");
       }
     })();
   }, [unidade?.id]);
@@ -141,8 +149,6 @@ function TvPage() {
   }, []);
 
   const speak = useCallback(async (chamada: Chamada) => {
-    if (!voiceConfig) return;
-
     const texto = montarTextoChamada({
       template: voiceConfig.template_chamada,
       nome: chamada.senha?.paciente_nome || null,
@@ -152,11 +158,15 @@ function TvPage() {
       formatarDestino,
     });
 
-    console.log("[TV] Falando:", texto);
+    console.log("[TV] Falando:", texto, "Provider:", voiceConfig.provider);
 
     if (voiceConfig.provider === "browser") {
+      if (typeof window === "undefined" || !window.speechSynthesis) {
+        console.warn("[TV] SpeechSynthesis não suportado neste navegador.");
+        return;
+      }
+
       const synth = window.speechSynthesis;
-      // Cancela qualquer fala anterior para não "travar" a fila do navegador
       synth.cancel();
 
       const utterance = new SpeechSynthesisUtterance(texto);
@@ -170,10 +180,10 @@ function TvPage() {
         if (v) utterance.voice = v;
       }
       
-      // Alguns navegadores precisam de um pequeno delay após o cancel
-      setTimeout(() => synth.speak(utterance), 50);
+      setTimeout(() => synth.speak(utterance), 100);
     } else {
       try {
+        console.log("[TV] Chamando TTS Edge Function...");
         const { data, error } = await supabase.functions.invoke("tts", {
           body: {
             text: texto,
@@ -184,27 +194,41 @@ function TvPage() {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("[TV] Erro na função TTS:", error);
+          throw error;
+        }
         
         const audioData = data?.audioContent 
           ? `data:${data.mime || "audio/mpeg"};base64,${data.audioContent}`
           : null;
 
         if (audioData) {
+          console.log("[TV] Reproduzindo áudio recebido...");
           const audio = new Audio(audioData);
-          await audio.play();
-        } else if (data?.fallback === "browser") {
+          audio.play().catch(playErr => {
+            console.error("[TV] Erro ao dar play no áudio:", playErr);
+            // Fallback imediato se o play falhar (ex: bloqueio de áudio)
+            const u = new SpeechSynthesisUtterance(texto);
+            u.lang = "pt-BR";
+            window.speechSynthesis.speak(u);
+          });
+        } else if (data?.fallback === "browser" || !audioData) {
+          console.log("[TV] TTS indisponível, usando fallback de navegador");
           const synth = window.speechSynthesis;
           synth.cancel();
           const u = new SpeechSynthesisUtterance(texto);
           u.lang = "pt-BR";
-          setTimeout(() => synth.speak(u), 50);
+          setTimeout(() => synth.speak(u), 100);
         }
       } catch (err) {
         console.error("[TV] Erro ao reproduzir voz:", err);
+        // Fallback final
+        const u = new SpeechSynthesisUtterance(texto);
+        u.lang = "pt-BR";
+        window.speechSynthesis.speak(u);
       }
     }
-
   }, [voiceConfig]);
 
   // Realtime para novas chamadas
