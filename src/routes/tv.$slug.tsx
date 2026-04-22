@@ -145,9 +145,23 @@ function TvPage() {
   // Relógio
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    if (needsInteraction) return;
+    
+    const interval = setInterval(() => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        const synth = window.speechSynthesis;
+        if (!synth.speaking) {
+          synth.resume();
+          // Utterance silenciosa curta para manter o motor acordado
+          const u = new SpeechSynthesisUtterance("");
+          u.volume = 0;
+          synth.speak(u);
+        }
+      }
+    }, 30000); // a cada 30 segundos
+    
+    return () => clearInterval(interval);
+  }, [needsInteraction]);
 
   const speak = useCallback(async (chamada: Chamada) => {
     const texto = montarTextoChamada({
