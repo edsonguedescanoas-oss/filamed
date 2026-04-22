@@ -24,12 +24,14 @@ export const securityHeadersMiddleware = createMiddleware({ type: "request" }).s
       "default-src 'self'",
       // Vite injeta scripts inline durante hidratação; em produção mantemos 'unsafe-inline'
       // até migrarmos para nonce-based CSP.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://www.youtube.com https://s.ytimg.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
       "media-src 'self' data: blob: https:",
-      `connect-src 'self' ${SUPABASE} ${SUPABASE_WS} https://fonts.googleapis.com https://fonts.gstatic.com`,
+      `connect-src 'self' ${SUPABASE} ${SUPABASE_WS} https://fonts.googleapis.com https://fonts.gstatic.com https://www.youtube.com https://www.google.com`,
+      // frame-src: necessário para embeds de YouTube e Google Drive na sinalização digital da TV.
+      "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://youtube.com https://drive.google.com https://docs.google.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -43,7 +45,9 @@ export const securityHeadersMiddleware = createMiddleware({ type: "request" }).s
     setResponseHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     setResponseHeader(
       "Permissions-Policy",
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
+      // autoplay=* e encrypted-media=* são necessários para YouTube/Drive tocarem
+      // automaticamente na TV (sem isso o navegador bloqueia o iframe externo).
+      "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), autoplay=*, encrypted-media=*, fullscreen=*",
     );
     setResponseHeader("X-DNS-Prefetch-Control", "on");
     // HSTS: só faz sentido em produção (HTTPS). Cloudflare já envia, mas reforçamos.
