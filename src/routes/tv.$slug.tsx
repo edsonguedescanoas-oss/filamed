@@ -104,6 +104,9 @@ function TvPage() {
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
 
   
+  // Hook de configuração visual (cores, logo, etc)
+  const { config: visual } = useTvVisualConfig(unidade?.id);
+
   // Lógica de contraste
   const palette = (() => {
     if (visual.contraste_chamadas === "maximo") {
