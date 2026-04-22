@@ -86,7 +86,11 @@ function parseGoogleDriveId(url: string | null | undefined): string | null {
 function buildGoogleDriveEmbed(url: string): string | null {
   const id = parseGoogleDriveId(url);
   if (!id) return null;
-  return `https://drive.google.com/file/d/${id}/preview`;
+  // O endpoint /preview do Drive aceita o parâmetro `autoplay=1` em alguns
+  // casos. Não há garantia (o Drive frequentemente ignora), mas quando o
+  // navegador permite (ex.: TV em quiosque com autoplay liberado) o vídeo
+  // começa sozinho. Mantemos o fallback visual caso falhe.
+  return `https://drive.google.com/file/d/${id}/preview?autoplay=1&mute=1`;
 }
 
 /**
