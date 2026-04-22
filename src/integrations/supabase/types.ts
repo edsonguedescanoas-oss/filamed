@@ -752,8 +752,10 @@ export type Database = {
           logo_url: string | null
           mensagem_rodape: string | null
           resolucao_preset: string
+          safe_area_padding: number | null
           unidade_id: string
           updated_at: string
+          zoom_nivel: number | null
         }
         Insert: {
           aspect_ratio?: string
@@ -778,8 +780,10 @@ export type Database = {
           logo_url?: string | null
           mensagem_rodape?: string | null
           resolucao_preset?: string
+          safe_area_padding?: number | null
           unidade_id: string
           updated_at?: string
+          zoom_nivel?: number | null
         }
         Update: {
           aspect_ratio?: string
@@ -804,8 +808,10 @@ export type Database = {
           logo_url?: string | null
           mensagem_rodape?: string | null
           resolucao_preset?: string
+          safe_area_padding?: number | null
           unidade_id?: string
           updated_at?: string
+          zoom_nivel?: number | null
         }
         Relationships: [
           {
