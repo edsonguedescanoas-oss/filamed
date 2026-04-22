@@ -867,7 +867,7 @@ function TvPage() {
                       className="font-medium uppercase tracking-widest"
                       style={{ fontSize: `clamp(0.625rem, 2.5cqmin, 1.25rem)` }}
                     >
-                      Aguardando Chamadas
+                      Aguardando Chamada
                     </p>
                   </div>
                 )}
