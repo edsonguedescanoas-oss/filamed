@@ -150,6 +150,10 @@ function buildYoutubeEmbed(url: string): string | null {
   // youtube-nocookie.com é o domínio "privacy-enhanced" — tem políticas de
   // incorporação MAIS permissivas e funciona melhor com CSPs restritivas.
   const base = "https://www.youtube-nocookie.com/embed";
+  // NOTA: começamos com mute=1 porque navegadores bloqueiam autoplay com som
+  // sem interação do usuário. Após o player carregar, usamos a IFrame API via
+  // postMessage para chamar unMute() + setVolume(40). Em TVs/quiosques onde
+  // autoplay com som é permitido, isso resulta em áudio a 40% automático.
   const common = [
     "autoplay=1",
     "mute=1",
