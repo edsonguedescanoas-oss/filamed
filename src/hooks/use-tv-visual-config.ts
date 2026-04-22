@@ -102,7 +102,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           escala_chamadas: Number(data.escala_chamadas) || 1,
           layout_grid_cols: Number(data.layout_grid_cols) || 12,
           layout_grid_rows: Number(data.layout_grid_rows) || 6,
-          layout_items: (data.layout_items as LayoutItem[]) || DEFAULT_TV_VISUAL.layout_items,
+          layout_items: (data.layout_items as unknown as LayoutItem[]) || DEFAULT_TV_VISUAL.layout_items,
         });
       }
       setLoading(false);
