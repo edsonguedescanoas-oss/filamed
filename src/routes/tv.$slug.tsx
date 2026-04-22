@@ -340,7 +340,7 @@ function TvPage() {
         </p>
         <button
           onClick={() => {
-            // "Destrava" o áudio no navegador com uma interação real
+            // Destravamento robusto de áudio
             const silentBeep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
             silentBeep.volume = 0.01;
             silentBeep.play().then(() => {
