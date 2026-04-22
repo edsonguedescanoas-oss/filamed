@@ -49,7 +49,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -68,6 +68,8 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           contraste_chamadas:
             (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
           escala_chamadas: Number(data.escala_chamadas) || 1,
+          escala_header: Number(data.escala_header) || 1,
+          escala_rodape: Number(data.escala_rodape) || 1,
           layout_grid_cols: Number(data.layout_grid_cols) || 12,
           layout_grid_rows: Number(data.layout_grid_rows) || 6,
           layout_items: (data.layout_items as any) || DEFAULT_TV_VISUAL.layout_items,
@@ -306,24 +308,56 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="escala_chamadas" className="text-xs font-medium">
-            Tamanho das fontes da chamada ({Math.round(cfg.escala_chamadas * 100)}%)
-          </Label>
-          <Input
-            id="escala_chamadas"
-            type="range"
-            min={0.1}
-            max={2.5}
-            step={0.05}
-            value={cfg.escala_chamadas}
-            onChange={(e) => update("escala_chamadas", Number(e.target.value))}
-          />
-          <p className="text-[11px] text-muted-foreground">
-            Aumente para que o paciente leia a senha de longe ou em ambientes
-            muito iluminados.
-          </p>
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="escala_header" className="text-xs font-medium">
+              Fontes do Header ({Math.round(cfg.escala_header * 100)}%)
+            </Label>
+            <Input
+              id="escala_header"
+              type="range"
+              min={0.5}
+              max={2.0}
+              step={0.05}
+              value={cfg.escala_header}
+              onChange={(e) => update("escala_header", Number(e.target.value))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="escala_chamadas" className="text-xs font-medium">
+              Fontes da Chamada ({Math.round(cfg.escala_chamadas * 100)}%)
+            </Label>
+            <Input
+              id="escala_chamadas"
+              type="range"
+              min={0.5}
+              max={2.5}
+              step={0.05}
+              value={cfg.escala_chamadas}
+              onChange={(e) => update("escala_chamadas", Number(e.target.value))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="escala_rodape" className="text-xs font-medium">
+              Fontes do Rodapé ({Math.round(cfg.escala_rodape * 100)}%)
+            </Label>
+            <Input
+              id="escala_rodape"
+              type="range"
+              min={0.5}
+              max={2.0}
+              step={0.05}
+              value={cfg.escala_rodape}
+              onChange={(e) => update("escala_rodape", Number(e.target.value))}
+            />
+          </div>
         </div>
+
+        <p className="text-[11px] text-muted-foreground">
+          Ajuste as fontes individualmente para garantir legibilidade à distância sem quebrar o layout.
+        </p>
       </section>
 
       {/* Cores */}
@@ -731,37 +765,37 @@ function PreviewCard({ cfg }: { cfg: TvVisualConfig }) {
             <div
               className="relative flex items-center justify-between border-b border-white/10"
               style={{
-                padding: `${(compact ? 6 : 10) * scale}px ${(compact ? 12 : 16) * scale}px`,
+                padding: `${(compact ? 6 : 10) * scale * cfg.escala_header}px ${(compact ? 12 : 16) * scale * cfg.escala_header}px`,
               }}
             >
-              <div className="flex items-center" style={{ gap: `${8 * scale}px` }}>
+              <div className="flex items-center" style={{ gap: `${8 * scale * cfg.escala_header}px` }}>
                 {cfg.logo_url ? (
                   <img
                     src={cfg.logo_url}
                     alt="logo"
                     className="object-contain"
-                    style={{ height: `${22 * scale}px`, width: `${22 * scale}px` }}
+                    style={{ height: `${22 * scale * cfg.escala_header}px`, width: `${22 * scale * cfg.escala_header}px` }}
                   />
                 ) : (
                   <div
                     className="rounded"
                     style={{
                       backgroundColor: cfg.cor_primaria,
-                      height: `${22 * scale}px`,
-                      width: `${22 * scale}px`,
+                      height: `${22 * scale * cfg.escala_header}px`,
+                      width: `${22 * scale * cfg.escala_header}px`,
                     }}
                   />
                 )}
                 <div
                   className="font-bold uppercase tracking-[0.25em]"
-                  style={{ fontSize: `${8 * scale}px`, color: cfg.cor_primaria }}
+                  style={{ fontSize: `${8 * scale * cfg.escala_header}px`, color: cfg.cor_primaria }}
                 >
                   Painel · Sua Clínica
                 </div>
               </div>
               <div
                 className="font-mono tabular-nums opacity-70"
-                style={{ fontSize: `${10 * scale}px` }}
+                style={{ fontSize: `${10 * scale * cfg.escala_header}px` }}
               >
                 14:32
               </div>
@@ -846,7 +880,7 @@ function PreviewCard({ cfg }: { cfg: TvVisualConfig }) {
             {/* Footer */}
             <div
               className="relative flex items-center bg-primary text-primary-foreground overflow-hidden whitespace-nowrap"
-              style={{ height: `${12 * scale}px`, fontSize: `${6 * scale}px`, padding: `0 ${8 * scale}px` }}
+              style={{ height: `${12 * scale * cfg.escala_rodape}px`, fontSize: `${6 * scale * cfg.escala_rodape}px`, padding: `0 ${8 * scale * cfg.escala_rodape}px` }}
             >
               <div className="font-bold">
                 {cfg.mensagem_rodape || "Bem-vindo ao atendimento..."}
