@@ -105,7 +105,8 @@ function TvPage() {
 
   
   // Hook de configuração visual (cores, logo, etc)
-  const { config: visual } = useTvVisualConfig(unidade?.id);
+  const { config: visual, connectionStatus: visualStatus } = useTvVisualConfig(unidade?.id);
+  const [chamadasStatus, setChamadasStatus] = useState<string>("INITIALIZING");
 
   // Lógica de contraste
   const palette = (() => {
@@ -396,7 +397,6 @@ function TvPage() {
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
           
-          // 1. Toca o beep IMEDIATAMENTE para dar feedback instantâneo (0s de delay)
           if (beepRef.current) {
             try {
               beepRef.current.currentTime = 0;
@@ -419,8 +419,6 @@ function TvPage() {
             return field[key] || null;
           };
 
-          // 2. Constrói objeto de chamada com dados do payload (instantâneo)
-          // Isso permite iniciar a voz IMEDIATAMENTE sem esperar queries de banco
           const novaChamada: Chamada = {
             ...(payload.new as Chamada),
             senha: {
@@ -432,15 +430,9 @@ function TvPage() {
             },
           };
 
-          // 3. Inicia a fala IMEDIATAMENTE (paralelo ao fetch de detalhes)
-          // Removido o timeout de 100ms para ser o mais rápido possível
           void speak(novaChamada);
-          
-          // 4. Atualiza a lista na UI imediatamente
           setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
 
-          // 5. Busca detalhes extras em background apenas para garantir integridade da UI
-          // (Não bloqueia o beep nem a voz)
           void (async () => {
             let senhaData = null;
             let retryCount = 0;
@@ -478,12 +470,35 @@ function TvPage() {
           })();
         }
       )
-      .subscribe();
+      .subscribe(async (status) => {
+        setChamadasStatus(status);
+        console.log(`[TV] Status do canal de chamadas: ${status}`);
+        
+        if (status === "SUBSCRIBED") {
+          // Re-sincroniza chamadas ao reconectar
+          const { data: chamadasData } = await supabase
+            .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: unidade.id });
+          
+          if (chamadasData) {
+            const mapped = (chamadasData ?? []).map(c => ({
+              ...c,
+              senha: {
+                id: c.senha_id,
+                codigo: c.senha_codigo,
+                fila_nome: c.fila_nome,
+                paciente_nome: (c as any).paciente_nome,
+              }
+            }));
+            setChamadas(mapped as Chamada[]);
+          }
+        }
+      });
 
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [unidade?.id, speak]);
+
 
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, 6);
@@ -585,7 +600,16 @@ function TvPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight">{unidade?.nome}</h1>
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Conectado" />
+              <div 
+                className={`h-2.5 w-2.5 rounded-full shadow-sm transition-colors duration-500 ${
+                  (visualStatus === "SUBSCRIBED" && chamadasStatus === "SUBSCRIBED") 
+                    ? "bg-green-500 animate-pulse" 
+                    : (visualStatus === "INITIALIZING" || chamadasStatus === "INITIALIZING")
+                    ? "bg-yellow-500 animate-pulse"
+                    : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                }`} 
+                title={`Status: Visual(${visualStatus}) Chamadas(${chamadasStatus})`} 
+              />
             </div>
             <p className="text-sm font-medium opacity-60 uppercase tracking-widest">Painel de Chamadas</p>
           </div>
@@ -694,11 +718,43 @@ function TvPage() {
       </main>
 
       {/* Footer / Scrolling News or Info */}
-      <footer className="relative h-16 flex items-center bg-primary px-10 text-primary-foreground font-bold overflow-hidden whitespace-nowrap">
+      <footer 
+        className="relative h-16 flex items-center px-10 font-bold overflow-hidden whitespace-nowrap transition-colors"
+        style={{ backgroundColor: palette.primaria, color: palette.primariaForeground }}
+      >
         <div className="animate-marquee inline-block">
           {visual.mensagem_rodape || `Bem-vindo à ${unidade?.nome} • Por favor, acompanhe sua senha no painel • ${unidade?.nome} - Qualidade no atendimento`}
         </div>
       </footer>
+
+      {/* Alerta de Desconexão (Logs/Alertas quando houver queda) */}
+      {(visualStatus === "CHANNEL_ERROR" || visualStatus === "TIMED_OUT" || visualStatus === "CLOSED" ||
+        chamadasStatus === "CHANNEL_ERROR" || chamadasStatus === "TIMED_OUT" || chamadasStatus === "CLOSED") && (
+        <div className="fixed top-24 right-10 z-[100] animate-in slide-in-from-top-10 duration-500">
+          <div className="flex items-center gap-4 rounded-2xl bg-red-600/95 px-6 py-4 text-white shadow-2xl backdrop-blur-md border border-red-500/50">
+            <AlertCircle className="h-8 w-8 animate-bounce" />
+            <div className="text-left">
+              <p className="text-lg font-bold">Conexão Instável</p>
+              <p className="text-sm opacity-90 leading-tight">Tentando reconectar automaticamente à central...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diagnóstico de Realtime (Opcional via ?debug=true) */}
+      {Route.useSearch().debug && (
+        <div className="fixed bottom-20 left-10 z-[100] rounded-lg bg-black/80 p-4 font-mono text-[10px] text-green-400 backdrop-blur-sm max-w-sm border border-white/10 shadow-2xl">
+          <p className="mb-2 font-bold border-b border-green-900 pb-1 uppercase tracking-widest text-[9px]">TV Diagnostic v2.0</p>
+          <div className="space-y-1">
+            <div className="flex justify-between gap-4"><span>STATUS VISUAL:</span> <span className={visualStatus === 'SUBSCRIBED' ? 'text-green-400' : 'text-yellow-400 font-bold'}>{visualStatus}</span></div>
+            <div className="flex justify-between gap-4"><span>STATUS CHAMADAS:</span> <span className={chamadasStatus === 'SUBSCRIBED' ? 'text-green-400' : 'text-yellow-400 font-bold'}>{chamadasStatus}</span></div>
+            <div className="flex justify-between gap-4"><span>RESOLUÇÃO:</span> <span className="text-white">{visual.resolucao_preset}</span></div>
+            <div className="flex justify-between gap-4"><span>CORES:</span> <span className="text-white uppercase">{visual.cor_primaria}</span></div>
+            <div className="flex justify-between gap-4"><span>DENSIDADE:</span> <span className="text-white uppercase">{visual.densidade}</span></div>
+          </div>
+        </div>
+      )}
+
 
       <style>{`
         @keyframes marquee {
