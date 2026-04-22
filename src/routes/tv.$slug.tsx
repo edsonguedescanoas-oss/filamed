@@ -46,6 +46,29 @@ function limparDestino(destino: string | null | undefined): string {
     .trim();
 }
 
+/**
+ * Mapeia o `status` da senha para um label curto exibido como badge no
+ * histórico da TV. Retorna `null` para status que não devem aparecer
+ * (aguardando, chamada, etc).
+ */
+function statusLabel(status: string | undefined | null): {
+  label: string;
+  cls: string;
+} | null {
+  switch (status) {
+    case "em_atendimento":
+      return { label: "Em atendimento", cls: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40" };
+    case "finalizada":
+      return { label: "Atendimento finalizado", cls: "bg-sky-500/20 text-sky-300 border-sky-400/40" };
+    case "ausente":
+      return { label: "Ausente", cls: "bg-amber-500/20 text-amber-300 border-amber-400/40" };
+    case "cancelada":
+      return { label: "Cancelada", cls: "bg-rose-500/20 text-rose-300 border-rose-400/40" };
+    default:
+      return null;
+  }
+}
+
 interface VoiceConfig {
   provider: "browser" | "google" | "elevenlabs";
   voice_id: string | null;
