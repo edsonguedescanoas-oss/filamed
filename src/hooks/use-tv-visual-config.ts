@@ -45,6 +45,12 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   mensagem_rodape: null,
   contraste_chamadas: "normal",
   escala_chamadas: 1,
+  layout_grid_cols: 12,
+  layout_grid_rows: 6,
+  layout_items: [
+    { type: "chamada_atual", col_span: 8, row_span: 6, order: 1 },
+    { type: "historico", col_span: 4, row_span: 6, order: 2 },
+  ],
 };
 
 export const RESOLUCAO_PRESETS: Record<
