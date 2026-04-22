@@ -122,7 +122,19 @@ function TvPage() {
     })();
   }, [unidade?.id]);
 
+  // Warm up voices
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      // Alguns navegadores precisam do evento voiceschanged
+      const refresh = () => window.speechSynthesis.getVoices();
+      window.speechSynthesis.addEventListener("voiceschanged", refresh);
+      return () => window.speechSynthesis.removeEventListener("voiceschanged", refresh);
+    }
+  }, []);
+
   // Relógio
+
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
