@@ -141,6 +141,21 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
         </div>
       </section>
 
+      <section className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label className="text-sm font-semibold">Modo de Autoajuste</Label>
+            <p className="text-xs text-muted-foreground">
+              Calcula automaticamente a melhor escala e espaçamentos para o conteúdo.
+            </p>
+          </div>
+          <Switch
+            checked={cfg.auto_ajuste}
+            onCheckedChange={(v) => update("auto_ajuste", v)}
+          />
+        </div>
+      </section>
+
       <section className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="escala" className="text-sm font-semibold">
