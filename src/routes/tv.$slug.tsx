@@ -94,6 +94,8 @@ function TvPage() {
   const [needsInteraction, setNeedsInteraction] = useState(true);
   const audioQueue = useRef<string[]>([]);
   const isSpeaking = useRef(false);
+  const beepRef = useRef<HTMLAudioElement | null>(null);
+
   
   // Hook de configuração visual (cores, logo, etc)
   const { config: visual } = useTvVisualConfig(unidade?.id);
