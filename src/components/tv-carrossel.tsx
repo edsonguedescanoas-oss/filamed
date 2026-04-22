@@ -67,8 +67,8 @@ function parseYoutube(url: string | null | undefined): { videoId?: string; playl
   if (!url) return {};
   const trimmed = url.trim();
   
-  // Detecta handle (@nome) - embeds do YouTube não suportam handles diretamente
-  if (trimmed.includes("/@") || trimmed.startsWith("@")) {
+  // Detecta URLs de canais/handles (não suportados diretamente no embed de vídeo)
+  if (trimmed.includes("/@") || trimmed.startsWith("@") || trimmed.includes("/c/") || trimmed.includes("/channel/") || trimmed.includes("/user/")) {
     return { isHandle: true };
   }
 
