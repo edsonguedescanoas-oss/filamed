@@ -1,1714 +1,244 @@
-import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Activity, Clock, Database, Info, Loader2, Maximize, Megaphone, Mic, Minimize, Wifi, WifiOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import { useEffect, useState, useMemo } from "react";
+import { Clock, Users, Activity, Loader2, Volume2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { QrCode } from "@/components/qr-code";
-import { TvCarrossel } from "@/components/tv-carrossel";
-import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
-import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
-import { useLocalZoom } from "@/hooks/use-local-zoom";
-import { useZoomSupport, buildScaleStyle } from "@/hooks/use-zoom-support";
-import { useWakeLock } from "@/hooks/use-wake-lock";
-import { TvZoomControl } from "@/components/tv-zoom-control";
-import { NoMediaFallback, CallRow, CallModal } from "@/components/tv/call-display";
-import { TestModePanel } from "@/components/tv/test-mode-panel";
+import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
+import { cn } from "@/lib/utils";
 
-type Unidade = { id: string; nome: string; slug: string };
-type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
-type SenhaPrioridade = "normal" | "preferencial" | "urgente";
-type SenhaStatus = "aguardando" | "chamada" | "em_atendimento" | "finalizada" | "ausente" | "cancelada";
+// Tipagens básicas
 type Senha = {
   id: string;
   codigo: string;
-  fila_id: string;
-  /** Não vem do anon; só populado se a TV rodar autenticada (futuro). */
-  paciente_id?: string | null;
-  status: SenhaStatus;
-  prioridade: SenhaPrioridade;
-  /** Não exposto ao anon. Mantido para compat com rotas autenticadas. */
-  token_publico?: string;
-  updated_at: string;
-  created_at: string;
+  status: string;
+  paciente_nome?: string;
+  fila_nome?: string;
+  destino?: string;
 };
+
 type Chamada = {
   id: string;
   senha_id: string;
   destino: string;
   created_at: string;
+  senha?: Senha;
 };
 
-/* ── Helpers de fala ───────────────────────────────────── */
-function primeiroEUltimoNome(nome: string): string {
-  const partes = nome.trim().split(/\s+/);
-  if (partes.length <= 2) return nome.trim();
-  return `${partes[0]} ${partes[partes.length - 1]}`;
-}
-
-/**
- * Soletra letras do código (A045 → "A, zero quatro cinco") para o TTS pronunciar
- * de forma clara em ambientes barulhentos. Letras isoladas, números agrupados.
- */
-function soletrarCodigo(codigo: string): string {
-  const trimmed = codigo.trim();
-  // Separa letras iniciais dos números: "A045" → "A " + "045"
-  const match = trimmed.match(/^([A-Za-z]*)(\d*)(.*)$/);
-  if (!match) return trimmed;
-  const letras = match[1].toUpperCase().split("").join(" ");
-  const numeros = match[2]
-    .split("")
-    .map((d) => ({ "0": "zero", "1": "um", "2": "dois", "3": "três", "4": "quatro", "5": "cinco", "6": "seis", "7": "sete", "8": "oito", "9": "nove" })[d] ?? d)
-    .join(" ");
-  const resto = match[3];
-  return [letras, numeros, resto].filter(Boolean).join(" ").trim();
-}
-
-/**
- * Adiciona preposição apropriada se o destino não começar com uma.
- * "Consultório 2" → "ao Consultório 2"; "à Sala 3" → mantém.
- */
-function formatarDestino(destino: string): string {
-  const d = destino.trim();
-  if (/^(ao|à|aos|às|para|no|na|nos|nas)\s/i.test(d)) return d;
-  // Heurística: começa com vogal feminina comum → "à", senão "ao"
-  if (/^[Ss]ala/.test(d)) return `à ${d}`;
-  return `ao ${d}`;
-}
-
-type TvSearch = { kiosk?: boolean; test?: boolean };
-
 export const Route = createFileRoute("/tv/$slug")({
-  validateSearch: (search: Record<string, unknown>): TvSearch => ({
-    kiosk:
-      search.kiosk === true ||
-      search.kiosk === 1 ||
-      search.kiosk === "1" ||
-      search.kiosk === "true",
-    test:
-      search.test === true ||
-      search.test === 1 ||
-      search.test === "1" ||
-      search.test === "true",
-  }),
-  head: ({ params }) => ({
-    meta: [
-      { title: `Painel — ${params.slug} — FilaMed` },
-      { name: "robots", content: "noindex" },
-    ],
-  }),
   component: TvPage,
 });
 
 function TvPage() {
   const { slug } = useParams({ from: "/tv/$slug" });
-  const { kiosk, test } = useSearch({ from: "/tv/$slug" });
-  const navigate = useNavigate();
-  // Estado da chamada simulada (apenas em modo teste). Quando definido,
-  // injetamos uma senha + chamada fake nas listas pra disparar o destaque
-  // sem tocar no banco.
-  const [simulado, setSimulado] = useState<{
-    senha: Senha;
-    chamada: Chamada;
-  } | null>(null);
-  const [unidade, setUnidade] = useState<Unidade | null>(null);
-  const [filas, setFilas] = useState<Fila[]>([]);
-  const [senhas, setSenhas] = useState<Senha[]>([]);
+  const [unidade, setUnidade] = useState<any>(null);
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
+  const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(new Date());
-  const [error, setError] = useState<string | null>(null);
-  // Configuração visual (cores, logo, fundo, escala, resolução)
-  const { config: visual } = useTvVisualConfig(unidade?.id);
-  const baseScale = RESOLUCAO_PRESETS[visual.resolucao_preset]?.baseScale ?? 1;
-  // Zoom local por dispositivo (persistido no próprio aparelho via
-  // localStorage). Permite calibrar cada TV/Firestick individualmente sem
-  // afetar a configuração global da unidade.
-  const { zoom: localZoom, inc, dec, reset } = useLocalZoom(slug);
-  const scale = baseScale * visual.escala_fonte * localZoom;
-  // Detecta suporte a CSS `zoom`. Em ambientes sem suporte (Firefox antigo,
-  // alguns WebViews de TV/Firestick) caímos para `transform: scale()` com
-  // compensação de tamanho, garantindo que a escala sempre seja aplicada.
-  const zoomSupported = useZoomSupport();
-  // Mantém a TV sempre acordada (Wake Lock + fallback de vídeo invisível
-  // em loop pra Firestick/Smart TVs sem suporte a Wake Lock).
-  useWakeLock(true);
-  const isCompact = visual.densidade === "compacto";
-  // O painel TV sempre tenta iniciar o áudio automaticamente.
-  const [audioBlocked, setAudioBlocked] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<{
-    text: string;
-    voice: string;
-    status: "falando" | "ok" | "erro" | "vazio";
-    at: Date;
-    error?: string;
-  } | null>(null);
   
-  // Cache reativo de nomes de paciente por paciente_id (alimenta a UI)
-  const [pacienteNomes, setPacienteNomes] = useState<Record<string, string>>({});
-
-  // Configuração de voz vinda do banco (configurada no admin)
-  type VoiceProvider = "browser" | "google" | "elevenlabs";
-  type VoiceCfg = {
-    provider: VoiceProvider;
-    voice_id: string | null;
-    rate: number;
-    pitch: number;
-    template_chamada: TemplateChamada;
-  };
-  const [voiceCfg, setVoiceCfg] = useState<VoiceCfg>({
-    provider: "browser",
-    voice_id: null,
-    rate: 0.95,
-    pitch: 1,
-    template_chamada: "paciente_senha_fila",
-  });
-  const [fetchStatus, setFetchStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [lastFetchError, setLastFetchError] = useState<string | null>(null);
-
-
-  // Carregamento inicial
-  useEffect(() => {
-    if (!slug) return;
-    let mounted = true;
-    void (async () => {
-      setFetchStatus("loading");
-      try {
-        console.log("[TV] carregando unidade:", slug);
-        // Busca a unidade pelo slug via RPC pública (não expõe cnpj/endereço/telefone).
-        // A RPC agora é case-insensitive, mas garantimos o trim() no slug.
-        const { data: uniRows, error: uniErr } = await supabase
-          .rpc("get_unidade_publica_by_slug", { _slug: slug.trim() });
-        
-        const uni = (uniRows ?? [])[0] ?? null;
-        if (!mounted) return;
-        if (uniErr || !uni) {
-          console.warn("[TV] unidade não encontrada:", slug, uniErr);
-          setError("Unidade não encontrada ou inativa");
-          setFetchStatus("error");
-          setLastFetchError("Unidade não encontrada ou inativa no banco");
-          return;
-        }
-        setUnidade(uni as Unidade);
-        setLastFetchError(null);
-
-        const [filasRes, senhasRes, chamadasRes] = await Promise.all([
-          supabase
-            .from("filas")
-            .select("id,nome,prefixo_senha,cor,ordem")
-            .eq("unidade_id", uni.id)
-            .eq("ativa", true)
-            .order("ordem"),
-          // RPC pública: senhas ativas SEM paciente_id e SEM token_publico
-          supabase.rpc("get_senhas_ativas", { _unidade_id: uni.id }),
-          // RPC pública: apenas chamadas dos últimos 60s (basta para piscar a TV)
-          supabase.rpc("get_chamadas_recentes", { _unidade_id: uni.id }),
-        ]);
-        if (!mounted) return;
-
-        if (filasRes.error) console.error("[TV] erro ao carregar filas:", filasRes.error);
-        if (senhasRes.error) console.error("[TV] erro ao carregar senhas:", senhasRes.error);
-        if (chamadasRes.error) console.error("[TV] erro ao carregar chamadas:", chamadasRes.error);
-
-        setFilas((filasRes.data ?? []) as Fila[]);
-        setSenhas(((senhasRes.data ?? []) as Senha[]).map((s) => ({ ...s, paciente_id: s.paciente_id ?? null })));
-        setChamadas((chamadasRes.data ?? []) as Chamada[]);
-        setFetchStatus("success");
-
-        // Carrega config de voz da unidade (se existir)
-        const { data: cfg } = await supabase
-          .from("unidade_voice_config")
-          .select("provider,voice_id,rate,pitch,template_chamada")
-          .eq("unidade_id", uni.id)
-          .maybeSingle();
-        if (mounted && cfg) {
-          setVoiceCfg({
-            provider: (cfg.provider as VoiceProvider) ?? "browser",
-            voice_id: cfg.voice_id,
-            rate: Number(cfg.rate) || 0.95,
-            pitch: Number(cfg.pitch) || 1,
-            template_chamada:
-              (cfg.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
-          });
-        }
-      } catch (err) {
-        console.error("[TV] erro fatal no mount:", err);
-        if (mounted) {
-          setError("Erro ao carregar o painel");
-          setFetchStatus("error");
-          setLastFetchError(err instanceof Error ? err.message : String(err));
-        }
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [slug]);
-
-
-  // Realtime: assina mudanças na config de voz da unidade
-  useEffect(() => {
-    if (!unidade) return;
-    const ch = supabase
-      .channel(`tv:${unidade.id}:voice-cfg`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "unidade_voice_config", filter: `unidade_id=eq.${unidade.id}` },
-        (payload) => {
-          const row = payload.new as {
-            provider?: string;
-            voice_id?: string | null;
-            rate?: number;
-            pitch?: number;
-            template_chamada?: string;
-          } | null;
-          if (!row) return;
-          setVoiceCfg({
-            provider: (row.provider as VoiceProvider) ?? "browser",
-            voice_id: row.voice_id ?? null,
-            rate: Number(row.rate) || 0.95,
-            pitch: Number(row.pitch) || 1,
-            template_chamada:
-              (row.template_chamada as TemplateChamada) ?? "paciente_senha_fila",
-          });
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(ch);
-    };
-  }, [unidade]);
-
-  // Realtime — escuta senhas e chamadas da unidade
-  useEffect(() => {
-    if (!unidade) return;
-    const channel = supabase
-      .channel(`tv:${unidade.id}:senhas-chamadas`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "senhas", filter: `unidade_id=eq.${unidade.id}` },
-        (payload) => {
-          setSenhas((prev) => {
-            if (payload.eventType === "INSERT") {
-              return [...prev, payload.new as Senha].filter((s) =>
-                ["aguardando", "chamada", "em_atendimento"].includes(s.status),
-              );
-            }
-            if (payload.eventType === "UPDATE") {
-              const updated = payload.new as Senha;
-              // Se a senha não está mais com status "chamada", cancela rechamadas pendentes
-              if (updated.status !== "chamada") {
-                cancelRechamadas(updated.id);
-              }
-              const next = prev.map((s) => (s.id === updated.id ? updated : s));
-              return next.filter((s) =>
-                ["aguardando", "chamada", "em_atendimento"].includes(s.status),
-              );
-            }
-            if (payload.eventType === "DELETE") {
-              const old = payload.old as { id: string };
-              cancelRechamadas(old.id);
-              return prev.filter((s) => s.id !== old.id);
-            }
-            return prev;
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chamadas", filter: `unidade_id=eq.${unidade.id}` },
-        (payload) => {
-          const nova = payload.new as Chamada;
-          console.log("[TV] 📣 chamada recebida via realtime:", nova, "provider:", voiceCfgRef.current.provider);
-          setChamadas((prev) => [nova, ...prev].slice(0, 10));
-          playDing();
-          void announceChamada(nova).catch((err) => {
-            console.error("[TV] announceChamada falhou:", err);
-            setDebugInfo({
-              text: "(erro)",
-              voice: voiceCfgRef.current.provider,
-              status: "erro",
-              at: new Date(),
-              error: `announceChamada: ${err instanceof Error ? err.message : String(err)}`,
-            });
-          });
-          agendarRechamadas(nova);
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-      // Limpa todos os timers pendentes ao desmontar
-      cancelAllRechamadas();
-    };
-  }, [unidade]);
+  // Hook de configuração visual (cores, logo, etc)
+  const { config: visual } = useTvVisualConfig(unidade?.id);
 
   // Relógio
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  // Fullscreen — controle e auto-ativação no modo kiosk.
-  // IMPORTANTE: chamamos requestFullscreen no wrapper externo (sem zoom/
-  // transform). Aplicar Fullscreen num elemento que tem `transform: scale()`
-  // quebra o layout em vários browsers (cria novo containing block e o
-  // pseudo-classe :fullscreen passa a ocupar só o tamanho escalado).
-  const fullscreenRef = useRef<HTMLDivElement | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  // Busca inicial da unidade e chamadas recentes
   useEffect(() => {
-    if (typeof document === "undefined") return;
-    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
-  }, []);
-  const requestFullscreen = async () => {
-    if (typeof document === "undefined") return;
-    try {
-      const el = (fullscreenRef.current ?? document.documentElement) as HTMLElement & {
-        webkitRequestFullscreen?: () => Promise<void>;
-      };
-      if (document.fullscreenElement) return;
-      if (el.requestFullscreen) await el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-    } catch {
-      /* navegador pode bloquear sem gesto — silencioso */
-    }
-  };
-  const exitFullscreen = async () => {
-    if (typeof document === "undefined") return;
-    try {
-      const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
-      if (!document.fullscreenElement) return;
-      if (document.exitFullscreen) await document.exitFullscreen();
-      else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
-    } catch {
-      /* ignora */
-    }
-  };
-  const toggleFullscreen = () => {
-    if (isFullscreen) void exitFullscreen();
-    else void requestFullscreen();
-  };
-
-  // Em modo kiosk, tenta entrar em fullscreen na primeira interação do usuário
-  useEffect(() => {
-    if (!kiosk || typeof window === "undefined") return;
-    // Não chamamos requestFullscreen sem gesto (gera warning no console).
-    // Aguardamos a primeira interação do usuário (clique/toque/tecla).
-    const onInteract = () => {
-      void requestFullscreen();
-      window.removeEventListener("click", onInteract);
-      window.removeEventListener("touchstart", onInteract);
-      window.removeEventListener("keydown", onInteract);
-    };
-    window.addEventListener("click", onInteract);
-    window.addEventListener("touchstart", onInteract);
-    window.addEventListener("keydown", onInteract);
-    return () => {
-      window.removeEventListener("click", onInteract);
-      window.removeEventListener("touchstart", onInteract);
-      window.removeEventListener("keydown", onInteract);
-    };
-  }, [kiosk]);
-
-  // Som
-  const audioCtxRef = useRef<AudioContext | null>(null);
-
-  // Elemento <audio> reutilizado para tocar TTS de Google/ElevenLabs.
-  // Chrome/Safari/iOS/Firestick exigem que play() seja consequência de um gesto do
-  // usuário. Criamos uma única instância e a "aquecemos" no primeiro clique
-  // com um WAV silencioso válido, para liberar reproduções futuras do mesmo
-  // elemento mesmo quando o áudio real chegar depois via fetch.
-  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
-  const remoteAudioPrimedRef = useRef(false);
-  const remoteAudioPrimingRef = useRef<Promise<boolean> | null>(null);
-  const remoteAudioObjectUrlRef = useRef<string | null>(null);
-  const remoteBufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const SILENT_WAV =
-    "data:audio/wav;base64,UklGRtAUAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YawUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-  const ensureRemoteAudio = (): HTMLAudioElement | null => {
-    if (typeof window === "undefined") return null;
-    if (!remoteAudioRef.current) {
-      const el = new Audio();
-      el.preload = "auto";
-      remoteAudioRef.current = el;
-    }
-    return remoteAudioRef.current;
-  };
-  const releaseRemoteAudioObjectUrl = () => {
-    if (!remoteAudioObjectUrlRef.current) return;
-    URL.revokeObjectURL(remoteAudioObjectUrlRef.current);
-    remoteAudioObjectUrlRef.current = null;
-  };
-  const base64ToBytes = (base64: string) => {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes;
-  };
-  const base64ToObjectUrl = (base64: string, mime: string) => {
-    const bytes = base64ToBytes(base64);
-    releaseRemoteAudioObjectUrl();
-    const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
-    remoteAudioObjectUrlRef.current = url;
-    return url;
-  };
-  const ensureAudioContextReady = async () => {
-    if (typeof window === "undefined") return null;
-    const Ctor =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctor) return null;
-
-    let ctx = audioCtxRef.current;
-    if (!ctx) {
-      ctx = new Ctor();
-      audioCtxRef.current = ctx;
-    }
-    if (ctx.state === "suspended") {
-      await ctx.resume();
-    }
-    return ctx;
-  };
-  const stopRemoteBufferPlayback = () => {
-    const source = remoteBufferSourceRef.current;
-    if (!source) return;
-    source.onended = null;
-    try {
-      source.stop();
-    } catch {
-      /* ignora */
-    }
-    source.disconnect();
-    remoteBufferSourceRef.current = null;
-  };
-  const playRemoteBuffer = async (base64: string, text: string) => {
-    const ctx = await ensureAudioContextReady();
-    if (!ctx) throw new Error("AudioContext indisponível para TTS remoto");
-
-    const bytes = base64ToBytes(base64);
-    const audioBuffer = await ctx.decodeAudioData(
-      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-    );
-
-    stopRemoteBufferPlayback();
-
-    const source = ctx.createBufferSource();
-    const gain = ctx.createGain();
-    gain.gain.value = 1;
-    source.buffer = audioBuffer;
-    source.connect(gain).connect(ctx.destination);
-    source.onended = () => {
-      if (remoteBufferSourceRef.current === source) {
-        remoteBufferSourceRef.current = null;
-      }
-      setDebugInfo((prev) =>
-        prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev,
-      );
-    };
-    remoteBufferSourceRef.current = source;
-    source.start(0);
-  };
-  const primeRemoteAudio = () => {
-    if (remoteAudioPrimedRef.current) return Promise.resolve(true);
-    if (remoteAudioPrimingRef.current) return remoteAudioPrimingRef.current;
-
-    const el = ensureRemoteAudio();
-    if (!el) return Promise.resolve(false);
-
-    remoteAudioPrimingRef.current = (async () => {
+    async function loadInitialData() {
       try {
-        el.pause();
-        el.removeAttribute("src");
-        el.load();
-        el.src = SILENT_WAV;
-        el.currentTime = 0;
-        el.muted = true;
-        el.volume = 0;
-        await el.play();
-        remoteAudioPrimedRef.current = true;
-        el.pause();
-        el.currentTime = 0;
-        el.muted = false;
-        el.volume = 1;
-        setAudioBlocked(false);
-        console.log("[TV] remote audio primed");
-        return true;
+        const { data: uniData, error: uniError } = await supabase
+          .rpc("get_unidade_publica_by_slug", { _slug: slug });
+
+        if (uniError || !uniData?.[0]) throw new Error("Unidade não encontrada");
+        const uni = uniData[0];
+        setUnidade(uni);
+
+        const { data: chamadasData } = await supabase
+          .rpc("get_chamadas_recentes", { _unidade_id: uni.id });
+        
+        setChamadas((chamadasData ?? []) as Chamada[]);
       } catch (err) {
-        console.warn("[TV] primeRemoteAudio bloqueado:", err);
-        setAudioBlocked(true);
-        return false;
+        console.error("Erro ao carregar TV:", err);
       } finally {
-        remoteAudioPrimingRef.current = null;
+        setLoading(false);
       }
-    })();
-
-    return remoteAudioPrimingRef.current;
-  };
-  const playDing = () => {
-    try {
-      let ctx = audioCtxRef.current;
-      if (!ctx) {
-        const Ctor =
-          window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (!Ctor) return;
-        ctx = new Ctor();
-        audioCtxRef.current = ctx;
-      }
-      const t0 = ctx.currentTime;
-      const tones = [880, 1320];
-      tones.forEach((freq, i) => {
-        const osc = ctx!.createOscillator();
-        const gain = ctx!.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, t0 + i * 0.18);
-        gain.gain.exponentialRampToValueAtTime(0.25, t0 + i * 0.18 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.18 + 0.35);
-        osc.connect(gain).connect(ctx!.destination);
-        osc.start(t0 + i * 0.18);
-        osc.stop(t0 + i * 0.18 + 0.4);
-      });
-    } catch {
-      /* ignora */
     }
-  };
-  const warmAudio = () => {
-    setAudioBlocked(false);
-    playDing();
-    primeSpeech();
-    void primeRemoteAudio();
-  };
 
-  const testVoiceNow = async () => {
-    const cfg = voiceCfgRef.current;
-    const frase = "Teste de voz. Se você está ouvindo esta mensagem, o áudio está funcionando corretamente.";
-    const browserUtterance = cfg.provider === "browser" ? createPreparedUtterance() : null;
+    if (slug) loadInitialData();
+  }, [slug]);
 
-    warmAudio();
-    console.log("[TV] 🧪 teste manual de voz →", { provider: cfg.provider, voiceId: cfg.voice_id });
-    setDebugInfo({
-      text: frase,
-      voice: cfg.provider,
-      status: "falando",
-      at: new Date(),
-    });
-
-    try {
-      if (cfg.provider === "browser") {
-        if (!browserUtterance) {
-          throw new Error("speechSynthesis indisponível neste dispositivo");
-        }
-        browserUtterance.text = frase;
-        speakUtterance(browserUtterance);
-        return;
-      }
-
-      const primed = await primeRemoteAudio();
-      if (!primed) {
-        throw new Error("Áudio remoto ainda bloqueado pelo navegador");
-      }
-      await playRemoteTts(frase, cfg);
-    } catch (err) {
-      console.error("[TV] teste de voz falhou:", err);
-      setDebugInfo({
-        text: frase,
-        voice: cfg.provider,
-        status: "erro",
-        at: new Date(),
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  };
-
-  // Tenta destravar áudio automaticamente. Se o browser bloquear (autoplay policy),
-  // sinaliza audioBlocked=true para mostrar overlay pedindo 1 clique do operador.
+  // Realtime para novas chamadas
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    let cancelled = false;
-    const tryUnlock = async () => {
-      try {
-        const Ctor =
-          window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (!Ctor) return;
-        let ctx = audioCtxRef.current;
-        if (!ctx) {
-          ctx = new Ctor();
-          audioCtxRef.current = ctx;
-        }
-        if (ctx.state === "suspended") {
-          await ctx.resume();
-        }
-        if (cancelled) return;
-        if (ctx.state !== "running") {
-          setAudioBlocked(true);
-        } else {
-          setAudioBlocked(false);
-          primeSpeech();
-        }
-      } catch {
-        if (!cancelled) setAudioBlocked(true);
-      }
-    };
-    void tryUnlock();
-    // Se houver qualquer interação inicial, destrava em background sem UI adicional.
-    const onInteract = () => {
-      warmAudio();
-      window.removeEventListener("click", onInteract, true);
-      window.removeEventListener("touchstart", onInteract, true);
-      window.removeEventListener("keydown", onInteract, true);
-      window.removeEventListener("pointerdown", onInteract, true);
-    };
-    window.addEventListener("click", onInteract, true);
-    window.addEventListener("touchstart", onInteract, true);
-    window.addEventListener("keydown", onInteract, true);
-    window.addEventListener("pointerdown", onInteract, true);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("click", onInteract, true);
-      window.removeEventListener("touchstart", onInteract, true);
-      window.removeEventListener("keydown", onInteract, true);
-      window.removeEventListener("pointerdown", onInteract, true);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!unidade?.id) return;
 
-  // ── Voz: Web Speech API ────────────────────────────────
-  const pacienteCacheRef = useRef<Map<string, string>>(new Map());
-  const senhasMapRef = useRef(new Map<string, Senha>());
-  useEffect(() => {
-    senhasMapRef.current = new Map(senhas.map((s) => [s.id, s]));
-  }, [senhas]);
-
-  // Mantém voiceCfg em ref para acessar dentro de callbacks de realtime sem closure stale
-  const voiceCfgRef = useRef(voiceCfg);
-  useEffect(() => {
-    voiceCfgRef.current = voiceCfg;
-  }, [voiceCfg]);
-
-  // Reproduz áudio TTS retornado pela edge function (Google ou ElevenLabs)
-  const playRemoteTts = async (text: string, cfg: VoiceCfg) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("tts", {
-        body: {
-          text,
-          provider: cfg.provider,
-          voiceId: cfg.voice_id,
-          rate: cfg.rate,
-          pitch: cfg.pitch,
+    const channel = supabase
+      .channel(`tv-realtime-${unidade.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chamadas",
+          filter: `unidade_id=eq.${unidade.id}`,
         },
-      });
-      if (error) throw error;
+        async (payload) => {
+          console.log("Nova chamada recebida:", payload.new);
+          
+          // Busca detalhes da senha para a nova chamada
+          const { data: senhaData } = await supabase
+            .from("senhas")
+            .select("id, codigo, status")
+            .eq("id", payload.new.senha_id)
+            .single();
 
-      // Provider indisponível (ex: API key revogada/cota zerada). A edge function
-      // devolve 200 com audioContent: null e fallback: "browser" — caímos no
-      // Web Speech ao invés de ficar muda. Ver supabase/functions/tts/index.ts.
-      if (!data?.audioContent) {
-        if (data?.fallback === "browser") {
-          console.warn(`[TV] ${cfg.provider} indisponível (${data.reason ?? "?"}), usando Web Speech`);
-          const utterance = createPreparedUtterance();
-          if (utterance) {
-            utterance.text = text;
-            speakUtterance(utterance);
-          }
-          return;
-        }
-        throw new Error("Sem áudio retornado");
-      }
-
-      setDebugInfo({
-        text,
-        voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
-        status: "falando",
-        at: new Date(),
-      });
-
-      const mime = data.mime ?? "audio/mpeg";
-      try {
-        await playRemoteBuffer(data.audioContent, text);
-      } catch (playErr) {
-        const name = playErr instanceof Error ? playErr.name : "Error";
-        const msg = playErr instanceof Error ? playErr.message : String(playErr);
-        console.warn("[TV] play via AudioContext falhou, tentando <audio>:", name, msg);
-        try {
-          const audio = ensureRemoteAudio();
-          if (!audio) throw new Error("Elemento <audio> indisponível");
-          audio.src = base64ToObjectUrl(data.audioContent, mime);
-          audio.onended = () => {
-            setDebugInfo((prev) => (prev && prev.text === text ? { ...prev, status: "ok", at: new Date() } : prev));
+          const novaChamada: Chamada = {
+            ...(payload.new as Chamada),
+            senha: senhaData as Senha,
           };
-          audio.onerror = () => {
-            const mediaErr = audio.error;
-            const codeMap: Record<number, string> = {
-              1: "MEDIA_ERR_ABORTED",
-              2: "MEDIA_ERR_NETWORK",
-              3: "MEDIA_ERR_DECODE",
-              4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
-            };
-            const reason = mediaErr ? (codeMap[mediaErr.code] ?? `code ${mediaErr.code}`) : "desconhecido";
-            console.error("[TV] <audio> onerror:", reason, mediaErr?.message);
-            const utterance = createPreparedUtterance();
-            if (utterance) {
-              console.warn(`[TV] fallback local após falha de reprodução remota (${reason})`);
-              utterance.text = text;
-              speakUtterance(utterance);
-              return;
-            }
-            setDebugInfo({
-              text,
-              voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
-              status: "erro",
-              at: new Date(),
-              error: `Falha ao reproduzir áudio (${reason})`,
-            });
-          };
-          await audio.play();
-        } catch (fallbackErr) {
-          const fname = fallbackErr instanceof Error ? fallbackErr.name : "Error";
-          const fmsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-          console.error("[TV] playback remoto falhou:", fname, fmsg);
-          const utterance = createPreparedUtterance();
-          if (utterance) {
-            console.warn(`[TV] fallback local após falha de playback remoto (${fname})`);
-            utterance.text = text;
-            speakUtterance(utterance);
-            return;
-          }
-          if (fname === "NotAllowedError") {
-            setAudioBlocked(true);
-          }
-          setDebugInfo({
-            text,
-            voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
-            status: "erro",
-            at: new Date(),
-            error: `Playback remoto falhou: ${fname} — ${fmsg}`,
-          });
+
+          setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
+          
+          // Aqui poderíamos disparar um som ou animação
+          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+          audio.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
         }
-      }
-    } catch (err) {
-      console.error("[TV] erro TTS remoto:", err);
-      setDebugInfo({
-        text,
-        voice: `${cfg.provider}: ${cfg.voice_id ?? "padrão"}`,
-        status: "erro",
-        at: new Date(),
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-  };
+      )
+      .subscribe();
 
-
-  const primeSpeech = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    try {
-      const u = new SpeechSynthesisUtterance(" ");
-      u.volume = 0;
-      u.lang = "pt-BR";
-      window.speechSynthesis.speak(u);
-    } catch {
-      /* ignora */
-    }
-  };
-
-  const createPreparedUtterance = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-
-    const synth = window.speechSynthesis;
-    const cfg = voiceCfgRef.current;
-    const utterance = new SpeechSynthesisUtterance("");
-    utterance.lang = "pt-BR";
-    utterance.rate = cfg.rate || 0.95;
-    utterance.pitch = cfg.pitch || 1;
-    utterance.volume = 1;
-
-    const voices = synth.getVoices();
-    // Prioridade: voz salva no banco (provider=browser) > localStorage legado > default pt-BR
-    // O voice_id salvo é o `name` da voz (portátil entre dispositivos); fallback p/ voiceURI legado.
-    const cfgVoice = cfg.provider === "browser" && cfg.voice_id
-      ? voices.find((v) => v.name === cfg.voice_id) ??
-        voices.find((v) => v.voiceURI === cfg.voice_id)
-      : null;
-
-    // Diagnóstico: se admin salvou uma voz específica e ela NÃO existe neste
-    // dispositivo (caso comum quando admin configura no Chrome desktop e a TV
-    // roda em Android/Firefox/Safari sem essa voz instalada), avisamos no debug
-    // — sem isso, a TV ficava muda silenciosamente.
-    if (cfg.provider === "browser" && cfg.voice_id && !cfgVoice) {
-      const available = voices.map((v) => v.name).join(", ") || "(nenhuma)";
-      console.warn(
-        `[TV] voz configurada "${cfg.voice_id}" não existe neste dispositivo. ` +
-          `Vozes disponíveis: ${available}. Usando fallback.`,
-      );
-      setDebugInfo({
-        text: "(config)",
-        voice: cfg.voice_id,
-        status: "erro",
-        at: new Date(),
-        error: `Voz "${cfg.voice_id}" não está instalada neste dispositivo. Reconfigure em /app/voz aqui mesmo, ou escolha provider Google/ElevenLabs.`,
-      });
-    }
-
-    const ptVoice =
-      cfgVoice ??
-      voices.find((v) => v.lang === "pt-BR") ??
-      voices.find((v) => v.lang?.toLowerCase().startsWith("pt")) ??
-      // Último recurso: qualquer voz disponível, mesmo que em outro idioma —
-      // melhor falar com sotaque do que ficar mudo.
-      voices[0];
-
-    if (ptVoice) utterance.voice = ptVoice;
-
-    return utterance;
-  };
-
-
-  const speakUtterance = (utterance: SpeechSynthesisUtterance) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      console.warn("[TV] speechSynthesis indisponível");
-      return;
-    }
-    try {
-      const synth = window.speechSynthesis;
-      if (synth.paused) synth.resume();
-      synth.cancel();
-
-      utterance.onstart = () => console.info("[TV] 🔊 falando:", utterance.text);
-      utterance.onstart = () => {
-        console.info("[TV] 🔊 falando:", utterance.text);
-        setDebugInfo({
-          text: utterance.text,
-          voice: utterance.voice?.name ?? "padrão do sistema",
-          status: "falando",
-          at: new Date(),
-        });
-      };
-      utterance.onerror = (e) => {
-        console.error("[TV] erro TTS:", e.error, utterance.text);
-        setDebugInfo({
-          text: utterance.text,
-          voice: utterance.voice?.name ?? "padrão do sistema",
-          status: "erro",
-          at: new Date(),
-          error: String(e.error ?? "desconhecido"),
-        });
-      };
-      utterance.onend = () => {
-        console.info("[TV] ✓ fim da fala");
-        setDebugInfo((prev) =>
-          prev && prev.text === utterance.text ? { ...prev, status: "ok", at: new Date() } : prev,
-        );
-      };
-      console.info("[TV] speak() →", { text: utterance.text, voice: utterance.voice?.name, voicesCount: synth.getVoices().length });
-      synth.speak(utterance);
-
-      setTimeout(() => {
-        if (synth.speaking && synth.paused) synth.resume();
-      }, 100);
-    } catch (e) {
-      console.error("[TV] exceção em speak():", e);
-    }
-  };
-
-  const resolveDadosDaSenha = async (senhaId: string) => {
-    const senhaAtual = senhasMapRef.current.get(senhaId);
-    if (senhaAtual?.codigo && senhaAtual.paciente_id) return senhaAtual;
-
-    // Anon não pode mais ler senhas direto. Buscamos só os campos públicos via RPC.
-    const { data, error } = await supabase
-      .rpc("get_senhas_ativas", { _unidade_id: unidade?.id ?? "" });
-    const found = ((data ?? []) as Senha[]).find((s) => s.id === senhaId) ?? null;
-
-    if (error || !found) {
-      console.warn("[TV] não foi possível resolver dados da senha:", senhaId, error?.message);
-      return senhaAtual ?? null;
-    }
-
-    const resolved: Senha = { ...found, paciente_id: found.paciente_id ?? null };
-    senhasMapRef.current.set(resolved.id, resolved);
-    return resolved;
-  };
-
-  const resolveNomePaciente = async (senha: Senha | null) => {
-    if (!senha?.paciente_id) return null;
-
-    const cached = pacienteCacheRef.current.get(senha.paciente_id);
-    if (cached) return cached;
-
-    // Usa RPC pública: a tabela `pacientes` tem RLS que bloqueia anon (TV
-    // Firestick não autenticada). A RPC devolve apenas o nome dos pacientes
-    // ligados a senhas ativas — sem CPF, telefone, email, prontuário, etc.
-    if (!unidade?.id) return null;
-    
-    const { data, error } = await supabase
-      .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade.id });
-
-    if (error) {
-      console.warn("[TV] não foi possível carregar pacientes públicos:", error.message);
-      return null;
-    }
-
-    const lista = (data ?? []) as Array<{ paciente_id: string; nome_completo: string }>;
-    const found = lista.find((p) => p.paciente_id === senha.paciente_id);
-    const raw = found?.nome_completo?.trim();
-    if (!raw) {
-      console.warn("[TV] paciente não encontrado na lista pública:", senha.paciente_id);
-      return null;
-    }
-
-    const nome = primeiroEUltimoNome(raw);
-    pacienteCacheRef.current.set(senha.paciente_id, nome);
-    setPacienteNomes((prev) =>
-      prev[senha.paciente_id!] === nome ? prev : { ...prev, [senha.paciente_id!]: nome },
-    );
-    return nome;
-  };
-
-  const announceChamada = async (chamada: Chamada, opts: { isRechamada?: boolean } = {}) => {
-    const cfg = voiceCfgRef.current;
-    const { isRechamada = false } = opts;
-    console.log("[TV] announceChamada start →", { chamadaId: chamada.id, provider: cfg.provider, voiceId: cfg.voice_id, isRechamada });
-    const usingBrowser = cfg.provider === "browser";
-    if (usingBrowser && (typeof window === "undefined" || !("speechSynthesis" in window))) {
-      console.warn("[TV] abortando: provider=browser mas speechSynthesis indisponível");
-      setDebugInfo({
-        text: "(abortado)",
-        voice: "browser",
-        status: "erro",
-        at: new Date(),
-        error: "speechSynthesis não suportado neste navegador",
-      });
-      return;
-    }
-
-    const utterance = usingBrowser ? createPreparedUtterance() : null;
-    if (usingBrowser && !utterance) {
-      console.warn("[TV] abortando: não consegui criar utterance");
-      return;
-    }
-
-    const senha = await resolveDadosDaSenha(chamada.senha_id);
-
-    // Pequeno delay para o "ding" terminar antes da fala
-    await new Promise((r) => setTimeout(r, 700));
-
-    const nome = await resolveNomePaciente(senha);
-
-    const codigo = senha?.codigo ?? "";
-    const codigoFalado = codigo ? soletrarCodigo(codigo) : "";
-    // Regra de chamada: o admin escolhe o template em /app/voz. O nome da fila
-    // é resolvido via fila_id; o destino é o texto livre digitado pelo operador
-    // (ex.: "Consultório 2") e só aparece nos templates que incluem "destino".
-    const fila = senha?.fila_id ? filas.find((f) => f.id === senha.fila_id) ?? null : null;
-    const nomeFila = fila?.nome ?? null;
-    // Rechamada: força o template padrão (paciente + senha + fila), sem destino,
-    // e prefixa "Rechamada." no início. Nunca colocar "Rechamada" antes do
-    // "Dirija-se" — por isso forçamos o template sem destino.
-    const templateUsado: TemplateChamada = isRechamada
-      ? "paciente_senha_fila"
-      : cfg.template_chamada;
-    const textoBase = montarTextoChamada({
-      template: templateUsado,
-      nome,
-      codigoFalado,
-      nomeFila,
-      destino: isRechamada ? null : (chamada.destino ?? null),
-      formatarDestino,
-    });
-    const texto = isRechamada && textoBase ? `Rechamada. ${textoBase}` : textoBase;
-    console.log("[TV] 🗣️ partes da chamada:", {
-      template: templateUsado,
-      isRechamada,
-      nome,
-      codigo,
-      codigoFalado,
-      nomeFila,
-      destino: chamada.destino,
-      filasCarregadas: filas.length,
-      textoFinal: texto,
-      provider: cfg.provider,
-    });
-    if (!texto) {
-      setDebugInfo({
-        text: "<vazio>",
-        voice: usingBrowser ? (utterance?.voice?.name ?? "padrão do sistema") : cfg.provider,
-        status: "vazio",
-        at: new Date(),
-        error: "Texto montado ficou vazio",
-      });
-      return;
-    }
-
-    if (usingBrowser && utterance) {
-      utterance.text = texto;
-      speakUtterance(utterance);
-    } else {
-      console.log("[TV] chamando playRemoteTts →", { provider: cfg.provider, voiceId: cfg.voice_id, textLen: texto.length });
-      await playRemoteTts(texto, cfg);
-    }
-  };
-
-  // ── Rechamada automática ───────────────────────────────
-  // Para cada chamada, mantém os timers de até 2 repetições.
-  // Se o status da senha sair de "chamada", cancela.
-  const rechamadasRef = useRef<Map<string, ReturnType<typeof setTimeout>[]>>(new Map());
-  // IDs de senhas que estão sendo rechamadas (para exibir badge "Rechamada")
-  const [rechamadasAtivas, setRechamadasAtivas] = useState<Set<string>>(new Set());
-
-  const cancelRechamadas = (senhaId: string) => {
-    const timers = rechamadasRef.current.get(senhaId);
-    if (timers) {
-      for (const t of timers) clearTimeout(t);
-      rechamadasRef.current.delete(senhaId);
-    }
-    setRechamadasAtivas((prev) => {
-      if (!prev.has(senhaId)) return prev;
-      const next = new Set(prev);
-      next.delete(senhaId);
-      return next;
-    });
-  };
-
-  const cancelAllRechamadas = () => {
-    for (const timers of rechamadasRef.current.values()) {
-      for (const t of timers) clearTimeout(t);
-    }
-    rechamadasRef.current.clear();
-    setRechamadasAtivas(new Set());
-  };
-
-  const agendarRechamadas = (chamada: Chamada) => {
-    // Limpa qualquer agendamento anterior dessa senha (caso seja re-chamada manual)
-    cancelRechamadas(chamada.senha_id);
-
-    const tentar = async () => {
-      // Só repete se a senha ainda estiver com status "chamada".
-      const atual = senhasMapRef.current.get(chamada.senha_id);
-      if (!atual || atual.status !== "chamada") {
-        cancelRechamadas(chamada.senha_id);
-        return;
-      }
-      // Marca como rechamada (badge vermelho na UI + prefixo "Rechamada." no áudio)
-      setRechamadasAtivas((prev) => {
-        if (prev.has(chamada.senha_id)) return prev;
-        const next = new Set(prev);
-        next.add(chamada.senha_id);
-        return next;
-      });
-      playDing();
-      await announceChamada(chamada, { isRechamada: true });
-    };
-
-    const t1 = setTimeout(() => void tentar(), 30_000);
-    const t2 = setTimeout(() => void tentar(), 60_000);
-    rechamadasRef.current.set(chamada.senha_id, [t1, t2]);
-  };
-
-
-  // Derivações
-  const filasMap = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
-  // Injeta a chamada simulada (modo teste) no topo das listas, sem persistir.
-  const senhasComSim = useMemo(
-    () => (simulado ? [simulado.senha, ...senhas] : senhas),
-    [simulado, senhas],
-  );
-  const chamadasComSim = useMemo(
-    () => (simulado ? [simulado.chamada, ...chamadas] : chamadas),
-    [simulado, chamadas],
-  );
-  const senhasMap = useMemo(
-    () => new Map(senhasComSim.map((s) => [s.id, s])),
-    [senhasComSim],
-  );
-
-  // Senha em destaque = última chamada ainda ativa
-  const destaque = useMemo(() => {
-    for (const c of chamadasComSim) {
-      const s = senhasMap.get(c.senha_id);
-      if (s && (s.status === "chamada" || s.status === "em_atendimento")) {
-        return { senha: s, chamada: c };
-      }
-    }
-    return null;
-  }, [chamadasComSim, senhasMap]);
-
-  const ultimasChamadas = useMemo(() => {
-    const seen = new Set<string>();
-    const list: Array<{ chamada: Chamada; senha: Senha }> = [];
-    for (const c of chamadasComSim) {
-      if (seen.has(c.senha_id)) continue;
-      const s = senhasMap.get(c.senha_id);
-      if (!s) continue;
-      seen.add(c.senha_id);
-      list.push({ chamada: c, senha: s });
-      if (list.length >= 5) break;
-    }
-    return list;
-  }, [chamadasComSim, senhasMap]);
-
-  // Pré-carrega nomes dos pacientes das senhas visíveis (destaque + últimas chamadas).
-  // Usa a RPC pública `get_pacientes_publicos_ativos` para evitar erros de permissão.
-  useEffect(() => {
-    const idsFaltando = new Set<string>();
-    const idsVisiveis = new Set<string>();
-    
-    if (destaque?.senha.paciente_id) idsVisiveis.add(destaque.senha.paciente_id);
-    for (const { senha } of ultimasChamadas) {
-      if (senha.paciente_id) idsVisiveis.add(senha.paciente_id);
-    }
-
-    for (const id of idsVisiveis) {
-      if (!pacienteNomes[id]) idsFaltando.add(id);
-    }
-
-    if (idsFaltando.size === 0 || !unidade?.id) return;
-
-    let mounted = true;
-    void (async () => {
-      // Usamos a RPC `get_pacientes_publicos_ativos` pois o acesso direto à tabela 
-      // `pacientes` é bloqueado para usuários anônimos (painel TV).
-      const { data, error } = await supabase
-        .rpc("get_pacientes_publicos_ativos", { _unidade_id: unidade.id });
-
-      if (!mounted) return;
-      if (error) {
-        console.warn("[TV] falha ao buscar nomes de pacientes via RPC:", error.message);
-        return;
-      }
-
-      const lista = (data ?? []) as Array<{ paciente_id: string; nome_completo: string }>;
-      const novosNomes: Record<string, string> = {};
-      let changed = false;
-
-      for (const p of lista) {
-        if (idsFaltando.has(p.paciente_id)) {
-          const nome = primeiroEUltimoNome(p.nome_completo);
-          novosNomes[p.paciente_id] = nome;
-          pacienteCacheRef.current.set(p.paciente_id, nome);
-          changed = true;
-        }
-      }
-
-      if (changed) {
-        setPacienteNomes((prev) => ({ ...prev, ...novosNomes }));
-      }
-    })();
     return () => {
-      mounted = false;
+      supabase.removeChannel(channel);
     };
-  }, [destaque?.senha.id, ultimasChamadas.length, unidade?.id]);
+  }, [unidade?.id]);
 
-  const aguardandoPorFila = useMemo(() => {
-    const groups = new Map<string, Senha[]>();
-    for (const s of senhas) {
-      if (s.status !== "aguardando") continue;
-      const arr = groups.get(s.fila_id) ?? [];
-      arr.push(s);
-      groups.set(s.fila_id, arr);
-    }
-    // ordena: urgente > preferencial > normal, depois created_at
-    const prioRank: Record<SenhaPrioridade, number> = { urgente: 0, preferencial: 1, normal: 2 };
-    for (const arr of groups.values()) {
-      arr.sort((a, b) => {
-        const r = prioRank[a.prioridade] - prioRank[b.prioridade];
-        if (r !== 0) return r;
-        return a.created_at.localeCompare(b.created_at);
-      });
-    }
-    return groups;
-  }, [senhas]);
-
-  // Modal de destaque: aberto apenas quando a chamada atual é urgente ou
-  // preferencial. Para chamadas normais, fica só o "flash" no card lateral.
-  const showCallModal = Boolean(
-    destaque && (destaque.senha.prioridade === "urgente" || destaque.senha.prioridade === "preferencial"),
-  );
-  // Flash pra chamadas normais — pisca o card da senha atual por 6s.
-  const [normalFlash, setNormalFlash] = useState(false);
-  useEffect(() => {
-    if (!destaque) {
-      setNormalFlash(false);
-      return;
-    }
-    if (destaque.senha.prioridade === "normal") {
-      setNormalFlash(true);
-      const t = setTimeout(() => setNormalFlash(false), 6000);
-      return () => clearTimeout(t);
-    }
-  }, [destaque?.chamada.id, destaque?.senha.prioridade]);
-
-  if (error) {
+  if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="text-center">
-          <Megaphone className="mx-auto mb-4 h-12 w-12 text-slate-500" />
-          <h1 className="font-display text-2xl font-bold">{error}</h1>
-          <p className="mt-2 text-sm text-slate-400">Verifique o endereço do painel.</p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (!unidade && !error) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white p-6 text-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-        <p className="text-slate-400 font-medium">Carregando painel...</p>
-        <p className="text-slate-600 text-xs mt-2 font-mono">Slug: {slug}</p>
-      </div>
-    );
-  }
-
-  if (!unidade) return null; // Fallback de segurança para o TS
-
-  // Senhas chamadas recentes (já calculadas em ultimasChamadas) — vou montar
-  // uma lista enxuta pra tabela lateral: senha atual no topo + 3 anteriores.
-  const tabelaChamadas = ultimasChamadas.slice(0, 4);
+  const ultimaChamada = chamadas[0];
+  const historico = chamadas.slice(1, 6);
 
   return (
-    <>
-    <div
-      ref={fullscreenRef}
-      className="min-h-screen relative"
-      style={{ backgroundColor: visual.cor_fundo }}
+    <div 
+      className="flex h-screen flex-col overflow-hidden font-sans transition-colors duration-500"
+      style={{ backgroundColor: visual.cor_fundo, color: visual.cor_texto }}
     >
-    <div
-      className="min-h-screen flex flex-col selection:bg-primary/40 relative"
-      style={
-        {
-          backgroundColor: visual.cor_fundo,
-          color: visual.cor_texto,
-          ["--tv-primary" as string]: visual.cor_primaria,
-          ...buildScaleStyle(scale, zoomSupported),
-        } as React.CSSProperties
-      }
-    >
-      {/* Imagem de fundo (se configurada) */}
-      {visual.fundo_url && (
-        <>
-          <div
-            className="fixed inset-0 bg-cover bg-center pointer-events-none"
-            style={{ backgroundImage: `url(${visual.fundo_url})` }}
-          />
-          <div className="fixed inset-0 bg-black/55 pointer-events-none" />
-        </>
-      )}
-
-      <div className="relative flex flex-1 flex-col">
-      {/* Header compacto — relógio + data sempre visível, fullscreen só fora do kiosk */}
-      <header
-        className="border-b border-white/10 backdrop-blur"
-        style={{ backgroundColor: `${visual.cor_fundo}cc` }}
-      >
-        <div
-          className={`mx-auto flex max-w-[1920px] items-center justify-between gap-4 ${
-            isCompact ? "px-4 py-1.5" : "px-6 py-2.5"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            {visual.logo_url ? (
-              <img
-                src={visual.logo_url}
-                alt={unidade.nome}
-                className={isCompact ? "h-7 w-auto" : "h-9 w-auto"}
-              />
-            ) : (
-              <div
-                className={`flex items-center justify-center rounded-lg shadow-glow ${
-                  isCompact ? "h-8 w-8" : "h-10 w-10"
-                }`}
-                style={{ backgroundColor: visual.cor_primaria }}
-              >
-                <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
-              </div>
-            )}
-            <h1 className="font-display text-lg font-bold leading-none">{unidade.nome}</h1>
-          </div>
-
-          {/* Relógio central estilo "barra LED" */}
-          <div
-            className="flex items-center gap-3 rounded-md border px-4 py-1.5"
-            style={{
-              borderColor: `color-mix(in srgb, ${visual.cor_primaria} 35%, transparent)`,
-              backgroundColor: `color-mix(in srgb, ${visual.cor_primaria} 8%, ${visual.cor_fundo})`,
-            }}
-          >
-            <Clock
-              className="h-4 w-4"
-              style={{ color: visual.cor_primaria }}
-            />
-            <span className="font-mono text-base font-bold tabular-nums">
-              {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-            </span>
-            <span className="opacity-30">|</span>
-            <span className="text-sm font-medium capitalize opacity-80">
-              {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
-            </span>
-          </div>
-
-          {!kiosk && (
-            <button
-              onClick={toggleFullscreen}
-              className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-white/10 transition-colors"
-              title={isFullscreen ? "Sair de tela cheia" : "Entrar em tela cheia"}
-            >
-              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-              <span className="hidden lg:inline">{isFullscreen ? "Sair" : "Tela cheia"}</span>
-            </button>
+      {/* Header */}
+      <header className="flex items-center justify-between border-b border-white/10 bg-black/20 px-10 py-6">
+        <div className="flex items-center gap-6">
+          {visual.logo_url ? (
+            <img src={visual.logo_url} alt="Logo" className="h-12 w-auto object-contain" />
+          ) : (
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-lg">
+              <Activity className="h-7 w-7 text-white" />
+            </div>
           )}
-          {kiosk && <div className="w-8" />}
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{unidade?.nome}</h1>
+            <p className="text-sm font-medium opacity-60 uppercase tracking-widest">Painel de Chamadas</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-8">
+          <div className="text-right">
+            <p className="text-4xl font-mono font-bold">
+              {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            </p>
+            <p className="text-sm font-medium opacity-60">
+              {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+            </p>
+          </div>
         </div>
       </header>
 
-      {/* Corpo: split 60% mídia | 40% tabela de senhas */}
-      <main
-        className={
-          isCompact || kiosk
-            ? "mx-auto w-full max-w-[1920px] grid flex-1 gap-3 px-3 py-3 grid-cols-[1.5fr_1fr]"
-            : "mx-auto w-full max-w-[1920px] grid flex-1 gap-4 px-4 py-4 grid-cols-[1.5fr_1fr]"
-        }
-      >
-        {/* ─── Esquerda: painel de mídia (carrossel + fallback logo) ─── */}
-        <section className="flex min-h-0">
-          {unidade && (
-            <div className="flex w-full">
-              <TvCarrossel
-                unidadeId={unidade.id}
-                paused={showCallModal}
-                className="w-full"
-                minimalChrome
-              />
-            </div>
-          )}
-          {/* Fallback se carrossel não tem itens — mostra logo da clínica grande */}
-          <NoMediaFallback visual={visual} unidadeNome={unidade.nome} />
-        </section>
-
-        {/* ─── Direita: tabela de senhas ─── */}
-        <aside className="flex min-h-0 flex-col gap-3">
-          {/* Cabeçalho da tabela: Paciente · Senha · Destino */}
-          <div
-            className="grid grid-cols-[1fr_auto_1fr_auto] gap-3 rounded-lg border px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] opacity-80"
-            style={{
-              color: visual.cor_primaria,
-              borderColor: `color-mix(in srgb, ${visual.cor_primaria} 35%, transparent)`,
-              backgroundColor: `color-mix(in srgb, ${visual.cor_primaria} 6%, ${visual.cor_fundo})`,
-            }}
-          >
-            <span>Paciente</span>
-            <span>Senha</span>
-            <span>Dirija-se a</span>
-            <span>Hora</span>
-          </div>
-
-          {/* Senha atual em destaque (linha vermelha estilo "ATUAL") */}
-          {destaque ? (
-            <CallRow
-              codigo={destaque.senha.codigo}
-              destino={destaque.chamada.destino}
-              paciente={
-                destaque.senha.paciente_id
-                  ? pacienteNomes[destaque.senha.paciente_id] ?? null
-                  : null
-              }
-              hora={destaque.chamada.created_at}
-              prioridade={destaque.senha.prioridade}
-              filaCor={filasMap.get(destaque.senha.fila_id)?.cor ?? visual.cor_primaria}
-              filaNome={filasMap.get(destaque.senha.fila_id)?.nome ?? ""}
-              isAtual
-              flash={normalFlash}
-              tvPrimaria={visual.cor_primaria}
-              tvFundo={visual.cor_fundo}
-              tvTexto={visual.cor_texto}
-              contraste={visual.contraste_chamadas}
-              escala={visual.escala_chamadas}
-            />
-          ) : (
-            <div
-              className="flex items-center justify-center rounded-lg border-2 border-dashed py-12 text-center"
-              style={{ borderColor: `color-mix(in srgb, ${visual.cor_texto} 15%, transparent)` }}
-            >
-              <div>
-                <Megaphone className="mx-auto mb-2 h-10 w-10 opacity-40" />
-                <p className="font-display text-lg opacity-60">Aguardando chamada…</p>
+      {/* Main Content */}
+      <main className="flex flex-1 overflow-hidden">
+        {/* Left Side: Current Call / Highlight */}
+        <div className="flex-[2] flex flex-col items-center justify-center border-r border-white/10 p-10 bg-black/5">
+          {ultimaChamada ? (
+            <div className="w-full max-w-2xl animate-in fade-in zoom-in duration-500 text-center">
+              <div 
+                className="mb-8 inline-flex items-center gap-3 rounded-full bg-primary/20 px-6 py-2 text-primary border border-primary/30"
+              >
+                <Volume2 className="h-5 w-5 animate-pulse" />
+                <span className="text-lg font-bold uppercase tracking-widest">Chamando Agora</span>
+              </div>
+              
+              <div className="mb-4 text-[12rem] font-black leading-none tracking-tighter text-primary drop-shadow-2xl">
+                {ultimaChamada.senha?.codigo}
+              </div>
+              
+              <div className="mt-4 space-y-2">
+                <p className="text-4xl font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
+                <p className="text-7xl font-bold uppercase">{ultimaChamada.destino}</p>
               </div>
             </div>
+          ) : (
+            <div className="text-center opacity-30">
+              <Users className="mx-auto mb-6 h-32 w-32" />
+              <p className="text-3xl font-medium uppercase tracking-widest">Aguardando Chamadas</p>
+            </div>
           )}
+        </div>
 
-          {/* Histórico — 3 chamadas anteriores */}
-          <div className="flex flex-col gap-2">
-            {tabelaChamadas.slice(1).map(({ chamada, senha }) => (
-              <CallRow
-                key={chamada.id}
-                codigo={senha.codigo}
-                destino={chamada.destino}
-                paciente={
-                  senha.paciente_id ? pacienteNomes[senha.paciente_id] ?? null : null
-                }
-                hora={chamada.created_at}
-                prioridade={senha.prioridade}
-                filaCor={filasMap.get(senha.fila_id)?.cor ?? visual.cor_primaria}
-                filaNome={filasMap.get(senha.fila_id)?.nome ?? ""}
-                tvPrimaria={visual.cor_primaria}
-                tvFundo={visual.cor_fundo}
-                tvTexto={visual.cor_texto}
-                contraste={visual.contraste_chamadas}
-                escala={visual.escala_chamadas}
-              />
-            ))}
-            {tabelaChamadas.length <= 1 && (
-              <p className="rounded-lg border border-dashed border-white/10 p-3 text-center text-xs opacity-40">
-                Sem chamadas anteriores.
-              </p>
+        {/* Right Side: History / Last Calls */}
+        <div className="flex-1 flex flex-col bg-black/10">
+          <div className="p-8 border-b border-white/10 bg-white/5">
+            <h2 className="text-xl font-bold uppercase tracking-widest opacity-80 flex items-center gap-3">
+              <Clock className="h-5 w-5 text-primary" />
+              Últimas Chamadas
+            </h2>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {historico.length > 0 ? (
+              historico.map((chamada, idx) => (
+                <div 
+                  key={chamada.id}
+                  className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-6 animate-in slide-in-from-right duration-300"
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  <div>
+                    <p className="text-4xl font-bold text-primary">{chamada.senha?.codigo}</p>
+                    <p className="text-sm font-medium opacity-40 uppercase">{chamada.senha?.fila_nome || "Geral"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold opacity-80">{chamada.destino}</p>
+                    <p className="text-xs font-mono opacity-30">
+                      {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex h-full items-center justify-center opacity-20 italic">
+                Nenhum histórico disponível
+              </div>
             )}
           </div>
-
-          {/* Mini-resumo de fila */}
-          <div className="mt-auto rounded-lg border border-white/10 bg-black/20 px-4 py-2.5">
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">
-              Aguardando atendimento
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-              {filas.length === 0 ? (
-                <span className="opacity-50">Nenhuma fila configurada.</span>
-              ) : (
-                filas.map((f) => {
-                  const arr = aguardandoPorFila.get(f.id) ?? [];
-                  return (
-                    <div key={f.id} className="flex items-center gap-1.5">
-                      <span
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: f.cor ?? visual.cor_primaria }}
-                      />
-                      <span className="font-medium">{f.nome}:</span>
-                      <span className="font-mono font-bold tabular-nums">{arr.length}</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </aside>
+        </div>
       </main>
 
-      {/* Rodapé: mensagem configurável + logo */}
-      {(visual.mensagem_rodape || visual.logo_url) && (
-        <footer
-          className="border-t border-white/10 flex items-center gap-4 px-6 py-3"
-          style={{
-            backgroundColor: `color-mix(in srgb, black 35%, ${visual.cor_fundo})`,
-          }}
-        >
-          {visual.logo_url && (
-            <img
-              src={visual.logo_url}
-              alt={unidade.nome}
-              className="h-7 w-auto opacity-90"
-            />
-          )}
-          {visual.mensagem_rodape && (
-            <p
-              className="flex-1 truncate font-display text-base font-semibold"
-              title={visual.mensagem_rodape}
-            >
-              {visual.mensagem_rodape}
-            </p>
-          )}
-        </footer>
-      )}
-
-      {/* QR code discreto — fixo no canto inferior direito enquanto há senha */}
-      {destaque?.senha.token_publico && !showCallModal && (
-        <div className="absolute bottom-3 right-3 flex flex-col items-center rounded-lg bg-white/95 px-2 py-1.5 shadow-xl">
-          <QrCode
-            value={`${typeof window !== "undefined" ? window.location.origin : ""}/s/${destaque.senha.token_publico}`}
-            size={70}
-          />
-          <div className="mt-0.5 text-center text-[8px] font-bold uppercase tracking-wider text-slate-700">
-            Acompanhe
-          </div>
+      {/* Footer / Scrolling News or Info */}
+      <footer className="h-16 flex items-center bg-primary px-10 text-primary-foreground font-bold overflow-hidden whitespace-nowrap">
+        <div className="animate-marquee inline-block">
+          {visual.mensagem_rodape || `Bem-vindo à ${unidade?.nome} • Por favor, acompanhe sua senha no painel • ${unidade?.nome} - Qualidade no atendimento`}
         </div>
-      )}
+      </header>
 
-      </div>
-    </div>
-
-    {/* ─── Modal de chamada destacada (urgente/preferencial) ─── */}
-    {showCallModal && destaque && (
-      <CallModal
-        codigo={destaque.senha.codigo}
-        destino={destaque.chamada.destino}
-        paciente={
-          destaque.senha.paciente_id ? pacienteNomes[destaque.senha.paciente_id] ?? null : null
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
         }
-        prioridade={destaque.senha.prioridade}
-        visual={visual}
-      />
-    )}
-
-    {/* ─── Overlay de áudio bloqueado (autoplay browser) ─── */}
-    {audioBlocked && (
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md">
-        <div className="max-w-md p-8 text-center animate-fade-in bg-slate-900 border border-white/10 rounded-3xl shadow-2xl">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-primary shadow-glow">
-            <Megaphone className="h-10 w-10 animate-pulse" />
-          </div>
-          <h2 className="font-display text-2xl font-bold text-white">Áudio desativado</h2>
-          <p className="mt-3 text-slate-300">
-            Seu navegador bloqueou o som automático. Clique abaixo para ativar os avisos sonoros das senhas.
-          </p>
-          <Button
-            onClick={warmAudio}
-            size="lg"
-            className="mt-8 bg-gradient-primary px-8 shadow-elegant hover:scale-105 transition-transform"
-          >
-            Ativar áudio do painel
-          </Button>
-          <p className="mt-4 text-[10px] uppercase tracking-widest text-slate-500">
-            Necessário apenas uma vez por sessão.
-          </p>
-        </div>
-      </div>
-    )}
+        .animate-marquee {
+          animation: marquee 30s linear infinite;
+        }
+      `}</style>
     </div>
-    <TvZoomControl
-      zoom={localZoom}
-      onInc={inc}
-      onDec={dec}
-      onReset={reset}
-      autoHide={kiosk}
-    />
-    {test && (
-      <TestModePanel
-        carrosselPaused={showCallModal}
-        onSimularNormal={() => {
-          const id = `sim-${Date.now()}`;
-          const filaId = filas[0]?.id ?? "sim-fila";
-          const agora = new Date().toISOString();
-          setSimulado({
-            senha: {
-              id,
-              codigo: "T999",
-              fila_id: filaId,
-              paciente_id: null,
-              status: "chamada",
-              prioridade: "normal",
-              token_publico: "",
-              created_at: agora,
-              updated_at: agora,
-            },
-            chamada: {
-              id: `cham-${id}`,
-              senha_id: id,
-              destino: "Consultório TESTE",
-              created_at: agora,
-            },
-          });
-        }}
-        onSimularDestaque={() => {
-          const id = `sim-${Date.now()}`;
-          const filaId = filas[0]?.id ?? "sim-fila";
-          const agora = new Date().toISOString();
-          setSimulado({
-            senha: {
-              id,
-              codigo: "U777",
-              fila_id: filaId,
-              paciente_id: null,
-              status: "chamada",
-              prioridade: "urgente",
-              token_publico: "",
-              created_at: agora,
-              updated_at: agora,
-            },
-            chamada: {
-              id: `cham-${id}`,
-              senha_id: id,
-              destino: "Sala URGÊNCIA",
-              created_at: agora,
-            },
-          });
-        }}
-        onLimpar={() => setSimulado(null)}
-        onFechar={() => {
-          setSimulado(null);
-          void navigate({
-            to: "/tv/$slug",
-            params: { slug },
-            search: kiosk ? { kiosk: true } : {},
-          });
-        }}
-      />
-    )}
-
-      {/* Painel de Debug / Status da Conexão */}
-      <div className="fixed bottom-3 left-3 z-[9999] pointer-events-none">
-        <div className={`flex flex-col gap-1 rounded-md border p-2 text-[10px] font-mono shadow-2xl backdrop-blur-md transition-all duration-300 ${
-          fetchStatus === 'error' || error 
-            ? 'bg-red-950/90 border-red-500/50 text-red-100 opacity-100 translate-y-0' 
-            : 'bg-black/60 border-white/10 text-white/40 opacity-20 hover:opacity-100 hover:translate-y-[-4px] pointer-events-auto'
-        }`}>
-          <div className="flex items-center gap-2 border-b border-white/10 pb-1 mb-1 font-bold uppercase tracking-wider">
-            {fetchStatus === 'loading' && <Loader2 className="h-3 w-3 animate-spin" />}
-            {fetchStatus === 'success' && <Wifi className="h-3 w-3 text-green-400" />}
-            {fetchStatus === 'error' && <WifiOff className="h-3 w-3 text-red-400" />}
-            <span>Status da TV</span>
-          </div>
-          
-          <div className="flex gap-2 justify-between">
-            <span className="opacity-60">Unidade:</span>
-            <span className="font-bold">{slug}</span>
-          </div>
-          
-          <div className="flex gap-2 justify-between">
-            <span className="opacity-60">ID:</span>
-            <span className="truncate max-w-[80px]">{unidade?.id || '---'}</span>
-          </div>
-          
-          <div className="flex gap-2 justify-between">
-            <span className="opacity-60">Fetch:</span>
-            <span className={
-              fetchStatus === 'success' ? 'text-green-400' : 
-              fetchStatus === 'loading' ? 'text-amber-400' : 'text-red-400'
-            }>{fetchStatus.toUpperCase()}</span>
-          </div>
-
-          {(lastFetchError || error) && (
-            <div className="mt-1 pt-1 border-t border-white/10 text-red-300 max-w-[200px] break-words leading-tight">
-              <div className="flex items-center gap-1 mb-0.5">
-                <Info className="h-3 w-3" />
-                <span className="font-bold uppercase text-[9px]">Último Erro:</span>
-              </div>
-              {lastFetchError || error}
-            </div>
-          )}
-          
-          <div className="mt-1 text-[8px] opacity-40 text-right">
-            {now.toLocaleTimeString()}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function PrioridadeTag({ prioridade, big = false }: { prioridade: SenhaPrioridade; big?: boolean }) {
-  const styles: Record<SenhaPrioridade, string> = {
-    normal: "bg-white/10 text-slate-200 border-white/10",
-    preferencial: "bg-amber-500/15 text-amber-200 border-amber-500/40",
-    urgente: "bg-red-500/15 text-red-200 border-red-500/40",
-  };
-  const labels: Record<SenhaPrioridade, string> = {
-    normal: "Normal",
-    preferencial: "Preferencial",
-    urgente: "Urgente",
-  };
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border font-semibold uppercase tracking-wide ${styles[prioridade]} ${
-        big ? "text-sm px-4 py-1.5" : "text-[10px] px-2 py-0.5"
-      }`}
-    >
-      {labels[prioridade]}
-    </span>
   );
 }
