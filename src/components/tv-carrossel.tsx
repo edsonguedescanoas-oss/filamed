@@ -371,7 +371,18 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
           />
         )}
 
-        {(!atual.url_midia || (!isImage(atual) && !isVideo(atual) && !youtubeEmbed)) && (
+        {driveEmbed && (
+          <iframe
+            key={atual.id}
+            src={driveEmbed}
+            title={atual.titulo}
+            className="absolute inset-0 h-full w-full border-0"
+            allow="autoplay; encrypted-media"
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        )}
+
+        {(!atual.url_midia || (!isImage(atual) && !isVideo(atual) && !youtubeEmbed && !driveEmbed)) && (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-800 to-slate-900 p-8 text-center">
             {!atual.url_midia ? (
               <p className="font-display text-3xl font-bold text-white">
