@@ -109,8 +109,6 @@ function buildYoutubeEmbed(url: string): string | null {
   // Origem é exigida pelo YouTube IFrame API quando enablejsapi=1
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const base = "https://www.youtube.com/embed";
-  // Inicia mutado (requisito de autoplay dos navegadores). Depois que o
-  // player carrega, chamamos `unMute` via postMessage pra liberar o som.
   const common = [
     "autoplay=1",
     "mute=1",
@@ -263,106 +261,23 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [atual?.id, paused, elegiveis.length]);
 
-  // Pausa/muta vídeo durante chamadas (paused=true) e retoma com som depois.
+  // Pausa/retoma vídeo conforme `paused`
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const youtubeIframeRef = useRef<HTMLIFrameElement | null>(null);
-  const [ytBlocked, setYtBlocked] = useState(false);
-  const ytReadyRef = useRef(false);
-
-  // Helper para enviar comandos pro player do YouTube via IFrame API
-  const ytCommand = (func: string, args: unknown[] = []) => {
-    const y = youtubeIframeRef.current;
-    if (!y || !y.contentWindow) return;
-    y.contentWindow.postMessage(
-      JSON.stringify({ event: "command", func, args }),
-      "*",
-    );
-  };
-
-  // Reseta estado quando muda o item
-  useEffect(() => {
-    setYtBlocked(false);
-    ytReadyRef.current = false;
-  }, [atual?.id]);
-
-  // Escuta mensagens do YouTube IFrame API (onReady, erros) e libera som
-  useEffect(() => {
-    if (!isYoutube(atual!) || !atual?.url_midia) return;
-    const handler = (ev: MessageEvent) => {
-      if (typeof ev.data !== "string") return;
-      if (!/youtube/i.test(ev.origin)) return;
-      try {
-        const msg = JSON.parse(ev.data);
-        // Player pronto — libera o som (se não estiver pausado por chamada)
-        if (msg?.event === "onReady" || msg?.event === "infoDelivery") {
-          if (!ytReadyRef.current) {
-            ytReadyRef.current = true;
-            ytCommand("addEventListener", ["onError"]);
-            if (!paused) {
-              ytCommand("unMute");
-              ytCommand("setVolume", [100]);
-            }
-          }
-        }
-        // Erros: 101/150 = embed bloqueado; 100 = removido; 2 = id inválido; 5 = player HTML5
-        const code = msg?.info?.errorCode ?? (msg?.event === "onError" ? msg?.info : null);
-        if (code != null && [2, 5, 100, 101, 150].includes(Number(code))) {
-          setYtBlocked(true);
-        }
-      } catch {
-        /* msgs não-JSON do YouTube */
-      }
-    };
-    window.addEventListener("message", handler);
-    // Pede pro player começar a emitir eventos
-    const t = setTimeout(() => {
-      const y = youtubeIframeRef.current;
-      if (y?.contentWindow) {
-        y.contentWindow.postMessage(
-          JSON.stringify({ event: "listening", id: atual?.id }),
-          "*",
-        );
-      }
-    }, 500);
-    return () => {
-      window.removeEventListener("message", handler);
-      clearTimeout(t);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [atual?.id]);
-
-  // Se o YouTube reportou erro de embed, pula pro próximo item após 4s
-  useEffect(() => {
-    if (!ytBlocked) return;
-    const t = setTimeout(advance, 4000);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ytBlocked]);
-
   useEffect(() => {
     const v = videoRef.current;
     if (v) {
-      if (paused) {
-        v.muted = true;
-        v.pause();
-      } else {
-        v.muted = false;
-        void v.play().catch(() => {
-          // Se autoplay com som for bloqueado, volta pra mudo
-          v.muted = true;
-          void v.play().catch(() => {});
-        });
-      }
+      if (paused) v.pause();
+      else void v.play().catch(() => {});
     }
-    // YouTube: muta enquanto há chamada (paused) e desmuta+retoma depois
-    if (ytReadyRef.current) {
-      if (paused) {
-        ytCommand("mute");
-      } else {
-        ytCommand("unMute");
-        ytCommand("setVolume", [100]);
-        ytCommand("playVideo");
-      }
+    // YouTube: comanda via postMessage (IFrame API)
+    const y = youtubeIframeRef.current;
+    if (y && y.contentWindow) {
+      const cmd = paused ? "pauseVideo" : "playVideo";
+      y.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: cmd, args: [] }),
+        "*",
+      );
     }
   }, [paused, atual?.id]);
 
@@ -405,7 +320,7 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
           />
         )}
 
-        {youtubeEmbed && !ytBlocked && (
+        {youtubeEmbed && (
           <iframe
             key={atual.id}
             ref={youtubeIframeRef}
@@ -418,18 +333,6 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
             // origem confiável pra player rodar.
             referrerPolicy="strict-origin-when-cross-origin"
           />
-        )}
-
-        {youtubeEmbed && ytBlocked && (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-800 to-slate-900 p-8 text-center">
-            <ImageOff className="h-10 w-10 text-slate-500" />
-            <p className="text-sm font-medium text-slate-300">
-              Vídeo do YouTube bloqueado para incorporação
-            </p>
-            <p className="max-w-[320px] text-[11px] text-slate-500">
-              O autor desse vídeo desativou a reprodução fora do YouTube. Tente outro vídeo ou uma playlist pública com permissão de embed.
-            </p>
-          </div>
         )}
 
         {(!atual.url_midia || (!isImage(atual) && !isVideo(atual) && !youtubeEmbed)) && (
