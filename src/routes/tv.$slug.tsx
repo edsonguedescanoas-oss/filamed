@@ -90,7 +90,13 @@ function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
   const [now, setNow] = useState(new Date());
-  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
+  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
+    provider: "browser",
+    voice_id: null,
+    rate: 1,
+    pitch: 1,
+    template_chamada: "paciente_senha_fila_destino",
+  });
   const [needsInteraction, setNeedsInteraction] = useState(true);
   const audioQueue = useRef<string[]>([]);
   const isSpeaking = useRef(false);
