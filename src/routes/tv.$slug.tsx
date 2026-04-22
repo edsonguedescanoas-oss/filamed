@@ -701,7 +701,7 @@ function TvPage() {
                     
                     <div 
                       className="w-full"
-                      style={{ marginTop: `clamp(0.25rem, 1.5cqmin, 1rem)` }}
+                      style={{ marginTop: `clamp(0.15rem, 0.8cqmin, 0.5rem)` }}
                     >
                       {ultimaChamada.senha?.paciente_nome && (
                         <p 
@@ -716,8 +716,8 @@ function TvPage() {
                         className="font-medium opacity-60 uppercase tracking-widest"
                         style={{ 
                           fontSize: `clamp(0.5rem, 1.8cqmin, 1.125rem)`,
-                          marginTop: `clamp(0.15rem, 0.6cqmin, 0.5rem)`,
-                          marginBottom: `clamp(0.15rem, 0.6cqmin, 0.5rem)`,
+                          marginTop: `clamp(0.1rem, 0.4cqmin, 0.3rem)`,
+                          marginBottom: `clamp(0.1rem, 0.4cqmin, 0.3rem)`,
                         }}
                       >
                         Favor dirigir-se
