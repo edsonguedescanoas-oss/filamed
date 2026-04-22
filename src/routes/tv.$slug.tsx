@@ -688,7 +688,7 @@ function TvPage() {
                         className="font-bold uppercase tracking-widest"
                         style={{ fontSize: `clamp(0.5rem, 1.6cqmin, 1rem)` }}
                       >
-                        Chamando Agora
+                        {isRechamada(ultimaChamada) ? "Rechamada" : "Chamando Agora"}
                       </span>
                     </div>
                     
