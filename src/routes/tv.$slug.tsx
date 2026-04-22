@@ -413,6 +413,7 @@ function TvPage() {
         </p>
         <button
           onClick={() => {
+            console.log("[TV] Iniciando painel e destravando áudio...");
             // Destravamento robusto de áudio
             const BEEP_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
             const audioBeep = new Audio(BEEP_URL);
@@ -422,23 +423,35 @@ function TvPage() {
               audioBeep.pause();
               audioBeep.volume = 1;
               beepRef.current = audioBeep;
-            }).catch(e => console.error("Erro ao destravar beep:", e));
+            }).catch(e => {
+              console.warn("Falha ao destravar beep, mas continuando:", e);
+              // Mesmo se falhar o play, tenta manter o ref se o browser permitir
+              beepRef.current = audioBeep;
+            });
 
-            // "Destrava" o áudio da voz
+            // "Destrava" o áudio da voz (importante para ElevenLabs/Google)
             const audioVoice = new Audio();
             audioVoice.volume = 0.01;
+            // Play de um buffer de silêncio ou arquivo curto para garantir "interaction"
             audioVoice.play().then(() => {
               console.log("[TV] Voz (Audio) destravada");
               audioVoice.pause();
               audioVoice.volume = 1;
               voiceAudioRef.current = audioVoice;
-            }).catch(e => console.error("Erro ao destravar voz (Audio):", e));
+            }).catch(e => {
+              console.warn("Falha ao destravar voz (Audio), mas continuando:", e);
+              voiceAudioRef.current = audioVoice;
+            });
 
             // "Destrava" a voz nativa (SpeechSynthesis)
-            const synth = window.speechSynthesis;
-            const u = new SpeechSynthesisUtterance("");
-            u.volume = 0;
-            synth.speak(u);
+            if (typeof window !== "undefined" && window.speechSynthesis) {
+              const synth = window.speechSynthesis;
+              synth.cancel();
+              const u = new SpeechSynthesisUtterance("");
+              u.volume = 0;
+              synth.speak(u);
+              console.log("[TV] SpeechSynthesis destravado");
+            }
 
             setNeedsInteraction(false);
           }}
