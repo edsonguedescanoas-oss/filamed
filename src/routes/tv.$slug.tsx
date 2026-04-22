@@ -491,6 +491,43 @@ function TvPage() {
     };
   }, [unidade?.id, speak]);
 
+  /**
+   * Realtime de senhas — escutamos UPDATE para detectar quando uma senha sai
+   * do estado "chamada" (vira em_atendimento, finalizada, ausente ou cancelada).
+   * Quando isso acontece, marcamos como inativa pra remover instantaneamente
+   * do bloco "Chamando agora", sem precisar esperar uma nova chamada chegar.
+   */
+  useEffect(() => {
+    if (!unidade?.id) return;
+    const ch = supabase
+      .channel(`tv-senhas-${unidade.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "senhas",
+          filter: `unidade_id=eq.${unidade.id}`,
+        },
+        (payload) => {
+          const novo = payload.new as { id: string; status?: string };
+          const finalStatus = ["em_atendimento", "finalizada", "ausente", "cancelada"];
+          if (novo.status && finalStatus.includes(novo.status)) {
+            setSenhasInativas((prev) => {
+              if (prev.has(novo.id)) return prev;
+              const next = new Set(prev);
+              next.add(novo.id);
+              return next;
+            });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [unidade?.id]);
+
   // Lógica de Autoajuste de Escala e Padding
   const [autoStyles, setAutoStyles] = useState<{ scale: number; padding: number }>({ scale: 1, padding: 8 });
 
