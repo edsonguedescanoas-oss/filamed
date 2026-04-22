@@ -24,16 +24,27 @@ type Chamada = {
   fila_nome?: string;
 };
 
+type TvSearchParams = {
+  debug?: boolean;
+};
+
 export const Route = createFileRoute("/tv/$slug")({
+  validateSearch: (search: Record<string, unknown>): TvSearchParams => {
+    return {
+      debug: search.debug === true || search.debug === "true",
+    };
+  },
   component: TvPage,
 });
 
 function TvPage() {
   const { slug } = Route.useParams();
+  const search = Route.useSearch();
   const [unidade, setUnidade] = useState<any>(null);
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
   const [now, setNow] = useState(new Date());
   
   // Hook de configuração visual (cores, logo, etc)
