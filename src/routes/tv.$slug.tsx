@@ -418,6 +418,36 @@ function TvPage() {
     };
   }, [unidade?.id, speak]);
 
+  // Lógica de Autoajuste de Escala e Padding
+  const [autoStyles, setAutoStyles] = useState<{ scale: number; padding: number }>({ scale: 1, padding: 8 });
+
+  useEffect(() => {
+    if (!visual.auto_ajuste) {
+      setAutoStyles({ scale: 1, padding: 8 });
+      return;
+    }
+
+    const adjust = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      
+      // Escala baseada em 1080p (Full HD)
+      const baseScale = Math.min(vw / 1920, vh / 1080);
+      
+      // Padding dinâmico (entre 10 e 40px dependendo da escala)
+      const dynamicPadding = Math.max(10, Math.min(40, 24 * baseScale));
+      
+      setAutoStyles({ 
+        scale: baseScale * visual.escala_fonte, 
+        padding: dynamicPadding 
+      });
+    };
+
+    adjust();
+    window.addEventListener("resize", adjust);
+    return () => window.removeEventListener("resize", adjust);
+  }, [visual.auto_ajuste, visual.escala_fonte]);
+
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, 9);
 
@@ -493,11 +523,12 @@ function TvPage() {
 
   return (
     <div 
-      className="flex h-screen flex-col overflow-hidden font-sans transition-colors duration-500"
+      className="flex h-screen flex-col overflow-hidden font-sans transition-all duration-500"
       style={{ 
         backgroundColor: visual.cor_fundo, 
         color: visual.cor_texto,
         backgroundImage: visual.fundo_url ? `url(${visual.fundo_url})` : undefined,
+        fontSize: visual.auto_ajuste ? `${autoStyles.scale}rem` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
@@ -551,8 +582,10 @@ function TvPage() {
 
       {/* Main Content */}
       <main 
-        className="relative flex-1 overflow-hidden grid gap-2 p-2"
+        className="relative flex-1 overflow-hidden grid"
         style={{
+          gap: visual.auto_ajuste ? `${autoStyles.padding / 2}px` : '8px',
+          padding: visual.auto_ajuste ? `${autoStyles.padding}px` : '8px',
           gridTemplateColumns: `repeat(${visual.layout_grid_cols || 12}, 1fr)`,
           gridTemplateRows: `repeat(${visual.layout_grid_rows || 6}, 1fr)`,
         }}

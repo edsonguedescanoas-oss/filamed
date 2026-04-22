@@ -14,6 +14,7 @@ import {
   type TvVisualConfig,
 } from "@/hooks/use-tv-visual-config";
 import { SinalizacaoManager } from "@/components/voz/sinalizacao-manager";
+import { Switch } from "@/components/ui/switch";
 
 interface Props {
   unidadeId: string;
@@ -31,7 +32,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -53,6 +54,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           layout_grid_cols: Number(data.layout_grid_cols) || 12,
           layout_grid_rows: Number(data.layout_grid_rows) || 6,
           layout_items: (data.layout_items as any) || DEFAULT_TV_VISUAL.layout_items,
+          auto_ajuste: !!data.auto_ajuste,
         });
       }
       setLoading(false);
@@ -136,6 +138,21 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
               </button>
             );
           })}
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label className="text-sm font-semibold">Modo de Autoajuste</Label>
+            <p className="text-xs text-muted-foreground">
+              Calcula automaticamente a melhor escala e espaçamentos para o conteúdo.
+            </p>
+          </div>
+          <Switch
+            checked={cfg.auto_ajuste}
+            onCheckedChange={(v) => update("auto_ajuste", v)}
+          />
         </div>
       </section>
 
@@ -519,7 +536,7 @@ function PreviewCard({ cfg }: { cfg: TvVisualConfig }) {
         <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
           <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
           {RESOLUCAO_PRESETS[cfg.resolucao_preset].label.split(" ")[0]} ·{" "}
-          {Math.round(cfg.escala_fonte * 100)}% · {cfg.densidade}
+          {cfg.auto_ajuste ? "Auto" : `${Math.round(cfg.escala_fonte * 100)}%`} · {cfg.densidade}
         </div>
       </div>
 
