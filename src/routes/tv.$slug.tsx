@@ -230,12 +230,13 @@ function TvPage() {
   }, [needsInteraction]);
 
   const speak = useCallback(async (chamada: Chamada) => {
+    const destinoLimpo = limparDestino(chamada.destino);
     const textoBase = montarTextoChamada({
       template: voiceConfig.template_chamada,
       nome: chamada.senha?.paciente_nome || null,
       codigoFalado: soletrar(chamada.senha?.codigo || ""),
       nomeFila: chamada.senha?.fila_nome || null,
-      destino: chamada.destino,
+      destino: destinoLimpo,
       formatarDestino,
     });
 
