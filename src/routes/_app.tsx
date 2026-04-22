@@ -155,7 +155,7 @@ function AppLayout() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
               <Activity className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="font-display text-lg font-semibold">
+            <span className="font-display text-base font-semibold">
               Fila<span className="text-gradient">Med</span>
             </span>
           </Link>
