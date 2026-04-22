@@ -51,11 +51,14 @@ function TvPage() {
       if (!slug) return;
       
       try {
+        console.log("TV: Iniciando carga para slug:", slug);
         setLoading(true);
         setError(null);
         
         const { data: uniData, error: uniError } = await supabase
           .rpc("get_unidade_publica_by_slug", { _slug: slug });
+
+        console.log("TV: Resposta unidade:", { uniData, uniError });
 
         if (uniError) throw uniError;
         if (!uniData || uniData.length === 0) {
@@ -67,12 +70,14 @@ function TvPage() {
         const uni = uniData[0];
         setUnidade(uni);
 
+        console.log("TV: Buscando chamadas para unidade:", uni.id);
         const { data: chamadasData, error: chamadasError } = await supabase
           .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: uni.id });
         
+        console.log("TV: Resposta chamadas:", { chamadasData, chamadasError });
+
         if (chamadasError) console.error("Erro ao buscar chamadas:", chamadasError);
         
-        // Mapear dados da RPC para o formato esperado pelo componente
         const mapeadas = (chamadasData ?? []).map(c => ({
           ...c,
           senha: {
@@ -87,6 +92,7 @@ function TvPage() {
         console.error("Erro fatal ao carregar TV:", err);
         setError(err.message || "Erro inesperado ao carregar o painel.");
       } finally {
+        console.log("TV: Finalizando loading");
         setLoading(false);
       }
     }
