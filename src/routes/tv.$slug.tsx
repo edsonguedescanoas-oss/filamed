@@ -144,6 +144,9 @@ function TvPage() {
 
     if (voiceConfig.provider === "browser") {
       const synth = window.speechSynthesis;
+      // Cancela qualquer fala anterior para não "travar" a fila do navegador
+      synth.cancel();
+
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = "pt-BR";
       utterance.rate = voiceConfig.rate;
@@ -155,7 +158,8 @@ function TvPage() {
         if (v) utterance.voice = v;
       }
       
-      synth.speak(utterance);
+      // Alguns navegadores precisam de um pequeno delay após o cancel
+      setTimeout(() => synth.speak(utterance), 50);
     } else {
       try {
         const { data, error } = await supabase.functions.invoke("tts", {
@@ -178,16 +182,17 @@ function TvPage() {
           const audio = new Audio(audioData);
           await audio.play();
         } else if (data?.fallback === "browser") {
-          // Fallback para browser se a API falhar (cota, etc)
           const synth = window.speechSynthesis;
+          synth.cancel();
           const u = new SpeechSynthesisUtterance(texto);
           u.lang = "pt-BR";
-          synth.speak(u);
+          setTimeout(() => synth.speak(u), 50);
         }
       } catch (err) {
         console.error("[TV] Erro ao reproduzir voz:", err);
       }
     }
+
   }, [voiceConfig]);
 
   // Realtime para novas chamadas
