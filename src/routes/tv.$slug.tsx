@@ -617,11 +617,11 @@ function TvPage() {
 
         <div className="flex items-center gap-8">
           <div className="text-right">
-            <p className="text-4xl font-mono font-bold">
-              {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+            <p className="text-4xl font-mono font-bold" suppressHydrationWarning>
+              {now ? now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "--:--"}
             </p>
-            <p className="text-sm font-medium opacity-60">
-              {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+            <p className="text-sm font-medium opacity-60" suppressHydrationWarning>
+              {now ? now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }) : ""}
             </p>
           </div>
           <button 
