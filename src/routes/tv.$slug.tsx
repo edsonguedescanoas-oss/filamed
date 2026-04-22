@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { Clock, Users, Activity, Volume2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
+import { TvCarrossel } from "@/components/tv-carrossel";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 
 // Tipagens básicas
