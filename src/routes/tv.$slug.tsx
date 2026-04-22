@@ -584,10 +584,10 @@ function TvPage() {
                     
                     <div className="mt-2 space-y-1">
                       {ultimaChamada.senha?.paciente_nome && (
-                        <p className="text-3xl font-bold text-white/90">{ultimaChamada.senha.paciente_nome}</p>
+                        <p className="text-2xl font-bold text-white/90 truncate px-4">{ultimaChamada.senha.paciente_nome}</p>
                       )}
-                      <p className="text-xl font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
-                      <p className="text-5xl font-bold uppercase">{ultimaChamada.destino}</p>
+                      <p className="text-lg font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
+                      <p className="text-4xl font-bold uppercase truncate px-4">{ultimaChamada.destino}</p>
                     </div>
                   </div>
                 ) : (
