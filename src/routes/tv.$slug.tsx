@@ -109,17 +109,26 @@ function TvPage() {
   // Hook de configuração visual (cores, logo, etc)
   const { config: visual, setConfig } = useTvVisualConfig(unidade?.id);
 
-  // Zoom local (salvo no localStorage deste dispositivo)
-  const [zoom, setZoom] = useState(() => {
-    if (typeof window === "undefined") return 1;
-    return Number(localStorage.getItem(`tv-zoom-${unidade?.id}`)) || 1;
-  });
+  // Zoom local (prioriza localStorage, mas usa o da unidade se não houver local)
+  const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    if (!loading && visual) {
+      const localZoom = localStorage.getItem(`tv-zoom-${unidade?.id}`);
+      if (localZoom) {
+        setZoom(Number(localZoom));
+      } else {
+        setZoom(visual.zoom_nivel || 1);
+      }
+    }
+  }, [loading, visual, unidade?.id]);
 
   const updateZoom = (newZoom: number) => {
     const z = Math.max(0.2, Math.min(3, newZoom));
     setZoom(z);
     localStorage.setItem(`tv-zoom-${unidade?.id}`, String(z));
   };
+
 
   // Carrega configuração de voz
   useEffect(() => {
