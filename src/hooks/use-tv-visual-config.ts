@@ -5,6 +5,13 @@ export type ResolucaoPreset = "hd" | "fhd" | "uhd" | "ultrawide";
 export type Densidade = "compacto" | "normal";
 export type ContrasteChamadas = "normal" | "alto" | "maximo";
 
+export interface LayoutItem {
+  type: "chamada_atual" | "historico" | "midia" | "relogio";
+  col_span: number;
+  row_span: number;
+  order: number;
+}
+
 export interface TvVisualConfig {
   cor_primaria: string;
   cor_fundo: string;
@@ -20,6 +27,10 @@ export interface TvVisualConfig {
   contraste_chamadas: ContrasteChamadas;
   /** Multiplicador (0.6–2.5) das fontes da área de chamadas. */
   escala_chamadas: number;
+  /** Configurações de layout em grid */
+  layout_grid_cols: number;
+  layout_grid_rows: number;
+  layout_items: LayoutItem[];
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
@@ -34,6 +45,12 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   mensagem_rodape: null,
   contraste_chamadas: "normal",
   escala_chamadas: 1,
+  layout_grid_cols: 12,
+  layout_grid_rows: 6,
+  layout_items: [
+    { type: "chamada_atual", col_span: 8, row_span: 6, order: 1 },
+    { type: "historico", col_span: 4, row_span: 6, order: 2 },
+  ],
 };
 
 export const RESOLUCAO_PRESETS: Record<
@@ -64,7 +81,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -83,6 +100,9 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           contraste_chamadas:
             (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
           escala_chamadas: Number(data.escala_chamadas) || 1,
+          layout_grid_cols: Number(data.layout_grid_cols) || 12,
+          layout_grid_rows: Number(data.layout_grid_rows) || 6,
+          layout_items: (data.layout_items as unknown as LayoutItem[]) || DEFAULT_TV_VISUAL.layout_items,
         });
       }
       setLoading(false);
