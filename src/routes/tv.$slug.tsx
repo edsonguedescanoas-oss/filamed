@@ -294,7 +294,7 @@ function TvPage() {
               finalize();
             }
           });
-        } else if (data?.fallback === "browser" || !audioData) {
+        } else if (data?.fallback === "browser" || !audioSrc) {
           console.log("[TV] Cloud indisponível, usando fallback de navegador");
           if (synth) {
             synth.cancel();
