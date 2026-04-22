@@ -705,6 +705,9 @@ export type Database = {
           escala_fonte: number
           fundo_url: string | null
           id: string
+          layout_grid_cols: number | null
+          layout_grid_rows: number | null
+          layout_items: Json | null
           logo_url: string | null
           mensagem_rodape: string | null
           resolucao_preset: string
@@ -722,6 +725,9 @@ export type Database = {
           escala_fonte?: number
           fundo_url?: string | null
           id?: string
+          layout_grid_cols?: number | null
+          layout_grid_rows?: number | null
+          layout_items?: Json | null
           logo_url?: string | null
           mensagem_rodape?: string | null
           resolucao_preset?: string
@@ -739,6 +745,9 @@ export type Database = {
           escala_fonte?: number
           fundo_url?: string | null
           id?: string
+          layout_grid_cols?: number | null
+          layout_grid_rows?: number | null
+          layout_items?: Json | null
           logo_url?: string | null
           mensagem_rodape?: string | null
           resolucao_preset?: string
