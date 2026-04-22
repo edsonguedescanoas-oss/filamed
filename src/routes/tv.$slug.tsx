@@ -164,12 +164,23 @@ function TvPage() {
       return;
     }
 
+    const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+    
+    // Sempre tenta dar resume no synth antes de qualquer operação de voz
+    if (synth) {
+      try {
+        synth.resume();
+      } catch (e) {
+        console.warn("[TV] Erro ao dar resume no speechSynthesis:", e);
+      }
+    }
+
     if (isSpeaking.current) {
       console.log("[TV] Já está falando, cancelando anterior e iniciando nova...");
-      if (voiceConfig.provider === "browser") {
-        window.speechSynthesis.cancel();
-      } else if (voiceAudioRef.current) {
+      if (synth) synth.cancel();
+      if (voiceAudioRef.current) {
         voiceAudioRef.current.pause();
+        voiceAudioRef.current.currentTime = 0;
       }
     }
 
@@ -178,36 +189,44 @@ function TvPage() {
 
     const finalize = () => {
       isSpeaking.current = false;
+      console.log("[TV] Finalizou fala.");
+    };
+
+    // Configuração comum para WebSpeech
+    const createUtterance = (t: string) => {
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = "pt-BR";
+      u.rate = voiceConfig.rate || 1;
+      u.pitch = voiceConfig.pitch || 1;
+      u.volume = 1;
+      u.onend = finalize;
+      u.onerror = (e) => {
+        console.error("[TV] Erro SpeechSynthesis:", e);
+        finalize();
+      };
+      
+      if (voiceConfig.voice_id && synth) {
+        const voices = synth.getVoices();
+        const v = voices.find(x => x.name === voiceConfig.voice_id || x.voiceURI === voiceConfig.voice_id);
+        if (v) u.voice = v;
+      }
+      return u;
     };
 
     if (voiceConfig.provider === "browser") {
-      if (typeof window === "undefined" || !window.speechSynthesis) {
+      if (!synth) {
         console.warn("[TV] SpeechSynthesis não suportado.");
         finalize();
         return;
       }
 
-      const synth = window.speechSynthesis;
       synth.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(texto);
-      utterance.lang = "pt-BR";
-      utterance.rate = voiceConfig.rate;
-      utterance.pitch = voiceConfig.pitch;
-      utterance.volume = 1; // Garante volume máximo
-      utterance.onend = finalize;
-      utterance.onerror = (e) => {
-        console.error("[TV] Erro SpeechSynthesis:", e);
-        finalize();
-      };
-      
-      if (voiceConfig.voice_id) {
-        const voices = synth.getVoices();
-        const v = voices.find(x => x.name === voiceConfig.voice_id || x.voiceURI === voiceConfig.voice_id);
-        if (v) utterance.voice = v;
-      }
-      
-      setTimeout(() => synth.speak(utterance), 150);
+      const utterance = createUtterance(texto);
+      // Timeout maior para garantir que o cancel anterior processou (comum em alguns navegadores)
+      setTimeout(() => {
+        if (synth) synth.resume(); // Reforça resume logo antes do speak
+        if (synth) synth.speak(utterance);
+      }, 200);
     } else {
       try {
         const { data, error } = await supabase.functions.invoke("tts", {
@@ -231,38 +250,52 @@ function TvPage() {
           audio.src = audioData;
           audio.onended = finalize;
           audio.onerror = (e) => {
-            console.error("[TV] Erro no elemento de áudio:", e);
-            // Fallback para browser
-            const u = new SpeechSynthesisUtterance(texto);
-            u.lang = "pt-BR";
-            u.onend = finalize;
-            window.speechSynthesis.speak(u);
+            console.error("[TV] Erro no elemento de áudio (cloud), tentando fallback local:", e);
+            if (synth) {
+              synth.cancel();
+              const u = createUtterance(texto);
+              synth.speak(u);
+            } else {
+              finalize();
+            }
           };
           
           audio.play().catch(playErr => {
-            console.error("[TV] Play bloqueado, tentando fallback WebSpeech:", playErr);
-            const u = new SpeechSynthesisUtterance(texto);
-            u.lang = "pt-BR";
-            u.onend = finalize;
-            window.speechSynthesis.speak(u);
+            console.error("[TV] Play cloud bloqueado, tentando fallback WebSpeech:", playErr);
+            if (synth) {
+              synth.cancel();
+              const u = createUtterance(texto);
+              synth.speak(u);
+            } else {
+              finalize();
+            }
           });
         } else if (data?.fallback === "browser" || !audioData) {
-          console.log("[TV] Usando fallback de navegador (Web Speech)");
-          const synth = window.speechSynthesis;
-          synth.cancel();
-          const u = new SpeechSynthesisUtterance(texto);
-          u.lang = "pt-BR";
-          u.onend = finalize;
-          setTimeout(() => synth.speak(u), 150);
+          console.log("[TV] Cloud indisponível ou vazio, usando fallback de navegador");
+          if (synth) {
+            synth.cancel();
+            const u = createUtterance(texto);
+            setTimeout(() => {
+              if (synth) {
+                synth.resume();
+                synth.speak(u);
+              }
+            }, 200);
+          } else {
+            finalize();
+          }
         } else {
           finalize();
         }
       } catch (err) {
-        console.error("[TV] Erro ao reproduzir voz cloud, fallback browser:", err);
-        const u = new SpeechSynthesisUtterance(texto);
-        u.lang = "pt-BR";
-        u.onend = finalize;
-        window.speechSynthesis.speak(u);
+        console.error("[TV] Erro ao processar voz cloud, fallback browser:", err);
+        if (synth) {
+          synth.cancel();
+          const u = createUtterance(texto);
+          synth.speak(u);
+        } else {
+          finalize();
+        }
       }
     }
   }, [voiceConfig, formatarDestino]);
