@@ -582,8 +582,10 @@ function TvPage() {
 
       {/* Main Content */}
       <main 
-        className="relative flex-1 overflow-hidden grid gap-2 p-2"
+        className="relative flex-1 overflow-hidden grid"
         style={{
+          gap: visual.auto_ajuste ? `${autoStyles.padding / 2}px` : '8px',
+          padding: visual.auto_ajuste ? `${autoStyles.padding}px` : '8px',
           gridTemplateColumns: `repeat(${visual.layout_grid_cols || 12}, 1fr)`,
           gridTemplateRows: `repeat(${visual.layout_grid_rows || 6}, 1fr)`,
         }}
