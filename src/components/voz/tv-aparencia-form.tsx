@@ -32,7 +32,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -55,6 +55,8 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           layout_grid_rows: Number(data.layout_grid_rows) || 6,
           layout_items: (data.layout_items as any) || DEFAULT_TV_VISUAL.layout_items,
           auto_ajuste: !!data.auto_ajuste,
+          historico_limite: Number(data.historico_limite) || 8,
+          historico_quebrar_texto: !!data.historico_quebrar_texto,
         });
       }
       setLoading(false);
@@ -359,6 +361,31 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
               max={12}
               value={cfg.layout_grid_rows}
               onChange={(e) => update("layout_grid_rows", Number(e.target.value))}
+            />
+          </div>
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="hist_limite" className="text-xs font-medium">Itens no Histórico ({cfg.historico_limite})</Label>
+            <Input
+              id="hist_limite"
+              type="number"
+              min={1}
+              max={20}
+              value={cfg.historico_limite}
+              onChange={(e) => update("historico_limite", Number(e.target.value))}
+            />
+            <p className="text-[10px] text-muted-foreground">Quantas chamadas anteriores mostrar na lista.</p>
+          </div>
+          <div className="flex items-center justify-between gap-4 pt-6">
+            <div className="space-y-0.5">
+              <Label className="text-xs font-medium">Quebrar texto no histórico</Label>
+              <p className="text-[10px] text-muted-foreground">Evita cortar nomes longos.</p>
+            </div>
+            <Switch
+              checked={cfg.historico_quebrar_texto}
+              onCheckedChange={(v) => update("historico_quebrar_texto", v)}
             />
           </div>
         </div>

@@ -402,7 +402,7 @@ function TvPage() {
             },
           };
 
-          setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
+          setChamadas(prev => [novaChamada, ...prev].slice(0, (visual.historico_limite || 8) + 2));
           
           // 3. Inicia a fala logo após o início do beep (reduzido de 800ms para 100ms)
           // Isso faz com que a voz comece quase junto ou logo após o "bipe" inicial
@@ -449,7 +449,7 @@ function TvPage() {
   }, [visual.auto_ajuste, visual.escala_fonte]);
 
   const ultimaChamada = chamadas[0];
-  const historico = chamadas.slice(1, 9);
+  const historico = chamadas.slice(1, (visual.historico_limite || 8) + 1);
 
   if (needsInteraction) {
     return (
@@ -617,10 +617,10 @@ function TvPage() {
                     
                     <div className="mt-2 space-y-1">
                       {ultimaChamada.senha?.paciente_nome && (
-                        <p className="text-2xl font-bold text-white/90 truncate px-4">{ultimaChamada.senha.paciente_nome}</p>
+                        <p className={`text-2xl font-bold text-white/90 px-4 ${visual.historico_quebrar_texto ? "" : "truncate"}`}>{ultimaChamada.senha.paciente_nome}</p>
                       )}
                       <p className="text-lg font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
-                      <p className="text-4xl font-bold uppercase truncate px-4">{ultimaChamada.destino}</p>
+                      <p className={`text-4xl font-bold uppercase px-4 ${visual.historico_quebrar_texto ? "" : "truncate"}`}>{ultimaChamada.destino}</p>
                     </div>
                   </div>
                 ) : (
@@ -660,13 +660,13 @@ function TvPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <p className="text-xl font-bold text-primary leading-tight">{chamada.senha?.codigo}</p>
-                          <p className="text-[10px] font-medium opacity-50 uppercase truncate">
+                          <p className={`text-[10px] font-medium opacity-50 uppercase ${visual.historico_quebrar_texto ? "" : "truncate"}`}>
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                             {chamada.senha?.fila_nome || "Geral"}
                           </p>
                         </div>
-                        <div className="text-right ml-4 shrink-0">
-                          <p className="text-base font-bold opacity-90 leading-tight">{chamada.destino}</p>
+                        <div className="text-right ml-4 shrink-0 max-w-[40%]">
+                          <p className={`text-base font-bold opacity-90 leading-tight ${visual.historico_quebrar_texto ? "" : "truncate"}`}>{chamada.destino}</p>
                           <p className="text-[9px] font-mono opacity-30">
                             {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
