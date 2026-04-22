@@ -49,7 +49,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto,aspect_ratio",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -76,6 +76,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           auto_ajuste: !!data.auto_ajuste,
           historico_limite: Number(data.historico_limite) || 8,
           historico_quebrar_texto: !!data.historico_quebrar_texto,
+          aspect_ratio: (data.aspect_ratio as any) ?? "16:9",
         });
       }
       setLoading(false);
@@ -197,18 +198,38 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <div className="flex items-center justify-between">
+      <section className="grid gap-4 md:grid-cols-2">
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4">
           <div className="space-y-0.5">
             <Label className="text-sm font-semibold">Modo de Autoajuste</Label>
             <p className="text-xs text-muted-foreground">
-              Calcula automaticamente a melhor escala e espaçamentos para o conteúdo.
+              Calcula automaticamente a melhor escala e espaçamentos.
             </p>
           </div>
           <Switch
             checked={cfg.auto_ajuste}
             onCheckedChange={(v) => update("auto_ajuste", v)}
           />
+        </div>
+
+        <div className="flex flex-col justify-center gap-2 rounded-xl border border-border bg-card p-4">
+          <Label className="text-sm font-semibold">Formato da Tela (Aspect Ratio)</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(["16:9", "4:3"] as const).map((ratio) => (
+              <button
+                key={ratio}
+                type="button"
+                onClick={() => update("aspect_ratio", ratio)}
+                className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                  cfg.aspect_ratio === ratio
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                {ratio === "16:9" ? "Widescreen (16:9)" : "TV Antiga (4:3)"}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

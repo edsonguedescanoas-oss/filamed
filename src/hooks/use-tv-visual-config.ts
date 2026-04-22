@@ -38,6 +38,7 @@ export interface TvVisualConfig {
   auto_ajuste: boolean;
   historico_limite: number;
   historico_quebrar_texto: boolean;
+  aspect_ratio: "16:9" | "4:3";
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
@@ -63,6 +64,7 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   auto_ajuste: false,
   historico_limite: 8,
   historico_quebrar_texto: false,
+  aspect_ratio: "16:9",
 };
 
 export const RESOLUCAO_PRESETS: Record<
@@ -93,7 +95,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto,aspect_ratio",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -120,6 +122,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           auto_ajuste: !!data.auto_ajuste,
           historico_limite: Number(data.historico_limite) || 8,
           historico_quebrar_texto: !!data.historico_quebrar_texto,
+          aspect_ratio: (data.aspect_ratio as any) ?? "16:9",
         });
       }
       setLoading(false);

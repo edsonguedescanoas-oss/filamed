@@ -4,6 +4,7 @@ import { Clock, Users, Activity, Volume2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
 import { TvCarrossel } from "@/components/tv-carrossel";
+import { TvZoomControl } from "@/components/tv-zoom-control";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 
 // Tipagens básicas
@@ -106,7 +107,19 @@ function TvPage() {
 
   
   // Hook de configuração visual (cores, logo, etc)
-  const { config: visual } = useTvVisualConfig(unidade?.id);
+  const { config: visual, setConfig } = useTvVisualConfig(unidade?.id);
+
+  // Zoom local (salvo no localStorage deste dispositivo)
+  const [zoom, setZoom] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    return Number(localStorage.getItem(`tv-zoom-${unidade?.id}`)) || 1;
+  });
+
+  const updateZoom = (newZoom: number) => {
+    const z = Math.max(0.2, Math.min(3, newZoom));
+    setZoom(z);
+    localStorage.setItem(`tv-zoom-${unidade?.id}`, String(z));
+  };
 
   // Carrega configuração de voz
   useEffect(() => {
@@ -431,8 +444,12 @@ function TvPage() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       
-      // Escala baseada em 1080p (Full HD)
-      const baseScale = Math.min(vw / 1920, vh / 1080);
+      // Define a resolução base dependendo do aspect ratio selecionado
+      const baseW = visual.aspect_ratio === "4:3" ? 1440 : 1920;
+      const baseH = 1080;
+      
+      // Escala baseada na resolução alvo
+      const baseScale = Math.min(vw / baseW, vh / baseH);
       
       // Padding dinâmico (entre 10 e 40px dependendo da escala)
       const dynamicPadding = Math.max(10, Math.min(40, 24 * baseScale));
@@ -446,7 +463,7 @@ function TvPage() {
     adjust();
     window.addEventListener("resize", adjust);
     return () => window.removeEventListener("resize", adjust);
-  }, [visual.auto_ajuste, visual.escala_fonte]);
+  }, [visual.auto_ajuste, visual.escala_fonte, visual.aspect_ratio]);
 
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, (visual.historico_limite || 8) + 1);
@@ -523,14 +540,16 @@ function TvPage() {
 
   return (
     <div 
-      className="flex h-screen flex-col overflow-hidden font-sans transition-all duration-500"
+      className="flex h-screen w-screen flex-col overflow-hidden font-sans transition-all duration-500 relative"
       style={{ 
         backgroundColor: visual.cor_fundo, 
         color: visual.cor_texto,
         backgroundImage: visual.fundo_url ? `url(${visual.fundo_url})` : undefined,
-        fontSize: visual.auto_ajuste ? `${autoStyles.scale}rem` : `${visual.escala_fonte}rem`,
+        fontSize: visual.auto_ajuste ? `${autoStyles.scale * zoom}rem` : `${visual.escala_fonte * zoom}rem`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        // Se for 4:3 num monitor widescreen, centralizamos com barras pretas se desejado
+        // Mas o pedido é "ajustar automaticamente sem distorcer", então apenas mudar a escala basta.
       }}
     >
       {/* Overlay se tiver imagem de fundo */}
@@ -755,6 +774,32 @@ function TvPage() {
           animation: marquee 30s linear infinite;
         }
       `}</style>
+
+      <TvZoomControl
+        zoom={zoom}
+        onInc={() => updateZoom(zoom + 0.05)}
+        onDec={() => updateZoom(zoom - 0.05)}
+        onReset={() => updateZoom(1)}
+        aspectRatio={visual.aspect_ratio}
+        onAspectRatioChange={async (ratio) => {
+          // Atualiza o estado visual IMEDIATAMENTE (localmente)
+          setConfig(prev => ({ ...prev, aspect_ratio: ratio }));
+          
+          // Tenta persistir no banco se for admin, mas aqui na TV é mais pra ajuste local rápido
+          // Como o useTvVisualConfig assina realtime, se mudarmos no banco muda em todas as TVs.
+          // Se o usuário quer mudar SÓ NESTA TV, talvez precisássemos de um state local.
+          // O pedido fala em "selecionar o formato", então vou persistir pra ser o padrão da unidade.
+          try {
+            await supabase
+              .from("tv_visual_config")
+              .update({ aspect_ratio: ratio } as any)
+              .eq("unidade_id", unidade.id);
+          } catch (e) {
+            console.error("Erro ao salvar ratio:", e);
+          }
+        }}
+        autoHide
+      />
     </div>
   );
 }

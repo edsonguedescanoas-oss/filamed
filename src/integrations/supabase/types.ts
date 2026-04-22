@@ -730,6 +730,7 @@ export type Database = {
       }
       tv_visual_config: {
         Row: {
+          aspect_ratio: string
           auto_ajuste: boolean | null
           contraste_chamadas: string
           cor_fundo: string
@@ -755,6 +756,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aspect_ratio?: string
           auto_ajuste?: boolean | null
           contraste_chamadas?: string
           cor_fundo?: string
@@ -780,6 +782,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aspect_ratio?: string
           auto_ajuste?: boolean | null
           contraste_chamadas?: string
           cor_fundo?: string
