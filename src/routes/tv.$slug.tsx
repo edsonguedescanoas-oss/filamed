@@ -549,80 +549,108 @@ function TvPage() {
       </header>
 
       {/* Main Content */}
-      <main className="relative flex flex-1 overflow-hidden">
-        {/* Left Side: Current Call / Highlight */}
-        <div className="flex-[2] flex flex-col items-center justify-center border-r border-white/10 p-10 bg-black/5">
-          {ultimaChamada ? (
-            <div className="w-full max-w-2xl animate-in fade-in zoom-in duration-500 text-center">
+      <main 
+        className="relative flex-1 overflow-hidden grid gap-2 p-2"
+        style={{
+          gridTemplateColumns: `repeat(${visual.layout_grid_cols || 12}, 1fr)`,
+          gridTemplateRows: `repeat(${visual.layout_grid_rows || 6}, 1fr)`,
+        }}
+      >
+        {visual.layout_items.sort((a, b) => a.order - b.order).map((item, idx) => {
+          if (item.type === "chamada_atual") {
+            return (
               <div 
-                className="mb-8 inline-flex items-center gap-3 rounded-full bg-primary/20 px-6 py-2 text-primary border border-primary/30"
+                key={`item-${idx}`}
+                className="flex flex-col items-center justify-center border border-white/10 bg-black/5 rounded-2xl p-6"
+                style={{
+                  gridColumn: `span ${item.col_span}`,
+                  gridRow: `span ${item.row_span}`,
+                }}
               >
-                <Volume2 className="h-5 w-5 animate-pulse" />
-                <span className="text-lg font-bold uppercase tracking-widest">Chamando Agora</span>
-              </div>
-              
-              <div 
-                className="mb-4 font-black leading-none tracking-tighter text-primary drop-shadow-2xl"
-                style={{ fontSize: `${12 * visual.escala_chamadas}rem` }}
-              >
-                {ultimaChamada.senha?.codigo}
-              </div>
-              
-              <div className="mt-4 space-y-2">
-                {ultimaChamada.senha?.paciente_nome && (
-                  <p className="text-5xl font-bold mb-6 text-white/90">{ultimaChamada.senha.paciente_nome}</p>
+                {ultimaChamada ? (
+                  <div className="w-full animate-in fade-in zoom-in duration-500 text-center">
+                    <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-1 text-primary border border-primary/30">
+                      <Volume2 className="h-4 w-4 animate-pulse" />
+                      <span className="text-sm font-bold uppercase tracking-widest">Chamando Agora</span>
+                    </div>
+                    
+                    <div 
+                      className="mb-2 font-black leading-none tracking-tighter text-primary drop-shadow-2xl"
+                      style={{ fontSize: `${8 * visual.escala_chamadas}rem` }}
+                    >
+                      {ultimaChamada.senha?.codigo}
+                    </div>
+                    
+                    <div className="mt-2 space-y-1">
+                      {ultimaChamada.senha?.paciente_nome && (
+                        <p className="text-3xl font-bold text-white/90">{ultimaChamada.senha.paciente_nome}</p>
+                      )}
+                      <p className="text-xl font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
+                      <p className="text-5xl font-bold uppercase">{ultimaChamada.destino}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center opacity-30">
+                    <Users className="mx-auto mb-4 h-16 w-16" />
+                    <p className="text-xl font-medium uppercase tracking-widest">Aguardando Chamadas</p>
+                  </div>
                 )}
-                <p className="text-4xl font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
-                <p className="text-7xl font-bold uppercase">{ultimaChamada.destino}</p>
               </div>
-            </div>
-          ) : (
-            <div className="text-center opacity-30">
-              <Users className="mx-auto mb-6 h-32 w-32" />
-              <p className="text-3xl font-medium uppercase tracking-widest">Aguardando Chamadas</p>
-            </div>
-          )}
-        </div>
+            );
+          }
 
-        {/* Right Side: History / Last Calls */}
-        <div className="flex-1 flex flex-col bg-black/10 backdrop-blur-sm">
-          <div className="p-8 border-b border-white/10 bg-white/5">
-            <h2 className="text-xl font-bold uppercase tracking-widest opacity-80 flex items-center gap-3">
-              <Clock className="h-5 w-5 text-primary" />
-              Últimas Chamadas
-            </h2>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {historico.length > 0 ? (
-              historico.map((chamada, idx) => (
-                <div 
-                  key={chamada.id}
-                  className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-6 animate-in slide-in-from-right duration-300"
-                  style={{ animationDelay: `${idx * 100}ms` }}
-                >
-                  <div>
-                    <p className="text-4xl font-bold text-primary">{chamada.senha?.codigo}</p>
-                    <p className="text-sm font-medium opacity-40 uppercase">
-                      {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
-                      {chamada.senha?.fila_nome || "Geral"}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold opacity-80">{chamada.destino}</p>
-                    <p className="text-xs font-mono opacity-30">
-                      {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
+          if (item.type === "historico") {
+            return (
+              <div 
+                key={`item-${idx}`}
+                className="flex flex-col bg-black/10 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden"
+                style={{
+                  gridColumn: `span ${item.col_span}`,
+                  gridRow: `span ${item.row_span}`,
+                }}
+              >
+                <div className="p-4 border-b border-white/10 bg-white/5">
+                  <h2 className="text-lg font-bold uppercase tracking-widest opacity-80 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Histórico
+                  </h2>
                 </div>
-              ))
-            ) : (
-              <div className="flex h-full items-center justify-center opacity-20 italic">
-                Nenhum histórico disponível
+                
+                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                  {historico.length > 0 ? (
+                    historico.map((chamada, hIdx) => (
+                      <div 
+                        key={chamada.id}
+                        className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-4 animate-in slide-in-from-right duration-300"
+                        style={{ animationDelay: `${hIdx * 100}ms` }}
+                      >
+                        <div>
+                          <p className="text-2xl font-bold text-primary">{chamada.senha?.codigo}</p>
+                          <p className="text-xs font-medium opacity-40 uppercase truncate max-w-[150px]">
+                            {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
+                            {chamada.senha?.fila_nome || "Geral"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold opacity-80">{chamada.destino}</p>
+                          <p className="text-[10px] font-mono opacity-30">
+                            {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex h-full items-center justify-center opacity-20 italic text-sm">
+                      Nenhum histórico
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
+            );
+          }
+
+          return null;
+        })}
       </main>
 
       {/* Footer / Scrolling News or Info */}
