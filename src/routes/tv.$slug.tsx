@@ -34,6 +34,18 @@ function isRechamada(c: Pick<Chamada, "observacao">): boolean {
   return (c.observacao ?? "").trim().toLowerCase() === "rechamada";
 }
 
+/**
+ * Remove qualquer prefixo "Rechamada" / "Rechamada —" / "Rechamada -" /
+ * "Rechamada:" do destino. Defesa contra dados antigos/legados gravados antes
+ * da regra de "rechamada vai só na badge/áudio, nunca no destino".
+ */
+function limparDestino(destino: string | null | undefined): string {
+  if (!destino) return "";
+  return destino
+    .replace(/^\s*rechamada\s*[—\-:.]*\s*/i, "")
+    .trim();
+}
+
 interface VoiceConfig {
   provider: "browser" | "google" | "elevenlabs";
   voice_id: string | null;
