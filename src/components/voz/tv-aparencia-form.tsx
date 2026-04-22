@@ -496,12 +496,6 @@ function PreviewCard({ cfg }: { cfg: TvVisualConfig }) {
 
   // Dados mock só pro preview (não bate no banco)
   const senhaAtual = { codigo: "A045", destino: "Consultório 02" };
-  const proximas = [
-    { codigo: "A046", fila: "Consulta", cor: cfg.cor_primaria },
-    { codigo: "P012", fila: "Preferencial", cor: "#F59E0B" },
-    { codigo: "E008", fila: "Exames", cor: "#10B981" },
-    { codigo: "A047", fila: "Consulta", cor: cfg.cor_primaria },
-  ];
   const ultimas = [
     { codigo: "A044", destino: "Cons. 01" },
     { codigo: "A043", destino: "Cons. 03" },
@@ -590,118 +584,93 @@ function PreviewCard({ cfg }: { cfg: TvVisualConfig }) {
               </div>
             </div>
 
-            {/* Corpo: senha em destaque + lateral */}
+            {/* Corpo com Grid Dinâmico */}
             <div
-              className="relative flex flex-1 min-h-0"
-              style={{ padding: `${(compact ? 8 : 14) * scale}px` }}
+              className="relative flex-1 min-h-0 grid gap-1 p-1"
+              style={{
+                gridTemplateColumns: `repeat(${cfg.layout_grid_cols}, 1fr)`,
+                gridTemplateRows: `repeat(${cfg.layout_grid_rows}, 1fr)`,
+              }}
             >
-              {/* Senha chamada */}
-              <div className="flex flex-1 flex-col justify-center">
-                <div
-                  className="font-bold uppercase tracking-[0.3em] opacity-70"
-                  style={{ fontSize: `${8 * scale}px`, color: cfg.cor_primaria }}
-                >
-                  Senha chamada
-                </div>
-                <div
-                  className="font-display font-black leading-none tabular-nums"
-                  style={{ fontSize: `${64 * scale}px`, marginTop: `${4 * scale}px` }}
-                >
-                  {senhaAtual.codigo}
-                </div>
-                <div
-                  className="font-bold"
-                  style={{
-                    fontSize: `${16 * scale}px`,
-                    marginTop: `${6 * scale}px`,
-                    color: cfg.cor_primaria,
-                  }}
-                >
-                  Dirija-se ao {senhaAtual.destino}
-                </div>
+              {cfg.layout_items.map((item, idx) => {
+                const isCall = item.type === "chamada_atual";
+                const isHist = item.type === "historico";
+                const isMidia = item.type === "midia";
+                const isRelogio = item.type === "relogio";
 
-                {/* Últimas chamadas */}
-                <div style={{ marginTop: `${(compact ? 8 : 12) * scale}px` }}>
+                return (
                   <div
-                    className="font-bold uppercase tracking-[0.25em] opacity-50"
-                    style={{ fontSize: `${7 * scale}px` }}
+                    key={idx}
+                    className="flex flex-col items-center justify-center border border-white/5 bg-white/5 rounded relative overflow-hidden"
+                    style={{
+                      gridColumn: `span ${item.col_span}`,
+                      gridRow: `span ${item.row_span}`,
+                    }}
                   >
-                    Últimas chamadas
-                  </div>
-                  <div
-                    className="flex flex-wrap"
-                    style={{ gap: `${6 * scale}px`, marginTop: `${4 * scale}px` }}
-                  >
-                    {ultimas.map((u) => (
-                      <div
-                        key={u.codigo}
-                        className="rounded font-mono tabular-nums"
-                        style={{
-                          padding: `${3 * scale}px ${6 * scale}px`,
-                          fontSize: `${9 * scale}px`,
-                          backgroundColor: `${cfg.cor_primaria}22`,
-                          color: cfg.cor_texto,
-                        }}
-                      >
-                        {u.codigo}
-                        <span className="opacity-60"> · {u.destino}</span>
+                    {isCall && (
+                      <div className="text-center">
+                        <div 
+                          className="font-black leading-none text-primary"
+                          style={{ fontSize: `${12 * scale * cfg.escala_chamadas}px` }}
+                        >
+                          {senhaAtual.codigo}
+                        </div>
+                        <div 
+                          className="font-bold opacity-80"
+                          style={{ fontSize: `${5 * scale}px` }}
+                        >
+                          {senhaAtual.destino}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                    )}
 
-              {/* Lateral: aguardando */}
-              <div
-                className="flex flex-col rounded border border-white/10 bg-black/20 backdrop-blur-sm"
-                style={{
-                  width: `${130 * scale}px`,
-                  marginLeft: `${10 * scale}px`,
-                  padding: `${8 * scale}px`,
-                }}
-              >
-                <div
-                  className="font-bold uppercase tracking-[0.25em] opacity-70"
-                  style={{ fontSize: `${7 * scale}px`, color: cfg.cor_primaria }}
-                >
-                  Aguardando
-                </div>
-                <div
-                  className="flex flex-col"
-                  style={{ gap: `${4 * scale}px`, marginTop: `${5 * scale}px` }}
-                >
-                  {proximas.map((p) => (
-                    <div
-                      key={p.codigo}
-                      className="flex items-center justify-between rounded"
-                      style={{
-                        padding: `${3 * scale}px ${5 * scale}px`,
-                        backgroundColor: `${p.cor}1f`,
-                        borderLeft: `${2 * scale}px solid ${p.cor}`,
-                      }}
-                    >
-                      <span
-                        className="font-mono font-bold tabular-nums"
-                        style={{ fontSize: `${10 * scale}px` }}
-                      >
-                        {p.codigo}
-                      </span>
-                      <span
-                        className="opacity-60"
-                        style={{ fontSize: `${7 * scale}px` }}
-                      >
-                        {p.fila}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    {isHist && (
+                      <div className="w-full h-full flex flex-col">
+                        <div 
+                          className="bg-white/5 px-2 py-0.5 font-bold uppercase opacity-50"
+                          style={{ fontSize: `${3 * scale}px` }}
+                        >
+                          Histórico
+                        </div>
+                        <div className="flex-1 p-1 space-y-0.5 overflow-hidden">
+                          {ultimas.map((u, i) => (
+                            <div key={i} className="flex justify-between items-center bg-white/5 rounded px-1">
+                              <span className="font-bold text-primary" style={{ fontSize: `${4 * scale}px` }}>{u.codigo}</span>
+                              <span className="opacity-60" style={{ fontSize: `${3 * scale}px` }}>{u.destino}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {isMidia && (
+                      <div className="flex items-center justify-center bg-slate-800/50 w-full h-full text-[6px] italic opacity-30">
+                        Espaço de Mídia
+                      </div>
+                    )}
+
+                    {isRelogio && (
+                      <div className="text-center">
+                        <div className="font-mono font-bold" style={{ fontSize: `${10 * scale}px` }}>14:32</div>
+                        <div className="opacity-40" style={{ fontSize: `${3 * scale}px` }}>terça-feira</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div
+              className="relative flex items-center bg-primary text-primary-foreground overflow-hidden whitespace-nowrap"
+              style={{ height: `${12 * scale}px`, fontSize: `${6 * scale}px`, padding: `0 ${8 * scale}px` }}
+            >
+              <div className="font-bold">
+                {cfg.mensagem_rodape || "Bem-vindo ao atendimento..."}
               </div>
             </div>
           </div>
         </div>
-
-        {/* Pé da moldura — like a TV stand */}
-        <div className="mx-auto mt-2 h-1.5 w-1/4 rounded-b-lg bg-neutral-800" />
       </div>
     </div>
   );
