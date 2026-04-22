@@ -14,6 +14,7 @@ import {
   type TvVisualConfig,
 } from "@/hooks/use-tv-visual-config";
 import { SinalizacaoManager } from "@/components/voz/sinalizacao-manager";
+import { Switch } from "@/components/ui/switch";
 
 interface Props {
   unidadeId: string;
