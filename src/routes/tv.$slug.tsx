@@ -303,11 +303,12 @@ function TvPage() {
           if (synth) {
             synth.cancel();
             const u = createUtterance(texto);
-            // Reduzido delay de fallback para feedback mais rápido
-            if (synth) {
-              synth.resume();
-              synth.speak(u);
-            }
+            setTimeout(() => {
+              if (synth) {
+                synth.resume();
+                synth.speak(u);
+              }
+            }, 200);
           } else {
             finalize();
           }
@@ -361,69 +362,52 @@ function TvPage() {
             beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
           }
 
+          // 2. Busca detalhes da senha em paralelo (enquanto o beep toca)
+          let senhaData = null;
+          let retryCount = 0;
+          const maxRetries = 2; // Reduzido de 3 para 2 para ser mais rápido
+          
+          while (retryCount < maxRetries && !senhaData) {
+            const { data } = await supabase
+              .from("senhas")
+              .select("id, codigo, status, filas(nome), pacientes(nome_completo)")
+              .eq("id", payload.new.senha_id)
+              .maybeSingle();
+            
+            if (data) {
+              senhaData = data;
+              break;
+            }
+            
+            retryCount++;
+            console.log(`[TV] Senha não encontrada para chamada ${payload.new.id}, retry ${retryCount}...`);
+            if (retryCount < maxRetries) await new Promise(r => setTimeout(r, 200)); // Reduzido de 500ms para 200ms
+          }
+
           const getJoinedField = (field: any, key: string) => {
             if (!field) return null;
             if (Array.isArray(field)) return field[0]?.[key] || null;
             return field[key] || null;
           };
 
-          // 2. Constrói objeto de chamada com dados do payload (instantâneo)
-          // Isso permite iniciar a voz IMEDIATAMENTE sem esperar queries de banco
           const novaChamada: Chamada = {
             ...(payload.new as Chamada),
             senha: {
-              id: (payload.new as any).senha_id as string,
-              codigo: (payload.new as any).senha_codigo as string,
-              status: "chamando",
-              fila_nome: (payload.new as any).fila_nome || "Fila",
-              paciente_nome: (payload.new as any).paciente_nome || null,
+              id: (senhaData?.id || payload.new.senha_id) as string,
+              codigo: (senhaData?.codigo || (payload.new as any).senha_codigo) as string,
+              status: senhaData?.status as string,
+              fila_nome: getJoinedField(senhaData?.filas, "nome") || (payload.new as any).fila_nome,
+              paciente_nome: getJoinedField(senhaData?.pacientes, "nome_completo") || (payload.new as any).paciente_nome,
             },
           };
 
-          // 3. Inicia a fala IMEDIATAMENTE (paralelo ao fetch de detalhes)
-          // Removido o timeout de 100ms para ser o mais rápido possível
-          void speak(novaChamada);
-          
-          // 4. Atualiza a lista na UI imediatamente
           setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
-
-          // 5. Busca detalhes extras em background apenas para garantir integridade da UI
-          // (Não bloqueia o beep nem a voz)
-          void (async () => {
-            let senhaData = null;
-            let retryCount = 0;
-            const maxRetries = 2;
-            
-            while (retryCount < maxRetries && !senhaData) {
-              const { data } = await supabase
-                .from("senhas")
-                .select("id, codigo, status, filas(nome), pacientes(nome_completo)")
-                .eq("id", payload.new.senha_id)
-                .maybeSingle();
-              
-              if (data) {
-                senhaData = data;
-                break;
-              }
-              
-              retryCount++;
-              if (retryCount < maxRetries) await new Promise(r => setTimeout(r, 200));
-            }
-
-            if (senhaData) {
-              const chamadaAtualizada: Chamada = {
-                ...novaChamada,
-                senha: {
-                  id: senhaData.id,
-                  codigo: senhaData.codigo,
-                  status: senhaData.status,
-                  fila_nome: getJoinedField(senhaData.filas, "nome") || (payload.new as any).fila_nome,
-                  paciente_nome: getJoinedField(senhaData.pacientes, "nome_completo") || (payload.new as any).paciente_nome,
-                },
-              };
-              setChamadas(prev => prev.map(c => c.id === payload.new.id ? chamadaAtualizada : c));
-            }
-          })();
+          
+          // 3. Inicia a fala logo após o início do beep (reduzido de 800ms para 100ms)
+          // Isso faz com que a voz comece quase junto ou logo após o "bipe" inicial
+          setTimeout(() => {
+            void speak(novaChamada);
+          }, 100);
         }
       )
       .subscribe();
