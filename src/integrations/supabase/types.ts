@@ -705,6 +705,7 @@ export type Database = {
           escala_chamadas: number
           escala_fonte: number
           fundo_url: string | null
+          historico_limite: number | null
           id: string
           layout_grid_cols: number | null
           layout_grid_rows: number | null
@@ -726,6 +727,7 @@ export type Database = {
           escala_chamadas?: number
           escala_fonte?: number
           fundo_url?: string | null
+          historico_limite?: number | null
           id?: string
           layout_grid_cols?: number | null
           layout_grid_rows?: number | null
@@ -747,6 +749,7 @@ export type Database = {
           escala_chamadas?: number
           escala_fonte?: number
           fundo_url?: string | null
+          historico_limite?: number | null
           id?: string
           layout_grid_cols?: number | null
           layout_grid_rows?: number | null
