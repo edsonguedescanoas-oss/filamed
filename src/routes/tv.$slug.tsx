@@ -269,11 +269,27 @@ function TvPage() {
           Para que o painel possa anunciar as senhas por voz, é necessário uma interação inicial com a página.
         </p>
         <button
-          onClick={() => setNeedsInteraction(false)}
+          onClick={() => {
+            // "Destrava" o áudio no navegador com uma interação real
+            const silentBeep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+            silentBeep.volume = 0.01;
+            silentBeep.play().then(() => {
+              beepRef.current = silentBeep;
+              beepRef.current.volume = 1;
+            }).catch(e => console.error("Erro ao destravar áudio:", e));
+
+            // "Destrava" a voz (SpeechSynthesis)
+            const synth = window.speechSynthesis;
+            const u = new SpeechSynthesisUtterance("");
+            synth.speak(u);
+
+            setNeedsInteraction(false);
+          }}
           className="rounded-full bg-primary px-10 py-4 font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105 active:scale-95"
         >
           Iniciar Painel
         </button>
+
       </div>
     );
   }
