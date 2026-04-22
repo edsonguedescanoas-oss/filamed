@@ -109,6 +109,8 @@ function buildYoutubeEmbed(url: string): string | null {
   // Origem é exigida pelo YouTube IFrame API quando enablejsapi=1
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const base = "https://www.youtube.com/embed";
+  // Inicia mutado (requisito de autoplay dos navegadores). Depois que o
+  // player carrega, chamamos `unMute` via postMessage pra liberar o som.
   const common = [
     "autoplay=1",
     "mute=1",
