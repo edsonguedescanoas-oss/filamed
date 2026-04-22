@@ -1,5 +1,5 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Clock, Users, Activity, Loader2, Volume2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/tv/$slug")({
 });
 
 function TvPage() {
-  const { slug } = useParams({ from: "/tv/$slug" });
+  const { slug } = Route.useParams();
   const [unidade, setUnidade] = useState<any>(null);
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [loading, setLoading] = useState(true);
