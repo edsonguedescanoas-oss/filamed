@@ -292,6 +292,45 @@ function RecepcaoPage() {
     }
   };
 
+  const handleResetHistorico = async () => {
+    if (!unidadeId) return;
+    setResetting(true);
+    try {
+      // Apaga apenas chamadas de senhas já finalizadas (atendidas, ausentes ou canceladas).
+      // Preserva chamadas de senhas ativas (aguardando, chamada, em_atendimento).
+      const { data: senhasFinalizadas, error: errSenhas } = await supabase
+        .from("senhas")
+        .select("id")
+        .eq("unidade_id", unidadeId)
+        .in("status", ["finalizada", "ausente", "cancelada"]);
+      if (errSenhas) throw errSenhas;
+
+      const ids = (senhasFinalizadas ?? []).map((s) => s.id);
+      if (ids.length === 0) {
+        toast.info("Nenhuma chamada atendida para limpar");
+        return;
+      }
+
+      const { error: errDel, count } = await supabase
+        .from("chamadas")
+        .delete({ count: "exact" })
+        .eq("unidade_id", unidadeId)
+        .in("senha_id", ids);
+      if (errDel) throw errDel;
+
+      toast.success(
+        `Histórico limpo: ${count ?? ids.length} chamada(s) removida(s)`,
+        { description: "Senhas em atendimento foram preservadas" },
+      );
+      void fetchRecentes();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Falha ao resetar histórico";
+      toast.error(msg);
+    } finally {
+      setResetting(false);
+    }
+  };
+
   if (!canGerar) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
