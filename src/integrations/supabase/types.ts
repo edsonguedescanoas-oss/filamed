@@ -977,6 +977,7 @@ export type Database = {
           destino: string
           fila_nome: string
           id: string
+          paciente_nome: string
           senha_codigo: string
           senha_id: string
           unidade_id: string
