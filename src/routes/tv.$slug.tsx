@@ -9,10 +9,8 @@ import { cn } from "@/lib/utils";
 type Senha = {
   id: string;
   codigo: string;
-  status: string;
-  paciente_nome?: string;
+  status?: string;
   fila_nome?: string;
-  destino?: string;
 };
 
 type Chamada = {
@@ -21,6 +19,9 @@ type Chamada = {
   destino: string;
   created_at: string;
   senha?: Senha;
+  // Campos vindos da nova RPC
+  senha_codigo?: string;
+  fila_nome?: string;
 };
 
 export const Route = createFileRoute("/tv/$slug")({
@@ -32,6 +33,7 @@ function TvPage() {
   const [unidade, setUnidade] = useState<any>(null);
   const [chamadas, setChamadas] = useState<Chamada[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
   
   // Hook de configuração visual (cores, logo, etc)
@@ -46,26 +48,56 @@ function TvPage() {
   // Busca inicial da unidade e chamadas recentes
   useEffect(() => {
     async function loadInitialData() {
+      if (!slug) return;
+      
       try {
+        console.log("TV: Iniciando carga para slug:", slug);
+        setLoading(true);
+        setError(null);
+        
         const { data: uniData, error: uniError } = await supabase
           .rpc("get_unidade_publica_by_slug", { _slug: slug });
 
-        if (uniError || !uniData?.[0]) throw new Error("Unidade não encontrada");
+        console.log("TV: Resposta unidade:", { uniData, uniError });
+
+        if (uniError) throw uniError;
+        if (!uniData || uniData.length === 0) {
+          setError("Unidade não encontrada ou inativa.");
+          setLoading(false);
+          return;
+        }
+
         const uni = uniData[0];
         setUnidade(uni);
 
-        const { data: chamadasData } = await supabase
-          .rpc("get_chamadas_recentes", { _unidade_id: uni.id });
+        console.log("TV: Buscando chamadas para unidade:", uni.id);
+        const { data: chamadasData, error: chamadasError } = await supabase
+          .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: uni.id });
         
-        setChamadas((chamadasData ?? []) as Chamada[]);
-      } catch (err) {
-        console.error("Erro ao carregar TV:", err);
+        console.log("TV: Resposta chamadas:", { chamadasData, chamadasError });
+
+        if (chamadasError) console.error("Erro ao buscar chamadas:", chamadasError);
+        
+        const mapeadas = (chamadasData ?? []).map(c => ({
+          ...c,
+          senha: {
+            id: c.senha_id,
+            codigo: c.senha_codigo,
+            fila_nome: c.fila_nome
+          }
+        }));
+
+        setChamadas(mapeadas as Chamada[]);
+      } catch (err: any) {
+        console.error("Erro fatal ao carregar TV:", err);
+        setError(err.message || "Erro inesperado ao carregar o painel.");
       } finally {
+        console.log("TV: Finalizando loading");
         setLoading(false);
       }
     }
 
-    if (slug) loadInitialData();
+    loadInitialData();
   }, [slug]);
 
   // Realtime para novas chamadas
@@ -85,21 +117,25 @@ function TvPage() {
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
           
-          // Busca detalhes da senha para a nova chamada
+          // Busca detalhes da senha para a nova chamada (mantido simples por enquanto)
           const { data: senhaData } = await supabase
             .from("senhas")
-            .select("id, codigo, status")
+            .select("id, codigo, status, filas(nome)")
             .eq("id", payload.new.senha_id)
             .single();
 
           const novaChamada: Chamada = {
             ...(payload.new as Chamada),
-            senha: senhaData as Senha,
+            senha: {
+              id: senhaData?.id as string,
+              codigo: senhaData?.codigo as string,
+              status: senhaData?.status as string,
+              fila_nome: (senhaData?.filas as any)?.nome as string
+            },
           };
 
           setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
           
-          // Aqui poderíamos disparar um som ou animação
           const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
           audio.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
         }
@@ -115,6 +151,22 @@ function TvPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-slate-950 text-white p-10 text-center">
+        <Activity className="h-16 w-16 text-destructive mb-6 opacity-50" />
+        <h2 className="text-3xl font-bold mb-2">Ops! Algo deu errado.</h2>
+        <p className="text-xl text-slate-400 max-w-md">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-8 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors font-semibold"
+        >
+          Tentar Novamente
+        </button>
       </div>
     );
   }
