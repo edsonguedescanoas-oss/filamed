@@ -813,6 +813,7 @@ function TvPage() {
                 <TvCarrossel 
                   unidadeId={unidade.id} 
                   minimalChrome 
+                  paused={isSpeakingState}
                   className="h-full border-0 rounded-none" 
                 />
               </div>
