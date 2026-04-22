@@ -46,6 +46,29 @@ function limparDestino(destino: string | null | undefined): string {
     .trim();
 }
 
+/**
+ * Mapeia o `status` da senha para um label curto exibido como badge no
+ * histórico da TV. Retorna `null` para status que não devem aparecer
+ * (aguardando, chamada, etc).
+ */
+function statusLabel(status: string | undefined | null): {
+  label: string;
+  cls: string;
+} | null {
+  switch (status) {
+    case "em_atendimento":
+      return { label: "Em atendimento", cls: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40" };
+    case "finalizada":
+      return { label: "Atendimento finalizado", cls: "bg-sky-500/20 text-sky-300 border-sky-400/40" };
+    case "ausente":
+      return { label: "Ausente", cls: "bg-amber-500/20 text-amber-300 border-amber-400/40" };
+    case "cancelada":
+      return { label: "Cancelada", cls: "bg-rose-500/20 text-rose-300 border-rose-400/40" };
+    default:
+      return null;
+  }
+}
+
 interface VoiceConfig {
   provider: "browser" | "google" | "elevenlabs";
   voice_id: string | null;
@@ -110,11 +133,22 @@ function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
   /**
-   * IDs de senhas que já saíram do estado "chamada" (ex.: viraram
-   * em_atendimento/finalizada/ausente). Usado para esconder do "Chamando agora"
-   * imediatamente — sem esperar nova chamada chegar.
+   * Mapa de senha_id -> status atual, populado via realtime de UPDATE em
+   * `senhas`. Usado para:
+   *  - Esconder do "Chamando agora" quando a senha sai do estado "chamada"
+   *    (vira em_atendimento/finalizada/ausente/cancelada).
+   *  - Mostrar um badge no histórico indicando o status final ("Em atendimento",
+   *    "Atendimento finalizado" ou "Ausente").
    */
-  const [senhasInativas, setSenhasInativas] = useState<Set<string>>(new Set());
+  const [statusSenhas, setStatusSenhas] = useState<Record<string, string>>({});
+  const senhasInativas = useMemo(() => {
+    const set = new Set<string>();
+    const finais = ["em_atendimento", "finalizada", "ausente", "cancelada"];
+    for (const [id, st] of Object.entries(statusSenhas)) {
+      if (finais.includes(st)) set.add(id);
+    }
+    return set;
+  }, [statusSenhas]);
   const [now, setNow] = useState(new Date());
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
     provider: "browser",
@@ -197,6 +231,35 @@ function TvPage() {
       }
     })();
   }, [unidade?.id]);
+
+  // Busca status atual das senhas que aparecem no histórico (precisa pra
+  // mostrar badges "em atendimento" / "ausente" / "atendimento finalizado").
+  // Roda quando entram novas chamadas e ainda não conhecemos o status delas.
+  useEffect(() => {
+    if (!unidade?.id) return;
+    const idsFaltando = Array.from(
+      new Set(
+        chamadas
+          .map((c) => c.senha?.id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0 && !(id in statusSenhas)),
+      ),
+    );
+    if (idsFaltando.length === 0) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("senhas")
+        .select("id, status")
+        .in("id", idsFaltando);
+      if (!data) return;
+      setStatusSenhas((prev) => {
+        const next = { ...prev };
+        for (const row of data) {
+          if (row.id && row.status) next[row.id] = row.status;
+        }
+        return next;
+      });
+    })();
+  }, [unidade?.id, chamadas, statusSenhas]);
 
   // Warm up voices
   useEffect(() => {
@@ -511,15 +574,41 @@ function TvPage() {
         },
         (payload) => {
           const novo = payload.new as { id: string; status?: string };
-          const finalStatus = ["em_atendimento", "finalizada", "ausente", "cancelada"];
-          if (novo.status && finalStatus.includes(novo.status)) {
-            setSenhasInativas((prev) => {
-              if (prev.has(novo.id)) return prev;
-              const next = new Set(prev);
-              next.add(novo.id);
-              return next;
+          if (novo.status) {
+            setStatusSenhas((prev) => {
+              if (prev[novo.id] === novo.status) return prev;
+              return { ...prev, [novo.id]: novo.status! };
             });
           }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [unidade?.id]);
+
+  /**
+   * Realtime de DELETE em `chamadas` — quando a recepção clica "Resetar
+   * histórico", as chamadas finalizadas/ausentes/canceladas são apagadas e a
+   * TV precisa refletir isso instantaneamente, sem reload.
+   */
+  useEffect(() => {
+    if (!unidade?.id) return;
+    const ch = supabase
+      .channel(`tv-chamadas-del-${unidade.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "chamadas",
+          filter: `unidade_id=eq.${unidade.id}`,
+        },
+        (payload) => {
+          const removida = payload.old as { id?: string };
+          if (!removida?.id) return;
+          setChamadas((prev) => prev.filter((c) => c.id !== removida.id));
         },
       )
       .subscribe();
@@ -936,6 +1025,20 @@ function TvPage() {
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                             {chamada.senha?.fila_nome || "Geral"}
                           </p>
+                          {(() => {
+                            const sid = chamada.senha?.id;
+                            const st = sid ? statusSenhas[sid] : undefined;
+                            const lbl = statusLabel(st);
+                            if (!lbl) return null;
+                            return (
+                              <span
+                                className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 font-bold uppercase tracking-wider ${lbl.cls}`}
+                                style={{ fontSize: "clamp(0.4375rem, 2cqi, 0.6875rem)" }}
+                              >
+                                {lbl.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <div className="text-right shrink-0 min-w-0 max-w-[55%]">
                           <p
