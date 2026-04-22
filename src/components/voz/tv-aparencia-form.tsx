@@ -567,9 +567,11 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setCfg({ ...DEFAULT_TV_VISUAL, ...p.config });
-                    toast.info(`Perfil "${p.nome}" carregado. Lembre-se de salvar.`);
+                  onClick={async () => {
+                    const newCfg = { ...DEFAULT_TV_VISUAL, ...p.config };
+                    setCfg(newCfg);
+                    await handleSave(newCfg);
+                    toast.info(`Perfil "${p.nome}" aplicado.`);
                   }}
                   className="h-8 text-xs text-primary hover:bg-primary/10"
                 >
