@@ -109,6 +109,12 @@ function formatarDestino(destino: string): string {
 function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
+  /**
+   * IDs de senhas que já saíram do estado "chamada" (ex.: viraram
+   * em_atendimento/finalizada/ausente). Usado para esconder do "Chamando agora"
+   * imediatamente — sem esperar nova chamada chegar.
+   */
+  const [senhasInativas, setSenhasInativas] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(new Date());
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
     provider: "browser",
