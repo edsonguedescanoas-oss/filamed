@@ -536,7 +536,7 @@ function PreviewCard({ cfg }: { cfg: TvVisualConfig }) {
         <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground">
           <span className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
           {RESOLUCAO_PRESETS[cfg.resolucao_preset].label.split(" ")[0]} ·{" "}
-          {Math.round(cfg.escala_fonte * 100)}% · {cfg.densidade}
+          {cfg.auto_ajuste ? "Auto" : `${Math.round(cfg.escala_fonte * 100)}%`} · {cfg.densidade}
         </div>
       </div>
 
