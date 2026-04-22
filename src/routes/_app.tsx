@@ -149,13 +149,13 @@ function AppLayout() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2 sm:px-6">
           {/* Logo */}
           <Link to="/app" className="flex items-center gap-2 shrink-0">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
               <Activity className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="font-display text-lg font-semibold">
+            <span className="font-display text-base font-semibold">
               Fila<span className="text-gradient">Med</span>
             </span>
           </Link>
@@ -170,7 +170,7 @@ function AppLayout() {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
                     active
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",

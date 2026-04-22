@@ -144,7 +144,10 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    font-size: 93.75%; /* Reduz a escala geral (16px -> 15px) */
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -155,6 +158,7 @@
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+    line-height: 1.2;
   }
 }
 
