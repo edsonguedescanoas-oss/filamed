@@ -600,7 +600,16 @@ function TvPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight">{unidade?.nome}</h1>
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Conectado" />
+              <div 
+                className={`h-2.5 w-2.5 rounded-full shadow-sm transition-colors duration-500 ${
+                  (visualStatus === "SUBSCRIBED" && chamadasStatus === "SUBSCRIBED") 
+                    ? "bg-green-500 animate-pulse" 
+                    : (visualStatus === "INITIALIZING" || chamadasStatus === "INITIALIZING")
+                    ? "bg-yellow-500 animate-pulse"
+                    : "bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"
+                }`} 
+                title={`Status: Visual(${visualStatus}) Chamadas(${chamadasStatus})`} 
+              />
             </div>
             <p className="text-sm font-medium opacity-60 uppercase tracking-widest">Painel de Chamadas</p>
           </div>
