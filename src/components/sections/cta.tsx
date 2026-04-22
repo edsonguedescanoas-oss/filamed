@@ -10,7 +10,7 @@ export function CTA() {
             backgroundImage: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.4) 0%, transparent 40%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.25) 0%, transparent 45%)",
           }} />
           <div className="relative mx-auto max-w-3xl">
-            <h2 className="font-display text-3xl font-bold leading-tight text-primary-foreground sm:text-5xl">
+            <h2 className="font-display text-2xl font-bold leading-tight text-primary-foreground sm:text-4xl">
               Pronto para eliminar filas caóticas e transformar seu atendimento?
             </h2>
             <p className="mt-5 text-lg text-primary-foreground/85">

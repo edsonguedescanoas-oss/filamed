@@ -19,7 +19,7 @@ export function Hero() {
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             Plataforma SaaS para unidades de saúde
           </span>
-          <h1 className="mt-6 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+          <h1 className="mt-6 font-display text-3xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
             Transforme o atendimento da sua unidade com{" "}
             <span className="text-gradient">gestão inteligente de filas</span>
           </h1>
