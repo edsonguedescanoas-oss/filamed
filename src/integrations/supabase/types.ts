@@ -693,6 +693,41 @@ export type Database = {
         }
         Relationships: []
       }
+      tv_layout_profiles: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          nome: string
+          unidade_id: string
+          updated_at: string
+        }
+        Insert: {
+          config: Json
+          created_at?: string
+          id?: string
+          nome: string
+          unidade_id: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          nome?: string
+          unidade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tv_layout_profiles_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tv_visual_config: {
         Row: {
           auto_ajuste: boolean | null
