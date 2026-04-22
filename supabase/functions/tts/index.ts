@@ -184,28 +184,49 @@ function getStorageClient() {
   return createClient(url, key);
 }
 
-async function tryReadCache(hash: string): Promise<string | null> {
+async function getPublicUrl(hash: string): Promise<string | null> {
   const client = getStorageClient();
   if (!client) return null;
-  const { data, error } = await client.storage.from(CACHE_BUCKET).download(`${hash}.mp3`);
-  if (error || !data) return null;
-  const buffer = await data.arrayBuffer();
-  return bufferToBase64(buffer);
+  
+  // Verifica se o arquivo existe antes de retornar a URL
+  const { data, error } = await client.storage
+    .from(CACHE_BUCKET)
+    .list("", { search: `${hash}.mp3` });
+
+  if (error || !data || data.length === 0) return null;
+
+  const { data: { publicUrl } } = client.storage
+    .from(CACHE_BUCKET)
+    .getPublicUrl(`${hash}.mp3`);
+
+  return publicUrl;
 }
 
-async function writeCache(hash: string, base64: string): Promise<void> {
+async function writeCache(hash: string, base64: string): Promise<string | null> {
   const client = getStorageClient();
-  if (!client) return;
+  if (!client) return null;
   // base64 → bytes
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  await client.storage
+  
+  const { error } = await client.storage
     .from(CACHE_BUCKET)
     .upload(`${hash}.mp3`, bytes, {
       contentType: "audio/mpeg",
-      upsert: false, // se outro request gerou primeiro, mantém o existente
+      upsert: true,
     });
+
+  if (error) {
+    console.error("[tts] Erro no upload do cache:", error);
+    return null;
+  }
+
+  const { data: { publicUrl } } = client.storage
+    .from(CACHE_BUCKET)
+    .getPublicUrl(`${hash}.mp3`);
+
+  return publicUrl;
 }
 
 // --- handler -----------------------------------------------------------------
