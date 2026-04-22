@@ -419,7 +419,7 @@ function TvPage() {
   }, [unidade?.id, speak]);
 
   const ultimaChamada = chamadas[0];
-  const historico = chamadas.slice(1, 6);
+  const historico = chamadas.slice(1, 9);
 
   if (needsInteraction) {
     return (
@@ -584,10 +584,10 @@ function TvPage() {
                     
                     <div className="mt-2 space-y-1">
                       {ultimaChamada.senha?.paciente_nome && (
-                        <p className="text-3xl font-bold text-white/90">{ultimaChamada.senha.paciente_nome}</p>
+                        <p className="text-2xl font-bold text-white/90 truncate px-4">{ultimaChamada.senha.paciente_nome}</p>
                       )}
-                      <p className="text-xl font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
-                      <p className="text-5xl font-bold uppercase">{ultimaChamada.destino}</p>
+                      <p className="text-lg font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
+                      <p className="text-4xl font-bold uppercase truncate px-4">{ultimaChamada.destino}</p>
                     </div>
                   </div>
                 ) : (
@@ -617,24 +617,24 @@ function TvPage() {
                   </h2>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
                   {historico.length > 0 ? (
                     historico.map((chamada, hIdx) => (
                       <div 
                         key={chamada.id}
-                        className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-4 animate-in slide-in-from-right duration-300"
+                        className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-4 py-2.5 animate-in slide-in-from-right duration-300"
                         style={{ animationDelay: `${hIdx * 100}ms` }}
                       >
-                        <div>
-                          <p className="text-2xl font-bold text-primary">{chamada.senha?.codigo}</p>
-                          <p className="text-xs font-medium opacity-40 uppercase truncate max-w-[150px]">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xl font-bold text-primary leading-tight">{chamada.senha?.codigo}</p>
+                          <p className="text-[10px] font-medium opacity-50 uppercase truncate">
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                             {chamada.senha?.fila_nome || "Geral"}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold opacity-80">{chamada.destino}</p>
-                          <p className="text-[10px] font-mono opacity-30">
+                        <div className="text-right ml-4 shrink-0">
+                          <p className="text-base font-bold opacity-90 leading-tight">{chamada.destino}</p>
+                          <p className="text-[9px] font-mono opacity-30">
                             {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
