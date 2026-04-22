@@ -8,11 +8,11 @@ import type { AppRole } from "@/hooks/use-auth";
  * - gestor: visão de gestão (filas + pacientes), sem operar atendimento
  */
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
-  admin: ["/app", "/app/recepcao", "/app/atendimento", "/app/filas", "/app/pacientes", "/app/voz", "/app/tv", "/app/notificacoes"],
+  admin: ["/app", "/app/recepcao", "/app/atendimento", "/app/filas", "/app/pacientes", "/app/voz", "/app/tv", "/app/notificacoes", "/app/relatorios"],
   recepcao: ["/app", "/app/recepcao", "/app/filas", "/app/pacientes", "/app/notificacoes"],
   medico: ["/app", "/app/atendimento", "/app/pacientes"],
   enfermeiro: ["/app", "/app/atendimento", "/app/pacientes"],
-  gestor: ["/app", "/app/filas", "/app/pacientes"],
+  gestor: ["/app", "/app/filas", "/app/pacientes", "/app/relatorios"],
   super_admin: [], // super_admin opera em /admin, não em /app
 };
 
