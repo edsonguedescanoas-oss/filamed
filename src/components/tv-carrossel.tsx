@@ -326,6 +326,31 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
     }
   }, [paused, atual?.id]);
 
+  // YouTube: tira o mute e seta volume em 40% após o iframe carregar.
+  // Navegadores bloqueiam autoplay com som sem interação, então em browsers
+  // comuns o vídeo pode permanecer mudo. Em TVs/quiosques (onde autoplay
+  // com som é liberado) o áudio toca em 40%.
+  useEffect(() => {
+    if (!atual || !isYoutube(atual)) return;
+    const y = youtubeIframeRef.current;
+    if (!y || !y.contentWindow) return;
+    // Espera 1.5s pra garantir que o player YT carregou e está pronto pra
+    // receber comandos via postMessage.
+    const t = setTimeout(() => {
+      const win = y.contentWindow;
+      if (!win) return;
+      win.postMessage(
+        JSON.stringify({ event: "command", func: "unMute", args: [] }),
+        "*",
+      );
+      win.postMessage(
+        JSON.stringify({ event: "command", func: "setVolume", args: [40] }),
+        "*",
+      );
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [atual?.id]);
+
   if (elegiveis.length === 0 || !atual) return null;
 
   const youtubeEmbed = isYoutube(atual) && atual.url_midia ? buildYoutubeEmbed(atual.url_midia) : null;
