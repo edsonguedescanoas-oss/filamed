@@ -35,13 +35,13 @@ function dentroDaJanela(item: SinalizacaoItem, agora: Date): boolean {
 }
 
 function isVideo(item: SinalizacaoItem): boolean {
-  if (item.tipo?.toLowerCase().includes("video") && !isYoutube(item)) return true;
+  if (item.tipo?.toLowerCase()?.includes("video") && !isYoutube(item)) return true;
   const url = item.url_midia ?? "";
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
 }
 
 function isImage(item: SinalizacaoItem): boolean {
-  if (item.tipo?.toLowerCase().includes("imagem") || item.tipo?.toLowerCase().includes("image")) {
+  if (item.tipo?.toLowerCase()?.includes("imagem") || item.tipo?.toLowerCase()?.includes("image")) {
     return true;
   }
   const url = item.url_midia ?? "";
@@ -49,7 +49,7 @@ function isImage(item: SinalizacaoItem): boolean {
 }
 
 function isYoutube(item: SinalizacaoItem): boolean {
-  if (item.tipo?.toLowerCase().includes("youtube")) return true;
+  if (item.tipo?.toLowerCase()?.includes("youtube")) return true;
   const url = item.url_midia ?? "";
   return /(?:youtube\.com|youtu\.be)/i.test(url);
 }
