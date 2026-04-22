@@ -63,7 +63,8 @@ function isYoutube(item: SinalizacaoItem): boolean {
  *  - apenas o ID (11 chars alfanuméricos)
  *  - ID de playlist (começa com PL/UU/RD/OL e tem >13 chars)
  */
-function parseYoutube(url: string): { videoId?: string; playlistId?: string; isHandle?: boolean } {
+function parseYoutube(url: string | null | undefined): { videoId?: string; playlistId?: string; isHandle?: boolean } {
+  if (!url) return {};
   const trimmed = url.trim();
   
   // Detecta handle (@nome) - embeds do YouTube não suportam handles diretamente
