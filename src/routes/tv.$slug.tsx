@@ -152,6 +152,19 @@ function TvPage() {
               {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
             </p>
           </div>
+          <button 
+            onClick={() => {
+              if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+              } else {
+                document.exitFullscreen();
+              }
+            }}
+            className="p-3 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+            title="Tela Cheia"
+          >
+            <Activity className="h-6 w-6 opacity-40" />
+          </button>
         </div>
       </header>
 
