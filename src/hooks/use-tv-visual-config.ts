@@ -54,6 +54,7 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
     { type: "historico", col_span: 4, row_span: 6, order: 2 },
   ],
   auto_ajuste: false,
+  historico_limite: 8,
 };
 
 export const RESOLUCAO_PRESETS: Record<
