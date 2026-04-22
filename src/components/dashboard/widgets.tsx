@@ -34,7 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/use-auth";
-import { RecursoGate } from "@/components/recurso-gate";
+
 
 /* ──────────────────────────────────────────────────────────
  * Helpers compartilhados
@@ -1374,35 +1374,32 @@ export function GestorWidgets({ unidadeId }: { unidadeId: string }) {
 }
 
 /**
- * Card de "Relatórios avançados" — recurso premium.
- * Quando o plano libera, mostra um placeholder pra futuros relatórios;
- * quando bloqueado, o RecursoGate mostra upsell pra /precos.
+ * Card de "Relatórios avançados" — CTA pro painel completo em /app/relatorios.
+ * O RecursoGate fica na própria página de relatórios; aqui só mostramos o convite.
  */
 function RelatoriosAvancadosSection({ unidadeId: _unidadeId }: { unidadeId: string }) {
   return (
-    <RecursoGate
-      recurso="relatorios_avancados"
-      titulo="Relatórios avançados"
-      descricao="Exporte CSV/PDF de atendimentos, tempos médios por médico e por hora do dia, taxa de ausência e produtividade da equipe."
-      beneficios={[
-        "Exportação CSV/PDF de atendimentos do mês",
-        "Tempo médio por médico, fila e hora do dia",
-        "Taxa de ausência e no-show por turno",
-        "Comparativo mensal e gráficos de tendência",
-      ]}
-    >
-      <div className="rounded-2xl border border-border bg-card p-8 shadow-soft">
+    <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-primary-glow/5 p-6 shadow-soft">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">
             <TrendingUp className="h-5 w-5" />
           </div>
           <div>
-            <SectionTitle>Relatórios avançados</SectionTitle>
-            <p className="text-sm text-muted-foreground">Em construção — em breve neste painel.</p>
+            <SectionTitle>Relatórios completos</SectionTitle>
+            <p className="text-sm text-muted-foreground">
+              Dia a dia, gráficos, gargalos, produtividade e exportação CSV.
+            </p>
           </div>
         </div>
+        <Link
+          to="/app/relatorios"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          Abrir relatórios <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
-    </RecursoGate>
+    </div>
   );
 }
 
