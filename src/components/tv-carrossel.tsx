@@ -86,7 +86,11 @@ function parseGoogleDriveId(url: string | null | undefined): string | null {
 function buildGoogleDriveEmbed(url: string): string | null {
   const id = parseGoogleDriveId(url);
   if (!id) return null;
-  return `https://drive.google.com/file/d/${id}/preview`;
+  // O endpoint /preview do Drive aceita o parâmetro `autoplay=1` em alguns
+  // casos. Não há garantia (o Drive frequentemente ignora), mas quando o
+  // navegador permite (ex.: TV em quiosque com autoplay liberado) o vídeo
+  // começa sozinho. Mantemos o fallback visual caso falhe.
+  return `https://drive.google.com/file/d/${id}/preview?autoplay=1&mute=1`;
 }
 
 /**
@@ -372,14 +376,27 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
         )}
 
         {driveEmbed && (
-          <iframe
-            key={atual.id}
-            src={driveEmbed}
-            title={atual.titulo}
-            className="absolute inset-0 h-full w-full border-0"
-            allow="autoplay; encrypted-media"
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
+          <>
+            <iframe
+              key={atual.id}
+              src={driveEmbed}
+              title={atual.titulo}
+              className="absolute inset-0 h-full w-full border-0"
+              // `allow` solicita autoplay — o Drive pode honrar em quiosques/TVs
+              // onde o navegador permite reprodução automática sem interação.
+              allow="autoplay; encrypted-media; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+            {/* Aviso discreto sobre limitações do Drive — fica no canto e
+                desaparece após alguns segundos via CSS animation. */}
+            <div className="pointer-events-none absolute right-3 top-3 max-w-[260px] rounded-lg border border-amber-400/30 bg-amber-950/70 px-3 py-2 text-[11px] text-amber-100 backdrop-blur-sm animate-fade-in [animation-delay:1s]">
+              <p className="font-medium">Vídeo do Google Drive</p>
+              <p className="mt-0.5 text-amber-200/80">
+                O Drive pode exigir clique para iniciar. Para autoplay garantido, use YouTube ou faça upload direto.
+              </p>
+            </div>
+          </>
         )}
 
         {(!atual.url_midia || (!isImage(atual) && !isVideo(atual) && !youtubeEmbed && !driveEmbed)) && (
