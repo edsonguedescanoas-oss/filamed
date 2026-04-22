@@ -155,7 +155,11 @@ function buildFeatures(plano: PlanoRow): string[] {
       : `${plano.limite_senhas_mes.toLocaleString("pt-BR")} senhas/mês`,
   );
 
-  const recursos = plano.recursos ?? {};
+  const recursos = { ...plano.recursos };
+
+  // Temporário: Mostrar relatórios em todos os planos
+  recursos.relatorios_avancados = true;
+
   for (const [chave, ativo] of Object.entries(recursos)) {
     if (ativo && RECURSO_LABEL[chave]) out.push(RECURSO_LABEL[chave]);
   }
