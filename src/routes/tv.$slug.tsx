@@ -233,13 +233,19 @@ function TvPage() {
           setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
           
           // Beep inicial
-          const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-          beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
+          if (beepRef.current) {
+            beepRef.current.currentTime = 0;
+            beepRef.current.play().catch(e => console.log("Erro ao tocar beep:", e));
+          } else {
+            const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+            beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
+          }
           
           // Aguarda um pouco o beep e fala
           setTimeout(() => {
             void speak(novaChamada);
           }, 1500);
+
         }
       )
       .subscribe();
