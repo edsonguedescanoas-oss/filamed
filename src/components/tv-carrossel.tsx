@@ -82,10 +82,15 @@ function parseYoutube(url: string | null | undefined): { videoId?: string; playl
   const shortMatch = trimmed.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
   const embedMatch = trimmed.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/);
   const liveMatch = trimmed.match(/youtube\.com\/live\/([A-Za-z0-9_-]{11})/);
+  const shortsMatch = trimmed.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/);
+  const vMatch = trimmed.match(/youtube\.com\/v\/([A-Za-z0-9_-]{11})/);
+
   if (watchMatch) videoId = watchMatch[1];
   else if (shortMatch) videoId = shortMatch[1];
   else if (embedMatch) videoId = embedMatch[1];
   else if (liveMatch) videoId = liveMatch[1];
+  else if (shortsMatch) videoId = shortsMatch[1];
+  else if (vMatch) videoId = vMatch[1];
   else if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) videoId = trimmed;
   else if (/^(PL|UU|RD|OL|FL|LL)[A-Za-z0-9_-]{10,}$/.test(trimmed)) {
     // ID de playlist solto
