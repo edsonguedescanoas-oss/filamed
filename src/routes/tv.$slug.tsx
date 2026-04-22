@@ -528,7 +528,7 @@ function TvPage() {
         backgroundColor: visual.cor_fundo, 
         color: visual.cor_texto,
         backgroundImage: visual.fundo_url ? `url(${visual.fundo_url})` : undefined,
-        fontSize: visual.auto_ajuste ? `${autoStyles.scale}rem` : undefined,
+        fontSize: visual.auto_ajuste ? `${autoStyles.scale}rem` : `${visual.escala_fonte}rem`,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
