@@ -94,7 +94,7 @@ function RecepcaoPage() {
   const [recentes, setRecentes] = useState<(Senha & { paciente?: { nome_completo: string } | null })[]>([]);
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
-
+  const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
   // cadastro rápido de paciente
   const [novoOpen, setNovoOpen] = useState(false);
   const [novoNome, setNovoNome] = useState("");
