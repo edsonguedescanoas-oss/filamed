@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Minus, Plus, RotateCcw, ZoomIn, Monitor } from "lucide-react";
+import { Minus, Plus, RotateCcw, ZoomIn, Monitor, ShieldAlert } from "lucide-react";
 
 interface Props {
   zoom: number;
@@ -10,6 +10,8 @@ interface Props {
   onAspectRatioChange?: (ratio: "16:9" | "4:3") => void;
   /** Quando true (modo kiosk), o controle se esconde após inatividade. */
   autoHide?: boolean;
+  safeArea?: number;
+  onSafeAreaChange?: (val: number) => void;
 }
 
 /**
@@ -19,7 +21,17 @@ interface Props {
  *   após 4s de inatividade.
  * - Atalhos de teclado: + / - para zoom, 0 para resetar.
  */
-export function TvZoomControl({ zoom, onInc, onDec, onReset, aspectRatio, onAspectRatioChange, autoHide }: Props) {
+export function TvZoomControl({ 
+  zoom, 
+  onInc, 
+  onDec, 
+  onReset, 
+  aspectRatio, 
+  onAspectRatioChange, 
+  autoHide,
+  safeArea = 0,
+  onSafeAreaChange
+}: Props) {
   const [visible, setVisible] = useState(!autoHide);
 
   useEffect(() => {
@@ -123,6 +135,23 @@ export function TvZoomControl({ zoom, onInc, onDec, onReset, aspectRatio, onAspe
           >
             4:3
           </button>
+        </div>
+      )}
+
+      {onSafeAreaChange && (
+        <div className="flex items-center gap-2 border-l border-white/10 pl-2 ml-1 pr-2">
+          <ShieldAlert className="h-3.5 w-3.5 text-white/50" />
+          <input
+            type="range"
+            min={0}
+            max={0.2}
+            step={0.005}
+            value={safeArea}
+            onChange={(e) => onSafeAreaChange(Number(e.target.value))}
+            className="w-16 h-1 opacity-60 hover:opacity-100 transition-opacity cursor-pointer accent-primary"
+            title={`Margem de segurança: ${Math.round(safeArea * 100)}%`}
+          />
+          <span className="text-[10px] font-mono opacity-50 min-w-[1.5rem]">{Math.round(safeArea * 100)}%</span>
         </div>
       )}
     </div>

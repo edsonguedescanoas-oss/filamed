@@ -107,7 +107,7 @@ function TvPage() {
 
   
   // Hook de configuração visual (cores, logo, etc)
-  const { config: visual, setConfig } = useTvVisualConfig(unidade?.id);
+  const { config: visual, loading, setConfig } = useTvVisualConfig(unidade?.id);
 
   // Zoom local (prioriza localStorage, mas usa o da unidade se não houver local)
   const [zoom, setZoom] = useState(1);
@@ -557,8 +557,7 @@ function TvPage() {
         fontSize: visual.auto_ajuste ? `${autoStyles.scale * zoom}rem` : `${visual.escala_fonte * zoom}rem`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        // Se for 4:3 num monitor widescreen, centralizamos com barras pretas se desejado
-        // Mas o pedido é "ajustar automaticamente sem distorcer", então apenas mudar a escala basta.
+        padding: `${visual.safe_area_padding * 100}vh ${visual.safe_area_padding * 100}vw`,
       }}
     >
       {/* Overlay se tiver imagem de fundo */}
