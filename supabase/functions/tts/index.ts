@@ -266,10 +266,11 @@ Deno.serve(async (req) => {
 
     // 1) Cache lookup
     const hash = await sha256Hex(cacheKey({ text, provider, voiceId, rate, pitch }));
-    const cached = await tryReadCache(hash);
-    if (cached) {
+    const cachedUrl = await getPublicUrl(hash);
+    if (cachedUrl) {
+      console.log(`[tts] Cache hit: ${hash}`);
       return new Response(
-        JSON.stringify({ audioContent: cached, mime: "audio/mpeg", cached: true }),
+        JSON.stringify({ audioUrl: cachedUrl, mime: "audio/mpeg", cached: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -280,13 +281,11 @@ Deno.serve(async (req) => {
         ? await googleTts(text, voiceId, rate, pitch)
         : await elevenLabsTts(text, voiceId, rate);
 
-    // 2a) Fallback gracioso: provider indisponível (credencial revogada, API
-    // desabilitada, cota zerada). Devolvemos 200 com audioContent: null pra
-    // que o cliente caia em Web Speech sem registrar erro 500.
+    // 2a) Fallback gracioso
     if (!result.ok) {
       return new Response(
         JSON.stringify({
-          audioContent: null,
+          audioUrl: null,
           fallback: "browser",
           error: "provider_unavailable",
           provider,
@@ -296,16 +295,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3) Cache write em background — não bloqueia a resposta
-    // EdgeRuntime.waitUntil garante que a promise termine mesmo após o response
-    const cachePromise = writeCache(hash, result.audioContent).catch((e) =>
-      console.error("[tts] cache write falhou:", e),
-    );
-    // @ts-ignore EdgeRuntime é global no Deno Deploy / Supabase Edge
-    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(cachePromise);
+    // 3) Cache write
+    // Salvamos no storage e retornamos a URL pública para o player
+    const publicUrl = await writeCache(hash, result.audioContent);
 
     return new Response(
-      JSON.stringify({ audioContent: result.audioContent, mime: result.mime, cached: false }),
+      JSON.stringify({ 
+        audioUrl: publicUrl || null, 
+        audioContent: publicUrl ? null : result.audioContent, // Fallback se o upload falhar
+        mime: result.mime, 
+        cached: false 
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
