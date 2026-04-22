@@ -364,6 +364,31 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
             />
           </div>
         </div>
+        
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="hist_limite" className="text-xs font-medium">Itens no Histórico ({cfg.historico_limite})</Label>
+            <Input
+              id="hist_limite"
+              type="number"
+              min={1}
+              max={20}
+              value={cfg.historico_limite}
+              onChange={(e) => update("historico_limite", Number(e.target.value))}
+            />
+            <p className="text-[10px] text-muted-foreground">Quantas chamadas anteriores mostrar na lista.</p>
+          </div>
+          <div className="flex items-center justify-between gap-4 pt-6">
+            <div className="space-y-0.5">
+              <Label className="text-xs font-medium">Quebrar texto no histórico</Label>
+              <p className="text-[10px] text-muted-foreground">Evita cortar nomes longos.</p>
+            </div>
+            <Switch
+              checked={cfg.historico_quebrar_texto}
+              onCheckedChange={(v) => update("historico_quebrar_texto", v)}
+            />
+          </div>
+        </div>
 
         <div className="space-y-3">
           <Label className="text-xs font-medium">Organização dos Componentes</Label>
