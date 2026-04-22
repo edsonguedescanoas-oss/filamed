@@ -107,6 +107,30 @@ function TvPage() {
   // Hook de configuração visual (cores, logo, etc)
   const { config: visual } = useTvVisualConfig(unidade?.id);
 
+  // Injeta cores e escala global no CSS
+  useEffect(() => {
+    if (!visual) return;
+    const root = document.documentElement;
+    
+    // Cores
+    root.style.setProperty("--primary", visual.cor_primaria);
+    root.style.setProperty("--primary-glow", visual.cor_primaria);
+    
+    // Escala baseada na resolução e ajuste de fonte
+    const preset = RESOLUCAO_PRESETS[visual.resolucao_preset] || RESOLUCAO_PRESETS.fhd;
+    const baseScale = preset.baseScale;
+    const finalScale = visual.escala_fonte * baseScale;
+    
+    // Aplica no root para que todas as unidades 'rem' escalem
+    root.style.fontSize = `${16 * finalScale}px`;
+    
+    return () => {
+      root.style.fontSize = "";
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--primary-glow");
+    };
+  }, [visual]);
+
   // Carrega configuração de voz
   useEffect(() => {
     if (!unidade?.id) return;
