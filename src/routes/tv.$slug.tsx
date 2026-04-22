@@ -397,7 +397,6 @@ function TvPage() {
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
           
-          // 1. Toca o beep IMEDIATAMENTE para dar feedback instantâneo (0s de delay)
           if (beepRef.current) {
             try {
               beepRef.current.currentTime = 0;
@@ -420,8 +419,6 @@ function TvPage() {
             return field[key] || null;
           };
 
-          // 2. Constrói objeto de chamada com dados do payload (instantâneo)
-          // Isso permite iniciar a voz IMEDIATAMENTE sem esperar queries de banco
           const novaChamada: Chamada = {
             ...(payload.new as Chamada),
             senha: {
@@ -433,15 +430,9 @@ function TvPage() {
             },
           };
 
-          // 3. Inicia a fala IMEDIATAMENTE (paralelo ao fetch de detalhes)
-          // Removido o timeout de 100ms para ser o mais rápido possível
           void speak(novaChamada);
-          
-          // 4. Atualiza a lista na UI imediatamente
           setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
 
-          // 5. Busca detalhes extras em background apenas para garantir integridade da UI
-          // (Não bloqueia o beep nem a voz)
           void (async () => {
             let senhaData = null;
             let retryCount = 0;
@@ -479,12 +470,35 @@ function TvPage() {
           })();
         }
       )
-      .subscribe();
+      .subscribe(async (status) => {
+        setChamadasStatus(status);
+        console.log(`[TV] Status do canal de chamadas: ${status}`);
+        
+        if (status === "SUBSCRIBED") {
+          // Re-sincroniza chamadas ao reconectar
+          const { data: chamadasData } = await supabase
+            .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: unidade.id });
+          
+          if (chamadasData) {
+            const mapped = (chamadasData ?? []).map(c => ({
+              ...c,
+              senha: {
+                id: c.senha_id,
+                codigo: c.senha_codigo,
+                fila_nome: c.fila_nome,
+                paciente_nome: (c as any).paciente_nome,
+              }
+            }));
+            setChamadas(mapped as Chamada[]);
+          }
+        }
+      });
 
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [unidade?.id, speak]);
+
 
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, 6);
