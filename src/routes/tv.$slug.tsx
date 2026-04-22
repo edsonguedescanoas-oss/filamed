@@ -105,7 +105,8 @@ function TvPage() {
 
   
   // Hook de configuração visual (cores, logo, etc)
-  const { config: visual } = useTvVisualConfig(unidade?.id);
+  const { config: visual, connectionStatus: visualStatus } = useTvVisualConfig(unidade?.id);
+  const [chamadasStatus, setChamadasStatus] = useState<string>("INITIALIZING");
 
   // Lógica de contraste
   const palette = (() => {
