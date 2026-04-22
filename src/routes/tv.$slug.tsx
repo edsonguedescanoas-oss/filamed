@@ -269,8 +269,13 @@ function TvPage() {
           // Usa o ref se estiver disponível, senão cria um novo temporário
           // Algumas TVs preferem novos elementos se o anterior "engasgou"
           const audio = voiceAudioRef.current || new Audio();
+          
+          // Importante para Firestick: resetar o estado antes de novo src
+          audio.pause();
+          audio.currentTime = 0;
           audio.src = audioSrc;
           audio.onended = finalize;
+          
           audio.onerror = (e) => {
             console.error("[TV] Erro no carregamento do áudio cloud, fallback browser:", e);
             if (synth) {
@@ -282,7 +287,7 @@ function TvPage() {
             }
           };
           
-          audio.load();
+          // Removido audio.load() redundante que pode atrasar o play em algumas SmartTVs
           audio.play().catch(playErr => {
             console.error("[TV] Play cloud bloqueado ou falhou, fallback browser:", playErr);
             if (synth) {
