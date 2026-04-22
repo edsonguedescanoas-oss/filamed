@@ -107,19 +107,47 @@ function TvPage() {
 
   
   // Hook de configuração visual (cores, logo, etc)
-  const { config: visual, setConfig } = useTvVisualConfig(unidade?.id);
+  const { config: visual, loading, setConfig } = useTvVisualConfig(unidade?.id);
 
-  // Zoom local (salvo no localStorage deste dispositivo)
-  const [zoom, setZoom] = useState(() => {
-    if (typeof window === "undefined") return 1;
-    return Number(localStorage.getItem(`tv-zoom-${unidade?.id}`)) || 1;
-  });
+  // Zoom local (prioriza localStorage, mas usa o da unidade se não houver local)
+  const [zoom, setZoom] = useState(1);
+
+  useEffect(() => {
+    if (!loading && visual) {
+      const localZoom = localStorage.getItem(`tv-zoom-${unidade?.id}`);
+      if (localZoom) {
+        setZoom(Number(localZoom));
+      } else {
+        setZoom(visual.zoom_nivel || 1);
+      }
+    }
+  }, [loading, visual, unidade?.id]);
 
   const updateZoom = (newZoom: number) => {
     const z = Math.max(0.2, Math.min(3, newZoom));
     setZoom(z);
     localStorage.setItem(`tv-zoom-${unidade?.id}`, String(z));
   };
+
+  // Safe area local
+  const [safeArea, setSafeArea] = useState(0);
+
+  useEffect(() => {
+    if (!loading && visual) {
+      const localSA = localStorage.getItem(`tv-safe-area-${unidade?.id}`);
+      if (localSA !== null) {
+        setSafeArea(Number(localSA));
+      } else {
+        setSafeArea(visual.safe_area_padding || 0);
+      }
+    }
+  }, [loading, visual, unidade?.id]);
+
+  const updateSafeArea = (val: number) => {
+    setSafeArea(val);
+    localStorage.setItem(`tv-safe-area-${unidade?.id}`, String(val));
+  };
+
 
   // Carrega configuração de voz
   useEffect(() => {
@@ -548,8 +576,7 @@ function TvPage() {
         fontSize: visual.auto_ajuste ? `${autoStyles.scale * zoom}rem` : `${visual.escala_fonte * zoom}rem`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        // Se for 4:3 num monitor widescreen, centralizamos com barras pretas se desejado
-        // Mas o pedido é "ajustar automaticamente sem distorcer", então apenas mudar a escala basta.
+        padding: `${safeArea * 100}vh ${safeArea * 100}vw`,
       }}
     >
       {/* Overlay se tiver imagem de fundo */}
@@ -777,7 +804,9 @@ function TvPage() {
         zoom={zoom}
         onInc={() => updateZoom(zoom + 0.05)}
         onDec={() => updateZoom(zoom - 0.05)}
-        onReset={() => updateZoom(1)}
+        onReset={() => updateZoom(visual.zoom_nivel || 1)}
+        safeArea={safeArea}
+        onSafeAreaChange={updateSafeArea}
         aspectRatio={visual.aspect_ratio}
         onAspectRatioChange={async (ratio) => {
           // Atualiza o estado visual IMEDIATAMENTE (localmente)

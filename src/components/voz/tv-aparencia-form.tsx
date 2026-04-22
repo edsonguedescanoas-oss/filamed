@@ -49,7 +49,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto,aspect_ratio",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto,aspect_ratio,zoom_nivel,safe_area_padding",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -77,6 +77,8 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           historico_limite: Number(data.historico_limite) || 8,
           historico_quebrar_texto: !!data.historico_quebrar_texto,
           aspect_ratio: (data.aspect_ratio as any) ?? "16:9",
+          zoom_nivel: Number(data.zoom_nivel) || 1.0,
+          safe_area_padding: Number(data.safe_area_padding) || 0.0,
         });
       }
       setLoading(false);
@@ -286,6 +288,69 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
               </button>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Zoom e Safe Area */}
+      <section className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="zoom_nivel" className="text-sm font-semibold">
+              Zoom Global ({Math.round(cfg.zoom_nivel * 100)}%)
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-[10px]"
+              onClick={() => update("zoom_nivel", 1.0)}
+            >
+              Resetar
+            </Button>
+          </div>
+          <Input
+            id="zoom_nivel"
+            type="range"
+            min={0.2}
+            max={3.0}
+            step={0.01}
+            value={cfg.zoom_nivel}
+            onChange={(e) => update("zoom_nivel", Number(e.target.value))}
+            className="h-6"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Aumenta ou diminui todo o conteúdo do painel. Útil para TVs com resoluções fora do padrão.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="safe_area_padding" className="text-sm font-semibold">
+              Margem de Segurança (Safe Area: {Math.round(cfg.safe_area_padding * 100)}%)
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-[10px]"
+              onClick={() => update("safe_area_padding", 0.0)}
+            >
+              Resetar
+            </Button>
+          </div>
+          <Input
+            id="safe_area_padding"
+            type="range"
+            min={0}
+            max={0.2}
+            step={0.005}
+            value={cfg.safe_area_padding}
+            onChange={(e) => update("safe_area_padding", Number(e.target.value))}
+            className="h-6"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Adiciona um respiro nas bordas para evitar que o texto seja cortado em TVs com overscan.
+          </p>
         </div>
       </section>
 
