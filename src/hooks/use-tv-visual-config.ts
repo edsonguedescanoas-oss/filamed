@@ -32,6 +32,7 @@ export interface TvVisualConfig {
   layout_grid_rows: number;
   layout_items: LayoutItem[];
   auto_ajuste: boolean;
+  historico_limite: number;
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
