@@ -1,6 +1,7 @@
 import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Clock, Database, Info, Loader2, Maximize, Megaphone, Mic, Minimize, Wifi, WifiOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
@@ -1542,6 +1543,31 @@ function TvPage() {
         prioridade={destaque.senha.prioridade}
         visual={visual}
       />
+    )}
+
+    {/* ─── Overlay de áudio bloqueado (autoplay browser) ─── */}
+    {audioBlocked && (
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md">
+        <div className="max-w-md p-8 text-center animate-fade-in bg-slate-900 border border-white/10 rounded-3xl shadow-2xl">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-primary shadow-glow">
+            <Megaphone className="h-10 w-10 animate-pulse" />
+          </div>
+          <h2 className="font-display text-2xl font-bold text-white">Áudio desativado</h2>
+          <p className="mt-3 text-slate-300">
+            Seu navegador bloqueou o som automático. Clique abaixo para ativar os avisos sonoros das senhas.
+          </p>
+          <Button
+            onClick={warmAudio}
+            size="lg"
+            className="mt-8 bg-gradient-primary px-8 shadow-elegant hover:scale-105 transition-transform"
+          >
+            Ativar áudio do painel
+          </Button>
+          <p className="mt-4 text-[10px] uppercase tracking-widest text-slate-500">
+            Necessário apenas uma vez por sessão.
+          </p>
+        </div>
+      </div>
     )}
     </div>
     <TvZoomControl
