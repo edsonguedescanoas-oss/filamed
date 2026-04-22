@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Clock, Users, Activity, Volume2 } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { Clock, Users, Activity, Volume2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
+import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 
 // Tipagens básicas
 type Senha = {
@@ -10,6 +11,7 @@ type Senha = {
   codigo: string;
   status?: string;
   fila_nome?: string;
+  paciente_nome?: string;
 };
 
 type Chamada = {
@@ -21,7 +23,16 @@ type Chamada = {
   // Campos vindos da nova RPC
   senha_codigo?: string;
   fila_nome?: string;
+  paciente_nome?: string;
 };
+
+interface VoiceConfig {
+  provider: "browser" | "google" | "elevenlabs";
+  voice_id: string | null;
+  rate: number;
+  pitch: number;
+  template_chamada: TemplateChamada;
+}
 
 type TvSearchParams = {
   debug?: boolean;
@@ -53,7 +64,8 @@ export const Route = createFileRoute("/tv/$slug")({
       senha: {
         id: c.senha_id,
         codigo: c.senha_codigo,
-        fila_nome: c.fila_nome
+        fila_nome: c.fila_nome,
+        paciente_nome: (c as any).paciente_nome,
       }
     }));
 
@@ -62,19 +74,119 @@ export const Route = createFileRoute("/tv/$slug")({
   component: TvPage,
 });
 
+function soletrar(codigo: string) {
+  return codigo.split("").join(" ").replace(/0/g, "zero");
+}
+
+function formatarDestino(destino: string): string {
+  const d = destino.trim().toLowerCase();
+  if (d.startsWith("sala") || d.startsWith("guichê") || d.startsWith("consultório")) {
+    return `ao ${destino.trim()}`;
+  }
+  return `ao destino ${destino.trim()}`;
+}
+
 function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
   const [now, setNow] = useState(new Date());
+  const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null);
+  const [needsInteraction, setNeedsInteraction] = useState(true);
+  const audioQueue = useRef<string[]>([]);
+  const isSpeaking = useRef(false);
   
   // Hook de configuração visual (cores, logo, etc)
   const { config: visual } = useTvVisualConfig(unidade?.id);
+
+  // Carrega configuração de voz
+  useEffect(() => {
+    if (!unidade?.id) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("unidade_voice_config")
+        .select("provider, voice_id, rate, pitch, template_chamada")
+        .eq("unidade_id", unidade.id)
+        .maybeSingle();
+      
+      if (data) {
+        setVoiceConfig({
+          provider: data.provider as any,
+          voice_id: data.voice_id,
+          rate: Number(data.rate) || 1,
+          pitch: Number(data.pitch) || 1,
+          template_chamada: (data.template_chamada as TemplateChamada) || "paciente_senha_fila_destino",
+        });
+      }
+    })();
+  }, [unidade?.id]);
 
   // Relógio
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const speak = useCallback(async (chamada: Chamada) => {
+    if (!voiceConfig) return;
+
+    const texto = montarTextoChamada({
+      template: voiceConfig.template_chamada,
+      nome: chamada.senha?.paciente_nome || null,
+      codigoFalado: soletrar(chamada.senha?.codigo || ""),
+      nomeFila: chamada.senha?.fila_nome || null,
+      destino: chamada.destino,
+      formatarDestino,
+    });
+
+    console.log("[TV] Falando:", texto);
+
+    if (voiceConfig.provider === "browser") {
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(texto);
+      utterance.lang = "pt-BR";
+      utterance.rate = voiceConfig.rate;
+      utterance.pitch = voiceConfig.pitch;
+      
+      if (voiceConfig.voice_id) {
+        const voices = synth.getVoices();
+        const v = voices.find(x => x.name === voiceConfig.voice_id || x.voiceURI === voiceConfig.voice_id);
+        if (v) utterance.voice = v;
+      }
+      
+      synth.speak(utterance);
+    } else {
+      try {
+        const { data, error } = await supabase.functions.invoke("tts", {
+          body: {
+            text: texto,
+            provider: voiceConfig.provider,
+            voiceId: voiceConfig.voice_id,
+            rate: voiceConfig.rate,
+            pitch: voiceConfig.pitch,
+          },
+        });
+
+        if (error) throw error;
+        
+        const audioData = data?.audioContent 
+          ? `data:${data.mime || "audio/mpeg"};base64,${data.audioContent}`
+          : null;
+
+        if (audioData) {
+          const audio = new Audio(audioData);
+          await audio.play();
+        } else if (data?.fallback === "browser") {
+          // Fallback para browser se a API falhar (cota, etc)
+          const synth = window.speechSynthesis;
+          const u = new SpeechSynthesisUtterance(texto);
+          u.lang = "pt-BR";
+          synth.speak(u);
+        }
+      } catch (err) {
+        console.error("[TV] Erro ao reproduzir voz:", err);
+      }
+    }
+  }, [voiceConfig]);
 
   // Realtime para novas chamadas
   useEffect(() => {
@@ -93,10 +205,10 @@ function TvPage() {
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
           
-          // Busca detalhes da senha para a nova chamada
+          // Busca detalhes da senha para a nova chamada (incluindo paciente)
           const { data: senhaData } = await supabase
             .from("senhas")
-            .select("id, codigo, status, filas(nome)")
+            .select("id, codigo, status, filas(nome), pacientes(nome_completo)")
             .eq("id", payload.new.senha_id)
             .single();
 
@@ -106,33 +218,69 @@ function TvPage() {
               id: senhaData?.id as string,
               codigo: senhaData?.codigo as string,
               status: senhaData?.status as string,
-              fila_nome: (senhaData?.filas as any)?.nome as string
+              fila_nome: (senhaData?.filas as any)?.nome as string,
+              paciente_nome: (senhaData?.pacientes as any)?.nome_completo as string,
             },
           };
 
           setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
           
-          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-          audio.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
+          // Beep inicial
+          const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+          beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
+          
+          // Aguarda um pouco o beep e fala
+          setTimeout(() => {
+            void speak(novaChamada);
+          }, 1500);
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
-  }, [unidade?.id]);
+  }, [unidade?.id, speak]);
 
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, 6);
 
+  if (needsInteraction) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-slate-950 text-white p-10 text-center">
+        <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-primary animate-pulse">
+          <Volume2 className="h-10 w-10" />
+        </div>
+        <h1 className="mb-4 font-display text-3xl font-bold">Painel de Chamadas</h1>
+        <p className="mb-8 max-w-md text-slate-400">
+          Para que o painel possa anunciar as senhas por voz, é necessário uma interação inicial com a página.
+        </p>
+        <button
+          onClick={() => setNeedsInteraction(false)}
+          className="rounded-full bg-primary px-10 py-4 font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105 active:scale-95"
+        >
+          Iniciar Painel
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="flex h-screen flex-col overflow-hidden font-sans transition-colors duration-500"
-      style={{ backgroundColor: visual.cor_fundo, color: visual.cor_texto }}
+      style={{ 
+        backgroundColor: visual.cor_fundo, 
+        color: visual.cor_texto,
+        backgroundImage: visual.fundo_url ? `url(${visual.fundo_url})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
     >
+      {/* Overlay se tiver imagem de fundo */}
+      {visual.fundo_url && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
+
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-white/10 bg-black/20 px-10 py-6">
+      <header className="relative flex items-center justify-between border-b border-white/10 bg-black/20 px-10 py-6 backdrop-blur-md">
         <div className="flex items-center gap-6">
           {visual.logo_url ? (
             <img src={visual.logo_url} alt="Logo" className="h-12 w-auto object-contain" />
@@ -176,7 +324,7 @@ function TvPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex flex-1 overflow-hidden">
+      <main className="relative flex flex-1 overflow-hidden">
         {/* Left Side: Current Call / Highlight */}
         <div className="flex-[2] flex flex-col items-center justify-center border-r border-white/10 p-10 bg-black/5">
           {ultimaChamada ? (
@@ -188,11 +336,17 @@ function TvPage() {
                 <span className="text-lg font-bold uppercase tracking-widest">Chamando Agora</span>
               </div>
               
-              <div className="mb-4 text-[12rem] font-black leading-none tracking-tighter text-primary drop-shadow-2xl">
+              <div 
+                className="mb-4 font-black leading-none tracking-tighter text-primary drop-shadow-2xl"
+                style={{ fontSize: `${12 * visual.escala_chamadas}rem` }}
+              >
                 {ultimaChamada.senha?.codigo}
               </div>
               
               <div className="mt-4 space-y-2">
+                {ultimaChamada.senha?.paciente_nome && (
+                  <p className="text-5xl font-bold mb-6 text-white/90">{ultimaChamada.senha.paciente_nome}</p>
+                )}
                 <p className="text-4xl font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
                 <p className="text-7xl font-bold uppercase">{ultimaChamada.destino}</p>
               </div>
@@ -206,7 +360,7 @@ function TvPage() {
         </div>
 
         {/* Right Side: History / Last Calls */}
-        <div className="flex-1 flex flex-col bg-black/10">
+        <div className="flex-1 flex flex-col bg-black/10 backdrop-blur-sm">
           <div className="p-8 border-b border-white/10 bg-white/5">
             <h2 className="text-xl font-bold uppercase tracking-widest opacity-80 flex items-center gap-3">
               <Clock className="h-5 w-5 text-primary" />
@@ -224,7 +378,10 @@ function TvPage() {
                 >
                   <div>
                     <p className="text-4xl font-bold text-primary">{chamada.senha?.codigo}</p>
-                    <p className="text-sm font-medium opacity-40 uppercase">{chamada.senha?.fila_nome || "Geral"}</p>
+                    <p className="text-sm font-medium opacity-40 uppercase">
+                      {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
+                      {chamada.senha?.fila_nome || "Geral"}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold opacity-80">{chamada.destino}</p>
@@ -244,7 +401,7 @@ function TvPage() {
       </main>
 
       {/* Footer / Scrolling News or Info */}
-      <footer className="h-16 flex items-center bg-primary px-10 text-primary-foreground font-bold overflow-hidden whitespace-nowrap">
+      <footer className="relative h-16 flex items-center bg-primary px-10 text-primary-foreground font-bold overflow-hidden whitespace-nowrap">
         <div className="animate-marquee inline-block">
           {visual.mensagem_rodape || `Bem-vindo à ${unidade?.nome} • Por favor, acompanhe sua senha no painel • ${unidade?.nome} - Qualidade no atendimento`}
         </div>
@@ -262,3 +419,4 @@ function TvPage() {
     </div>
   );
 }
+
