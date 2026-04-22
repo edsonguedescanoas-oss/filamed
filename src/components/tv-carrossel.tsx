@@ -405,7 +405,7 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
           />
         )}
 
-        {youtubeEmbed && (
+        {youtubeEmbed && !ytBlocked && (
           <iframe
             key={atual.id}
             ref={youtubeIframeRef}
@@ -418,6 +418,18 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
             // origem confiável pra player rodar.
             referrerPolicy="strict-origin-when-cross-origin"
           />
+        )}
+
+        {youtubeEmbed && ytBlocked && (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-800 to-slate-900 p-8 text-center">
+            <ImageOff className="h-10 w-10 text-slate-500" />
+            <p className="text-sm font-medium text-slate-300">
+              Vídeo do YouTube bloqueado para incorporação
+            </p>
+            <p className="max-w-[320px] text-[11px] text-slate-500">
+              O autor desse vídeo desativou a reprodução fora do YouTube. Tente outro vídeo ou uma playlist pública com permissão de embed.
+            </p>
+          </div>
         )}
 
         {(!atual.url_midia || (!isImage(atual) && !isVideo(atual) && !youtubeEmbed)) && (
