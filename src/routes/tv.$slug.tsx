@@ -218,7 +218,7 @@ function TvPage() {
   }, [needsInteraction]);
 
   const speak = useCallback(async (chamada: Chamada) => {
-    const texto = montarTextoChamada({
+    const textoBase = montarTextoChamada({
       template: voiceConfig.template_chamada,
       nome: chamada.senha?.paciente_nome || null,
       codigoFalado: soletrar(chamada.senha?.codigo || ""),
@@ -226,6 +226,10 @@ function TvPage() {
       destino: chamada.destino,
       formatarDestino,
     });
+
+    // Para rechamadas (manuais ou automáticas), prefixa "Rechamada." no áudio
+    // sem nunca alterar o texto do destino exibido na TV.
+    const texto = isRechamada(chamada) ? `Rechamada. ${textoBase}` : textoBase;
 
     if (!texto.trim()) {
       console.warn("[TV] Texto de chamada vazio, ignorando voz.");
