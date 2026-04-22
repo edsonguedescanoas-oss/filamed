@@ -619,7 +619,7 @@ function TvPage() {
       {/* Main Content */}
       <main className="relative flex flex-1 overflow-hidden">
         {/* Left Side: Current Call / Highlight */}
-        <div className="flex-[2] flex flex-col items-center justify-center border-r border-white/10 p-10 bg-black/5">
+        <div className={`flex-[2] flex flex-col items-center justify-center border-r border-white/10 bg-black/5 transition-all ${visual.densidade === 'compacto' ? 'p-6' : 'p-10'}`}>
           {ultimaChamada ? (
             <div className="w-full max-w-2xl animate-in fade-in zoom-in duration-500 text-center">
               <div 
