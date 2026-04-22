@@ -545,15 +545,15 @@ function TvPage() {
     <div 
       className="flex h-screen flex-col overflow-hidden font-sans transition-colors duration-500"
       style={{ 
-        backgroundColor: visual.cor_fundo, 
-        color: visual.cor_texto,
-        backgroundImage: visual.fundo_url ? `url(${visual.fundo_url})` : undefined,
+        backgroundColor: palette.fundo, 
+        color: palette.texto,
+        backgroundImage: (visual.contraste_chamadas === 'normal' && visual.fundo_url) ? `url(${visual.fundo_url})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
     >
       {/* Overlay se tiver imagem de fundo */}
-      {visual.fundo_url && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
+      {(visual.contraste_chamadas === 'normal' && visual.fundo_url) && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
 
       {/* Header */}
       <header className={`relative flex items-center justify-between border-b border-white/10 bg-black/20 backdrop-blur-md transition-all ${visual.densidade === 'compacto' ? 'px-8 py-3' : 'px-10 py-6'}`}>
