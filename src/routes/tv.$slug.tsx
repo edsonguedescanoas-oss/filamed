@@ -102,6 +102,7 @@ function TvPage() {
       } catch (err: any) {
         console.error("Erro fatal ao carregar TV:", err);
         setError(err.message || "Erro inesperado ao carregar o painel.");
+        setErrorDetails(err);
       } finally {
         console.log("TV: Finalizando loading");
         setLoading(false);
