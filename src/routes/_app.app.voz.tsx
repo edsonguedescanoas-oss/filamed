@@ -294,23 +294,12 @@ function VozConfigPage() {
         setSaving(false);
         const msg = err instanceof Error ? err.message : String(err);
         const isMissingKey = /não configurada|API[_ ]?KEY/i.test(msg);
-        const isGoogle403 = msg.includes("google_403");
-
-        let errorTitle = `Falha ao validar ${providerLabel(config.provider)}`;
-        let errorDesc = msg;
-
-        if (isMissingKey) {
-          errorTitle = "Chave de API ausente";
-          errorDesc = `Configure o secret ${config.provider === "google" ? "GOOGLE_TTS_API_KEY" : "ELEVENLABS_API_KEY"} no painel da Lovable.`;
-        } else if (isGoogle403) {
-          errorTitle = "Google Cloud: Acesso Negado (403)";
-          errorDesc = "Sua chave de API do Google está bloqueando o serviço de Text-to-Speech. Verifique se a 'Cloud Text-to-Speech API' está ativada e se a chave não possui restrições de serviço no Google Cloud Console.";
-        }
-
-        toast.error(errorTitle, {
-          description: errorDesc,
-          duration: 10000,
-        });
+        toast.error(
+          isMissingKey
+            ? `Chave de API ausente: ${msg}. Configure o secret antes de salvar.`
+            : `Falha ao validar ${providerLabel(config.provider)}: ${msg}`,
+          { duration: 8000 },
+        );
         return;
       }
     }
