@@ -39,6 +39,8 @@ export interface TvVisualConfig {
   historico_limite: number;
   historico_quebrar_texto: boolean;
   aspect_ratio: "16:9" | "4:3";
+  zoom_nivel: number;
+  safe_area_padding: number;
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
@@ -65,6 +67,8 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   historico_limite: 8,
   historico_quebrar_texto: false,
   aspect_ratio: "16:9",
+  zoom_nivel: 1.0,
+  safe_area_padding: 0.0,
 };
 
 export const RESOLUCAO_PRESETS: Record<
@@ -95,7 +99,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto,aspect_ratio",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto,aspect_ratio,zoom_nivel,safe_area_padding",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -123,6 +127,8 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           historico_limite: Number(data.historico_limite) || 8,
           historico_quebrar_texto: !!data.historico_quebrar_texto,
           aspect_ratio: (data.aspect_ratio as any) ?? "16:9",
+          zoom_nivel: Number(data.zoom_nivel) || 1.0,
+          safe_area_padding: Number(data.safe_area_padding) || 0.0,
         });
       }
       setLoading(false);
@@ -154,6 +160,8 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
             escala_chamadas: row.escala_chamadas !== undefined ? Number(row.escala_chamadas) : prev.escala_chamadas,
             escala_header: row.escala_header !== undefined ? Number(row.escala_header) : prev.escala_header,
             escala_rodape: row.escala_rodape !== undefined ? Number(row.escala_rodape) : prev.escala_rodape,
+            zoom_nivel: row.zoom_nivel !== undefined ? Number(row.zoom_nivel) : prev.zoom_nivel,
+            safe_area_padding: row.safe_area_padding !== undefined ? Number(row.safe_area_padding) : prev.safe_area_padding,
           }));
         },
       )
