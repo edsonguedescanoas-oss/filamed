@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Monitor, Save, Eye } from "lucide-react";
+import { Loader2, Monitor, Save, Eye, LayoutGrid, Bookmark, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,23 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cfg, setCfg] = useState<TvVisualConfig>(DEFAULT_TV_VISUAL);
+  const [profiles, setProfiles] = useState<{ id: string; nome: string; config: any }[]>([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
+  const [profileName, setProfileName] = useState("");
+
+  const fetchProfiles = async () => {
+    const { data } = await supabase
+      .from("tv_layout_profiles")
+      .select("id, nome, config")
+      .eq("unidade_id", unidadeId)
+      .order("created_at", { ascending: false });
+    if (data) setProfiles(data);
+    setLoadingProfiles(false);
+  };
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [unidadeId]);
 
   useEffect(() => {
     let mounted = true;
@@ -83,6 +100,34 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
   };
 
   const handleReset = () => setCfg(DEFAULT_TV_VISUAL);
+
+  const handleSaveProfile = async () => {
+    if (!profileName.trim()) {
+      toast.error("Digite um nome para o perfil");
+      return;
+    }
+    const { error } = await supabase.from("tv_layout_profiles").insert({
+      unidade_id: unidadeId,
+      nome: profileName,
+      config: cfg as any,
+    } as any);
+    if (error) {
+      toast.error("Erro ao salvar perfil");
+      return;
+    }
+    toast.success("Perfil salvo!");
+    setProfileName("");
+    fetchProfiles();
+  };
+
+  const deleteProfile = async (id: string) => {
+    const { error } = await supabase.from("tv_layout_profiles").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao excluir perfil");
+      return;
+    }
+    fetchProfiles();
+  };
 
   if (loading) {
     return (
@@ -471,6 +516,74 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
               + Adicionar Componente
             </Button>
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-xl border border-border bg-card/50 p-6">
+        <div className="flex items-center gap-2">
+          <Bookmark className="h-5 w-5 text-primary" />
+          <h3 className="font-display text-lg font-bold">Perfis de Layout</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Salve as configurações atuais como um perfil ou escolha um perfil salvo para aplicar rapidamente.
+        </p>
+
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="profileName">Nome do perfil</Label>
+            <Input
+              id="profileName"
+              placeholder="Ex: Compacto, Noturno, Padrão..."
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" onClick={handleSaveProfile} className="gap-2">
+            <Save className="h-4 w-4" />
+            Salvar perfil
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {profiles.map((p) => (
+            <div
+              key={p.id}
+              className="flex items-center justify-between rounded-lg border bg-background p-3 transition-colors hover:border-primary/40"
+            >
+              <div className="flex flex-col overflow-hidden">
+                <span className="truncate text-sm font-semibold">{p.nome}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {p.config.resolucao_preset?.toUpperCase()} • {p.config.densidade}
+                </span>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCfg({ ...DEFAULT_TV_VISUAL, ...p.config });
+                    toast.info(`Perfil "${p.nome}" carregado. Lembre-se de salvar.`);
+                  }}
+                  className="h-8 text-xs text-primary hover:bg-primary/10"
+                >
+                  Aplicar
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteProfile(p.id)}
+                  className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {profiles.length === 0 && !loadingProfiles && (
+            <div className="col-span-full py-4 text-center text-sm text-muted-foreground">
+              Nenhum perfil salvo para esta unidade.
+            </div>
+          )}
         </div>
       </section>
 
