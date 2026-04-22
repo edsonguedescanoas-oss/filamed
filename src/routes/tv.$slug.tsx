@@ -860,9 +860,9 @@ function TvPage() {
                           <p
                             className="font-bold opacity-90 leading-tight truncate"
                             style={{ fontSize: "clamp(0.6875rem, 4.5cqi, 1rem)" }}
-                            title={chamada.destino}
+                            title={limparDestino(chamada.destino)}
                           >
-                            {chamada.destino}
+                            {limparDestino(chamada.destino)}
                           </p>
                           <p
                             className="font-mono opacity-30"
