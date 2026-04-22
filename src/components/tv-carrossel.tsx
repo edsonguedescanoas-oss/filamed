@@ -35,13 +35,13 @@ function dentroDaJanela(item: SinalizacaoItem, agora: Date): boolean {
 }
 
 function isVideo(item: SinalizacaoItem): boolean {
-  if (item.tipo?.toLowerCase().includes("video") && !isYoutube(item)) return true;
+  if (item.tipo?.toLowerCase()?.includes("video") && !isYoutube(item)) return true;
   const url = item.url_midia ?? "";
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
 }
 
 function isImage(item: SinalizacaoItem): boolean {
-  if (item.tipo?.toLowerCase().includes("imagem") || item.tipo?.toLowerCase().includes("image")) {
+  if (item.tipo?.toLowerCase()?.includes("imagem") || item.tipo?.toLowerCase()?.includes("image")) {
     return true;
   }
   const url = item.url_midia ?? "";
@@ -49,7 +49,7 @@ function isImage(item: SinalizacaoItem): boolean {
 }
 
 function isYoutube(item: SinalizacaoItem): boolean {
-  if (item.tipo?.toLowerCase().includes("youtube")) return true;
+  if (item.tipo?.toLowerCase()?.includes("youtube")) return true;
   const url = item.url_midia ?? "";
   return /(?:youtube\.com|youtu\.be)/i.test(url);
 }
@@ -63,7 +63,8 @@ function isYoutube(item: SinalizacaoItem): boolean {
  *  - apenas o ID (11 chars alfanuméricos)
  *  - ID de playlist (começa com PL/UU/RD/OL e tem >13 chars)
  */
-function parseYoutube(url: string): { videoId?: string; playlistId?: string; isHandle?: boolean } {
+function parseYoutube(url: string | null | undefined): { videoId?: string; playlistId?: string; isHandle?: boolean } {
+  if (!url) return {};
   const trimmed = url.trim();
   
   // Detecta handle (@nome) - embeds do YouTube não suportam handles diretamente
