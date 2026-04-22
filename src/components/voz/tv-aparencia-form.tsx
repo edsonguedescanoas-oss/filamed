@@ -600,7 +600,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       <SinalizacaoManager unidadeId={unidadeId} />
 
       <section className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
+        <Button onClick={() => handleSave()} disabled={saving} className="gap-2">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
