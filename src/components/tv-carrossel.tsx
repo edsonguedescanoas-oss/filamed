@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ImageOff } from "lucide-react";
+import { ImageOff, Volume2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SinalizacaoItem = {
@@ -189,10 +189,29 @@ function buildYoutubeEmbed(url: string): string | null {
   return null;
 }
 
+function postYoutubeCommand(
+  iframe: HTMLIFrameElement | null,
+  func: string,
+  args: unknown[] = [],
+) {
+  const win = iframe?.contentWindow;
+  if (!win) return;
+  win.postMessage(JSON.stringify({ event: "command", func, args }), "*");
+}
+
+function tryEnableYoutubeAudio(iframe: HTMLIFrameElement | null, volume = 40) {
+  postYoutubeCommand(iframe, "playVideo");
+  postYoutubeCommand(iframe, "unMute");
+  postYoutubeCommand(iframe, "setVolume", [volume]);
+  postYoutubeCommand(iframe, "playVideo");
+}
+
 export function TvCarrossel({ unidadeId, paused = false, className, minimalChrome = false }: Props) {
   const [items, setItems] = useState<SinalizacaoItem[]>([]);
   const [index, setIndex] = useState(0);
   const [now, setNow] = useState(() => new Date());
+  const [youtubeAudioHintVisible, setYoutubeAudioHintVisible] = useState(false);
+  const [youtubeLoadTick, setYoutubeLoadTick] = useState(0);
 
   // Carrega itens ativos da unidade + assina realtime
   useEffect(() => {
@@ -317,39 +336,48 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
     }
     // YouTube: comanda via postMessage (IFrame API)
     const y = youtubeIframeRef.current;
-    if (y && y.contentWindow) {
-      const cmd = paused ? "pauseVideo" : "playVideo";
-      y.contentWindow.postMessage(
-        JSON.stringify({ event: "command", func: cmd, args: [] }),
-        "*",
-      );
+    if (y) {
+      if (paused) {
+        postYoutubeCommand(y, "pauseVideo");
+      } else {
+        tryEnableYoutubeAudio(y, 40);
+      }
     }
   }, [paused, atual?.id]);
 
-  // YouTube: tira o mute e seta volume em 40% após o iframe carregar.
-  // Navegadores bloqueiam autoplay com som sem interação, então em browsers
-  // comuns o vídeo pode permanecer mudo. Em TVs/quiosques (onde autoplay
-  // com som é liberado) o áudio toca em 40%.
+  // YouTube: tenta liberar o áudio algumas vezes após o player carregar.
+  // Em navegadores com política restritiva, exibimos um CTA para ativação manual.
   useEffect(() => {
     if (!atual || !isYoutube(atual)) return;
-    const y = youtubeIframeRef.current;
-    if (!y || !y.contentWindow) return;
-    // Espera 1.5s pra garantir que o player YT carregou e está pronto pra
-    // receber comandos via postMessage.
-    const t = setTimeout(() => {
-      const win = y.contentWindow;
-      if (!win) return;
-      win.postMessage(
-        JSON.stringify({ event: "command", func: "unMute", args: [] }),
-        "*",
-      );
-      win.postMessage(
-        JSON.stringify({ event: "command", func: "setVolume", args: [40] }),
-        "*",
-      );
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [atual?.id]);
+    if (paused) {
+      setYoutubeAudioHintVisible(false);
+      return;
+    }
+
+    setYoutubeAudioHintVisible(false);
+
+    const attempts = [600, 1500, 2600].map((delay) =>
+      setTimeout(() => {
+        tryEnableYoutubeAudio(youtubeIframeRef.current, 40);
+      }, delay),
+    );
+    const hintTimer = setTimeout(() => {
+      setYoutubeAudioHintVisible(true);
+    }, 3400);
+
+    return () => {
+      attempts.forEach((timer) => clearTimeout(timer));
+      clearTimeout(hintTimer);
+    };
+  }, [atual?.id, paused, youtubeLoadTick]);
+
+  const handleYoutubeAudioUnlock = () => {
+    tryEnableYoutubeAudio(youtubeIframeRef.current, 40);
+    setYoutubeAudioHintVisible(false);
+    window.setTimeout(() => {
+      tryEnableYoutubeAudio(youtubeIframeRef.current, 40);
+    }, 180);
+  };
 
   if (elegiveis.length === 0 || !atual) return null;
 
@@ -392,18 +420,48 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
         )}
 
         {youtubeEmbed && (
-          <iframe
-            key={atual.id}
-            ref={youtubeIframeRef}
-            src={youtubeEmbed}
-            title={atual.titulo}
-            className="absolute inset-0 h-full w-full border-0"
-            // `allow` precisa autoplay + encrypted-media pra YouTube tocar sozinho.
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            // `sandbox` é omitido de propósito — o YouTube embed precisa de
-            // origem confiável pra player rodar.
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
+          <>
+            <iframe
+              key={atual.id}
+              ref={youtubeIframeRef}
+              src={youtubeEmbed}
+              title={atual.titulo}
+              className="absolute inset-0 h-full w-full border-0"
+              onLoad={() => {
+                setYoutubeAudioHintVisible(false);
+                setYoutubeLoadTick((tick) => tick + 1);
+              }}
+              // `allow` precisa autoplay + encrypted-media pra YouTube tocar sozinho.
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              // `sandbox` é omitido de propósito — o YouTube embed precisa de
+              // origem confiável pra player rodar.
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+
+            {youtubeAudioHintVisible && !paused && (
+              <div className="absolute bottom-4 right-4 z-10 max-w-[320px] rounded-xl border border-white/15 bg-black/75 p-3 text-white shadow-lg backdrop-blur-sm animate-fade-in">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-full bg-white/10 p-2">
+                    <Volume2 className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Áudio do YouTube bloqueado pelo navegador</p>
+                    <p className="mt-1 text-xs text-white/75">
+                      Alguns navegadores só liberam som após interação. Toque no botão abaixo para tentar ativar em 40%.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleYoutubeAudioUnlock}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/15"
+                    >
+                      <Volume2 className="h-4 w-4" />
+                      Ativar áudio
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {driveEmbed && (
