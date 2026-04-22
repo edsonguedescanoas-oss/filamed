@@ -13,8 +13,13 @@ export function useRecurso(chave: string) {
   const { profile } = useAuth();
   const { plano, loading } = usePlanoAtual(profile?.unidade_id);
 
-  const ativo = !!plano?.recursos?.[chave];
+  let ativo = !!plano?.recursos?.[chave];
   const statusOk = plano?.status === "ativa" || plano?.status === "trialing";
+
+  // Temporário: Liberar relatórios para todos os planos por enquanto
+  if (chave === "relatorios_avancados") {
+    ativo = true;
+  }
 
   return {
     /** True quando o plano libera o recurso e a assinatura está vigente. */
