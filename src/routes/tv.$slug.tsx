@@ -232,6 +232,35 @@ function TvPage() {
     })();
   }, [unidade?.id]);
 
+  // Busca status atual das senhas que aparecem no histórico (precisa pra
+  // mostrar badges "em atendimento" / "ausente" / "atendimento finalizado").
+  // Roda quando entram novas chamadas e ainda não conhecemos o status delas.
+  useEffect(() => {
+    if (!unidade?.id) return;
+    const idsFaltando = Array.from(
+      new Set(
+        chamadas
+          .map((c) => c.senha?.id)
+          .filter((id): id is string => Boolean(id) && !(id in statusSenhas)),
+      ),
+    );
+    if (idsFaltando.length === 0) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("senhas")
+        .select("id, status")
+        .in("id", idsFaltando);
+      if (!data) return;
+      setStatusSenhas((prev) => {
+        const next = { ...prev };
+        for (const row of data) {
+          if (row.id && row.status) next[row.id] = row.status;
+        }
+        return next;
+      });
+    })();
+  }, [unidade?.id, chamadas, statusSenhas]);
+
   // Warm up voices
   useEffect(() => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
