@@ -1,0 +1,1 @@
+ALTER TABLE public.tv_visual_config ADD COLUMN auto_ajuste BOOLEAN DEFAULT false;

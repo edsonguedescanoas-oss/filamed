@@ -695,6 +695,7 @@ export type Database = {
       }
       tv_visual_config: {
         Row: {
+          auto_ajuste: boolean | null
           contraste_chamadas: string
           cor_fundo: string
           cor_primaria: string
@@ -715,6 +716,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_ajuste?: boolean | null
           contraste_chamadas?: string
           cor_fundo?: string
           cor_primaria?: string
@@ -735,6 +737,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_ajuste?: boolean | null
           contraste_chamadas?: string
           cor_fundo?: string
           cor_primaria?: string
