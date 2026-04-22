@@ -718,11 +718,43 @@ function TvPage() {
       </main>
 
       {/* Footer / Scrolling News or Info */}
-      <footer className="relative h-16 flex items-center bg-primary px-10 text-primary-foreground font-bold overflow-hidden whitespace-nowrap">
+      <footer 
+        className="relative h-16 flex items-center px-10 font-bold overflow-hidden whitespace-nowrap transition-colors"
+        style={{ backgroundColor: palette.primaria, color: palette.primariaForeground }}
+      >
         <div className="animate-marquee inline-block">
           {visual.mensagem_rodape || `Bem-vindo à ${unidade?.nome} • Por favor, acompanhe sua senha no painel • ${unidade?.nome} - Qualidade no atendimento`}
         </div>
       </footer>
+
+      {/* Alerta de Desconexão (Logs/Alertas quando houver queda) */}
+      {(visualStatus === "CHANNEL_ERROR" || visualStatus === "TIMED_OUT" || visualStatus === "CLOSED" ||
+        chamadasStatus === "CHANNEL_ERROR" || chamadasStatus === "TIMED_OUT" || chamadasStatus === "CLOSED") && (
+        <div className="fixed top-24 right-10 z-[100] animate-in slide-in-from-top-10 duration-500">
+          <div className="flex items-center gap-4 rounded-2xl bg-red-600/95 px-6 py-4 text-white shadow-2xl backdrop-blur-md border border-red-500/50">
+            <AlertCircle className="h-8 w-8 animate-bounce" />
+            <div className="text-left">
+              <p className="text-lg font-bold">Conexão Instável</p>
+              <p className="text-sm opacity-90 leading-tight">Tentando reconectar automaticamente à central...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diagnóstico de Realtime (Opcional via ?debug=true) */}
+      {Route.useSearch().debug && (
+        <div className="fixed bottom-20 left-10 z-[100] rounded-lg bg-black/80 p-4 font-mono text-[10px] text-green-400 backdrop-blur-sm max-w-sm border border-white/10 shadow-2xl">
+          <p className="mb-2 font-bold border-b border-green-900 pb-1 uppercase tracking-widest text-[9px]">TV Diagnostic v2.0</p>
+          <div className="space-y-1">
+            <div className="flex justify-between gap-4"><span>STATUS VISUAL:</span> <span className={visualStatus === 'SUBSCRIBED' ? 'text-green-400' : 'text-yellow-400 font-bold'}>{visualStatus}</span></div>
+            <div className="flex justify-between gap-4"><span>STATUS CHAMADAS:</span> <span className={chamadasStatus === 'SUBSCRIBED' ? 'text-green-400' : 'text-yellow-400 font-bold'}>{chamadasStatus}</span></div>
+            <div className="flex justify-between gap-4"><span>RESOLUÇÃO:</span> <span className="text-white">{visual.resolucao_preset}</span></div>
+            <div className="flex justify-between gap-4"><span>CORES:</span> <span className="text-white uppercase">{visual.cor_primaria}</span></div>
+            <div className="flex justify-between gap-4"><span>DENSIDADE:</span> <span className="text-white uppercase">{visual.densidade}</span></div>
+          </div>
+        </div>
+      )}
+
 
       <style>{`
         @keyframes marquee {
