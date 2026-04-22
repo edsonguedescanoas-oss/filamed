@@ -356,20 +356,49 @@ function RecepcaoPage() {
           </p>
         </div>
         {unidadeSlug && (
-          <Button
-            asChild
-            variant="outline"
-            className="gap-2"
-          >
-            <a
-              href={`/tv/${unidadeSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Tv className="h-4 w-4" />
-              Abrir TV (chamadas e histórico)
-            </a>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="gap-2" disabled={resetting}>
+                  {resetting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Resetar histórico
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Resetar histórico de chamadas?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso apaga as chamadas de senhas <strong>já atendidas, ausentes ou canceladas</strong> —
+                    elas somem do histórico da TV. As senhas em atendimento, chamadas e aguardando são <strong>preservadas</strong>.
+                    Essa ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => void handleResetHistorico()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Sim, resetar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button asChild variant="outline" className="gap-2">
+              <a
+                href={`/tv/${unidadeSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Tv className="h-4 w-4" />
+                Abrir TV (chamadas e histórico)
+              </a>
+            </Button>
+          </div>
         )}
       </header>
 
