@@ -38,6 +38,7 @@ export interface TvVisualConfig {
   auto_ajuste: boolean;
   historico_limite: number;
   historico_quebrar_texto: boolean;
+  aspect_ratio: "16:9" | "4:3";
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
