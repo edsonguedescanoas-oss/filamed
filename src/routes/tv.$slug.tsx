@@ -522,15 +522,41 @@ function TvPage() {
         },
         (payload) => {
           const novo = payload.new as { id: string; status?: string };
-          const finalStatus = ["em_atendimento", "finalizada", "ausente", "cancelada"];
-          if (novo.status && finalStatus.includes(novo.status)) {
-            setSenhasInativas((prev) => {
-              if (prev.has(novo.id)) return prev;
-              const next = new Set(prev);
-              next.add(novo.id);
-              return next;
+          if (novo.status) {
+            setStatusSenhas((prev) => {
+              if (prev[novo.id] === novo.status) return prev;
+              return { ...prev, [novo.id]: novo.status! };
             });
           }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [unidade?.id]);
+
+  /**
+   * Realtime de DELETE em `chamadas` — quando a recepção clica "Resetar
+   * histórico", as chamadas finalizadas/ausentes/canceladas são apagadas e a
+   * TV precisa refletir isso instantaneamente, sem reload.
+   */
+  useEffect(() => {
+    if (!unidade?.id) return;
+    const ch = supabase
+      .channel(`tv-chamadas-del-${unidade.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "chamadas",
+          filter: `unidade_id=eq.${unidade.id}`,
+        },
+        (payload) => {
+          const removida = payload.old as { id?: string };
+          if (!removida?.id) return;
+          setChamadas((prev) => prev.filter((c) => c.id !== removida.id));
         },
       )
       .subscribe();
