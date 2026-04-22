@@ -150,11 +150,6 @@ function TvPage() {
   }, []);
 
   const speak = useCallback(async (chamada: Chamada) => {
-    if (isSpeaking.current) {
-      console.log("[TV] Já está falando, aguardando...");
-      // Opcional: implementar fila real. Por ora, apenas ignora ou cancela anterior.
-    }
-
     const texto = montarTextoChamada({
       template: voiceConfig.template_chamada,
       nome: chamada.senha?.paciente_nome || null,
@@ -164,7 +159,21 @@ function TvPage() {
       formatarDestino,
     });
 
-    console.log("[TV] Preparando para falar:", texto, "Provider:", voiceConfig.provider);
+    if (!texto.trim()) {
+      console.warn("[TV] Texto de chamada vazio, ignorando voz.");
+      return;
+    }
+
+    if (isSpeaking.current) {
+      console.log("[TV] Já está falando, cancelando anterior e iniciando nova...");
+      if (voiceConfig.provider === "browser") {
+        window.speechSynthesis.cancel();
+      } else if (voiceAudioRef.current) {
+        voiceAudioRef.current.pause();
+      }
+    }
+
+    console.log("[TV] Falando:", texto, "Provider:", voiceConfig.provider);
     isSpeaking.current = true;
 
     const finalize = () => {
@@ -185,6 +194,7 @@ function TvPage() {
       utterance.lang = "pt-BR";
       utterance.rate = voiceConfig.rate;
       utterance.pitch = voiceConfig.pitch;
+      utterance.volume = 1; // Garante volume máximo
       utterance.onend = finalize;
       utterance.onerror = (e) => {
         console.error("[TV] Erro SpeechSynthesis:", e);
@@ -197,7 +207,7 @@ function TvPage() {
         if (v) utterance.voice = v;
       }
       
-      setTimeout(() => synth.speak(utterance), 100);
+      setTimeout(() => synth.speak(utterance), 150);
     } else {
       try {
         const { data, error } = await supabase.functions.invoke("tts", {
@@ -217,13 +227,12 @@ function TvPage() {
           : null;
 
         if (audioData && voiceAudioRef.current) {
-          console.log("[TV] Reproduzindo áudio via elemento persistente...");
           const audio = voiceAudioRef.current;
           audio.src = audioData;
           audio.onended = finalize;
           audio.onerror = (e) => {
             console.error("[TV] Erro no elemento de áudio:", e);
-            // Fallback
+            // Fallback para browser
             const u = new SpeechSynthesisUtterance(texto);
             u.lang = "pt-BR";
             u.onend = finalize;
@@ -238,25 +247,25 @@ function TvPage() {
             window.speechSynthesis.speak(u);
           });
         } else if (data?.fallback === "browser" || !audioData) {
-          console.log("[TV] TTS indisponível, usando fallback de navegador");
+          console.log("[TV] Usando fallback de navegador (Web Speech)");
           const synth = window.speechSynthesis;
           synth.cancel();
           const u = new SpeechSynthesisUtterance(texto);
           u.lang = "pt-BR";
           u.onend = finalize;
-          setTimeout(() => synth.speak(u), 100);
+          setTimeout(() => synth.speak(u), 150);
         } else {
           finalize();
         }
       } catch (err) {
-        console.error("[TV] Erro ao reproduzir voz:", err);
+        console.error("[TV] Erro ao reproduzir voz cloud, fallback browser:", err);
         const u = new SpeechSynthesisUtterance(texto);
         u.lang = "pt-BR";
         u.onend = finalize;
         window.speechSynthesis.speak(u);
       }
     }
-  }, [voiceConfig]);
+  }, [voiceConfig, formatarDestino]);
 
   // Realtime para novas chamadas
   useEffect(() => {
