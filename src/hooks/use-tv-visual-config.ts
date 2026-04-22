@@ -33,6 +33,7 @@ export interface TvVisualConfig {
   layout_items: LayoutItem[];
   auto_ajuste: boolean;
   historico_limite: number;
+  historico_quebrar_texto: boolean;
 }
 
 export const DEFAULT_TV_VISUAL: TvVisualConfig = {
