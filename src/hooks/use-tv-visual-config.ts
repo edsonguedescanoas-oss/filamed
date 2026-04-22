@@ -25,7 +25,7 @@ export interface TvVisualConfig {
   mensagem_rodape: string | null;
   /** Nível de contraste aplicado na área de chamadas (tabela + modal). */
   contraste_chamadas: ContrasteChamadas;
-  /** Multiplicador (0.6–2.5) das fontes da área de chamadas. */
+  /** Multiplicador (0.1–2.5) das fontes da área de chamadas. */
   escala_chamadas: number;
   /** Configurações de layout em grid */
   layout_grid_cols: number;

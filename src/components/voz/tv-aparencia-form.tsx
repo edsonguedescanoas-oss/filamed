@@ -147,7 +147,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           <Input
             id="escala"
             type="range"
-            min={0.5}
+            min={0.1}
             max={1.5}
             step={0.05}
             value={cfg.escala_fonte}
@@ -225,7 +225,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           <Input
             id="escala_chamadas"
             type="range"
-            min={0.6}
+            min={0.1}
             max={2.5}
             step={0.05}
             value={cfg.escala_chamadas}
