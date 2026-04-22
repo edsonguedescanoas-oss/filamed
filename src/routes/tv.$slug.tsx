@@ -351,9 +351,20 @@ function TvPage() {
               beepRef.current = audioBeep;
             }).catch(e => console.error("Erro ao destravar beep:", e));
 
-            // "Destrava" a voz (SpeechSynthesis)
+            // "Destrava" o áudio da voz
+            const audioVoice = new Audio();
+            audioVoice.volume = 0.01;
+            audioVoice.play().then(() => {
+              console.log("[TV] Voz (Audio) destravada");
+              audioVoice.pause();
+              audioVoice.volume = 1;
+              voiceAudioRef.current = audioVoice;
+            }).catch(e => console.error("Erro ao destravar voz (Audio):", e));
+
+            // "Destrava" a voz nativa (SpeechSynthesis)
             const synth = window.speechSynthesis;
             const u = new SpeechSynthesisUtterance("");
+            u.volume = 0;
             synth.speak(u);
 
             setNeedsInteraction(false);
