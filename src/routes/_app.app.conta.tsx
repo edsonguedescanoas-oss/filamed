@@ -149,9 +149,17 @@ function ContaPage() {
     };
   }, [profile?.unidade_id]);
 
-  const recursosAtivos = plano?.recursos
-    ? Object.entries(plano.recursos).filter(([, v]) => v).map(([k]) => k)
-    : [];
+  const recursosAtivos = useMemo(() => {
+    const list = plano?.recursos
+      ? Object.entries(plano.recursos).filter(([, v]) => v).map(([k]) => k)
+      : [];
+    
+    // Temporário: Considerar relatórios como ativo por enquanto
+    if (!list.includes("relatorios_avancados")) {
+      list.push("relatorios_avancados");
+    }
+    return list;
+  }, [plano]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 space-y-6">
