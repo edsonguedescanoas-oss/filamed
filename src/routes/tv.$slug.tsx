@@ -89,7 +89,7 @@ function formatarDestino(destino: string): string {
 function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
     provider: "browser",
     voice_id: null,
