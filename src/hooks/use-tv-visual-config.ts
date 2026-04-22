@@ -53,47 +53,51 @@ export const RESOLUCAO_PRESETS: Record<
 export function useTvVisualConfig(unidadeId: string | null | undefined) {
   const [config, setConfig] = useState<TvVisualConfig>(DEFAULT_TV_VISUAL);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR" | "INITIALIZING">("INITIALIZING");
+
+  const fetchConfig = useCallback(async () => {
+    if (!unidadeId) return;
+    const { data } = await supabase
+      .from("tv_visual_config")
+      .select(
+        "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas",
+      )
+      .eq("unidade_id", unidadeId)
+      .maybeSingle();
+
+    if (data) {
+      setConfig({
+        cor_primaria: data.cor_primaria ?? DEFAULT_TV_VISUAL.cor_primaria,
+        cor_fundo: data.cor_fundo ?? DEFAULT_TV_VISUAL.cor_fundo,
+        cor_texto: data.cor_texto ?? DEFAULT_TV_VISUAL.cor_texto,
+        logo_url: data.logo_url,
+        fundo_url: data.fundo_url,
+        resolucao_preset: (data.resolucao_preset as ResolucaoPreset) ?? "fhd",
+        escala_fonte: Number(data.escala_fonte) || 1,
+        densidade: (data.densidade as Densidade) ?? "normal",
+        mensagem_rodape: data.mensagem_rodape ?? null,
+        contraste_chamadas:
+          (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
+        escala_chamadas: Number(data.escala_chamadas) || 1,
+      });
+    }
+  }, [unidadeId]);
 
   useEffect(() => {
     if (!unidadeId) {
       setLoading(false);
       return;
     }
-    let mounted = true;
-    void (async () => {
-      const { data } = await supabase
-        .from("tv_visual_config")
-        .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas",
-        )
-        .eq("unidade_id", unidadeId)
-        .maybeSingle();
-      if (!mounted) return;
-      if (data) {
-        setConfig({
-          cor_primaria: data.cor_primaria ?? DEFAULT_TV_VISUAL.cor_primaria,
-          cor_fundo: data.cor_fundo ?? DEFAULT_TV_VISUAL.cor_fundo,
-          cor_texto: data.cor_texto ?? DEFAULT_TV_VISUAL.cor_texto,
-          logo_url: data.logo_url,
-          fundo_url: data.fundo_url,
-          resolucao_preset: (data.resolucao_preset as ResolucaoPreset) ?? "fhd",
-          escala_fonte: Number(data.escala_fonte) || 1,
-          densidade: (data.densidade as Densidade) ?? "normal",
-          mensagem_rodape: data.mensagem_rodape ?? null,
-          contraste_chamadas:
-            (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
-          escala_chamadas: Number(data.escala_chamadas) || 1,
-        });
-      }
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [unidadeId]);
+    setLoading(true);
+    fetchConfig().finally(() => setLoading(false));
+  }, [unidadeId, fetchConfig]);
+
   // Realtime
   useEffect(() => {
     if (!unidadeId) return;
+
+    console.log(`[TV] Iniciando canal de realtime para unidade: ${unidadeId}`);
+
     const ch = supabase
       .channel(`tv:${unidadeId}:visual-cfg`)
       .on(
@@ -105,6 +109,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           filter: `unidade_id=eq.${unidadeId}`,
         },
         (payload) => {
+          console.log("[TV] Mudança visual detectada via Realtime:", payload);
           const row = payload.new as any;
           if (!row) return;
           
@@ -116,11 +121,23 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           }));
         },
       )
-      .subscribe();
+      .subscribe(async (status) => {
+        console.log(`[TV] Status do canal visual: ${status}`);
+        setStatus(status as any);
+        
+        // Se a conexão voltou de um erro/queda, re-sincroniza os dados
+        if (status === "SUBSCRIBED") {
+          console.log("[TV] Canal conectado, verificando se há atualizações pendentes...");
+          await fetchConfig();
+        }
+      });
+
     return () => {
+      console.log("[TV] Removendo canal de realtime");
       void supabase.removeChannel(ch);
     };
-  }, [unidadeId]);
+  }, [unidadeId, fetchConfig]);
 
-  return { config, loading, setConfig };
+  return { config, loading, setConfig, connectionStatus: status };
 }
+
