@@ -328,7 +328,7 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
             title={atual.titulo}
             className="absolute inset-0 h-full w-full border-0"
             // `allow` precisa autoplay + encrypted-media pra YouTube tocar sozinho.
-            allow="autoplay; encrypted-media; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             // `sandbox` é omitido de propósito — o YouTube embed precisa de
             // origem confiável pra player rodar.
             referrerPolicy="strict-origin-when-cross-origin"
