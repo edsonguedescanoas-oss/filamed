@@ -418,6 +418,36 @@ function TvPage() {
     };
   }, [unidade?.id, speak]);
 
+  // Lógica de Autoajuste de Escala e Padding
+  const [autoStyles, setAutoStyles] = useState<{ scale: number; padding: number }>({ scale: 1, padding: 8 });
+
+  useEffect(() => {
+    if (!visual.auto_ajuste) {
+      setAutoStyles({ scale: 1, padding: 8 });
+      return;
+    }
+
+    const adjust = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      
+      // Escala baseada em 1080p (Full HD)
+      const baseScale = Math.min(vw / 1920, vh / 1080);
+      
+      // Padding dinâmico (entre 10 e 40px dependendo da escala)
+      const dynamicPadding = Math.max(10, Math.min(40, 24 * baseScale));
+      
+      setAutoStyles({ 
+        scale: baseScale * visual.escala_fonte, 
+        padding: dynamicPadding 
+      });
+    };
+
+    adjust();
+    window.addEventListener("resize", adjust);
+    return () => window.removeEventListener("resize", adjust);
+  }, [visual.auto_ajuste, visual.escala_fonte]);
+
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, 9);
 
