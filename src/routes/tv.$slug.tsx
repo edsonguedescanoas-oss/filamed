@@ -303,12 +303,11 @@ function TvPage() {
           if (synth) {
             synth.cancel();
             const u = createUtterance(texto);
-            setTimeout(() => {
-              if (synth) {
-                synth.resume();
-                synth.speak(u);
-              }
-            }, 200);
+            // Reduzido delay de fallback para feedback mais rápido
+            if (synth) {
+              synth.resume();
+              synth.speak(u);
+            }
           } else {
             finalize();
           }
