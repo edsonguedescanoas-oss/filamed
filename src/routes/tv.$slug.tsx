@@ -138,7 +138,10 @@ function TvPage() {
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{unidade?.nome}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">{unidade?.nome}</h1>
+              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Conectado" />
+            </div>
             <p className="text-sm font-medium opacity-60 uppercase tracking-widest">Painel de Chamadas</p>
           </div>
         </div>
