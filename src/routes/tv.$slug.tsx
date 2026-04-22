@@ -402,7 +402,7 @@ function TvPage() {
             },
           };
 
-          setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
+          setChamadas(prev => [novaChamada, ...prev].slice(0, (visual.historico_limite || 8) + 2));
           
           // 3. Inicia a fala logo após o início do beep (reduzido de 800ms para 100ms)
           // Isso faz com que a voz comece quase junto ou logo após o "bipe" inicial
