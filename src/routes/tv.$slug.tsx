@@ -241,7 +241,7 @@ function TvPage() {
       new Set(
         chamadas
           .map((c) => c.senha?.id)
-          .filter((id): id is string => Boolean(id) && !(id in statusSenhas)),
+          .filter((id): id is string => typeof id === "string" && id.length > 0 && !(id in statusSenhas)),
       ),
     );
     if (idsFaltando.length === 0) return;
