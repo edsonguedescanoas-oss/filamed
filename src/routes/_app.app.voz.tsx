@@ -364,7 +364,7 @@ function VozConfigPage() {
       });
 
       if (error) throw error;
-      if (!data?.audioContent) {
+      if (!data?.audioUrl && !data?.audioContent) {
         // Fallback gracioso — provider indisponível, demonstra com Web Speech
         if (data?.fallback === "browser") {
           toast.warning(
@@ -385,7 +385,8 @@ function VozConfigPage() {
         throw new Error("Sem áudio retornado");
       }
 
-      const audio = new Audio(`data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`);
+      const audioSrc = data.audioUrl || `data:${data.mime ?? "audio/mpeg"};base64,${data.audioContent}`;
+      const audio = new Audio(audioSrc);
       audio.onended = () => setPreviewing(false);
       audio.onerror = () => setPreviewing(false);
       await audio.play();

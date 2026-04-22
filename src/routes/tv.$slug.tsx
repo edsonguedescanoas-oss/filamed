@@ -203,15 +203,14 @@ function TvPage() {
       }
     }
 
-    console.log("[TV] Falando:", texto, "Provider:", voiceConfig.provider);
+    console.log("[TV] Tentando falar:", texto, "Provider:", voiceConfig.provider);
     isSpeaking.current = true;
 
     const finalize = () => {
       isSpeaking.current = false;
-      console.log("[TV] Finalizou fala.");
+      console.log("[TV] Finalizou processo de fala.");
     };
 
-    // Configuração comum para WebSpeech
     const createUtterance = (t: string) => {
       const u = new SpeechSynthesisUtterance(t);
       u.lang = "pt-BR";
@@ -241,13 +240,16 @@ function TvPage() {
 
       synth.cancel();
       const utterance = createUtterance(texto);
-      // Timeout maior para garantir que o cancel anterior processou (comum em alguns navegadores)
       setTimeout(() => {
-        if (synth) synth.resume(); // Reforça resume logo antes do speak
-        if (synth) synth.speak(utterance);
+        if (synth) {
+          synth.resume();
+          synth.speak(utterance);
+        }
       }, 200);
     } else {
+      // Provedor Cloud (ElevenLabs / Google)
       try {
+        console.log(`[TV] Chamando Edge Function tts para ${voiceConfig.provider}...`);
         const { data, error } = await supabase.functions.invoke("tts", {
           body: {
             text: texto,
@@ -260,16 +262,18 @@ function TvPage() {
 
         if (error) throw error;
         
-        const audioData = data?.audioContent 
+        const audioSrc = data?.audioUrl || (data?.audioContent 
           ? `data:${data.mime || "audio/mpeg"};base64,${data.audioContent}`
-          : null;
+          : null);
 
-        if (audioData && voiceAudioRef.current) {
-          const audio = voiceAudioRef.current;
-          audio.src = audioData;
+        if (audioSrc) {
+          // Usa o ref se estiver disponível, senão cria um novo temporário
+          // Algumas TVs preferem novos elementos se o anterior "engasgou"
+          const audio = voiceAudioRef.current || new Audio();
+          audio.src = audioSrc;
           audio.onended = finalize;
           audio.onerror = (e) => {
-            console.error("[TV] Erro no elemento de áudio (cloud), tentando fallback local:", e);
+            console.error("[TV] Erro no carregamento do áudio cloud, fallback browser:", e);
             if (synth) {
               synth.cancel();
               const u = createUtterance(texto);
@@ -279,8 +283,9 @@ function TvPage() {
             }
           };
           
+          audio.load();
           audio.play().catch(playErr => {
-            console.error("[TV] Play cloud bloqueado, tentando fallback WebSpeech:", playErr);
+            console.error("[TV] Play cloud bloqueado ou falhou, fallback browser:", playErr);
             if (synth) {
               synth.cancel();
               const u = createUtterance(texto);
@@ -289,8 +294,8 @@ function TvPage() {
               finalize();
             }
           });
-        } else if (data?.fallback === "browser" || !audioData) {
-          console.log("[TV] Cloud indisponível ou vazio, usando fallback de navegador");
+        } else if (data?.fallback === "browser" || !audioSrc) {
+          console.log("[TV] Cloud indisponível, usando fallback de navegador");
           if (synth) {
             synth.cancel();
             const u = createUtterance(texto);
@@ -307,7 +312,7 @@ function TvPage() {
           finalize();
         }
       } catch (err) {
-        console.error("[TV] Erro ao processar voz cloud, fallback browser:", err);
+        console.error("[TV] Falha crítica na chamada cloud, tentando fallback browser:", err);
         if (synth) {
           synth.cancel();
           const u = createUtterance(texto);
@@ -336,12 +341,31 @@ function TvPage() {
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
           
-          // Busca detalhes da senha para a nova chamada (incluindo paciente)
-          const { data: senhaData } = await supabase
-            .from("senhas")
-            .select("id, codigo, status, filas(nome), pacientes(nome_completo)")
-            .eq("id", payload.new.senha_id)
-            .single();
+          // Busca detalhes da senha com retry curto se não achar (ajuda com lag de replicação)
+          let senhaData = null;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries && !senhaData) {
+            const { data } = await supabase
+              .from("senhas")
+              .select("id, codigo, status, filas(nome), pacientes(nome_completo)")
+              .eq("id", payload.new.senha_id)
+              .maybeSingle();
+            
+            if (data) {
+              senhaData = data;
+              break;
+            }
+            
+            retryCount++;
+            console.log(`[TV] Senha não encontrada para chamada ${payload.new.id}, retry ${retryCount}...`);
+            await new Promise(r => setTimeout(r, 500));
+          }
+
+          if (!senhaData) {
+            console.warn("[TV] Não foi possível encontrar dados da senha para esta chamada.");
+          }
 
           // Normaliza dados de join (podem vir como objeto ou array de 1 item)
           const getJoinedField = (field: any, key: string) => {
@@ -354,10 +378,10 @@ function TvPage() {
             ...(payload.new as Chamada),
             senha: {
               id: senhaData?.id as string,
-              codigo: senhaData?.codigo as string,
+              codigo: (senhaData?.codigo || payload.new.senha_codigo) as string,
               status: senhaData?.status as string,
-              fila_nome: getJoinedField(senhaData?.filas, "nome"),
-              paciente_nome: getJoinedField(senhaData?.pacientes, "nome_completo"),
+              fila_nome: getJoinedField(senhaData?.filas, "nome") || payload.new.fila_nome,
+              paciente_nome: getJoinedField(senhaData?.pacientes, "nome_completo") || (payload.new as any).paciente_nome,
             },
           };
 
@@ -366,13 +390,18 @@ function TvPage() {
           // Beep inicial
           if (beepRef.current) {
             console.log("[TV] Tocando beep...");
-            beepRef.current.currentTime = 0;
-            beepRef.current.play().catch(e => {
-              console.warn("[TV] Falha ao tocar beep via ref:", e);
-              // Fallback se o ref falhar (tenta criar novo, embora improvável de funcionar se ref falhou)
-              const b = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-              b.play().catch(() => {});
-            });
+            try {
+              beepRef.current.currentTime = 0;
+              beepRef.current.load();
+              beepRef.current.play().catch(e => {
+                console.warn("[TV] Falha ao tocar beep via ref:", e);
+                // Fallback imediato se o ref falhar (tenta criar novo)
+                const b = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+                b.play().catch(() => {});
+              });
+            } catch (e) {
+              console.warn("[TV] Erro ao preparar/tocar beep:", e);
+            }
           } else {
             console.warn("[TV] Beep ref não disponível.");
             const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
@@ -408,6 +437,7 @@ function TvPage() {
         </p>
         <button
           onClick={() => {
+            console.log("[TV] Iniciando painel e destravando áudio...");
             // Destravamento robusto de áudio
             const BEEP_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
             const audioBeep = new Audio(BEEP_URL);
@@ -417,23 +447,35 @@ function TvPage() {
               audioBeep.pause();
               audioBeep.volume = 1;
               beepRef.current = audioBeep;
-            }).catch(e => console.error("Erro ao destravar beep:", e));
+            }).catch(e => {
+              console.warn("Falha ao destravar beep, mas continuando:", e);
+              // Mesmo se falhar o play, tenta manter o ref se o browser permitir
+              beepRef.current = audioBeep;
+            });
 
-            // "Destrava" o áudio da voz
+            // "Destrava" o áudio da voz (importante para ElevenLabs/Google)
             const audioVoice = new Audio();
             audioVoice.volume = 0.01;
+            // Play de um buffer de silêncio ou arquivo curto para garantir "interaction"
             audioVoice.play().then(() => {
               console.log("[TV] Voz (Audio) destravada");
               audioVoice.pause();
               audioVoice.volume = 1;
               voiceAudioRef.current = audioVoice;
-            }).catch(e => console.error("Erro ao destravar voz (Audio):", e));
+            }).catch(e => {
+              console.warn("Falha ao destravar voz (Audio), mas continuando:", e);
+              voiceAudioRef.current = audioVoice;
+            });
 
             // "Destrava" a voz nativa (SpeechSynthesis)
-            const synth = window.speechSynthesis;
-            const u = new SpeechSynthesisUtterance("");
-            u.volume = 0;
-            synth.speak(u);
+            if (typeof window !== "undefined" && window.speechSynthesis) {
+              const synth = window.speechSynthesis;
+              synth.cancel();
+              const u = new SpeechSynthesisUtterance("");
+              u.volume = 0;
+              synth.speak(u);
+              console.log("[TV] SpeechSynthesis destravado");
+            }
 
             setNeedsInteraction(false);
           }}
