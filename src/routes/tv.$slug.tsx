@@ -203,15 +203,14 @@ function TvPage() {
       }
     }
 
-    console.log("[TV] Falando:", texto, "Provider:", voiceConfig.provider);
+    console.log("[TV] Tentando falar:", texto, "Provider:", voiceConfig.provider);
     isSpeaking.current = true;
 
     const finalize = () => {
       isSpeaking.current = false;
-      console.log("[TV] Finalizou fala.");
+      console.log("[TV] Finalizou processo de fala.");
     };
 
-    // Configuração comum para WebSpeech
     const createUtterance = (t: string) => {
       const u = new SpeechSynthesisUtterance(t);
       u.lang = "pt-BR";
@@ -241,13 +240,16 @@ function TvPage() {
 
       synth.cancel();
       const utterance = createUtterance(texto);
-      // Timeout maior para garantir que o cancel anterior processou (comum em alguns navegadores)
       setTimeout(() => {
-        if (synth) synth.resume(); // Reforça resume logo antes do speak
-        if (synth) synth.speak(utterance);
+        if (synth) {
+          synth.resume();
+          synth.speak(utterance);
+        }
       }, 200);
     } else {
+      // Provedor Cloud (ElevenLabs / Google)
       try {
+        console.log(`[TV] Chamando Edge Function tts para ${voiceConfig.provider}...`);
         const { data, error } = await supabase.functions.invoke("tts", {
           body: {
             text: texto,
@@ -264,12 +266,14 @@ function TvPage() {
           ? `data:${data.mime || "audio/mpeg"};base64,${data.audioContent}`
           : null;
 
-        if (audioData && voiceAudioRef.current) {
-          const audio = voiceAudioRef.current;
+        if (audioData) {
+          // Usa o ref se estiver disponível, senão cria um novo temporário
+          // Algumas TVs preferem novos elementos se o anterior "engasgou"
+          const audio = voiceAudioRef.current || new Audio();
           audio.src = audioData;
           audio.onended = finalize;
           audio.onerror = (e) => {
-            console.error("[TV] Erro no elemento de áudio (cloud), tentando fallback local:", e);
+            console.error("[TV] Erro no carregamento do áudio cloud, fallback browser:", e);
             if (synth) {
               synth.cancel();
               const u = createUtterance(texto);
@@ -279,8 +283,9 @@ function TvPage() {
             }
           };
           
+          audio.load();
           audio.play().catch(playErr => {
-            console.error("[TV] Play cloud bloqueado, tentando fallback WebSpeech:", playErr);
+            console.error("[TV] Play cloud bloqueado ou falhou, fallback browser:", playErr);
             if (synth) {
               synth.cancel();
               const u = createUtterance(texto);
@@ -290,7 +295,7 @@ function TvPage() {
             }
           });
         } else if (data?.fallback === "browser" || !audioData) {
-          console.log("[TV] Cloud indisponível ou vazio, usando fallback de navegador");
+          console.log("[TV] Cloud indisponível, usando fallback de navegador");
           if (synth) {
             synth.cancel();
             const u = createUtterance(texto);
@@ -307,7 +312,7 @@ function TvPage() {
           finalize();
         }
       } catch (err) {
-        console.error("[TV] Erro ao processar voz cloud, fallback browser:", err);
+        console.error("[TV] Falha crítica na chamada cloud, tentando fallback browser:", err);
         if (synth) {
           synth.cancel();
           const u = createUtterance(texto);
