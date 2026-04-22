@@ -291,14 +291,21 @@ function TvPage() {
             .eq("id", payload.new.senha_id)
             .single();
 
+          // Normaliza dados de join (podem vir como objeto ou array de 1 item)
+          const getJoinedField = (field: any, key: string) => {
+            if (!field) return null;
+            if (Array.isArray(field)) return field[0]?.[key] || null;
+            return field[key] || null;
+          };
+
           const novaChamada: Chamada = {
             ...(payload.new as Chamada),
             senha: {
               id: senhaData?.id as string,
               codigo: senhaData?.codigo as string,
               status: senhaData?.status as string,
-              fila_nome: (senhaData?.filas as any)?.nome as string,
-              paciente_nome: (senhaData?.pacientes as any)?.nome_completo as string,
+              fila_nome: getJoinedField(senhaData?.filas, "nome"),
+              paciente_nome: getJoinedField(senhaData?.pacientes, "nome_completo"),
             },
           };
 
