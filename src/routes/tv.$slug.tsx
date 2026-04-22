@@ -145,6 +145,11 @@ function TvPage() {
   // Relógio
 
   useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     if (needsInteraction) return;
     
     const interval = setInterval(() => {
