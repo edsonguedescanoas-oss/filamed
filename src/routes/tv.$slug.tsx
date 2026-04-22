@@ -408,10 +408,10 @@ function TvPage() {
             beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
           }
 
-          // Aguarda um pouco o beep e fala
+          // Aguarda um pouco o beep e fala (reduzido de 1500ms para 800ms para diminuir o delay)
           setTimeout(() => {
             void speak(novaChamada);
-          }, 1500);
+          }, 800);
 
         }
       )
