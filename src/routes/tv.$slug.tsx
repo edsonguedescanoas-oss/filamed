@@ -562,11 +562,43 @@ function TvPage() {
     return () => window.removeEventListener("resize", adjust);
   }, [visual.auto_ajuste, visual.escala_fonte, visual.aspect_ratio]);
 
-  const ultimaChamada = chamadas[0];
-  // Limita o histórico a no máximo 5 itens (independente do que estiver configurado),
-  // pra garantir que cada linha tenha espaço suficiente para mostrar o texto completo.
+  /**
+   * Regras de exibição:
+   * - O histórico mostra apenas chamadas únicas (originais), nunca rechamadas —
+   *   rechamada não vira nova entrada na lista, é só destaque temporário.
+   * - O "Chamando agora" exibe a chamada (original ou rechamada) mais recente
+   *   da senha que ainda está no estado "chamada"; se a senha já saiu pra
+   *   atendimento/ausente/finalizada, o bloco fica vazio (volta ao "aguardando").
+   */
   const HISTORICO_MAX = 5;
-  const historico = chamadas.slice(1, Math.min((visual.historico_limite || 5), HISTORICO_MAX) + 1);
+  const chamadasOriginais = useMemo(
+    () => chamadas.filter((c) => !isRechamada(c)),
+    [chamadas],
+  );
+  const ultimaChamada = useMemo(() => {
+    // A primeira chamada (independente de ser rechamada) ainda válida.
+    return (
+      chamadas.find(
+        (c) => !c.senha?.id || !senhasInativas.has(c.senha.id),
+      ) ?? null
+    );
+  }, [chamadas, senhasInativas]);
+  const historico = useMemo(() => {
+    // Pula a "ultimaChamada" (se ela ainda for visível) e mostra o restante,
+    // só com chamadas únicas (sem rechamadas) e sem duplicar a mesma senha.
+    const vistas = new Set<string>();
+    if (ultimaChamada?.senha?.id) vistas.add(ultimaChamada.senha.id);
+    const limite = Math.min(visual.historico_limite || 5, HISTORICO_MAX);
+    const out: Chamada[] = [];
+    for (const c of chamadasOriginais) {
+      const sid = c.senha?.id;
+      if (sid && vistas.has(sid)) continue;
+      if (sid) vistas.add(sid);
+      out.push(c);
+      if (out.length >= limite) break;
+    }
+    return out;
+  }, [chamadasOriginais, ultimaChamada, visual.historico_limite]);
 
   if (needsInteraction) {
     return (
