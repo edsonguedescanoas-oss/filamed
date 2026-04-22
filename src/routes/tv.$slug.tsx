@@ -686,23 +686,42 @@ function TvPage() {
               >
                 {ultimaChamada ? (
                   <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 text-center">
-                    <div 
-                      className="inline-flex items-center gap-2 rounded-full bg-red-600/20 text-red-500 border border-red-500/40"
-                      style={{
-                        padding: `clamp(0.1rem, 0.6cqmin, 0.35rem) clamp(0.4rem, 1.2cqmin, 0.9rem)`,
-                        marginBottom: `clamp(0.15rem, 0.6cqmin, 0.5rem)`,
-                      }}
+                    <div
+                      className="inline-flex items-center gap-2 flex-wrap justify-center"
+                      style={{ marginBottom: `clamp(0.15rem, 0.6cqmin, 0.5rem)` }}
                     >
-                      <Volume2 
-                        className="animate-pulse" 
-                        style={{ width: `clamp(0.75rem, 1.8cqmin, 1.25rem)`, height: `clamp(0.75rem, 1.8cqmin, 1.25rem)` }}
-                      />
-                      <span 
-                        className="font-bold uppercase tracking-widest"
-                        style={{ fontSize: `clamp(0.5rem, 1.6cqmin, 1rem)` }}
+                      <div
+                        className="inline-flex items-center gap-2 rounded-full bg-red-600/20 text-red-500 border border-red-500/40"
+                        style={{
+                          padding: `clamp(0.1rem, 0.6cqmin, 0.35rem) clamp(0.4rem, 1.2cqmin, 0.9rem)`,
+                        }}
                       >
-                        {isRechamada(ultimaChamada) ? "Rechamada" : "Chamando Agora"}
-                      </span>
+                        <Volume2
+                          className="animate-pulse"
+                          style={{ width: `clamp(0.75rem, 1.8cqmin, 1.25rem)`, height: `clamp(0.75rem, 1.8cqmin, 1.25rem)` }}
+                        />
+                        <span
+                          className="font-bold uppercase tracking-widest"
+                          style={{ fontSize: `clamp(0.5rem, 1.6cqmin, 1rem)` }}
+                        >
+                          Chamando Agora
+                        </span>
+                      </div>
+                      {isRechamada(ultimaChamada) && (
+                        <div
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 text-amber-300 border border-amber-400/50 animate-pulse"
+                          style={{
+                            padding: `clamp(0.1rem, 0.6cqmin, 0.35rem) clamp(0.4rem, 1.2cqmin, 0.9rem)`,
+                          }}
+                        >
+                          <span
+                            className="font-black uppercase tracking-widest"
+                            style={{ fontSize: `clamp(0.5rem, 1.6cqmin, 1rem)` }}
+                          >
+                            Rechamada
+                          </span>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Senha — usa cqmin (menor dimensão do container) pra escalar
@@ -748,9 +767,9 @@ function TvPage() {
                       <p 
                         className={`font-bold uppercase px-2 ${visual.historico_quebrar_texto ? "" : "truncate"}`}
                         style={{ fontSize: `clamp(1rem, 6cqmin, 3rem)`, lineHeight: 1.05 }}
-                        title={ultimaChamada.destino}
+                        title={limparDestino(ultimaChamada.destino)}
                       >
-                        {ultimaChamada.destino}
+                        {limparDestino(ultimaChamada.destino)}
                       </p>
                     </div>
                   </div>
