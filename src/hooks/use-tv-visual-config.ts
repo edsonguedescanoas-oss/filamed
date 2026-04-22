@@ -27,6 +27,10 @@ export interface TvVisualConfig {
   contraste_chamadas: ContrasteChamadas;
   /** Multiplicador (0.1–2.5) das fontes da área de chamadas. */
   escala_chamadas: number;
+  /** Multiplicador (0.5–2.0) das fontes do cabeçalho. */
+  escala_header: number;
+  /** Multiplicador (0.5–2.0) das fontes do rodapé. */
+  escala_rodape: number;
   /** Configurações de layout em grid */
   layout_grid_cols: number;
   layout_grid_rows: number;
