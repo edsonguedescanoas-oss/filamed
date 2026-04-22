@@ -31,7 +31,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
