@@ -94,6 +94,8 @@ function TvPage() {
   const [needsInteraction, setNeedsInteraction] = useState(true);
   const audioQueue = useRef<string[]>([]);
   const isSpeaking = useRef(false);
+  const beepRef = useRef<HTMLAudioElement | null>(null);
+
   
   // Hook de configuração visual (cores, logo, etc)
   const { config: visual } = useTvVisualConfig(unidade?.id);
@@ -120,7 +122,19 @@ function TvPage() {
     })();
   }, [unidade?.id]);
 
+  // Warm up voices
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      // Alguns navegadores precisam do evento voiceschanged
+      const refresh = () => window.speechSynthesis.getVoices();
+      window.speechSynthesis.addEventListener("voiceschanged", refresh);
+      return () => window.speechSynthesis.removeEventListener("voiceschanged", refresh);
+    }
+  }, []);
+
   // Relógio
+
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
@@ -142,6 +156,9 @@ function TvPage() {
 
     if (voiceConfig.provider === "browser") {
       const synth = window.speechSynthesis;
+      // Cancela qualquer fala anterior para não "travar" a fila do navegador
+      synth.cancel();
+
       const utterance = new SpeechSynthesisUtterance(texto);
       utterance.lang = "pt-BR";
       utterance.rate = voiceConfig.rate;
@@ -153,7 +170,8 @@ function TvPage() {
         if (v) utterance.voice = v;
       }
       
-      synth.speak(utterance);
+      // Alguns navegadores precisam de um pequeno delay após o cancel
+      setTimeout(() => synth.speak(utterance), 50);
     } else {
       try {
         const { data, error } = await supabase.functions.invoke("tts", {
@@ -176,16 +194,17 @@ function TvPage() {
           const audio = new Audio(audioData);
           await audio.play();
         } else if (data?.fallback === "browser") {
-          // Fallback para browser se a API falhar (cota, etc)
           const synth = window.speechSynthesis;
+          synth.cancel();
           const u = new SpeechSynthesisUtterance(texto);
           u.lang = "pt-BR";
-          synth.speak(u);
+          setTimeout(() => synth.speak(u), 50);
         }
       } catch (err) {
         console.error("[TV] Erro ao reproduzir voz:", err);
       }
     }
+
   }, [voiceConfig]);
 
   // Realtime para novas chamadas
@@ -226,13 +245,19 @@ function TvPage() {
           setChamadas(prev => [novaChamada, ...prev].slice(0, 10));
           
           // Beep inicial
-          const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-          beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
+          if (beepRef.current) {
+            beepRef.current.currentTime = 0;
+            beepRef.current.play().catch(e => console.log("Erro ao tocar beep:", e));
+          } else {
+            const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+            beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
+          }
           
           // Aguarda um pouco o beep e fala
           setTimeout(() => {
             void speak(novaChamada);
           }, 1500);
+
         }
       )
       .subscribe();
@@ -256,11 +281,27 @@ function TvPage() {
           Para que o painel possa anunciar as senhas por voz, é necessário uma interação inicial com a página.
         </p>
         <button
-          onClick={() => setNeedsInteraction(false)}
+          onClick={() => {
+            // "Destrava" o áudio no navegador com uma interação real
+            const silentBeep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+            silentBeep.volume = 0.01;
+            silentBeep.play().then(() => {
+              beepRef.current = silentBeep;
+              beepRef.current.volume = 1;
+            }).catch(e => console.error("Erro ao destravar áudio:", e));
+
+            // "Destrava" a voz (SpeechSynthesis)
+            const synth = window.speechSynthesis;
+            const u = new SpeechSynthesisUtterance("");
+            synth.speak(u);
+
+            setNeedsInteraction(false);
+          }}
           className="rounded-full bg-primary px-10 py-4 font-bold text-primary-foreground shadow-glow transition-transform hover:scale-105 active:scale-95"
         >
           Iniciar Painel
         </button>
+
       </div>
     );
   }
