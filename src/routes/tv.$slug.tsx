@@ -228,7 +228,7 @@ function TvPage() {
         <div className="animate-marquee inline-block">
           {visual.mensagem_rodape || `Bem-vindo à ${unidade?.nome} • Por favor, acompanhe sua senha no painel • ${unidade?.nome} - Qualidade no atendimento`}
         </div>
-      </header>
+      </footer>
 
       <style>{`
         @keyframes marquee {
