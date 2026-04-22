@@ -1,6 +1,7 @@
 import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Clock, Database, Info, Loader2, Maximize, Megaphone, Mic, Minimize, Wifi, WifiOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { TvCarrossel } from "@/components/tv-carrossel";
