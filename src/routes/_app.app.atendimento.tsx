@@ -232,15 +232,31 @@ function AtendimentoPage() {
     }
   };
 
-  const rechamar = async (s: Senha) => {
+  /**
+   * Rechamada — preserva o destino original (consultório/sala/guichê) da última
+   * chamada da senha. NUNCA injeta a palavra "Rechamada" no texto do destino;
+   * ela aparece só no áudio (via observacao=="Rechamada", tratada na TV).
+   */
+  const rechamar = async (s: Senha, opts?: { silent?: boolean }) => {
     if (!user || !profile?.unidade_id) return;
-    const destinoSugerido = `Rechamada — ${filaById.get(s.fila_id)?.nome ?? ""}`.trim();
-    setActionId(s.id);
+    // Busca última chamada para reaproveitar o destino real
+    const { data: ultima } = await supabase
+      .from("chamadas")
+      .select("destino")
+      .eq("senha_id", s.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const destinoFinal =
+      (ultima?.destino && ultima.destino.trim()) ||
+      filaById.get(s.fila_id)?.nome ||
+      "Atendimento";
+    if (!opts?.silent) setActionId(s.id);
     try {
       const { error } = await supabase.from("chamadas").insert({
         unidade_id: profile.unidade_id,
         senha_id: s.id,
-        destino: destinoSugerido,
+        destino: destinoFinal,
         chamado_por: user.id,
         observacao: "Rechamada",
       });
@@ -250,13 +266,50 @@ function AtendimentoPage() {
         .from("senhas")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", s.id);
-      toast.success(`${s.codigo} rechamada.`);
+      if (!opts?.silent) toast.success(`${s.codigo} rechamada.`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao rechamar.");
+      if (!opts?.silent)
+        toast.error(err instanceof Error ? err.message : "Falha ao rechamar.");
+      else console.warn("[atendimento] Falha na rechamada automática:", err);
     } finally {
-      setActionId(null);
+      if (!opts?.silent) setActionId(null);
     }
   };
+
+  /**
+   * Rechamada automática a cada 30s para qualquer senha em status "chamada"
+   * (ou seja: foi chamada mas o atendimento ainda não começou). Para de
+   * rechamar assim que o status muda para "em_atendimento" / "finalizada" /
+   * "ausente" — controlado naturalmente pela lista `chamadasAtivas`.
+   *
+   * Usa um Map<senha_id, timestamp_ultimo_disparo> pra garantir que cada
+   * senha só dispara a cada 30s independente do tick global.
+   */
+  const ultimaRechamadaRef = useRef<Map<string, number>>(new Map());
+  useEffect(() => {
+    if (!user || !profile?.unidade_id) return;
+    const interval = setInterval(() => {
+      const agora = Date.now();
+      for (const s of chamadasAtivas) {
+        // Base: quando a senha foi atualizada pela última vez (chamada/rechamada).
+        // Toda chamada/rechamada faz update na senha → updated_at avança.
+        const baseMs = new Date(s.updated_at).getTime();
+        const ultimoDispMs = ultimaRechamadaRef.current.get(s.id) ?? baseMs;
+        const referencia = Math.max(baseMs, ultimoDispMs);
+        if (agora - referencia >= 30_000) {
+          ultimaRechamadaRef.current.set(s.id, agora);
+          void rechamar(s, { silent: true });
+        }
+      }
+      // Limpa entradas de senhas que não estão mais ativas
+      const ativasIds = new Set(chamadasAtivas.map((s) => s.id));
+      for (const id of ultimaRechamadaRef.current.keys()) {
+        if (!ativasIds.has(id)) ultimaRechamadaRef.current.delete(id);
+      }
+    }, 5_000); // verifica a cada 5s; o gate dos 30s é por senha
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chamadasAtivas, user, profile?.unidade_id]);
 
   const iniciarAtendimento = async (s: Senha) => {
     if (!user || !profile?.unidade_id) return;
