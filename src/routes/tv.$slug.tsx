@@ -545,7 +545,7 @@ function TvPage() {
       {visual.fundo_url && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
 
       {/* Header */}
-      <header className="relative flex items-center justify-between border-b border-white/10 bg-black/20 px-10 py-6 backdrop-blur-md">
+      <header className={`relative flex items-center justify-between border-b border-white/10 bg-black/20 backdrop-blur-md transition-all ${visual.densidade === 'compacto' ? 'px-8 py-3' : 'px-10 py-6'}`}>
         <div className="flex items-center gap-6">
           {visual.logo_url ? (
             <img src={visual.logo_url} alt="Logo" className="h-12 w-auto object-contain" />
