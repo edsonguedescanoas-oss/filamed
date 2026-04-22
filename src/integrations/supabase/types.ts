@@ -970,6 +970,18 @@ export type Database = {
           unidade_id: string
         }[]
       }
+      get_chamadas_recentes_detalhadas: {
+        Args: { _unidade_id: string }
+        Returns: {
+          created_at: string
+          destino: string
+          fila_nome: string
+          id: string
+          senha_codigo: string
+          senha_id: string
+          unidade_id: string
+        }[]
+      }
       get_pacientes_publicos_ativos: {
         Args: { _unidade_id: string }
         Returns: {
