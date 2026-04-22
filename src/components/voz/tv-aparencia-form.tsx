@@ -31,7 +31,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -50,6 +50,9 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           contraste_chamadas:
             (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
           escala_chamadas: Number(data.escala_chamadas) || 1,
+          layout_grid_cols: Number(data.layout_grid_cols) || 12,
+          layout_grid_rows: Number(data.layout_grid_rows) || 6,
+          layout_items: (data.layout_items as any) || DEFAULT_TV_VISUAL.layout_items,
         });
       }
       setLoading(false);
