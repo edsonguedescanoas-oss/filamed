@@ -210,22 +210,39 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="escala" className="text-sm font-semibold">
-            Tamanho da fonte ({Math.round(cfg.escala_fonte * 100)}%)
-          </Label>
+      <section className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="escala" className="text-sm font-semibold">
+              Escala de fonte ({Math.round(cfg.escala_fonte * 100)}%)
+            </Label>
+            <div className="flex gap-1">
+              {[0.9, 0.95, 1.0, 1.05, 1.1].map((v) => (
+                <Button
+                  key={v}
+                  type="button"
+                  variant={cfg.escala_fonte === v ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 px-2 text-[10px]"
+                  onClick={() => update("escala_fonte", v)}
+                >
+                  {Math.round(v * 100)}%
+                </Button>
+              ))}
+            </div>
+          </div>
           <Input
             id="escala"
             type="range"
-            min={0.1}
+            min={0.5}
             max={1.5}
-            step={0.05}
+            step={0.01}
             value={cfg.escala_fonte}
             onChange={(e) => update("escala_fonte", Number(e.target.value))}
+            className="h-6"
           />
           <p className="text-[11px] text-muted-foreground">
-            Ajuste fino. Menor = mais informação cabe na tela.
+            Ajuste global do tamanho de tudo no painel. Use para evitar que o conteúdo transborde em sua TV.
           </p>
         </div>
         <div className="space-y-2">
