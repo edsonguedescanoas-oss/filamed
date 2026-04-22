@@ -431,8 +431,12 @@ function TvPage() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       
-      // Escala baseada em 1080p (Full HD)
-      const baseScale = Math.min(vw / 1920, vh / 1080);
+      // Define a resolução base dependendo do aspect ratio selecionado
+      const baseW = visual.aspect_ratio === "4:3" ? 1440 : 1920;
+      const baseH = 1080;
+      
+      // Escala baseada na resolução alvo
+      const baseScale = Math.min(vw / baseW, vh / baseH);
       
       // Padding dinâmico (entre 10 e 40px dependendo da escala)
       const dynamicPadding = Math.max(10, Math.min(40, 24 * baseScale));
@@ -446,7 +450,7 @@ function TvPage() {
     adjust();
     window.addEventListener("resize", adjust);
     return () => window.removeEventListener("resize", adjust);
-  }, [visual.auto_ajuste, visual.escala_fonte]);
+  }, [visual.auto_ajuste, visual.escala_fonte, visual.aspect_ratio]);
 
   const ultimaChamada = chamadas[0];
   const historico = chamadas.slice(1, (visual.historico_limite || 8) + 1);
