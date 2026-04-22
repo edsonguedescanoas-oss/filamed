@@ -147,7 +147,9 @@ function buildYoutubeEmbed(url: string): string | null {
   const { videoId, playlistId } = parseYoutube(url);
   // Origem é exigida pelo YouTube IFrame API quando enablejsapi=1
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const base = "https://www.youtube.com/embed";
+  // youtube-nocookie.com é o domínio "privacy-enhanced" — tem políticas de
+  // incorporação MAIS permissivas e funciona melhor com CSPs restritivas.
+  const base = "https://www.youtube-nocookie.com/embed";
   const common = [
     "autoplay=1",
     "mute=1",
