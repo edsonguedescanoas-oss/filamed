@@ -34,17 +34,41 @@ export const Route = createFileRoute("/tv/$slug")({
       debug: search.debug === true || search.debug === "true",
     };
   },
+  loader: async ({ params: { slug } }) => {
+    console.log("TV: Loader iniciado para slug:", slug);
+    const { data: uniData, error: uniError } = await supabase
+      .rpc("get_unidade_publica_by_slug", { _slug: slug });
+
+    if (uniError) throw uniError;
+    if (!uniData || uniData.length === 0) {
+      throw new Error("Unidade não encontrada ou inativa.");
+    }
+
+    const unidade = uniData[0];
+    const { data: chamadasData, error: chamadasError } = await supabase
+      .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: unidade.id });
+    
+    if (chamadasError) console.error("Erro ao buscar chamadas:", chamadasError);
+    
+    const chamadas = (chamadasData ?? []).map(c => ({
+      ...c,
+      senha: {
+        id: c.senha_id,
+        codigo: c.senha_codigo,
+        fila_nome: c.fila_nome
+      }
+    }));
+
+    return { unidade, chamadas: chamadas as Chamada[] };
+  },
   component: TvPage,
 });
 
 function TvPage() {
   const { slug } = Route.useParams();
   const search = Route.useSearch();
-  const [unidade, setUnidade] = useState<any>(null);
-  const [chamadas, setChamadas] = useState<Chamada[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<any>(null);
+  const { unidade, chamadas: initialChamadas } = Route.useLoaderData();
+  const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
   const [now, setNow] = useState(new Date());
   
   // Hook de configuração visual (cores, logo, etc)
@@ -56,61 +80,6 @@ function TvPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Busca inicial da unidade e chamadas recentes
-  useEffect(() => {
-    async function loadInitialData() {
-      if (!slug) return;
-      
-      try {
-        console.log("TV: Iniciando carga para slug:", slug);
-        setLoading(true);
-        setError(null);
-        
-        const { data: uniData, error: uniError } = await supabase
-          .rpc("get_unidade_publica_by_slug", { _slug: slug });
-
-        console.log("TV: Resposta unidade:", { uniData, uniError });
-
-        if (uniError) throw uniError;
-        if (!uniData || uniData.length === 0) {
-          setError("Unidade não encontrada ou inativa.");
-          setLoading(false);
-          return;
-        }
-
-        const uni = uniData[0];
-        setUnidade(uni);
-
-        console.log("TV: Buscando chamadas para unidade:", uni.id);
-        const { data: chamadasData, error: chamadasError } = await supabase
-          .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: uni.id });
-        
-        console.log("TV: Resposta chamadas:", { chamadasData, chamadasError });
-
-        if (chamadasError) console.error("Erro ao buscar chamadas:", chamadasError);
-        
-        const mapeadas = (chamadasData ?? []).map(c => ({
-          ...c,
-          senha: {
-            id: c.senha_id,
-            codigo: c.senha_codigo,
-            fila_nome: c.fila_nome
-          }
-        }));
-
-        setChamadas(mapeadas as Chamada[]);
-      } catch (err: any) {
-        console.error("Erro fatal ao carregar TV:", err);
-        setError(err.message || "Erro inesperado ao carregar o painel.");
-        setErrorDetails(err);
-      } finally {
-        console.log("TV: Finalizando loading");
-        setLoading(false);
-      }
-    }
-
-    loadInitialData();
-  }, [slug]);
 
   // Realtime para novas chamadas
   useEffect(() => {
