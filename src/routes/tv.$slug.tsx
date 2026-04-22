@@ -107,14 +107,25 @@ function TvPage() {
   // Hook de configuração visual (cores, logo, etc)
   const { config: visual } = useTvVisualConfig(unidade?.id);
 
+  // Lógica de contraste
+  const palette = (() => {
+    if (visual.contraste_chamadas === "maximo") {
+      return { fundo: "#000000", texto: "#FFFFFF", primaria: "#FFD400" };
+    }
+    if (visual.contraste_chamadas === "alto") {
+      return { fundo: "#020617", texto: "#FFFFFF", primaria: visual.cor_primaria };
+    }
+    return { fundo: visual.cor_fundo, texto: visual.cor_texto, primaria: visual.cor_primaria };
+  })();
+
   // Injeta cores e escala global no CSS
   useEffect(() => {
     if (!visual) return;
     const root = document.documentElement;
     
-    // Cores
-    root.style.setProperty("--primary", visual.cor_primaria);
-    root.style.setProperty("--primary-glow", visual.cor_primaria);
+    // Cores (respeitando contraste)
+    root.style.setProperty("--primary", palette.primaria);
+    root.style.setProperty("--primary-glow", palette.primaria);
     
     // Escala baseada na resolução e ajuste de fonte
     const preset = RESOLUCAO_PRESETS[visual.resolucao_preset] || RESOLUCAO_PRESETS.fhd;
@@ -129,7 +140,7 @@ function TvPage() {
       root.style.removeProperty("--primary");
       root.style.removeProperty("--primary-glow");
     };
-  }, [visual]);
+  }, [visual, palette]);
 
   // Carrega configuração de voz
   useEffect(() => {
