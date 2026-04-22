@@ -351,9 +351,22 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
           <div className="space-y-4">
             {cfg.layout_items.map((item, idx) => (
               <div key={idx} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-                <div className="flex-1 min-w-[120px] space-y-1.5">
+                <div className="flex-1 min-w-[150px] space-y-1.5">
                   <Label className="text-[10px] uppercase opacity-60">Tipo</Label>
-                  <div className="text-sm font-bold capitalize">{item.type.replace("_", " ")}</div>
+                  <select
+                    className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={item.type}
+                    onChange={(e) => {
+                      const newItems = [...cfg.layout_items];
+                      newItems[idx] = { ...item, type: e.target.value as any };
+                      update("layout_items", newItems);
+                    }}
+                  >
+                    <option value="chamada_atual">Chamada Atual</option>
+                    <option value="historico">Histórico</option>
+                    <option value="midia">Mídia (Carrossel)</option>
+                    <option value="relogio">Relógio Grande</option>
+                  </select>
                 </div>
                 <div className="w-20 space-y-1.5">
                   <Label className="text-[10px] uppercase opacity-60">Col Span</Label>
@@ -385,8 +398,34 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
                     }}
                   />
                 </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-destructive"
+                  onClick={() => {
+                    const newItems = cfg.layout_items.filter((_, i) => i !== idx);
+                    update("layout_items", newItems);
+                  }}
+                >
+                  <span className="sr-only">Remover</span>
+                  &times;
+                </Button>
               </div>
             ))}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full border-dashed"
+              onClick={() => {
+                const newItems = [
+                  ...cfg.layout_items, 
+                  { type: "midia", col_span: 4, row_span: 3, order: cfg.layout_items.length + 1 } as any
+                ];
+                update("layout_items", newItems);
+              }}
+            >
+              + Adicionar Componente
+            </Button>
           </div>
         </div>
       </section>
