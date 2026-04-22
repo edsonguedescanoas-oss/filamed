@@ -93,7 +93,7 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
       const { data } = await supabase
         .from("tv_visual_config")
         .select(
-          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto",
+          "cor_primaria,cor_fundo,cor_texto,logo_url,fundo_url,resolucao_preset,escala_fonte,densidade,mensagem_rodape,contraste_chamadas,escala_chamadas,escala_header,escala_rodape,layout_grid_cols,layout_grid_rows,layout_items,auto_ajuste,historico_limite,historico_quebrar_texto",
         )
         .eq("unidade_id", unidadeId)
         .maybeSingle();
@@ -112,6 +112,8 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           contraste_chamadas:
             (data.contraste_chamadas as ContrasteChamadas) ?? "normal",
           escala_chamadas: Number(data.escala_chamadas) || 1,
+          escala_header: Number(data.escala_header) || 1,
+          escala_rodape: Number(data.escala_rodape) || 1,
           layout_grid_cols: Number(data.layout_grid_cols) || 12,
           layout_grid_rows: Number(data.layout_grid_rows) || 6,
           layout_items: (data.layout_items as unknown as LayoutItem[]) || DEFAULT_TV_VISUAL.layout_items,
