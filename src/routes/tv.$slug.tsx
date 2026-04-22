@@ -760,7 +760,10 @@ function TvPage() {
                 }}
               >
                 {ultimaChamada ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 text-center">
+                  <div
+                    key={ultimaChamada.id}
+                    className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 text-center"
+                  >
                     <div
                       className="inline-flex items-center gap-2 flex-wrap justify-center"
                       style={{ marginBottom: `clamp(0.15rem, 0.6cqmin, 0.5rem)` }}
@@ -784,7 +787,7 @@ function TvPage() {
                       </div>
                       {isRechamada(ultimaChamada) && (
                         <div
-                          className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 text-amber-300 border border-amber-400/50 animate-pulse"
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 text-amber-300 border border-amber-400/50 animate-badge-rechamada"
                           style={{
                             padding: `clamp(0.1rem, 0.6cqmin, 0.35rem) clamp(0.4rem, 1.2cqmin, 0.9rem)`,
                           }}
@@ -802,9 +805,11 @@ function TvPage() {
                     {/* Senha — usa cqmin (menor dimensão do container) pra escalar
                         proporcionalmente ao espaço disponível, garantindo que nunca
                         ultrapasse vertical nem horizontalmente. clamp protege min/max
-                        e a escala_chamadas continua sendo o multiplicador final. */}
+                        e a escala_chamadas continua sendo o multiplicador final.
+                        A animação senha-pop dá um overshoot ao trocar de senha. */}
                     <div 
-                      className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl w-full px-2"
+                      key={`codigo-${ultimaChamada.senha?.id ?? ultimaChamada.id}`}
+                      className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl w-full px-2 animate-senha-pop"
                       style={{ 
                         fontSize: `clamp(2rem, ${22 * escChamada}cqmin, ${10 * escChamada}rem)`,
                         overflow: "hidden",
