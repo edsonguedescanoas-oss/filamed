@@ -559,34 +559,32 @@ function TvPage() {
       <header 
         className="relative flex items-center justify-between border-b border-white/10 bg-black/20 px-10 backdrop-blur-md"
         style={{ 
-          height: `${6 * (visual.escala_header ?? 1)}rem`,
-          paddingTop: `${1.5 * (visual.escala_header ?? 1)}rem`,
-          paddingBottom: `${1.5 * (visual.escala_header ?? 1)}rem`
+          height: `${3 * (visual.escala_header ?? 1)}rem`,
+          paddingTop: `${0.5 * (visual.escala_header ?? 1)}rem`,
+          paddingBottom: `${0.5 * (visual.escala_header ?? 1)}rem`
         }}
       >
-        <div className="flex items-center gap-6" style={{ transform: `scale(${visual.escala_header ?? 1})`, transformOrigin: 'left center' }}>
+        <div className="flex items-center gap-3" style={{ transform: `scale(${visual.escala_header ?? 1})`, transformOrigin: 'left center' }}>
           {visual.logo_url ? (
-            <img src={visual.logo_url} alt="Logo" className="h-12 w-auto object-contain" />
+            <img src={visual.logo_url} alt="Logo" className="h-7 w-auto object-contain" />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-lg">
-              <Activity className="h-7 w-7 text-white" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary shadow-lg">
+              <Activity className="h-4 w-4 text-white" />
             </div>
           )}
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight">{unidade?.nome}</h1>
-              <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Conectado" />
-            </div>
-            <p className="text-sm font-medium opacity-60 uppercase tracking-widest">Painel de Chamadas</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-base font-bold tracking-tight leading-none">{unidade?.nome}</h1>
+            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" title="Conectado" />
+            <p className="text-[10px] font-medium opacity-60 uppercase tracking-widest leading-none">Painel de Chamadas</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-8" style={{ transform: `scale(${visual.escala_header ?? 1})`, transformOrigin: 'right center' }}>
-          <div className="text-right">
-            <p className="text-4xl font-mono font-bold">
+        <div className="flex items-center gap-4" style={{ transform: `scale(${visual.escala_header ?? 1})`, transformOrigin: 'right center' }}>
+          <div className="flex items-center gap-3">
+            <p className="text-xl font-mono font-bold leading-none">
               {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
             </p>
-            <p className="text-sm font-medium opacity-60">
+            <p className="text-[10px] font-medium opacity-60 leading-none">
               {now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
             </p>
           </div>
