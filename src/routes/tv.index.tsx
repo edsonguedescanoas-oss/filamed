@@ -12,29 +12,16 @@ export const Route = createFileRoute("/tv/")({
       { name: "robots", content: "noindex" },
     ],
   }),
+  loader: async () => {
+    const { data, error } = await supabase.rpc("get_unidades_publicas");
+    if (error) throw error;
+    return (data ?? []) as Unidade[];
+  },
   component: TvIndexPage,
 });
 
 function TvIndexPage() {
-  const [unidades, setUnidades] = useState<Unidade[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const { data, error: rpcError } = await supabase.rpc("get_unidades_publicas");
-
-        if (rpcError) throw rpcError;
-        setUnidades((data ?? []) as Unidade[]);
-      } catch (err) {
-        console.error("[TV Index] falha ao carregar unidades:", err);
-        setError("Não foi possível carregar as unidades. Tente novamente mais tarde.");
-        setUnidades([]);
-      }
-    })();
-  }, []);
-
-
+  const unidades = Route.useLoaderData();
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -53,11 +40,7 @@ function TvIndexPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-8 py-12">
-        {unidades === null ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-          </div>
-        ) : unidades.length === 0 ? (
+        {unidades.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-slate-900 p-10 text-center text-slate-400">
             Nenhuma unidade ativa encontrada.
           </div>
