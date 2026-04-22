@@ -52,6 +52,8 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   mensagem_rodape: null,
   contraste_chamadas: "normal",
   escala_chamadas: 1,
+  escala_header: 1,
+  escala_rodape: 1,
   layout_grid_cols: 12,
   layout_grid_rows: 6,
   layout_items: [
