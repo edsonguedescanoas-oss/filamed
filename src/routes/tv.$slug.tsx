@@ -449,7 +449,7 @@ function TvPage() {
   }, [visual.auto_ajuste, visual.escala_fonte]);
 
   const ultimaChamada = chamadas[0];
-  const historico = chamadas.slice(1, 9);
+  const historico = chamadas.slice(1, (visual.historico_limite || 8) + 1);
 
   if (needsInteraction) {
     return (
