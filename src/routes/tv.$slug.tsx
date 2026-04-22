@@ -118,12 +118,14 @@ function TvPage() {
       
       if (data) {
         setVoiceConfig({
-          provider: data.provider as any,
+          provider: (data.provider as any) || "browser",
           voice_id: data.voice_id,
           rate: Number(data.rate) || 1,
           pitch: Number(data.pitch) || 1,
           template_chamada: (data.template_chamada as TemplateChamada) || "paciente_senha_fila_destino",
         });
+      } else {
+        console.log("[TV] Usando configuração de voz padrão (navegador)");
       }
     })();
   }, [unidade?.id]);
