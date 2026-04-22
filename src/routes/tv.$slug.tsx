@@ -183,6 +183,7 @@ function TvPage() {
       setTimeout(() => synth.speak(utterance), 100);
     } else {
       try {
+        console.log("[TV] Chamando TTS Edge Function...");
         const { data, error } = await supabase.functions.invoke("tts", {
           body: {
             text: texto,
@@ -193,27 +194,41 @@ function TvPage() {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("[TV] Erro na função TTS:", error);
+          throw error;
+        }
         
         const audioData = data?.audioContent 
           ? `data:${data.mime || "audio/mpeg"};base64,${data.audioContent}`
           : null;
 
         if (audioData) {
+          console.log("[TV] Reproduzindo áudio recebido...");
           const audio = new Audio(audioData);
-          await audio.play();
-        } else if (data?.fallback === "browser") {
+          audio.play().catch(playErr => {
+            console.error("[TV] Erro ao dar play no áudio:", playErr);
+            // Fallback imediato se o play falhar (ex: bloqueio de áudio)
+            const u = new SpeechSynthesisUtterance(texto);
+            u.lang = "pt-BR";
+            window.speechSynthesis.speak(u);
+          });
+        } else if (data?.fallback === "browser" || !audioData) {
+          console.log("[TV] TTS indisponível, usando fallback de navegador");
           const synth = window.speechSynthesis;
           synth.cancel();
           const u = new SpeechSynthesisUtterance(texto);
           u.lang = "pt-BR";
-          setTimeout(() => synth.speak(u), 50);
+          setTimeout(() => synth.speak(u), 100);
         }
       } catch (err) {
         console.error("[TV] Erro ao reproduzir voz:", err);
+        // Fallback final
+        const u = new SpeechSynthesisUtterance(texto);
+        u.lang = "pt-BR";
+        window.speechSynthesis.speak(u);
       }
     }
-
   }, [voiceConfig]);
 
   // Realtime para novas chamadas
