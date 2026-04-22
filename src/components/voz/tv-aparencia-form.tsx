@@ -313,6 +313,84 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
         </p>
       </section>
 
+      {/* Layout Grid */}
+      <section className="space-y-4 rounded-xl border border-border bg-muted/30 p-4">
+        <div>
+          <Label className="text-sm font-semibold">Configuração do Grid de Layout</Label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Defina o número de colunas e linhas para organizar os elementos na tela.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="grid_cols" className="text-xs font-medium">Colunas ({cfg.layout_grid_cols})</Label>
+            <Input
+              id="grid_cols"
+              type="number"
+              min={1}
+              max={24}
+              value={cfg.layout_grid_cols}
+              onChange={(e) => update("layout_grid_cols", Number(e.target.value))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="grid_rows" className="text-xs font-medium">Linhas ({cfg.layout_grid_rows})</Label>
+            <Input
+              id="grid_rows"
+              type="number"
+              min={1}
+              max={12}
+              value={cfg.layout_grid_rows}
+              onChange={(e) => update("layout_grid_rows", Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Label className="text-xs font-medium">Organização dos Componentes</Label>
+          <div className="space-y-4">
+            {cfg.layout_items.map((item, idx) => (
+              <div key={idx} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
+                <div className="flex-1 min-w-[120px] space-y-1.5">
+                  <Label className="text-[10px] uppercase opacity-60">Tipo</Label>
+                  <div className="text-sm font-bold capitalize">{item.type.replace("_", " ")}</div>
+                </div>
+                <div className="w-20 space-y-1.5">
+                  <Label className="text-[10px] uppercase opacity-60">Col Span</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={cfg.layout_grid_cols}
+                    className="h-8"
+                    value={item.col_span}
+                    onChange={(e) => {
+                      const newItems = [...cfg.layout_items];
+                      newItems[idx] = { ...item, col_span: Number(e.target.value) };
+                      update("layout_items", newItems);
+                    }}
+                  />
+                </div>
+                <div className="w-20 space-y-1.5">
+                  <Label className="text-[10px] uppercase opacity-60">Row Span</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={cfg.layout_grid_rows}
+                    className="h-8"
+                    value={item.row_span}
+                    onChange={(e) => {
+                      const newItems = [...cfg.layout_items];
+                      newItems[idx] = { ...item, row_span: Number(e.target.value) };
+                      update("layout_items", newItems);
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Mídias do carrossel (imagem / vídeo / YouTube) */}
       <SinalizacaoManager unidadeId={unidadeId} />
 
