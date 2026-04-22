@@ -341,12 +341,31 @@ function TvPage() {
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
           
-          // Busca detalhes da senha para a nova chamada (incluindo paciente)
-          const { data: senhaData } = await supabase
-            .from("senhas")
-            .select("id, codigo, status, filas(nome), pacientes(nome_completo)")
-            .eq("id", payload.new.senha_id)
-            .single();
+          // Busca detalhes da senha com retry curto se não achar (ajuda com lag de replicação)
+          let senhaData = null;
+          let retryCount = 0;
+          const maxRetries = 3;
+          
+          while (retryCount < maxRetries && !senhaData) {
+            const { data } = await supabase
+              .from("senhas")
+              .select("id, codigo, status, filas(nome), pacientes(nome_completo)")
+              .eq("id", payload.new.senha_id)
+              .maybeSingle();
+            
+            if (data) {
+              senhaData = data;
+              break;
+            }
+            
+            retryCount++;
+            console.log(`[TV] Senha não encontrada para chamada ${payload.new.id}, retry ${retryCount}...`);
+            await new Promise(r => setTimeout(r, 500));
+          }
+
+          if (!senhaData) {
+            console.warn("[TV] Não foi possível encontrar dados da senha para esta chamada.");
+          }
 
           // Normaliza dados de join (podem vir como objeto ou array de 1 item)
           const getJoinedField = (field: any, key: string) => {
@@ -359,10 +378,10 @@ function TvPage() {
             ...(payload.new as Chamada),
             senha: {
               id: senhaData?.id as string,
-              codigo: senhaData?.codigo as string,
+              codigo: (senhaData?.codigo || payload.new.senha_codigo) as string,
               status: senhaData?.status as string,
-              fila_nome: getJoinedField(senhaData?.filas, "nome"),
-              paciente_nome: getJoinedField(senhaData?.pacientes, "nome_completo"),
+              fila_nome: getJoinedField(senhaData?.filas, "nome") || payload.new.fila_nome,
+              paciente_nome: getJoinedField(senhaData?.pacientes, "nome_completo") || (payload.new as any).paciente_nome,
             },
           };
 
@@ -371,13 +390,18 @@ function TvPage() {
           // Beep inicial
           if (beepRef.current) {
             console.log("[TV] Tocando beep...");
-            beepRef.current.currentTime = 0;
-            beepRef.current.play().catch(e => {
-              console.warn("[TV] Falha ao tocar beep via ref:", e);
-              // Fallback se o ref falhar (tenta criar novo, embora improvável de funcionar se ref falhou)
-              const b = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-              b.play().catch(() => {});
-            });
+            try {
+              beepRef.current.currentTime = 0;
+              beepRef.current.load();
+              beepRef.current.play().catch(e => {
+                console.warn("[TV] Falha ao tocar beep via ref:", e);
+                // Fallback imediato se o ref falhar (tenta criar novo)
+                const b = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+                b.play().catch(() => {});
+              });
+            } catch (e) {
+              console.warn("[TV] Erro ao preparar/tocar beep:", e);
+            }
           } else {
             console.warn("[TV] Beep ref não disponível.");
             const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
