@@ -35,8 +35,9 @@ function dentroDaJanela(item: SinalizacaoItem, agora: Date): boolean {
 }
 
 function isVideo(item: SinalizacaoItem): boolean {
-  if (item.tipo?.toLowerCase()?.includes("video") && !isYoutube(item)) return true;
+  if (item.tipo?.toLowerCase()?.includes("video") && !isYoutube(item) && !isGoogleDrive(item)) return true;
   const url = item.url_midia ?? "";
+  if (isGoogleDrive(item)) return false;
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url);
 }
 
@@ -45,6 +46,7 @@ function isImage(item: SinalizacaoItem): boolean {
     return true;
   }
   const url = item.url_midia ?? "";
+  if (isGoogleDrive(item) || isYoutube(item)) return false;
   return /\.(png|jpe?g|gif|webp|avif|svg)(\?|$)/i.test(url);
 }
 
@@ -52,6 +54,39 @@ function isYoutube(item: SinalizacaoItem): boolean {
   if (item.tipo?.toLowerCase()?.includes("youtube")) return true;
   const url = item.url_midia ?? "";
   return /(?:youtube\.com|youtu\.be)/i.test(url);
+}
+
+/**
+ * Detecta URLs do Google Drive. Como o Drive bloqueia download direto entre
+ * origens (CORS) e não serve o MP4 bruto via URL pública, a única forma de
+ * exibir o vídeo é via iframe usando o endpoint /preview.
+ */
+function isGoogleDrive(item: SinalizacaoItem): boolean {
+  const url = item.url_midia ?? "";
+  return /drive\.google\.com/i.test(url);
+}
+
+/**
+ * Extrai o ID do arquivo do Google Drive nas formas comuns:
+ *  - https://drive.google.com/file/d/FILE_ID/view
+ *  - https://drive.google.com/file/d/FILE_ID/preview
+ *  - https://drive.google.com/open?id=FILE_ID
+ *  - https://drive.google.com/uc?id=FILE_ID&export=download
+ */
+function parseGoogleDriveId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const fileMatch = trimmed.match(/\/file\/d\/([A-Za-z0-9_-]{20,})/);
+  if (fileMatch) return fileMatch[1];
+  const idMatch = trimmed.match(/[?&]id=([A-Za-z0-9_-]{20,})/);
+  if (idMatch) return idMatch[1];
+  return null;
+}
+
+function buildGoogleDriveEmbed(url: string): string | null {
+  const id = parseGoogleDriveId(url);
+  if (!id) return null;
+  return `https://drive.google.com/file/d/${id}/preview`;
 }
 
 /**
@@ -284,6 +319,7 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
   if (elegiveis.length === 0 || !atual) return null;
 
   const youtubeEmbed = isYoutube(atual) && atual.url_midia ? buildYoutubeEmbed(atual.url_midia) : null;
+  const driveEmbed = isGoogleDrive(atual) && atual.url_midia ? buildGoogleDriveEmbed(atual.url_midia) : null;
 
   return (
     <div
@@ -335,7 +371,18 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
           />
         )}
 
-        {(!atual.url_midia || (!isImage(atual) && !isVideo(atual) && !youtubeEmbed)) && (
+        {driveEmbed && (
+          <iframe
+            key={atual.id}
+            src={driveEmbed}
+            title={atual.titulo}
+            className="absolute inset-0 h-full w-full border-0"
+            allow="autoplay; encrypted-media"
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        )}
+
+        {(!atual.url_midia || (!isImage(atual) && !isVideo(atual) && !youtubeEmbed && !driveEmbed)) && (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-800 to-slate-900 p-8 text-center">
             {!atual.url_midia ? (
               <p className="font-display text-3xl font-bold text-white">
