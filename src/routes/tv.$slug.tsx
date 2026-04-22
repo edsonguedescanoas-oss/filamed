@@ -660,13 +660,13 @@ function TvPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <p className="text-xl font-bold text-primary leading-tight">{chamada.senha?.codigo}</p>
-                          <p className="text-[10px] font-medium opacity-50 uppercase truncate">
+                          <p className={`text-[10px] font-medium opacity-50 uppercase ${visual.historico_quebrar_texto ? "" : "truncate"}`}>
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                             {chamada.senha?.fila_nome || "Geral"}
                           </p>
                         </div>
-                        <div className="text-right ml-4 shrink-0">
-                          <p className="text-base font-bold opacity-90 leading-tight">{chamada.destino}</p>
+                        <div className="text-right ml-4 shrink-0 max-w-[40%]">
+                          <p className={`text-base font-bold opacity-90 leading-tight ${visual.historico_quebrar_texto ? "" : "truncate"}`}>{chamada.destino}</p>
                           <p className="text-[9px] font-mono opacity-30">
                             {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                           </p>
