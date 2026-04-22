@@ -452,7 +452,10 @@ function AtendimentoPage() {
 
       {/* Atendimento ativo */}
       {atendimentoAtivo && senhaAtiva && (
-        <div className="mt-6 rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-6 shadow-glow">
+        <div
+          key={atendimentoAtivo.id}
+          className="mt-6 rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-6 shadow-glow animate-scale-in"
+        >
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-primary shadow-glow">
@@ -462,7 +465,12 @@ function AtendimentoPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary">
                   Em atendimento
                 </p>
-                <div className="font-display text-3xl font-bold tabular-nums">{senhaAtiva.codigo}</div>
+                <div
+                  key={`senha-${senhaAtiva.id}`}
+                  className="font-display text-3xl font-bold tabular-nums animate-senha-pop"
+                >
+                  {senhaAtiva.codigo}
+                </div>
                 {senhaAtiva.paciente_id && (
                   <div className="text-sm text-muted-foreground">
                     {pacientes.get(senhaAtiva.paciente_id)?.nome_completo ?? "Paciente"}
@@ -475,7 +483,7 @@ function AtendimentoPage() {
                 <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1 justify-end">
                   <Clock4 className="h-3 w-3" /> Duração
                 </div>
-                <div className="font-display text-2xl font-bold tabular-nums">
+                <div className="font-display text-2xl font-bold tabular-nums transition-colors duration-500">
                   {formatDur(duracaoAtiva)}
                 </div>
               </div>
