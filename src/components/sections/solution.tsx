@@ -14,7 +14,7 @@ export function Solution() {
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
           <div className="reveal">
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">A Solução</span>
-            <h2 className="mt-3 text-3xl font-bold sm:text-5xl leading-tight">
+            <h2 className="mt-3 text-2xl font-bold sm:text-4xl leading-tight">
               Um sistema inteligente que organiza, automatiza e <span className="text-gradient">acelera</span> o atendimento.
             </h2>
             <p className="mt-5 text-lg text-muted-foreground">

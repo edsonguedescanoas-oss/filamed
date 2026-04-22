@@ -13,7 +13,7 @@ export function Problem() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="mx-auto max-w-2xl text-center reveal">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-destructive">O Problema</span>
-          <h2 className="mt-3 text-3xl font-bold sm:text-5xl">
+          <h2 className="mt-3 text-2xl font-bold sm:text-4xl">
             Sua recepção ainda depende de processos manuais?
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
