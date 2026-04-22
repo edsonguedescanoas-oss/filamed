@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { Clock, Users, Activity, Volume2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
@@ -109,6 +109,12 @@ function formatarDestino(destino: string): string {
 function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
+  /**
+   * IDs de senhas que já saíram do estado "chamada" (ex.: viraram
+   * em_atendimento/finalizada/ausente). Usado para esconder do "Chamando agora"
+   * imediatamente — sem esperar nova chamada chegar.
+   */
+  const [senhasInativas, setSenhasInativas] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(new Date());
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
     provider: "browser",
@@ -485,6 +491,43 @@ function TvPage() {
     };
   }, [unidade?.id, speak]);
 
+  /**
+   * Realtime de senhas — escutamos UPDATE para detectar quando uma senha sai
+   * do estado "chamada" (vira em_atendimento, finalizada, ausente ou cancelada).
+   * Quando isso acontece, marcamos como inativa pra remover instantaneamente
+   * do bloco "Chamando agora", sem precisar esperar uma nova chamada chegar.
+   */
+  useEffect(() => {
+    if (!unidade?.id) return;
+    const ch = supabase
+      .channel(`tv-senhas-${unidade.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "senhas",
+          filter: `unidade_id=eq.${unidade.id}`,
+        },
+        (payload) => {
+          const novo = payload.new as { id: string; status?: string };
+          const finalStatus = ["em_atendimento", "finalizada", "ausente", "cancelada"];
+          if (novo.status && finalStatus.includes(novo.status)) {
+            setSenhasInativas((prev) => {
+              if (prev.has(novo.id)) return prev;
+              const next = new Set(prev);
+              next.add(novo.id);
+              return next;
+            });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(ch);
+    };
+  }, [unidade?.id]);
+
   // Lógica de Autoajuste de Escala e Padding
   const [autoStyles, setAutoStyles] = useState<{ scale: number; padding: number }>({ scale: 1, padding: 8 });
 
@@ -519,11 +562,43 @@ function TvPage() {
     return () => window.removeEventListener("resize", adjust);
   }, [visual.auto_ajuste, visual.escala_fonte, visual.aspect_ratio]);
 
-  const ultimaChamada = chamadas[0];
-  // Limita o histórico a no máximo 5 itens (independente do que estiver configurado),
-  // pra garantir que cada linha tenha espaço suficiente para mostrar o texto completo.
+  /**
+   * Regras de exibição:
+   * - O histórico mostra apenas chamadas únicas (originais), nunca rechamadas —
+   *   rechamada não vira nova entrada na lista, é só destaque temporário.
+   * - O "Chamando agora" exibe a chamada (original ou rechamada) mais recente
+   *   da senha que ainda está no estado "chamada"; se a senha já saiu pra
+   *   atendimento/ausente/finalizada, o bloco fica vazio (volta ao "aguardando").
+   */
   const HISTORICO_MAX = 5;
-  const historico = chamadas.slice(1, Math.min((visual.historico_limite || 5), HISTORICO_MAX) + 1);
+  const chamadasOriginais = useMemo(
+    () => chamadas.filter((c) => !isRechamada(c)),
+    [chamadas],
+  );
+  const ultimaChamada = useMemo(() => {
+    // A primeira chamada (independente de ser rechamada) ainda válida.
+    return (
+      chamadas.find(
+        (c) => !c.senha?.id || !senhasInativas.has(c.senha.id),
+      ) ?? null
+    );
+  }, [chamadas, senhasInativas]);
+  const historico = useMemo(() => {
+    // Pula a "ultimaChamada" (se ela ainda for visível) e mostra o restante,
+    // só com chamadas únicas (sem rechamadas) e sem duplicar a mesma senha.
+    const vistas = new Set<string>();
+    if (ultimaChamada?.senha?.id) vistas.add(ultimaChamada.senha.id);
+    const limite = Math.min(visual.historico_limite || 5, HISTORICO_MAX);
+    const out: Chamada[] = [];
+    for (const c of chamadasOriginais) {
+      const sid = c.senha?.id;
+      if (sid && vistas.has(sid)) continue;
+      if (sid) vistas.add(sid);
+      out.push(c);
+      if (out.length >= limite) break;
+    }
+    return out;
+  }, [chamadasOriginais, ultimaChamada, visual.historico_limite]);
 
   if (needsInteraction) {
     return (
@@ -685,7 +760,10 @@ function TvPage() {
                 }}
               >
                 {ultimaChamada ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 text-center">
+                  <div
+                    key={ultimaChamada.id}
+                    className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 text-center"
+                  >
                     <div
                       className="inline-flex items-center gap-2 flex-wrap justify-center"
                       style={{ marginBottom: `clamp(0.15rem, 0.6cqmin, 0.5rem)` }}
@@ -709,7 +787,7 @@ function TvPage() {
                       </div>
                       {isRechamada(ultimaChamada) && (
                         <div
-                          className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 text-amber-300 border border-amber-400/50 animate-pulse"
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 text-amber-300 border border-amber-400/50 animate-badge-rechamada"
                           style={{
                             padding: `clamp(0.1rem, 0.6cqmin, 0.35rem) clamp(0.4rem, 1.2cqmin, 0.9rem)`,
                           }}
@@ -727,9 +805,11 @@ function TvPage() {
                     {/* Senha — usa cqmin (menor dimensão do container) pra escalar
                         proporcionalmente ao espaço disponível, garantindo que nunca
                         ultrapasse vertical nem horizontalmente. clamp protege min/max
-                        e a escala_chamadas continua sendo o multiplicador final. */}
+                        e a escala_chamadas continua sendo o multiplicador final.
+                        A animação senha-pop dá um overshoot ao trocar de senha. */}
                     <div 
-                      className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl w-full px-2"
+                      key={`codigo-${ultimaChamada.senha?.id ?? ultimaChamada.id}`}
+                      className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl w-full px-2 animate-senha-pop"
                       style={{ 
                         fontSize: `clamp(2rem, ${22 * escChamada}cqmin, ${10 * escChamada}rem)`,
                         overflow: "hidden",
