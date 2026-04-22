@@ -319,6 +319,7 @@ export function TvCarrossel({ unidadeId, paused = false, className, minimalChrom
   if (elegiveis.length === 0 || !atual) return null;
 
   const youtubeEmbed = isYoutube(atual) && atual.url_midia ? buildYoutubeEmbed(atual.url_midia) : null;
+  const driveEmbed = isGoogleDrive(atual) && atual.url_midia ? buildGoogleDriveEmbed(atual.url_midia) : null;
 
   return (
     <div
