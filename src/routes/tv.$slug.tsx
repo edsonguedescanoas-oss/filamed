@@ -110,11 +110,22 @@ function TvPage() {
   const { unidade, initialChamadas } = Route.useLoaderData();
   const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
   /**
-   * IDs de senhas que já saíram do estado "chamada" (ex.: viraram
-   * em_atendimento/finalizada/ausente). Usado para esconder do "Chamando agora"
-   * imediatamente — sem esperar nova chamada chegar.
+   * Mapa de senha_id -> status atual, populado via realtime de UPDATE em
+   * `senhas`. Usado para:
+   *  - Esconder do "Chamando agora" quando a senha sai do estado "chamada"
+   *    (vira em_atendimento/finalizada/ausente/cancelada).
+   *  - Mostrar um badge no histórico indicando o status final ("Em atendimento",
+   *    "Atendimento finalizado" ou "Ausente").
    */
-  const [senhasInativas, setSenhasInativas] = useState<Set<string>>(new Set());
+  const [statusSenhas, setStatusSenhas] = useState<Record<string, string>>({});
+  const senhasInativas = useMemo(() => {
+    const set = new Set<string>();
+    const finais = ["em_atendimento", "finalizada", "ausente", "cancelada"];
+    for (const [id, st] of Object.entries(statusSenhas)) {
+      if (finais.includes(st)) set.add(id);
+    }
+    return set;
+  }, [statusSenhas]);
   const [now, setNow] = useState(new Date());
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
     provider: "browser",
