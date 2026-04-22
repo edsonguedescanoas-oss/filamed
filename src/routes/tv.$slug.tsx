@@ -643,41 +643,104 @@ function TvPage() {
       >
         {visual.layout_items.sort((a, b) => a.order - b.order).map((item, idx) => {
           if (item.type === "chamada_atual") {
+            const escChamada = visual.escala_chamadas ?? 1;
             return (
               <div 
                 key={`item-${idx}`}
-                className="flex flex-col items-center justify-center border border-white/10 bg-black/5 rounded-2xl p-6"
+                className="flex flex-col items-center justify-center border border-white/10 bg-black/5 rounded-2xl overflow-hidden"
                 style={{
                   gridColumn: `span ${item.col_span}`,
                   gridRow: `span ${item.row_span}`,
+                  containerType: "size",
+                  padding: "clamp(0.5rem, 2cqmin, 1.5rem)",
                 }}
               >
                 {ultimaChamada ? (
-                  <div className="w-full animate-in fade-in zoom-in duration-500 text-center">
-                    <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-1 text-primary border border-primary/30">
-                      <Volume2 className="h-4 w-4 animate-pulse" />
-                      <span className="text-sm font-bold uppercase tracking-widest">Chamando Agora</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-500 text-center">
+                    <div 
+                      className="inline-flex items-center gap-2 rounded-full bg-primary/20 text-primary border border-primary/30"
+                      style={{
+                        padding: `clamp(0.15rem, 0.8cqmin, 0.4rem) clamp(0.5rem, 1.5cqmin, 1rem)`,
+                        marginBottom: `clamp(0.25rem, 1cqmin, 0.75rem)`,
+                      }}
+                    >
+                      <Volume2 
+                        className="animate-pulse" 
+                        style={{ width: `clamp(0.75rem, 1.8cqmin, 1.25rem)`, height: `clamp(0.75rem, 1.8cqmin, 1.25rem)` }}
+                      />
+                      <span 
+                        className="font-bold uppercase tracking-widest"
+                        style={{ fontSize: `clamp(0.5rem, 1.6cqmin, 1rem)` }}
+                      >
+                        Chamando Agora
+                      </span>
                     </div>
                     
+                    {/* Senha — usa cqmin (menor dimensão do container) pra escalar
+                        proporcionalmente ao espaço disponível, garantindo que nunca
+                        ultrapasse vertical nem horizontalmente. clamp protege min/max
+                        e a escala_chamadas continua sendo o multiplicador final. */}
                     <div 
-                      className="mb-2 font-black leading-none tracking-tighter text-primary drop-shadow-2xl"
-                      style={{ fontSize: `${8 * visual.escala_chamadas}rem` }}
+                      className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl w-full px-2"
+                      style={{ 
+                        fontSize: `clamp(2rem, ${22 * escChamada}cqmin, ${10 * escChamada}rem)`,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={ultimaChamada.senha?.codigo}
                     >
                       {ultimaChamada.senha?.codigo}
                     </div>
                     
-                    <div className="mt-2 space-y-1">
+                    <div 
+                      className="w-full"
+                      style={{ marginTop: `clamp(0.25rem, 1.5cqmin, 1rem)` }}
+                    >
                       {ultimaChamada.senha?.paciente_nome && (
-                        <p className={`text-2xl font-bold text-white/90 px-4 ${visual.historico_quebrar_texto ? "" : "truncate"}`}>{ultimaChamada.senha.paciente_nome}</p>
+                        <p 
+                          className={`font-bold text-white/90 px-2 ${visual.historico_quebrar_texto ? "" : "truncate"}`}
+                          style={{ fontSize: `clamp(0.75rem, 4cqmin, 2rem)`, lineHeight: 1.1 }}
+                          title={ultimaChamada.senha.paciente_nome}
+                        >
+                          {ultimaChamada.senha.paciente_nome}
+                        </p>
                       )}
-                      <p className="text-lg font-medium opacity-60 uppercase tracking-widest">Favor dirigir-se</p>
-                      <p className={`text-4xl font-bold uppercase px-4 ${visual.historico_quebrar_texto ? "" : "truncate"}`}>{ultimaChamada.destino}</p>
+                      <p 
+                        className="font-medium opacity-60 uppercase tracking-widest"
+                        style={{ 
+                          fontSize: `clamp(0.5rem, 1.8cqmin, 1.125rem)`,
+                          marginTop: `clamp(0.15rem, 0.6cqmin, 0.5rem)`,
+                          marginBottom: `clamp(0.15rem, 0.6cqmin, 0.5rem)`,
+                        }}
+                      >
+                        Favor dirigir-se
+                      </p>
+                      <p 
+                        className={`font-bold uppercase px-2 ${visual.historico_quebrar_texto ? "" : "truncate"}`}
+                        style={{ fontSize: `clamp(1rem, 6cqmin, 3rem)`, lineHeight: 1.05 }}
+                        title={ultimaChamada.destino}
+                      >
+                        {ultimaChamada.destino}
+                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center opacity-30">
-                    <Users className="mx-auto mb-4 h-16 w-16" />
-                    <p className="text-xl font-medium uppercase tracking-widest">Aguardando Chamadas</p>
+                    <Users 
+                      className="mx-auto" 
+                      style={{ 
+                        width: `clamp(2rem, 8cqmin, 4rem)`, 
+                        height: `clamp(2rem, 8cqmin, 4rem)`,
+                        marginBottom: `clamp(0.5rem, 2cqmin, 1rem)`,
+                      }}
+                    />
+                    <p 
+                      className="font-medium uppercase tracking-widest"
+                      style={{ fontSize: `clamp(0.625rem, 2.5cqmin, 1.25rem)` }}
+                    >
+                      Aguardando Chamadas
+                    </p>
                   </div>
                 )}
               </div>
