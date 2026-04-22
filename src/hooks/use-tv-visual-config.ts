@@ -105,12 +105,14 @@ export function useTvVisualConfig(unidadeId: string | null | undefined) {
           filter: `unidade_id=eq.${unidadeId}`,
         },
         (payload) => {
-          const row = payload.new as Partial<TvVisualConfig> | null;
+          const row = payload.new as any;
           if (!row) return;
+          
           setConfig((prev) => ({
             ...prev,
             ...row,
-            escala_fonte: Number(row.escala_fonte) || prev.escala_fonte,
+            escala_fonte: row.escala_fonte !== undefined ? Number(row.escala_fonte) : prev.escala_fonte,
+            escala_chamadas: row.escala_chamadas !== undefined ? Number(row.escala_chamadas) : prev.escala_chamadas,
           }));
         },
       )

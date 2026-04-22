@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Clock, Users, Activity, Volume2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTvVisualConfig } from "@/hooks/use-tv-visual-config";
+import { useTvVisualConfig, RESOLUCAO_PRESETS } from "@/hooks/use-tv-visual-config";
 import { montarTextoChamada, type TemplateChamada } from "@/lib/voice-template";
 
 // Tipagens básicas
@@ -106,6 +106,58 @@ function TvPage() {
   
   // Hook de configuração visual (cores, logo, etc)
   const { config: visual } = useTvVisualConfig(unidade?.id);
+
+  // Lógica de contraste
+  const palette = (() => {
+    if (visual.contraste_chamadas === "maximo") {
+      return { 
+        fundo: "#000000", 
+        texto: "#FFFFFF", 
+        primaria: "#FFD400",
+        primariaForeground: "#000000"
+      };
+    }
+    if (visual.contraste_chamadas === "alto") {
+      return { 
+        fundo: "#020617", 
+        texto: "#FFFFFF", 
+        primaria: visual.cor_primaria,
+        primariaForeground: "#FFFFFF"
+      };
+    }
+    return { 
+      fundo: visual.cor_fundo, 
+      texto: visual.cor_texto, 
+      primaria: visual.cor_primaria,
+      primariaForeground: visual.cor_texto // Tenta manter contraste do tema
+    };
+  })();
+
+  // Injeta cores e escala global no CSS
+  useEffect(() => {
+    if (!visual) return;
+    const root = document.documentElement;
+    
+    // Cores (respeitando contraste)
+    root.style.setProperty("--primary", palette.primaria);
+    root.style.setProperty("--primary-glow", palette.primaria);
+    root.style.setProperty("--primary-foreground", palette.primariaForeground);
+    
+    // Escala baseada na resolução e ajuste de fonte
+    const preset = RESOLUCAO_PRESETS[visual.resolucao_preset] || RESOLUCAO_PRESETS.fhd;
+    const baseScale = preset.baseScale;
+    const finalScale = visual.escala_fonte * baseScale;
+    
+    // Aplica no root para que todas as unidades 'rem' escalem
+    root.style.fontSize = `${16 * finalScale}px`;
+    
+    return () => {
+      root.style.fontSize = "";
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--primary-glow");
+      root.style.removeProperty("--primary-foreground");
+    };
+  }, [visual, palette]);
 
   // Carrega configuração de voz
   useEffect(() => {
@@ -510,18 +562,18 @@ function TvPage() {
     <div 
       className="flex h-screen flex-col overflow-hidden font-sans transition-colors duration-500"
       style={{ 
-        backgroundColor: visual.cor_fundo, 
-        color: visual.cor_texto,
-        backgroundImage: visual.fundo_url ? `url(${visual.fundo_url})` : undefined,
+        backgroundColor: palette.fundo, 
+        color: palette.texto,
+        backgroundImage: (visual.contraste_chamadas === 'normal' && visual.fundo_url) ? `url(${visual.fundo_url})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
     >
       {/* Overlay se tiver imagem de fundo */}
-      {visual.fundo_url && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
+      {(visual.contraste_chamadas === 'normal' && visual.fundo_url) && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
 
       {/* Header */}
-      <header className="relative flex items-center justify-between border-b border-white/10 bg-black/20 px-10 py-6 backdrop-blur-md">
+      <header className={`relative flex items-center justify-between border-b border-white/10 bg-black/20 backdrop-blur-md transition-all ${visual.densidade === 'compacto' ? 'px-8 py-3' : 'px-10 py-6'}`}>
         <div className="flex items-center gap-6">
           {visual.logo_url ? (
             <img src={visual.logo_url} alt="Logo" className="h-12 w-auto object-contain" />
@@ -567,7 +619,7 @@ function TvPage() {
       {/* Main Content */}
       <main className="relative flex flex-1 overflow-hidden">
         {/* Left Side: Current Call / Highlight */}
-        <div className="flex-[2] flex flex-col items-center justify-center border-r border-white/10 p-10 bg-black/5">
+        <div className={`flex-[2] flex flex-col items-center justify-center border-r border-white/10 bg-black/5 transition-all ${visual.densidade === 'compacto' ? 'p-6' : 'p-10'}`}>
           {ultimaChamada ? (
             <div className="w-full max-w-2xl animate-in fade-in zoom-in duration-500 text-center">
               <div 
@@ -614,19 +666,19 @@ function TvPage() {
               historico.map((chamada, idx) => (
                 <div 
                   key={chamada.id}
-                  className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-6 animate-in slide-in-from-right duration-300"
+                  className={`flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 animate-in slide-in-from-right duration-300 ${visual.densidade === 'compacto' ? 'p-4' : 'p-6'}`}
                   style={{ animationDelay: `${idx * 100}ms` }}
                 >
                   <div>
-                    <p className="text-4xl font-bold text-primary">{chamada.senha?.codigo}</p>
-                    <p className="text-sm font-medium opacity-40 uppercase">
+                    <p className="font-bold text-primary" style={{ fontSize: `${2.25 * visual.escala_chamadas}rem` }}>{chamada.senha?.codigo}</p>
+                    <p className="font-medium opacity-40 uppercase" style={{ fontSize: `${0.875 * visual.escala_chamadas}rem` }}>
                       {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                       {chamada.senha?.fila_nome || "Geral"}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-bold opacity-80">{chamada.destino}</p>
-                    <p className="text-xs font-mono opacity-30">
+                    <p className="font-bold opacity-80" style={{ fontSize: `${1.5 * visual.escala_chamadas}rem` }}>{chamada.destino}</p>
+                    <p className="font-mono opacity-30" style={{ fontSize: `${0.75 * visual.escala_chamadas}rem` }}>
                       {new Date(chamada.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
