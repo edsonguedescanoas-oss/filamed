@@ -149,8 +149,6 @@ function TvPage() {
   }, []);
 
   const speak = useCallback(async (chamada: Chamada) => {
-    if (!voiceConfig) return;
-
     const texto = montarTextoChamada({
       template: voiceConfig.template_chamada,
       nome: chamada.senha?.paciente_nome || null,
@@ -160,11 +158,15 @@ function TvPage() {
       formatarDestino,
     });
 
-    console.log("[TV] Falando:", texto);
+    console.log("[TV] Falando:", texto, "Provider:", voiceConfig.provider);
 
     if (voiceConfig.provider === "browser") {
+      if (typeof window === "undefined" || !window.speechSynthesis) {
+        console.warn("[TV] SpeechSynthesis não suportado neste navegador.");
+        return;
+      }
+
       const synth = window.speechSynthesis;
-      // Cancela qualquer fala anterior para não "travar" a fila do navegador
       synth.cancel();
 
       const utterance = new SpeechSynthesisUtterance(texto);
@@ -178,8 +180,7 @@ function TvPage() {
         if (v) utterance.voice = v;
       }
       
-      // Alguns navegadores precisam de um pequeno delay após o cancel
-      setTimeout(() => synth.speak(utterance), 50);
+      setTimeout(() => synth.speak(utterance), 100);
     } else {
       try {
         const { data, error } = await supabase.functions.invoke("tts", {
