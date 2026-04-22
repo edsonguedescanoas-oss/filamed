@@ -576,12 +576,13 @@ function TvPage() {
     [chamadas],
   );
   const ultimaChamada = useMemo(() => {
-    // A primeira chamada (independente de ser rechamada) ainda válida.
-    return (
-      chamadas.find(
-        (c) => !c.senha?.id || !senhasInativas.has(c.senha.id),
-      ) ?? null
-    );
+    // Mostra APENAS a chamada mais recente (índice 0). Se a senha dela já saiu
+    // do estado "chamada" (foi para atendimento/finalizada/ausente/cancelada),
+    // o bloco fica vazio — nunca cai pra uma chamada antiga de outra senha.
+    const top = chamadas[0];
+    if (!top) return null;
+    if (top.senha?.id && senhasInativas.has(top.senha.id)) return null;
+    return top;
   }, [chamadas, senhasInativas]);
   const historico = useMemo(() => {
     // Pula a "ultimaChamada" (se ela ainda for visível) e mostra o restante,

@@ -11,6 +11,7 @@ import {
   X,
   AlertCircle,
   UserPlus,
+  Tv,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -93,7 +94,7 @@ function RecepcaoPage() {
   const [recentes, setRecentes] = useState<(Senha & { paciente?: { nome_completo: string } | null })[]>([]);
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
-
+  const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
   // cadastro rápido de paciente
   const [novoOpen, setNovoOpen] = useState(false);
   const [novoNome, setNovoNome] = useState("");
@@ -139,6 +140,16 @@ function RecepcaoPage() {
   useEffect(() => {
     void fetchFilas();
     void fetchRecentes();
+    if (unidadeId) {
+      void (async () => {
+        const { data } = await supabase
+          .from("unidades")
+          .select("slug")
+          .eq("id", unidadeId)
+          .maybeSingle();
+        setUnidadeSlug(data?.slug ?? null);
+      })();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId]);
 
@@ -282,14 +293,32 @@ function RecepcaoPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-          Operação
-        </p>
-        <h1 className="mt-1 font-display text-3xl font-bold">Recepção</h1>
-        <p className="mt-1 text-muted-foreground">
-          Emita senhas em tempo real e acompanhe as últimas geradas.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Operação
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-bold">Recepção</h1>
+          <p className="mt-1 text-muted-foreground">
+            Emita senhas em tempo real e acompanhe as últimas geradas.
+          </p>
+        </div>
+        {unidadeSlug && (
+          <Button
+            asChild
+            variant="outline"
+            className="gap-2"
+          >
+            <a
+              href={`/tv/${unidadeSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Tv className="h-4 w-4" />
+              Abrir TV (chamadas e histórico)
+            </a>
+          </Button>
+        )}
       </header>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1.1fr]">
