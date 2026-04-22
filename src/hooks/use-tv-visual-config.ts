@@ -56,6 +56,7 @@ export const DEFAULT_TV_VISUAL: TvVisualConfig = {
   ],
   auto_ajuste: false,
   historico_limite: 8,
+  historico_quebrar_texto: false,
 };
 
 export const RESOLUCAO_PRESETS: Record<
