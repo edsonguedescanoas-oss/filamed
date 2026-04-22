@@ -537,8 +537,15 @@ function TvPage() {
       {visual.fundo_url && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
 
       {/* Header */}
-      <header className="relative flex items-center justify-between border-b border-white/10 bg-black/20 px-10 py-6 backdrop-blur-md">
-        <div className="flex items-center gap-6">
+      <header 
+        className="relative flex items-center justify-between border-b border-white/10 bg-black/20 px-10 backdrop-blur-md"
+        style={{ 
+          height: `${6 * (visual.escala_header ?? 1)}rem`,
+          paddingTop: `${1.5 * (visual.escala_header ?? 1)}rem`,
+          paddingBottom: `${1.5 * (visual.escala_header ?? 1)}rem`
+        }}
+      >
+        <div className="flex items-center gap-6" style={{ transform: `scale(${visual.escala_header ?? 1})`, transformOrigin: 'left center' }}>
           {visual.logo_url ? (
             <img src={visual.logo_url} alt="Logo" className="h-12 w-auto object-contain" />
           ) : (
@@ -555,7 +562,7 @@ function TvPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-8" style={{ transform: `scale(${visual.escala_header ?? 1})`, transformOrigin: 'right center' }}>
           <div className="text-right">
             <p className="text-4xl font-mono font-bold">
               {now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -727,7 +734,13 @@ function TvPage() {
       </main>
 
       {/* Footer / Scrolling News or Info */}
-      <footer className="relative h-16 flex items-center bg-primary px-10 text-primary-foreground font-bold overflow-hidden whitespace-nowrap">
+      <footer 
+        className="relative flex items-center bg-primary px-10 text-primary-foreground font-bold overflow-hidden whitespace-nowrap"
+        style={{ 
+          height: `${4 * (visual.escala_rodape ?? 1)}rem`,
+          fontSize: `${1.125 * (visual.escala_rodape ?? 1)}rem`
+        }}
+      >
         <div className="animate-marquee inline-block">
           {visual.mensagem_rodape || `Bem-vindo à ${unidade?.nome} • Por favor, acompanhe sua senha no painel • ${unidade?.nome} - Qualidade no atendimento`}
         </div>
