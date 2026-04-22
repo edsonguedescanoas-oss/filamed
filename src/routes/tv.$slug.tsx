@@ -129,6 +129,25 @@ function TvPage() {
     localStorage.setItem(`tv-zoom-${unidade?.id}`, String(z));
   };
 
+  // Safe area local
+  const [safeArea, setSafeArea] = useState(0);
+
+  useEffect(() => {
+    if (!loading && visual) {
+      const localSA = localStorage.getItem(`tv-safe-area-${unidade?.id}`);
+      if (localSA !== null) {
+        setSafeArea(Number(localSA));
+      } else {
+        setSafeArea(visual.safe_area_padding || 0);
+      }
+    }
+  }, [loading, visual, unidade?.id]);
+
+  const updateSafeArea = (val: number) => {
+    setSafeArea(val);
+    localStorage.setItem(`tv-safe-area-${unidade?.id}`, String(val));
+  };
+
 
   // Carrega configuração de voz
   useEffect(() => {
@@ -557,7 +576,7 @@ function TvPage() {
         fontSize: visual.auto_ajuste ? `${autoStyles.scale * zoom}rem` : `${visual.escala_fonte * zoom}rem`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        padding: `${visual.safe_area_padding * 100}vh ${visual.safe_area_padding * 100}vw`,
+        padding: `${safeArea * 100}vh ${safeArea * 100}vw`,
       }}
     >
       {/* Overlay se tiver imagem de fundo */}
@@ -785,7 +804,9 @@ function TvPage() {
         zoom={zoom}
         onInc={() => updateZoom(zoom + 0.05)}
         onDec={() => updateZoom(zoom - 0.05)}
-        onReset={() => updateZoom(1)}
+        onReset={() => updateZoom(visual.zoom_nivel || 1)}
+        safeArea={safeArea}
+        onSafeAreaChange={updateSafeArea}
         aspectRatio={visual.aspect_ratio}
         onAspectRatioChange={async (ratio) => {
           // Atualiza o estado visual IMEDIATAMENTE (localmente)
