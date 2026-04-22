@@ -102,6 +102,7 @@ function TvPage() {
   const [needsInteraction, setNeedsInteraction] = useState(true);
   const audioQueue = useRef<string[]>([]);
   const isSpeaking = useRef(false);
+  const [isSpeakingState, setIsSpeakingState] = useState(false);
   const beepRef = useRef<HTMLAudioElement | null>(null);
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
 
