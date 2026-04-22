@@ -101,6 +101,7 @@ function TvPage() {
   const audioQueue = useRef<string[]>([]);
   const isSpeaking = useRef(false);
   const beepRef = useRef<HTMLAudioElement | null>(null);
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
 
   
   // Hook de configuração visual (cores, logo, etc)
@@ -149,6 +150,11 @@ function TvPage() {
   }, []);
 
   const speak = useCallback(async (chamada: Chamada) => {
+    if (isSpeaking.current) {
+      console.log("[TV] Já está falando, aguardando...");
+      // Opcional: implementar fila real. Por ora, apenas ignora ou cancela anterior.
+    }
+
     const texto = montarTextoChamada({
       template: voiceConfig.template_chamada,
       nome: chamada.senha?.paciente_nome || null,
@@ -158,11 +164,17 @@ function TvPage() {
       formatarDestino,
     });
 
-    console.log("[TV] Falando:", texto, "Provider:", voiceConfig.provider);
+    console.log("[TV] Preparando para falar:", texto, "Provider:", voiceConfig.provider);
+    isSpeaking.current = true;
+
+    const finalize = () => {
+      isSpeaking.current = false;
+    };
 
     if (voiceConfig.provider === "browser") {
       if (typeof window === "undefined" || !window.speechSynthesis) {
-        console.warn("[TV] SpeechSynthesis não suportado neste navegador.");
+        console.warn("[TV] SpeechSynthesis não suportado.");
+        finalize();
         return;
       }
 
@@ -173,6 +185,11 @@ function TvPage() {
       utterance.lang = "pt-BR";
       utterance.rate = voiceConfig.rate;
       utterance.pitch = voiceConfig.pitch;
+      utterance.onend = finalize;
+      utterance.onerror = (e) => {
+        console.error("[TV] Erro SpeechSynthesis:", e);
+        finalize();
+      };
       
       if (voiceConfig.voice_id) {
         const voices = synth.getVoices();
@@ -183,7 +200,6 @@ function TvPage() {
       setTimeout(() => synth.speak(utterance), 100);
     } else {
       try {
-        console.log("[TV] Chamando TTS Edge Function...");
         const { data, error } = await supabase.functions.invoke("tts", {
           body: {
             text: texto,
@@ -194,23 +210,31 @@ function TvPage() {
           },
         });
 
-        if (error) {
-          console.error("[TV] Erro na função TTS:", error);
-          throw error;
-        }
+        if (error) throw error;
         
         const audioData = data?.audioContent 
           ? `data:${data.mime || "audio/mpeg"};base64,${data.audioContent}`
           : null;
 
-        if (audioData) {
-          console.log("[TV] Reproduzindo áudio recebido...");
-          const audio = new Audio(audioData);
-          audio.play().catch(playErr => {
-            console.error("[TV] Erro ao dar play no áudio:", playErr);
-            // Fallback imediato se o play falhar (ex: bloqueio de áudio)
+        if (audioData && voiceAudioRef.current) {
+          console.log("[TV] Reproduzindo áudio via elemento persistente...");
+          const audio = voiceAudioRef.current;
+          audio.src = audioData;
+          audio.onended = finalize;
+          audio.onerror = (e) => {
+            console.error("[TV] Erro no elemento de áudio:", e);
+            // Fallback
             const u = new SpeechSynthesisUtterance(texto);
             u.lang = "pt-BR";
+            u.onend = finalize;
+            window.speechSynthesis.speak(u);
+          };
+          
+          audio.play().catch(playErr => {
+            console.error("[TV] Play bloqueado, tentando fallback WebSpeech:", playErr);
+            const u = new SpeechSynthesisUtterance(texto);
+            u.lang = "pt-BR";
+            u.onend = finalize;
             window.speechSynthesis.speak(u);
           });
         } else if (data?.fallback === "browser" || !audioData) {
@@ -219,13 +243,16 @@ function TvPage() {
           synth.cancel();
           const u = new SpeechSynthesisUtterance(texto);
           u.lang = "pt-BR";
+          u.onend = finalize;
           setTimeout(() => synth.speak(u), 100);
+        } else {
+          finalize();
         }
       } catch (err) {
         console.error("[TV] Erro ao reproduzir voz:", err);
-        // Fallback final
         const u = new SpeechSynthesisUtterance(texto);
         u.lang = "pt-BR";
+        u.onend = finalize;
         window.speechSynthesis.speak(u);
       }
     }
@@ -270,13 +297,20 @@ function TvPage() {
           
           // Beep inicial
           if (beepRef.current) {
+            console.log("[TV] Tocando beep...");
             beepRef.current.currentTime = 0;
-            beepRef.current.play().catch(e => console.log("Erro ao tocar beep:", e));
+            beepRef.current.play().catch(e => {
+              console.warn("[TV] Falha ao tocar beep via ref:", e);
+              // Fallback se o ref falhar (tenta criar novo, embora improvável de funcionar se ref falhou)
+              const b = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+              b.play().catch(() => {});
+            });
           } else {
+            console.warn("[TV] Beep ref não disponível.");
             const beep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
             beep.play().catch(() => console.log("Áudio bloqueado pelo navegador"));
           }
-          
+
           // Aguarda um pouco o beep e fala
           setTimeout(() => {
             void speak(novaChamada);
