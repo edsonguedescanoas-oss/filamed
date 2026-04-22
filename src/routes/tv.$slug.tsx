@@ -248,9 +248,11 @@ function TvPage() {
 
     console.log("[TV] Tentando falar:", texto, "Provider:", voiceConfig.provider);
     isSpeaking.current = true;
+    setIsSpeakingState(true);
 
     const finalize = () => {
       isSpeaking.current = false;
+      setIsSpeakingState(false);
       console.log("[TV] Finalizou processo de fala.");
     };
 
