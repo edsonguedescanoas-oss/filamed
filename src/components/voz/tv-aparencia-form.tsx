@@ -86,17 +86,20 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
   const update = <K extends keyof TvVisualConfig>(key: K, value: TvVisualConfig[K]) =>
     setCfg((c) => ({ ...c, [key]: value }));
 
-  const handleSave = async () => {
+  const handleSave = async (customCfg?: TvVisualConfig) => {
     setSaving(true);
+    const configToSave = customCfg || cfg;
     const { error } = await supabase
       .from("tv_visual_config")
-      .upsert({ unidade_id: unidadeId, ...cfg } as any, { onConflict: "unidade_id" });
+      .upsert({ unidade_id: unidadeId, ...configToSave } as any, { onConflict: "unidade_id" });
     setSaving(false);
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
       return;
     }
-    toast.success("Aparência da TV salva!");
+    if (!customCfg) {
+      toast.success("Aparência da TV salva!");
+    }
   };
 
   const handleReset = () => setCfg(DEFAULT_TV_VISUAL);
@@ -115,7 +118,11 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       toast.error("Erro ao salvar perfil");
       return;
     }
-    toast.success("Perfil salvo!");
+    
+    // Aplicar imediatamente como solicitado
+    await handleSave(cfg);
+    
+    toast.success("Perfil salvo e aplicado com sucesso!");
     setProfileName("");
     fetchProfiles();
   };
@@ -560,9 +567,11 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setCfg({ ...DEFAULT_TV_VISUAL, ...p.config });
-                    toast.info(`Perfil "${p.nome}" carregado. Lembre-se de salvar.`);
+                  onClick={async () => {
+                    const newCfg = { ...DEFAULT_TV_VISUAL, ...p.config };
+                    setCfg(newCfg);
+                    await handleSave(newCfg);
+                    toast.info(`Perfil "${p.nome}" aplicado.`);
                   }}
                   className="h-8 text-xs text-primary hover:bg-primary/10"
                 >
@@ -591,7 +600,7 @@ export function TvAparenciaForm({ unidadeId, unidadeSlug }: Props) {
       <SinalizacaoManager unidadeId={unidadeId} />
 
       <section className="flex flex-wrap items-center gap-3 border-t border-border pt-6">
-        <Button onClick={handleSave} disabled={saving} className="gap-2">
+        <Button onClick={() => handleSave()} disabled={saving} className="gap-2">
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
