@@ -12,6 +12,7 @@ import {
   AlertCircle,
   UserPlus,
   Tv,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -31,6 +32,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -95,6 +107,7 @@ function RecepcaoPage() {
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
   // cadastro rápido de paciente
   const [novoOpen, setNovoOpen] = useState(false);
   const [novoNome, setNovoNome] = useState("");
@@ -279,6 +292,45 @@ function RecepcaoPage() {
     }
   };
 
+  const handleResetHistorico = async () => {
+    if (!unidadeId) return;
+    setResetting(true);
+    try {
+      // Apaga apenas chamadas de senhas já finalizadas (atendidas, ausentes ou canceladas).
+      // Preserva chamadas de senhas ativas (aguardando, chamada, em_atendimento).
+      const { data: senhasFinalizadas, error: errSenhas } = await supabase
+        .from("senhas")
+        .select("id")
+        .eq("unidade_id", unidadeId)
+        .in("status", ["finalizada", "ausente", "cancelada"]);
+      if (errSenhas) throw errSenhas;
+
+      const ids = (senhasFinalizadas ?? []).map((s) => s.id);
+      if (ids.length === 0) {
+        toast.info("Nenhuma chamada atendida para limpar");
+        return;
+      }
+
+      const { error: errDel, count } = await supabase
+        .from("chamadas")
+        .delete({ count: "exact" })
+        .eq("unidade_id", unidadeId)
+        .in("senha_id", ids);
+      if (errDel) throw errDel;
+
+      toast.success(
+        `Histórico limpo: ${count ?? ids.length} chamada(s) removida(s)`,
+        { description: "Senhas em atendimento foram preservadas" },
+      );
+      void fetchRecentes();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Falha ao resetar histórico";
+      toast.error(msg);
+    } finally {
+      setResetting(false);
+    }
+  };
+
   if (!canGerar) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-16 text-center">
@@ -304,20 +356,49 @@ function RecepcaoPage() {
           </p>
         </div>
         {unidadeSlug && (
-          <Button
-            asChild
-            variant="outline"
-            className="gap-2"
-          >
-            <a
-              href={`/tv/${unidadeSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Tv className="h-4 w-4" />
-              Abrir TV (chamadas e histórico)
-            </a>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="gap-2" disabled={resetting}>
+                  {resetting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Resetar histórico
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Resetar histórico de chamadas?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso apaga as chamadas de senhas <strong>já atendidas, ausentes ou canceladas</strong> —
+                    elas somem do histórico da TV. As senhas em atendimento, chamadas e aguardando são <strong>preservadas</strong>.
+                    Essa ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => void handleResetHistorico()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Sim, resetar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button asChild variant="outline" className="gap-2">
+              <a
+                href={`/tv/${unidadeSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Tv className="h-4 w-4" />
+                Abrir TV (chamadas e histórico)
+              </a>
+            </Button>
+          </div>
         )}
       </header>
 
