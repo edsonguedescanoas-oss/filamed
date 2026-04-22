@@ -341,12 +341,15 @@ function TvPage() {
         <button
           onClick={() => {
             // Destravamento robusto de áudio
-            const silentBeep = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-            silentBeep.volume = 0.01;
-            silentBeep.play().then(() => {
-              beepRef.current = silentBeep;
-              beepRef.current.volume = 1;
-            }).catch(e => console.error("Erro ao destravar áudio:", e));
+            const BEEP_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+            const audioBeep = new Audio(BEEP_URL);
+            audioBeep.volume = 0.01;
+            audioBeep.play().then(() => {
+              console.log("[TV] Beep destravado");
+              audioBeep.pause();
+              audioBeep.volume = 1;
+              beepRef.current = audioBeep;
+            }).catch(e => console.error("Erro ao destravar beep:", e));
 
             // "Destrava" a voz (SpeechSynthesis)
             const synth = window.speechSynthesis;
