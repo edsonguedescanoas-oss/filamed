@@ -398,11 +398,11 @@ function PontosPage() {
                             </Badge>
                           )}
                         </div>
-                        {usuarios.length === 0 ? (
+                        {usuariosFiltrados.length === 0 ? (
                           <p className="text-xs text-muted-foreground">Nenhum usuário ativo na unidade.</p>
                         ) : (
                           <div className="grid gap-2 sm:grid-cols-2">
-                            {usuarios.map((usuario) => (
+                            {usuariosFiltrados.map((usuario) => (
                               <label
                                 key={usuario.id}
                                 className="flex items-center gap-2 text-xs text-foreground"
@@ -584,4 +584,11 @@ function PontosPage() {
       </AlertDialog>
     </div>
   );
+}
+
+function normalizar(valor: string) {
+  return valor
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
