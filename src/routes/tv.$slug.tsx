@@ -587,7 +587,16 @@ function TvPage() {
         },
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
-          
+
+          // Filtro multi-TV: ignora chamadas cujo destino não pertence a esta TV.
+          // Faz isso ANTES do beep pra TV de "Consultório 001" não tocar quando
+          // a senha é chamada no "Guichê 02".
+          const destinoChamada = (payload.new as { destino?: string })?.destino;
+          if (!matchDestino(destinoChamada)) {
+            console.log("[TV] Chamada ignorada por filtro multi-TV:", destinoChamada);
+            return;
+          }
+
           // 1. Toca o beep IMEDIATAMENTE para dar feedback instantâneo (0s de delay)
           if (beepRef.current) {
             try {
