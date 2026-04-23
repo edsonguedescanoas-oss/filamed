@@ -252,8 +252,11 @@ function RecepcaoPage() {
     ? `${filaSelecionada.prefixo_senha}${String(filaSelecionada.contador_senha + 1).padStart(3, "0")}`
     : null;
 
-  const handleGerar = async (pacOverride?: Paciente) => {
-    const pac = pacOverride || pacienteSelecionado;
+  const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent) => {
+    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent) 
+      ? (pacOrEvent as Paciente) 
+      : pacienteSelecionado;
+
     if (!filaId || !canGerar) return;
     if (!pac) {
       toast.error("Selecione ou cadastre um paciente para gerar a senha");
@@ -270,15 +273,15 @@ function RecepcaoPage() {
       if (error) throw error;
       const senha = data as unknown as Senha;
       toast.success(`Senha ${senha.codigo} emitida`, {
-        description: `Vinculada a ${pacienteSelecionado.nome_completo}`,
+        description: `Vinculada a ${pac.nome_completo}`,
       });
 
       // Abre modal de compartilhamento
       setShareData({
         senha: { id: senha.id, codigo: senha.codigo, token_publico: senha.token_publico! },
         paciente: {
-          nome_completo: pacienteSelecionado.nome_completo,
-          telefone: pacienteSelecionado.telefone,
+          nome_completo: pac.nome_completo,
+          telefone: pac.telefone,
         },
       });
       setShareAutoPrint(false);
