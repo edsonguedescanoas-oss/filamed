@@ -350,6 +350,7 @@ export type Database = {
           mensagem: string
           senha_id: string | null
           status: Database["public"]["Enums"]["notificacao_status"]
+          tentativas: number | null
           unidade_id: string
         }
         Insert: {
@@ -363,6 +364,7 @@ export type Database = {
           mensagem: string
           senha_id?: string | null
           status?: Database["public"]["Enums"]["notificacao_status"]
+          tentativas?: number | null
           unidade_id: string
         }
         Update: {
@@ -376,6 +378,7 @@ export type Database = {
           mensagem?: string
           senha_id?: string | null
           status?: Database["public"]["Enums"]["notificacao_status"]
+          tentativas?: number | null
           unidade_id?: string
         }
         Relationships: [
@@ -1193,6 +1196,7 @@ export type Database = {
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       marcar_senhas_ausentes: { Args: never; Returns: number }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
+      retry_failed_notifications: { Args: never; Returns: undefined }
       setup_initial_unidade: {
         Args: {
           _cnpj?: string
