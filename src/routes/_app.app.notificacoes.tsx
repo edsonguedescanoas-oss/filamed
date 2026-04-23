@@ -284,8 +284,8 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                     <p className="text-muted-foreground truncate">{log.mensagem}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <Badge variant={log.status === "sucesso" ? "outline" : "destructive"} className="text-[9px] px-1 h-4">
-                      {log.status}
+                    <Badge variant={log.status === "enviada" ? "outline" : "destructive"} className="text-[9px] px-1 h-4">
+                      {log.status === "enviada" ? "sucesso" : log.status}
                     </Badge>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
                       {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
