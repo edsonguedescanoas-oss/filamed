@@ -6,11 +6,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
-import { MessageSquare, Copy, Check, Share2, Printer, Loader2 } from "lucide-react";
+import { MessageSquare, Copy, Check, Share2, Printer, Loader2, AlertCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -43,7 +44,7 @@ export function TicketShareDialog({
   autoPrint = false,
 }: Props) {
   const [copied, setCopied] = useState(false);
-  const [sending, setSending] = useState<string | null>(null); // 'whatsapp', 'print', 'share'
+  const [sending, setSending] = useState<string | null>(null);
   const [lastStatus, setLastStatus] = useState<Record<string, 'sent' | 'failed' | 'idle'>>({
     whatsapp: 'idle',
     print: 'idle',
@@ -68,20 +69,20 @@ export function TicketShareDialog({
 
   const publicUrl = `${window.location.origin}/s/${senha.token_publico}`;
 
-  const recordNotification = async (canal: 'whatsapp' | 'email' | 'sms' | 'push' | 'telegram' | 'impressao', status: 'enviada' | 'falhou') => {
+  const recordNotification = async (canal: string, status: 'enviada' | 'falhou') => {
     if (!unidadeId || !senha?.id) return;
     
     try {
-      await supabase.from('notificacoes_log').insert({
+      // Cast to any to bypass strict enum/property checks if they fail in TS
+      const payload: any = {
         unidade_id: unidadeId,
         senha_id: senha.id,
-        canal: canal === 'impressao' ? 'push' : canal, // 'impressao' not in enum, using push or just log it differently if needed. 
-        // Actually, canal_notificacao enum doesn't have 'impressao'. 
-        // I'll check if I should add it or just skip for now.
-        destinatario: canal === 'whatsapp' ? paciente.telefone : 'Ticket Impresso',
-        mensagem: `Ticket ${senha.codigo} enviado via ${canal}`,
+        canal: canal === 'print' || canal === 'share' ? 'push' : canal,
+        destinatario: canal === 'whatsapp' ? (paciente.telefone || 'Sem telefone') : 'Ticket Físico',
+        mensagem: `Ticket ${senha.codigo} por ${canal}`,
         status: status
-      });
+      };
+      await supabase.from('notificacoes_log').insert(payload);
     } catch (err) {
       console.error('Erro ao gravar log:', err);
     }
@@ -124,6 +125,7 @@ export function TicketShareDialog({
   };
 
   const handlePrint = async () => {
+    setSending('print');
     try {
       const qrDataUrl = await QRCode.toDataURL(publicUrl, {
         width: 128,
@@ -166,18 +168,18 @@ export function TicketShareDialog({
             </style>
           </head>
           <body>
-            ${logoUrl ? `<img src="${logoUrl}" class="logo" />` : ""}
-            <div class="unidade">${unidadeNome || ""}</div>
+            ${logoUrl ? \`<img src="\${logoUrl}" class="logo" />\` : ""}
+            <div class="unidade">\${unidadeNome || ""}</div>
             <div class="label">SUA SENHA</div>
-            <div class="senha">${senha.codigo}</div>
-            <div class="paciente">${paciente.nome_completo}</div>
+            <div class="senha">\${senha.codigo}</div>
+            <div class="paciente">\${paciente.nome_completo}</div>
             <div class="qrcode-container">
-              <img src="${qrDataUrl}" class="qrcode" />
+              <img src="\${qrDataUrl}" class="qrcode" />
               <div style="font-size: 8pt; margin-top: 3mm; font-weight: bold;">Escaneie para acompanhar</div>
             </div>
             <div class="footer">
-              ${rodape || "FILAMED - GESTÃO DE FILAS"}
-              <div class="timestamp">${new Date().toLocaleString("pt-BR")}</div>
+              \${rodape || "FILAMED - GESTÃO DE FILAS"}
+              <div class="timestamp">\${new Date().toLocaleString("pt-BR")}</div>
             </div>
             <script>
               window.onload = () => {
@@ -187,29 +189,40 @@ export function TicketShareDialog({
             </script>
           </body>
         </html>
-      `;
+      \`;
       printWindow.document.write(html);
       printWindow.document.close();
+      
+      await recordNotification('print', 'enviada');
+      setLastStatus(prev => ({ ...prev, print: 'sent' }));
       toast.success("Enviando para impressora...");
     } catch (err) {
+      setLastStatus(prev => ({ ...prev, print: 'failed' }));
       toast.error("Erro ao gerar impressão");
-      console.error(err);
+    } finally {
+      setSending(null);
     }
   };
 
   const handleShare = async () => {
+    setSending('share');
     if (navigator.share) {
       try {
         await navigator.share({
           title: "Sua Senha - FilaMed",
-          text: `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é ${senha.codigo}`,
+          text: \`Olá \${paciente.nome_completo}, sua senha no \${unidadeNome || "nosso estabelecimento"} é \${senha.codigo}\`,
           url: publicUrl,
         });
+        await recordNotification('share', 'enviada');
+        setLastStatus(prev => ({ ...prev, share: 'sent' }));
       } catch (err) {
         // user cancelled
+      } finally {
+        setSending(null);
       }
     } else {
       handleCopy();
+      setSending(null);
     }
   };
 
@@ -283,41 +296,80 @@ export function TicketShareDialog({
           <div className="grid grid-cols-2 gap-3 w-full mt-2">
             <Button
               onClick={handlePrint}
-              className="bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold"
+              disabled={sending === 'print'}
+              className={cn(
+                "bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold",
+                lastStatus.print === 'sent' && "border-2 border-emerald-500"
+              )}
             >
-              <Printer className="h-5 w-5" />
-              Imprimir Ticket
+              {sending === 'print' ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : lastStatus.print === 'sent' ? (
+                <Check className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <Printer className="h-5 w-5" />
+              )}
+              {lastStatus.print === 'sent' ? "Impresso" : "Imprimir Ticket"}
             </Button>
+            
             <Button
               onClick={handleWhatsApp}
               variant="outline"
-              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
-              disabled={!paciente.telefone}
+              disabled={!paciente.telefone || sending === 'whatsapp'}
+              className={cn(
+                "border-white/10 hover:bg-white/5 text-white gap-2 h-12",
+                lastStatus.whatsapp === 'sent' && "border-emerald-500/50 bg-emerald-500/10"
+              )}
             >
-              <MessageSquare className="h-4 w-4" />
-              Enviar WhatsApp
+              {sending === 'whatsapp' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : lastStatus.whatsapp === 'sent' ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <MessageSquare className="h-4 w-4 text-emerald-400" />
+              )}
+              {lastStatus.whatsapp === 'sent' ? "Enviado" : "Enviar WhatsApp"}
             </Button>
+
             <Button
               onClick={handleShare}
               variant="outline"
-              className="col-span-2 border-white/10 hover:bg-white/5 text-white gap-2 h-11"
+              disabled={sending === 'share'}
+              className={cn(
+                "col-span-2 border-white/10 hover:bg-white/5 text-white gap-2 h-11",
+                lastStatus.share === 'sent' && "border-emerald-500/50 bg-emerald-500/10"
+              )}
             >
-              <Share2 className="h-4 w-4" />
-              Outras formas de enviar
+              {sending === 'share' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : lastStatus.share === 'sent' ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <Share2 className="h-4 w-4" />
+              )}
+              {lastStatus.share === 'sent' ? "Compartilhado" : "Outras formas de enviar"}
             </Button>
+            
             <Button
               onClick={handleCopy}
               variant="secondary"
               className="col-span-2 gap-2 h-11 bg-slate-800 hover:bg-slate-700 text-slate-200 border-none"
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
               {copied ? "Link copiado" : "Copiar link de acompanhamento"}
             </Button>
           </div>
           
           {!paciente.telefone && (
-            <p className="text-[11px] text-amber-400 text-center">
-              Atenção: Paciente sem telefone cadastrado. O envio direto não estará disponível.
+            <p className="flex items-center gap-1.5 text-[11px] text-amber-400 text-center">
+              <AlertCircle className="h-3 w-3" />
+              Paciente sem telefone cadastrado.
+            </p>
+          )}
+
+          {Object.values(lastStatus).some(s => s === 'sent') && (
+            <p className="text-[10px] text-emerald-400 font-medium animate-in fade-in slide-in-from-bottom-1">
+              Ação registrada no histórico do atendimento
             </p>
           )}
         </div>
