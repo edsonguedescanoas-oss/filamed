@@ -127,7 +127,7 @@ function AdminLogsPage() {
             <div className="relative w-full sm:w-64">
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar destinatário, mensagem ou unidade…"
+                placeholder="Buscar destinatário, mensagem ou senha…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 className="pl-9"
