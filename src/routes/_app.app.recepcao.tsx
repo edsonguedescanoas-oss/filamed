@@ -1169,7 +1169,7 @@ function RecepcaoPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="novo-cpf" className="mb-1.5 block">
-                  CPF <span className="text-destructive">*</span>
+                  CPF
                 </Label>
                 <Input
                   id="novo-cpf"
