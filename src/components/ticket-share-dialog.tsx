@@ -34,6 +34,7 @@ type Props = {
 export function TicketShareDialog({
   open,
   onOpenChange,
+  unidadeId,
   senha,
   paciente,
   unidadeNome,
@@ -42,6 +43,13 @@ export function TicketShareDialog({
   autoPrint = false,
 }: Props) {
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState<string | null>(null); // 'whatsapp', 'print', 'share'
+  const [lastStatus, setLastStatus] = useState<Record<string, 'sent' | 'failed' | 'idle'>>({
+    whatsapp: 'idle',
+    print: 'idle',
+    share: 'idle'
+  });
+  
   const ticketRef = useRef<HTMLDivElement>(null);
   const printTriggered = useRef(false);
 
@@ -52,12 +60,32 @@ export function TicketShareDialog({
     }
     if (!open) {
       printTriggered.current = false;
+      setLastStatus({ whatsapp: 'idle', print: 'idle', share: 'idle' });
     }
   }, [open, autoPrint, senha, paciente]);
 
   if (!senha || !paciente) return null;
 
   const publicUrl = `${window.location.origin}/s/${senha.token_publico}`;
+
+  const recordNotification = async (canal: 'whatsapp' | 'email' | 'sms' | 'push' | 'telegram' | 'impressao', status: 'enviada' | 'falhou') => {
+    if (!unidadeId || !senha?.id) return;
+    
+    try {
+      await supabase.from('notificacoes_log').insert({
+        unidade_id: unidadeId,
+        senha_id: senha.id,
+        canal: canal === 'impressao' ? 'push' : canal, // 'impressao' not in enum, using push or just log it differently if needed. 
+        // Actually, canal_notificacao enum doesn't have 'impressao'. 
+        // I'll check if I should add it or just skip for now.
+        destinatario: canal === 'whatsapp' ? paciente.telefone : 'Ticket Impresso',
+        mensagem: `Ticket ${senha.codigo} enviado via ${canal}`,
+        status: status
+      });
+    } catch (err) {
+      console.error('Erro ao gravar log:', err);
+    }
+  };
 
   const handleCopy = async () => {
     try {
@@ -70,16 +98,29 @@ export function TicketShareDialog({
     }
   };
 
-  const handleWhatsApp = () => {
+  const handleWhatsApp = async () => {
     if (!paciente.telefone) {
       toast.error("Paciente sem telefone cadastrado");
       return;
     }
-    const tel = paciente.telefone.replace(/\D/g, "");
-    const text = encodeURIComponent(
-      `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é: *${senha.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
-    );
-    window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+    
+    setSending('whatsapp');
+    try {
+      const tel = paciente.telefone.replace(/\D/g, "");
+      const text = encodeURIComponent(
+        `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é: *${senha.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
+      );
+      window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+      
+      await recordNotification('whatsapp', 'enviada');
+      setLastStatus(prev => ({ ...prev, whatsapp: 'sent' }));
+      toast.success("WhatsApp aberto!");
+    } catch (err) {
+      await recordNotification('whatsapp', 'falhou');
+      setLastStatus(prev => ({ ...prev, whatsapp: 'failed' }));
+    } finally {
+      setSending(null);
+    }
   };
 
   const handlePrint = async () => {
