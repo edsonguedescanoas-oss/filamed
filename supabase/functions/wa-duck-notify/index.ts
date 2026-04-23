@@ -291,10 +291,10 @@ Avisaremos você quando for a sua vez!`;
         senha_id: finalSenhaId,
         canal: "whatsapp",
         destinatario: formattedTelefone,
-        status: response.ok ? "enviada" : "falhou",
+        status: response?.ok ? "enviada" : "falhou",
         mensagem: mensagem,
-        erro: response.ok ? null : (responseText || "Erro desconhecido"),
-        idempotency_key: idempotency_key,
+        erro: response?.ok ? null : (responseText || "Erro desconhecido"),
+        idempotency_key: currentIdempotencyKey,
       };
 
       // Se temos idempotency_key, usamos upsert para não duplicar logs de reenvio
@@ -307,10 +307,11 @@ Avisaremos você quando for a sua vez!`;
       }
     }
 
-    return new Response(JSON.stringify({ success: response.ok, data: responseData, error: response.ok ? null : responseText }), {
+    return new Response(JSON.stringify({ success: response?.ok, data: responseData, error: response?.ok ? null : responseText }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+
   } catch (error: any) {
     console.error("Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
