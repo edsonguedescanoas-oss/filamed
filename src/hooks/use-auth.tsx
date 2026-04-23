@@ -26,6 +26,8 @@ export interface UserProfile {
   unidade_id: string | null;
   avatar_url: string | null;
   ativo: boolean;
+  /** Ponto de atendimento atualmente ocupado pelo usuário (Guichê 02, Consultório 001…). */
+  ponto_atendimento_id: string | null;
 }
 
 export interface AuthState {
