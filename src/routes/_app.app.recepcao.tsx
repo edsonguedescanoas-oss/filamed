@@ -738,7 +738,7 @@ function RecepcaoPage() {
                           });
                           setShareOpen(true);
                         }}
-                        title="Compartilhar senha"
+                        title="Enviar ou Imprimir"
                       >
                         <Share2 className="h-4 w-4" />
                       </Button>
