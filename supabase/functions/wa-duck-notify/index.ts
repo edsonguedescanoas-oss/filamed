@@ -30,6 +30,8 @@ serve(async (req) => {
       throw new Error("senha_id is required");
     }
 
+    console.log(`Processando notificação para senha_id: ${senha_id}`);
+
     // 1. Busca dados da senha, paciente, fila e unidade
     const { data: senha, error: senhaError } = await supabaseClient
       .from("senhas")
@@ -43,7 +45,7 @@ serve(async (req) => {
       .single();
 
     if (senhaError || !senha) {
-      throw new Error("Senha não encontrada: " + senhaError?.message);
+      throw new Error("Senha não encontrada: " + (senhaError?.message || "Registro inexistente"));
     }
 
     const { paciente, fila, unidade } = senha;
@@ -91,10 +93,11 @@ ${publicUrl}
 Avisaremos você quando for a sua vez!`;
 
     // 4. Envia para o WADuck
-    // Assume o padrão: POST {api_url}/message/sendText/{instance}
-    // Com header apikey e body { "number": "...", "text": "..." }
     const endpoint = api_url.endsWith("/") ? api_url : `${api_url}/`;
     const fullUrl = `${endpoint}message/sendText/${instance_id}`;
+    const telefone = paciente.telefone.replace(/\D/g, "");
+
+    console.log(`Enviando WhatsApp para ${telefone} via ${fullUrl}`);
 
     const response = await fetch(fullUrl, {
       method: "POST",
@@ -103,34 +106,38 @@ Avisaremos você quando for a sua vez!`;
         "apikey": api_key,
       },
       body: JSON.stringify({
-        number: paciente.telefone.replace(/\D/g, ""),
+        number: telefone,
         text: mensagem,
       }),
     });
 
-    let responseData = {};
     const responseText = await response.text();
     console.log(`WADuck Response Status: ${response.status}`);
     console.log(`WADuck Response Text: ${responseText}`);
 
+    let responseData = {};
     try {
       if (responseText) {
         responseData = JSON.parse(responseText);
       }
     } catch (e) {
-      console.error("Erro ao parsear resposta do WADuck:", e.message);
+      console.warn("Erro ao parsear resposta do WADuck:", e.message);
     }
 
     // 5. Loga a notificação
-    await supabaseClient.from("notificacoes_log").insert({
+    const { error: logError } = await supabaseClient.from("notificacoes_log").insert({
       unidade_id: senha.unidade_id,
-      paciente_id: senha.paciente_id,
       senha_id: senha.id,
       canal: "whatsapp",
-      status: response.ok ? "sucesso" : "erro",
+      destinatario: telefone,
+      status: response.ok ? "enviada" : "falhou",
       mensagem: mensagem,
-      erro_detalhe: response.ok ? null : (responseText || "Erro desconhecido"),
+      erro: response.ok ? null : (responseText || "Erro desconhecido"),
     });
+
+    if (logError) {
+      console.error("Erro ao inserir log de notificação:", logError.message);
+    }
 
     return new Response(JSON.stringify({ success: response.ok, data: responseData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
