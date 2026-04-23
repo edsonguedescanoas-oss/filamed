@@ -85,6 +85,21 @@ const PRIORIDADES: { value: Prioridade; label: string; ring: string; badge: stri
 
 const onlyDigits = (v: string) => v.replace(/\D/g, "");
 
+function maskTelefone(v: string): string {
+  const digits = onlyDigits(v);
+  let d = digits;
+  if (d.length > 0 && !d.startsWith("55") && d.length <= 11) {
+    d = "55" + d;
+  }
+  d = d.slice(0, 13);
+  if (d.length <= 4) return d;
+  if (d.length <= 6) return d.replace(/(\d{2})(\d{2})/, "$1 $2");
+  if (d.length <= 11) {
+    return d.replace(/(\d{2})(\d{2})(\d{1,})/, "$1 $2 $3");
+  }
+  return d.replace(/(\d{2})(\d{2})(\d{5})(\d{1,})/, "$1 $2 $3-$4");
+}
+
 function RecepcaoPage() {
   const { profile, hasAnyRole } = useAuth();
   const unidadeId = profile?.unidade_id;
