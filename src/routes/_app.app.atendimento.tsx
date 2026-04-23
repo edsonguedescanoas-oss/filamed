@@ -430,6 +430,7 @@ function AtendimentoPage() {
       setFinalizar(null);
       setObservacoes("");
       setRequerRetorno(false);
+      setPreviewRetorno(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao finalizar atendimento.");
     } finally {
