@@ -303,7 +303,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                 <Badge variant="secondary" className="text-[10px] cursor-help" title="Código da senha">
                   {"{{senha}}"}
                 </Badge>
-                <Badge variant="secondary" className="text-[10px] cursor-help" title="Local de atendimento (Mesa/Guichê/Sala)">
+                <Badge variant="secondary" className="text-[10px] cursor-help" title="Fila e local de atendimento (ex: Clínica Geral, Consultório 03)">
                   {"{{local}}"}
                 </Badge>
               </div>
@@ -315,7 +315,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                 "{config.template_chamada
                   .replace("{{nome}}", "João Silva")
                   .replace("{{senha}}", "A-102")
-                  .replace("{{local}}", "Consultório 03")}"
+                  .replace("{{local}}", "Clínica Geral, Consultório 03")}"
               </p>
             </div>
 
