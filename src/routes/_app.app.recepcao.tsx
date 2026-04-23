@@ -407,7 +407,25 @@ function RecepcaoPage() {
     }
     
     // Validações
-...
+    const errors: { nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string } = {};
+    const nome = novoNome.trim();
+    const cpfDigits = onlyDigits(novoCpf);
+    const telDigits = onlyDigits(novoTelefone);
+
+    if (nome.length < 2) {
+      errors.nome = "Informe o nome completo do paciente";
+    }
+    
+    if (cpfDigits && !isValidCPF(cpfDigits)) {
+      errors.cpf = "CPF inválido";
+    }
+
+    if (!telDigits) {
+      errors.telefone = "Telefone é obrigatório";
+    } else if (telDigits.length < 10) {
+      errors.telefone = "Telefone inválido";
+    }
+
     if (Object.keys(errors).length > 0) {
       setNovoErrors(errors);
       return;
