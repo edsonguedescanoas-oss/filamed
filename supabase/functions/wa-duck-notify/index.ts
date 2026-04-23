@@ -24,10 +24,10 @@ serve(async (req) => {
       console.error("Erro ao parsear o JSON do request:", e.message);
       throw new Error("Invalid JSON body");
     }
-    const { senha_id, tipo = "criacao", mesa_nome } = body;
-
-    if (!senha_id) {
-      throw new Error("senha_id is required");
+    const { senha_id, tipo = "criacao", mesa_nome, telefone: testTelefone, mensagem: testMensagem, unidade_id: testUnidadeId, config: testConfig } = body;
+    
+    if (tipo !== "teste" && !senha_id) {
+      throw new Error("senha_id is required for non-test types");
     }
 
     console.log(`Processando notificação (${tipo}) para senha_id: ${senha_id}`);
