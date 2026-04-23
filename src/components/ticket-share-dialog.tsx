@@ -352,6 +352,27 @@ export function TicketShareDialog({
             </div>
           </div>
 
+          <div className="w-full px-4 py-2.5 bg-slate-900 border border-white/5 rounded-lg flex flex-col gap-1.5 -mt-3">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">QR Code Verificado</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[11px] text-primary truncate font-mono bg-primary/5 px-2 py-1 rounded border border-primary/10">
+                {publicUrl}
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-3 text-xs text-white bg-white/5 hover:bg-white/10 gap-1.5 font-semibold"
+                onClick={() => window.open(publicUrl, '_blank')}
+              >
+                <Monitor className="h-3.5 w-3.5" />
+                Validar Link
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 w-full mt-2">
             <Button
               onClick={handlePrint}
