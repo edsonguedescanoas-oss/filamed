@@ -238,6 +238,9 @@ function TvPage() {
     destinosAceitos ? initialChamadas.filter((c) => matchDestino(c.destino)) : initialChamadas,
   );
 
+  /**
+   * Mapa de senha_id -> status atual, populado via realtime de UPDATE em
+   * `senhas`. Usado para:
    *  - Esconder do "Chamando agora" quando a senha sai do estado "chamada"
    *    (vira em_atendimento/finalizada/ausente/cancelada).
    *  - Mostrar um badge no histórico indicando o status final ("Em atendimento",
