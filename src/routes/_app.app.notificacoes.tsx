@@ -202,7 +202,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                   <Label htmlFor="api_url">URL da API</Label>
                   <Input
                     id="api_url"
-                    placeholder="https://api.waduck.com.br"
+                    placeholder="Ex: https://api.waduck.pro/v1"
                     value={config.api_url}
                     onChange={(e) => setConfig({ ...config, api_url: e.target.value })}
                   />
