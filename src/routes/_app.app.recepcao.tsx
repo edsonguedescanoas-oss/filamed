@@ -894,6 +894,7 @@ function RecepcaoPage() {
         unidadeNome={unidadeTicketConfig?.nome ?? null}
         logoUrl={unidadeTicketConfig?.logo_url ?? null}
         rodape={unidadeTicketConfig?.rodape ?? null}
+        autoPrint={shareAutoPrint}
       />
     </div>
   );
