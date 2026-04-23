@@ -140,7 +140,7 @@ function maskTelefone(v: string): string {
 function RecepcaoPage() {
   const { profile, hasAnyRole } = useAuth();
   const unidadeId = profile?.unidade_id;
-  const canGerar = hasAnyRole(["admin", "recepcao"]);
+  const canGerar = hasAnyRole(["admin", "recepcao", "super_admin", "gestor"]);
 
   const [filas, setFilas] = useState<Fila[]>([]);
   const [loadingFilas, setLoadingFilas] = useState(true);
@@ -205,7 +205,14 @@ function RecepcaoPage() {
       toast.error("Erro ao carregar filas: " + error.message);
     } else {
       setFilas(data ?? []);
-      if (data && data.length > 0 && !filaId) setFilaId(data[0].id);
+      // Reseta filaId se a selecionada não estiver na nova lista ou se for a primeira carga
+      if (data && data.length > 0) {
+        if (!filaId || !data.some(f => f.id === filaId)) {
+          setFilaId(data[0].id);
+        }
+      } else {
+        setFilaId(null);
+      }
     }
     setLoadingFilas(false);
   };
@@ -328,7 +335,8 @@ function RecepcaoPage() {
     : null;
 
   const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent, autoPrintOverride?: boolean) => {
-    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent) 
+    // Se for um evento (clique no botão), pacOrEvent é o evento e não tem id de paciente
+    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent && !('_reactName' in pacOrEvent)) 
       ? (pacOrEvent as Paciente) 
       : pacienteSelecionado;
 
