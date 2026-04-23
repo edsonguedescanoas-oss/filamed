@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Activity,
   Loader2,
@@ -199,6 +200,8 @@ function exportarCsv(rows: AuditoriaRow[]) {
   URL.revokeObjectURL(url);
 }
 
+const PAGE_SIZE = 50;
+
 function AdminAuditoriaPage() {
   const [unidades, setUnidades] = useState<UnidadeOpt[]>([]);
   const [unidadeId, setUnidadeId] = useState<string>("todas");
@@ -208,7 +211,12 @@ function AdminAuditoriaPage() {
   const [buscaDebounced, setBuscaDebounced] = useState<string>("");
   const [eventos, setEventos] = useState<AuditoriaRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Token para invalidar requests obsoletas (filtros mudaram durante fetch).
+  const reqIdRef = useRef(0);
 
   // Debounce da busca textual
   useEffect(() => {
@@ -227,11 +235,9 @@ function AdminAuditoriaPage() {
     })();
   }, []);
 
-  // Carrega eventos sempre que filtros mudam
-  useEffect(() => {
-    let cancel = false;
-    setLoading(true);
-    void (async () => {
+  // Função de fetch paginada — usa created_at do último item como cursor (_ate).
+  const fetchPage = useCallback(
+    async (cursorAte: string | null, reqId: number) => {
       const desde = periodoDesde(periodo);
       const { data, error } = await (
         supabase.rpc as unknown as (
@@ -242,24 +248,57 @@ function AdminAuditoriaPage() {
         _unidade_id: unidadeId === "todas" ? null : unidadeId,
         _entidade: entidade === "todas" ? null : entidade,
         _desde: desde,
-        _ate: null,
-        _limite: 500,
+        _ate: cursorAte,
+        _limite: PAGE_SIZE,
         _busca: buscaDebounced || null,
         _ator_id: null,
       });
-      if (cancel) return;
+      if (reqId !== reqIdRef.current) return null; // request obsoleta
       if (error) {
         console.error(error);
-        setEventos([]);
-      } else {
-        setEventos(data ?? []);
+        return [];
       }
+      return data ?? [];
+    },
+    [unidadeId, entidade, periodo, buscaDebounced],
+  );
+
+  // Reload inicial sempre que filtros mudam
+  useEffect(() => {
+    const reqId = ++reqIdRef.current;
+    setLoading(true);
+    setHasMore(true);
+    setExpanded(new Set());
+    void (async () => {
+      const rows = await fetchPage(null, reqId);
+      if (rows === null) return;
+      setEventos(rows);
+      setHasMore(rows.length === PAGE_SIZE);
       setLoading(false);
     })();
-    return () => {
-      cancel = true;
-    };
-  }, [unidadeId, entidade, periodo, buscaDebounced]);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || loading || !hasMore || eventos.length === 0) return;
+    const last = eventos[eventos.length - 1];
+    // Cursor: created_at do último item; subtrai 1ms para evitar duplicar borda.
+    const cursorMs = new Date(last.created_at).getTime() - 1;
+    const cursor = new Date(cursorMs).toISOString();
+    setLoadingMore(true);
+    const reqId = reqIdRef.current;
+    const rows = await fetchPage(cursor, reqId);
+    if (rows === null) {
+      setLoadingMore(false);
+      return;
+    }
+    setEventos((prev) => {
+      const seen = new Set(prev.map((p) => p.id));
+      const fresh = rows.filter((r) => !seen.has(r.id));
+      return [...prev, ...fresh];
+    });
+    setHasMore(rows.length === PAGE_SIZE);
+    setLoadingMore(false);
+  }, [eventos, fetchPage, hasMore, loading, loadingMore]);
 
   const stats = useMemo(() => {
     let assinatura = 0;
@@ -288,6 +327,37 @@ function AdminAuditoriaPage() {
     });
   };
 
+  // Virtualização da lista
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const itemCount = eventos.length + (hasMore || loadingMore ? 1 : 0);
+  const virtualizer = useVirtualizer({
+    count: itemCount,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) => {
+      if (index >= eventos.length) return 64;
+      const ev = eventos[index];
+      return expanded.has(ev.id) ? 360 : 96;
+    },
+    overscan: 6,
+    getItemKey: (index) =>
+      index >= eventos.length ? "__sentinel__" : eventos[index].id,
+  });
+
+  // Trigger de load-more quando o sentinela aparece
+  const virtualItems = virtualizer.getVirtualItems();
+  useEffect(() => {
+    const last = virtualItems[virtualItems.length - 1];
+    if (!last) return;
+    if (last.index >= eventos.length && hasMore && !loadingMore && !loading) {
+      void loadMore();
+    }
+  }, [virtualItems, eventos.length, hasMore, loadingMore, loading, loadMore]);
+
+  // Re-mede quando expanded muda (alturas variam)
+  useEffect(() => {
+    virtualizer.measure();
+  }, [expanded, virtualizer]);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
@@ -300,7 +370,9 @@ function AdminAuditoriaPage() {
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="gap-1.5">
             <Activity className="h-3.5 w-3.5" />
-            {eventos.length} evento{eventos.length === 1 ? "" : "s"}
+            {eventos.length}
+            {hasMore ? "+" : ""} evento{eventos.length === 1 ? "" : "s"} carregado
+            {eventos.length === 1 ? "" : "s"}
           </Badge>
           <Button
             size="sm"
@@ -405,7 +477,8 @@ function AdminAuditoriaPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Trilha de eventos</CardTitle>
           <CardDescription>
-            Ordenado do mais recente para o mais antigo. Clique para ver os detalhes do payload.
+            Ordenado do mais recente para o mais antigo. Clique para ver os detalhes do payload. A
+            lista carrega mais registros automaticamente conforme você rola.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -418,63 +491,112 @@ function AdminAuditoriaPage() {
               Nenhum evento encontrado para os filtros selecionados.
             </div>
           ) : (
-            <ol className="divide-y divide-border">
-              {eventos.map((ev) => {
-                const meta = entidadeMeta(ev.entidade, ev.acao);
-                const Icon = meta.icon;
-                const isOpen = expanded.has(ev.id);
-                const hasPayload = !!(ev.dados_antes || ev.dados_depois);
-                return (
-                  <li key={ev.id} className="py-3">
-                    <button
-                      type="button"
-                      onClick={() => hasPayload && toggle(ev.id)}
-                      className={`flex w-full items-start gap-3 text-left ${
-                        hasPayload ? "cursor-pointer" : "cursor-default"
-                      }`}
+            <div
+              ref={scrollRef}
+              className="relative max-h-[70vh] min-h-[400px] overflow-auto rounded-md border border-border"
+            >
+              <div
+                style={{
+                  height: `${virtualizer.getTotalSize()}px`,
+                  width: "100%",
+                  position: "relative",
+                }}
+              >
+                {virtualItems.map((vRow) => {
+                  const isSentinel = vRow.index >= eventos.length;
+                  return (
+                    <div
+                      key={vRow.key}
+                      data-index={vRow.index}
+                      ref={virtualizer.measureElement}
+                      className="absolute left-0 top-0 w-full border-b border-border last:border-b-0"
+                      style={{ transform: `translateY(${vRow.start}px)` }}
                     >
-                      <div
-                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline" className={meta.tone}>
-                            {meta.label}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{fmtDateTime(ev.created_at)}</span>
-                        </div>
-                        <p className="mt-1 text-sm font-medium leading-snug">{ev.resumo}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                          {ev.unidade_nome && (
-                            <span className="inline-flex items-center gap-1">
-                              <Building2 className="h-3 w-3" />
-                              {ev.unidade_nome}
-                            </span>
+                      {isSentinel ? (
+                        <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+                          {hasMore ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Carregando mais eventos…
+                            </>
+                          ) : (
+                            <span>Fim da lista</span>
                           )}
-                          <span className="inline-flex items-center gap-1">
-                            <UserIcon className="h-3 w-3" />
-                            {ev.ator_nome ?? (ev.ator_id ? "Usuário" : "Sistema")}
-                          </span>
                         </div>
-                      </div>
-                      {hasPayload && (
-                        <span className="mt-1 text-muted-foreground">
-                          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </span>
-                      )}
-                    </button>
+                      ) : (
+                        (() => {
+                          const ev = eventos[vRow.index];
+                          const meta = entidadeMeta(ev.entidade, ev.acao);
+                          const Icon = meta.icon;
+                          const isOpen = expanded.has(ev.id);
+                          const hasPayload = !!(ev.dados_antes || ev.dados_depois);
+                          return (
+                            <div className="px-3 py-3">
+                              <button
+                                type="button"
+                                onClick={() => hasPayload && toggle(ev.id)}
+                                className={`flex w-full items-start gap-3 text-left ${
+                                  hasPayload ? "cursor-pointer" : "cursor-default"
+                                }`}
+                              >
+                                <div
+                                  className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline" className={meta.tone}>
+                                      {meta.label}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {fmtDateTime(ev.created_at)}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-sm font-medium leading-snug">
+                                    {ev.resumo}
+                                  </p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                    {ev.unidade_nome && (
+                                      <span className="inline-flex items-center gap-1">
+                                        <Building2 className="h-3 w-3" />
+                                        {ev.unidade_nome}
+                                      </span>
+                                    )}
+                                    <span className="inline-flex items-center gap-1">
+                                      <UserIcon className="h-3 w-3" />
+                                      {ev.ator_nome ?? (ev.ator_id ? "Usuário" : "Sistema")}
+                                    </span>
+                                  </div>
+                                </div>
+                                {hasPayload && (
+                                  <span className="mt-1 text-muted-foreground">
+                                    {isOpen ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
+                                    )}
+                                  </span>
+                                )}
+                              </button>
 
-                    {isOpen && hasPayload && (
-                      <div className="mt-3 ml-12">
-                        <AuditoriaDiff before={ev.dados_antes} after={ev.dados_depois} />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
+                              {isOpen && hasPayload && (
+                                <div className="mt-3 ml-12">
+                                  <AuditoriaDiff
+                                    before={ev.dados_antes}
+                                    after={ev.dados_depois}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
