@@ -66,6 +66,12 @@ export function TicketShareDialog({
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
+  const [lastStatus, setLastStatus] = useState<Record<string, 'sent' | 'failed' | 'idle'>>({
+    whatsapp: 'idle',
+    print: 'idle',
+    share: 'idle'
+  });
+  
   const [logoContrast, setLogoContrast] = useState(100);
   const [logoScale, setLogoScale] = useState(100);
   
