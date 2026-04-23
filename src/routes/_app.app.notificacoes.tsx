@@ -80,6 +80,8 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
   const [saving, setSaving] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [testPhone, setTestPhone] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
 
   const fetchConfig = async () => {
     if (!unidadeId) return;
