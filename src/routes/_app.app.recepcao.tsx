@@ -538,7 +538,8 @@ function RecepcaoPage() {
           canal: 'whatsapp',
           destinatario: s.paciente.telefone,
           mensagem: `Ticket ${s.codigo} enviado via WhatsApp`,
-          status: 'enviada'
+          status: 'enviada',
+          idempotency_key: crypto.randomUUID()
         });
         toast.success("Envio registrado no histórico");
       } catch (err) {
