@@ -1,5 +1,6 @@
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -95,10 +96,14 @@ export function TicketShareDialog({
   
   const ticketRef = useRef<HTMLDivElement>(null);
   const printTriggered = useRef(false);
+  const autoNotifyTriggered = useRef(false);
 
   useEffect(() => {
-    // We removed the automatic handleWhatsApp call because it's already handled by a database trigger (tr_on_new_ticket)
-    // on the 'senhas' table, avoiding duplicate messages.
+    if (open && senha && paciente?.telefone && !autoNotifyTriggered.current) {
+      autoNotifyTriggered.current = true;
+      setAutoSent(true);
+      void handleWhatsApp(true);
+    }
     
     if (open && autoPrint && senha && paciente && !printTriggered.current) {
       printTriggered.current = true;
@@ -107,6 +112,7 @@ export function TicketShareDialog({
     
     if (!open) {
       printTriggered.current = false;
+      autoNotifyTriggered.current = false;
       setAutoSent(false);
       setLastStatus({ whatsapp: 'idle', print: 'idle', share: 'idle' });
     }
@@ -164,6 +170,9 @@ export function TicketShareDialog({
       });
 
       if (error) throw error;
+      if (data && typeof data === "object" && "success" in data && !data.success) {
+        throw new Error(String((data as { error?: unknown }).error || "Falha ao enviar WhatsApp"));
+      }
 
       setLastStatus(prev => ({ ...prev, whatsapp: 'sent' }));
       if (!isAuto) toast.success("Notificação enviada com sucesso!");
@@ -304,16 +313,29 @@ export function TicketShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white p-0 max-h-[95vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-white text-center flex items-center justify-center gap-2">
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-[1040px] border-border bg-background p-0 text-foreground max-h-[92dvh] overflow-y-auto overflow-x-hidden sm:rounded-xl">
+        <DialogClose asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-3 top-3 z-[60] h-9 w-9 rounded-full bg-background/90 text-foreground shadow-sm hover:bg-muted"
+            aria-label="Fechar prévia do ticket"
+          >
+            <span className="text-xl leading-none">×</span>
+          </Button>
+        </DialogClose>
+
+        <DialogHeader className="border-b border-border px-5 py-4 pr-14">
+          <DialogTitle className="text-foreground flex items-center gap-2">
             <Printer className="h-5 w-5 text-primary" />
             Prévia do Ticket
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-6 p-6">
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid gap-4 p-4 lg:grid-cols-[minmax(280px,1fr)_360px] lg:items-start lg:p-5">
+          <div className="order-2 space-y-4 lg:order-1">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                 <Monitor className="h-3 w-3" />
@@ -336,7 +358,7 @@ export function TicketShareDialog({
               </Select>
             </div>
 
-            <div className="space-y-2 p-3 bg-slate-900/50 rounded-lg border border-white/5">
+            <div className="space-y-2 rounded-lg border border-border bg-card p-3">
               <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
                 <Settings2 className="h-3 w-3" />
                 Ajustes do Logo
@@ -374,6 +396,102 @@ export function TicketShareDialog({
             </div>
           </div>
 
+          <div className="w-full px-4 py-2.5 bg-card border border-border rounded-lg flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">QR Code Verificado</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate rounded border border-primary/10 bg-primary/5 px-2 py-1 font-mono text-[11px] text-primary">
+                {publicUrl}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 shrink-0 gap-1.5 px-3 text-xs font-semibold"
+                onClick={() => window.open(publicUrl, '_blank')}
+              >
+                <Monitor className="h-3.5 w-3.5" />
+                Validar
+              </Button>
+            </div>
+          </div>
+
+          {autoSent && lastStatus.whatsapp === 'idle' && (
+            <p className="text-xs text-muted-foreground">Enviando WhatsApp automaticamente…</p>
+          )}
+
+          <div className="grid grid-cols-1 gap-3 w-full sm:grid-cols-2">
+            <Button
+              onClick={handlePrint}
+              disabled={sending === 'print'}
+              className={cn(
+                "gap-2 min-h-12 font-bold",
+                lastStatus.print === 'sent' && "border-2 border-emerald-500"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                {sending === 'print' ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : lastStatus.print === 'sent' ? (
+                  <Check className="h-5 w-5 text-emerald-600" />
+                ) : (
+                  <Printer className="h-5 w-5" />
+                )}
+                {lastStatus.print === 'sent' ? "Impresso" : "Imprimir Ticket"}
+              </div>
+            </Button>
+            
+            <Button
+              onClick={() => void handleWhatsApp(false)}
+              variant="outline"
+              disabled={!paciente.telefone || sending === 'whatsapp'}
+              className={cn(
+                "gap-2 min-h-12",
+                lastStatus.whatsapp === 'sent' && "border-emerald-500/50 bg-emerald-500/10"
+              )}
+            >
+              {sending === 'whatsapp' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : lastStatus.whatsapp === 'sent' ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <MessageSquare className="h-4 w-4 text-emerald-400" />
+              )}
+              {lastStatus.whatsapp === 'sent' ? "Enviado" : "Enviar WhatsApp"}
+            </Button>
+
+            <Button
+              onClick={handleShare}
+              variant="outline"
+              disabled={sending === 'share'}
+              className={cn(
+                "gap-2 min-h-11 sm:col-span-2",
+                lastStatus.share === 'sent' && "border-emerald-500/50 bg-emerald-500/10"
+              )}
+            >
+              {sending === 'share' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : lastStatus.share === 'sent' ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <Share2 className="h-4 w-4" />
+              )}
+              {lastStatus.share === 'sent' ? "Compartilhado" : "Outras formas de enviar"}
+            </Button>
+            
+            <Button
+              onClick={handleCopy}
+              variant="secondary"
+              className="gap-2 min-h-11 sm:col-span-2"
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+              {copied ? "Link copiado" : "Copiar link de acompanhamento"}
+            </Button>
+          </div>
+          </div>
+
+          <div className="order-1 flex justify-center lg:order-2">
           <div 
             ref={ticketRef}
             className={cn(
@@ -440,29 +558,9 @@ export function TicketShareDialog({
               ))}
             </div>
           </div>
-
-          <div className="w-full px-4 py-2.5 bg-slate-900 border border-white/5 rounded-lg flex flex-col gap-1.5 -mt-3">
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">QR Code Verificado</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[11px] text-primary truncate font-mono bg-primary/5 px-2 py-1 rounded border border-primary/10">
-                {publicUrl}
-              </span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 px-3 text-xs text-white bg-white/5 hover:bg-white/10 gap-1.5 font-semibold"
-                onClick={() => window.open(publicUrl, '_blank')}
-              >
-                <Monitor className="h-3.5 w-3.5" />
-                Validar Link
-              </Button>
-            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 w-full mt-2">
+          <div className="hidden grid-cols-2 gap-3 w-full mt-2">
             <Button
               onClick={handlePrint}
               disabled={sending === 'print'}
