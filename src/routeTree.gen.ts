@@ -39,6 +39,7 @@ import { Route as AppAppAuditoriaRouteImport } from './routes/_app.app.auditoria
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
+import { Route as AdminAdminUnidadesUnidadeIdRouteImport } from './routes/_admin.admin.unidades.$unidadeId'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -188,6 +189,12 @@ const AdminAdminLogsRoute = AdminAdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminUnidadesUnidadeIdRoute =
+  AdminAdminUnidadesUnidadeIdRouteImport.update({
+    id: '/unidades/$unidadeId',
+    path: '/unidades/$unidadeId',
+    getParentRoute: () => AdminAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app/': typeof AppAppIndexRoute
+  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -247,6 +255,7 @@ export interface FileRoutesByTo {
   '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app': typeof AppAppIndexRoute
+  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -280,6 +289,7 @@ export interface FileRoutesById {
   '/_app/app/tv': typeof AppAppTvRoute
   '/_app/app/voz': typeof AppAppVozRoute
   '/_app/app/': typeof AppAppIndexRoute
+  '/_admin/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/app/tv'
     | '/app/voz'
     | '/app/'
+    | '/admin/unidades/$unidadeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/app/tv'
     | '/app/voz'
     | '/app'
+    | '/admin/unidades/$unidadeId'
   id:
     | '__root__'
     | '/'
@@ -373,6 +385,7 @@ export interface FileRouteTypes {
     | '/_app/app/tv'
     | '/_app/app/voz'
     | '/_app/app/'
+    | '/_admin/admin/unidades/$unidadeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -605,17 +618,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminLogsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/unidades/$unidadeId': {
+      id: '/_admin/admin/unidades/$unidadeId'
+      path: '/unidades/$unidadeId'
+      fullPath: '/admin/unidades/$unidadeId'
+      preLoaderRoute: typeof AdminAdminUnidadesUnidadeIdRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
   }
 }
 
 interface AdminAdminRouteChildren {
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
+  AdminAdminUnidadesUnidadeIdRoute: typeof AdminAdminUnidadesUnidadeIdRoute
 }
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
+  AdminAdminUnidadesUnidadeIdRoute: AdminAdminUnidadesUnidadeIdRoute,
 }
 
 const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(

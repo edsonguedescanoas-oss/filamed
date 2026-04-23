@@ -79,18 +79,22 @@ function AdminUnidadeDetalhes() {
     let cancel = false;
     void (async () => {
       setLoading(true);
-      const [unidadeRes, integracaoRes] = await Promise.all([
-        supabase
-          .from("unidades")
-          .select("id, nome, slug, cnpj, telefone, endereco, ativo, status_assinatura, trial_ends_at, created_at")
-          .eq("id", unidadeId)
-          .maybeSingle(),
-        supabase.rpc("admin_unidade_integracao_status" as never, { _unidade_id: unidadeId } as never),
-      ]);
+      const unidadeRes = await supabase
+        .from("unidades")
+        .select("id, nome, slug, cnpj, telefone, endereco, ativo, status_assinatura, trial_ends_at, created_at")
+        .eq("id", unidadeId)
+        .maybeSingle();
+      const integracaoRes = await (supabase.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: IntegracaoStatus[] | null; error: unknown }>)(
+        "admin_unidade_integracao_status",
+        { _unidade_id: unidadeId },
+      );
       if (cancel) return;
       if (unidadeRes.data) setUnidade(unidadeRes.data as UnidadeDetalhe);
-      if (integracaoRes.data && Array.isArray(integracaoRes.data) && integracaoRes.data.length > 0) {
-        setIntegracao(integracaoRes.data[0] as IntegracaoStatus);
+      if (integracaoRes.data && integracaoRes.data.length > 0) {
+        setIntegracao(integracaoRes.data[0]);
       }
       setLoading(false);
     })();
