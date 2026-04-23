@@ -87,6 +87,19 @@ export const handler = async (req: Request) => {
 
       if (!paciente?.telefone) {
         console.log(`Paciente ${paciente?.nome_completo} não possui telefone. Ignorando.`);
+        
+        if (finalUnidadeId) {
+          await supabaseClient.from("notificacoes_log").insert({
+            unidade_id: finalUnidadeId,
+            senha_id: finalSenhaId,
+            canal: "whatsapp",
+            destinatario: "N/A",
+            status: "ignorado",
+            mensagem: mensagem || "(Vazia)",
+            erro: "Paciente sem telefone cadastrado",
+          });
+        }
+
         return new Response(JSON.stringify({ status: "ignored", reason: "no_phone" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
