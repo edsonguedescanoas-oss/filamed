@@ -71,6 +71,9 @@ function GuichePage() {
   const [senhas, setSenhas] = useState<Senha[]>([]);
   const [pacientes, setPacientes] = useState<Map<string, Paciente>>(new Map());
   const [buscaAgendamento, setBuscaAgendamento] = useState("");
+  const [filtroBuscaData, setFiltroBuscaData] = useState("");
+  const [filtroBuscaTipo, setFiltroBuscaTipo] = useState<"todos" | "agendamento" | "paciente">("todos");
+  const [ordenacaoBusca, setOrdenacaoBusca] = useState<"relevancia" | "data_desc" | "data_asc" | "nome">("relevancia");
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -164,14 +167,33 @@ function GuichePage() {
   const resultadosAgendamento = useMemo(() => {
     const termo = buscaAgendamento.trim().toLowerCase();
     if (termo.length < 2) return [];
-    return pacientesLista
-      .filter((p) =>
-        [p.nome_completo, p.telefone, p.cpf, p.identificacao_numero]
-          .filter(Boolean)
-          .some((valor) => String(valor).toLowerCase().includes(termo)),
-      )
-      .slice(0, 5);
-  }, [buscaAgendamento, pacientesLista]);
+
+    const resultados = pacientesLista
+      .map((p) => {
+        const tipo = p.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10) ? "agendamento" : "paciente";
+        const campos = [
+          { chave: "nome", rotulo: "Nome", valor: p.nome_completo },
+          { chave: "telefone", rotulo: "Telefone", valor: p.telefone },
+          { chave: "cpf", rotulo: "CPF", valor: p.cpf },
+          { chave: "documento", rotulo: "Documento", valor: p.identificacao_numero },
+        ].filter((campo): campo is { chave: string; rotulo: string; valor: string } => Boolean(campo.valor));
+
+        const matches = campos.filter((campo) => campo.valor.toLowerCase().includes(termo));
+        return { paciente: p, tipo, data: p.created_at.slice(0, 10), matches };
+      })
+      .filter((resultado) => resultado.matches.length > 0)
+      .filter((resultado) => !filtroBuscaData || resultado.data === filtroBuscaData)
+      .filter((resultado) => filtroBuscaTipo === "todos" || resultado.tipo === filtroBuscaTipo);
+
+    resultados.sort((a, b) => {
+      if (ordenacaoBusca === "nome") return a.paciente.nome_completo.localeCompare(b.paciente.nome_completo);
+      if (ordenacaoBusca === "data_asc") return a.data.localeCompare(b.data);
+      if (ordenacaoBusca === "data_desc") return b.data.localeCompare(a.data);
+      return b.matches.length - a.matches.length || a.paciente.nome_completo.localeCompare(b.paciente.nome_completo);
+    });
+
+    return resultados.slice(0, 8);
+  }, [buscaAgendamento, filtroBuscaData, filtroBuscaTipo, ordenacaoBusca, pacientesLista]);
 
   const proximaSenha = senhasGuiche[0] ?? null;
 
@@ -471,12 +493,41 @@ function GuichePage() {
                       onChange={(e) => setBuscaAgendamento(e.target.value)}
                       placeholder="Nome, telefone, CPF ou documento"
                     />
+                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                      <Input
+                        type="date"
+                        className="h-8 text-xs"
+                        value={filtroBuscaData}
+                        onChange={(e) => setFiltroBuscaData(e.target.value)}
+                      />
+                      <Select value={filtroBuscaTipo} onValueChange={(v) => setFiltroBuscaTipo(v as typeof filtroBuscaTipo)}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="agendamento">Agendamento</SelectItem>
+                          <SelectItem value="paciente">Paciente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={ordenacaoBusca} onValueChange={(v) => setOrdenacaoBusca(v as typeof ordenacaoBusca)}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="relevancia">Relevância</SelectItem>
+                          <SelectItem value="data_desc">Mais recentes</SelectItem>
+                          <SelectItem value="data_asc">Mais antigos</SelectItem>
+                          <SelectItem value="nome">Nome</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     {buscaAgendamento.trim().length >= 2 && (
                       <div className="mt-2 space-y-1">
                         {resultadosAgendamento.length === 0 ? (
                           <p className="text-xs text-muted-foreground">Nenhum registro encontrado.</p>
                         ) : (
-                          resultadosAgendamento.map((p) => (
+                          resultadosAgendamento.map(({ paciente: p, tipo, data, matches }) => (
                             <button
                               key={p.id}
                               type="button"
@@ -494,8 +545,14 @@ function GuichePage() {
                                 }))
                               }
                             >
-                              <span className="font-medium">{p.nome_completo}</span>
-                              {p.telefone && <span className="text-muted-foreground"> · {p.telefone}</span>}
+                              <span className="font-medium">{highlightTerm(p.nome_completo, buscaAgendamento)}</span>
+                              {p.telefone && <span className="text-muted-foreground"> · {highlightTerm(p.telefone, buscaAgendamento)}</span>}
+                              <span className="ml-2 rounded border border-border px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
+                                {tipo === "agendamento" ? "Agendamento" : "Paciente"} · {new Date(data).toLocaleDateString("pt-BR")}
+                              </span>
+                              <span className="mt-1 block text-[11px] text-muted-foreground">
+                                Campos: {matches.map((m) => `${m.rotulo}: ${m.valor}`).join(" · ")}
+                              </span>
                             </button>
                           ))
                         )}
@@ -643,6 +700,20 @@ function GuichePage() {
         </div>
       )}
     </div>
+  );
+}
+
+function highlightTerm(text: string, termo: string) {
+  const valor = termo.trim();
+  if (!valor) return text;
+  const index = text.toLowerCase().indexOf(valor.toLowerCase());
+  if (index < 0) return text;
+  return (
+    <>
+      {text.slice(0, index)}
+      <mark className="rounded bg-primary/15 px-0.5 text-primary">{text.slice(index, index + valor.length)}</mark>
+      {text.slice(index + valor.length)}
+    </>
   );
 }
 
