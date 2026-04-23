@@ -98,6 +98,8 @@ type TvSearchParams = {
   tipos?: string;
 };
 
+type TvModoExibicao = "ambos" | "guiches" | "atendimentos";
+
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearchParams => {
     return {
@@ -190,6 +192,17 @@ function resolverFiltroDestinos(
   }
 
   return aceitos.size > 0 ? aceitos : null;
+}
+
+function destinoEhGuiche(
+  destino: string | null | undefined,
+  pontos: Array<{ nome: string; tipo: string }>,
+): boolean {
+  const destinoNormalizado = limparDestino(destino).toLowerCase().trim();
+  if (!destinoNormalizado) return false;
+  const ponto = pontos.find((p) => p.nome.trim().toLowerCase() === destinoNormalizado);
+  if (ponto) return ponto.tipo.toLowerCase() === "guiche";
+  return destinoNormalizado.startsWith("guich") || destinoNormalizado.includes("guichê") || destinoNormalizado.includes("guiche");
 }
 
 function soletrar(codigo: string) {
