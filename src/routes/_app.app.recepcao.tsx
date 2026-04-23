@@ -89,6 +89,29 @@ const PRIORIDADES: { value: Prioridade; label: string; ring: string; badge: stri
 
 const onlyDigits = (v: string) => v.replace(/\D/g, "");
 
+function maskCPF(v: string): string {
+  const d = onlyDigits(v).slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function isValidCPF(cpf: string): boolean {
+  const d = onlyDigits(cpf);
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += parseInt(d[i], 10) * (10 - i);
+  let r = (s * 10) % 11;
+  if (r === 10) r = 0;
+  if (r !== parseInt(d[9], 10)) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += parseInt(d[i], 10) * (11 - i);
+  r = (s * 10) % 11;
+  if (r === 10) r = 0;
+  return r === parseInt(d[10], 10);
+}
+
 function maskTelefone(v: string): string {
   const digits = onlyDigits(v);
   let d = digits;
@@ -132,6 +155,7 @@ function RecepcaoPage() {
   const [novoNome, setNovoNome] = useState("");
   const [novoCpf, setNovoCpf] = useState("");
   const [novoTelefone, setNovoTelefone] = useState("");
+  const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string }>({});
   const [savingNovo, setSavingNovo] = useState(false);
 
   // compartilhamento
@@ -303,11 +327,35 @@ function RecepcaoPage() {
 
   const handleSalvarNovoPaciente = async (emitirSenha = false) => {
     if (!unidadeId) return;
+    
+    // Validações
+    const errors: { nome?: string; cpf?: string; telefone?: string } = {};
     const nome = novoNome.trim();
+    const cpfDigits = onlyDigits(novoCpf);
+    const telDigits = onlyDigits(novoTelefone);
+
     if (nome.length < 2) {
-      toast.error("Informe o nome completo do paciente");
+      errors.nome = "Informe o nome completo do paciente";
+    }
+    
+    if (!cpfDigits) {
+      errors.cpf = "CPF é obrigatório";
+    } else if (!isValidCPF(cpfDigits)) {
+      errors.cpf = "CPF inválido";
+    }
+
+    if (!telDigits) {
+      errors.telefone = "Telefone é obrigatório";
+    } else if (telDigits.length < 10) {
+      errors.telefone = "Telefone inválido";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setNovoErrors(errors);
       return;
     }
+
+    setNovoErrors({});
     setSavingNovo(true);
     try {
       const { data, error } = await supabase
@@ -315,12 +363,24 @@ function RecepcaoPage() {
         .insert({
           unidade_id: unidadeId,
           nome_completo: nome,
-          cpf: onlyDigits(novoCpf) || null,
-          telefone: onlyDigits(novoTelefone) || null,
+          cpf: cpfDigits,
+          telefone: telDigits,
         })
         .select("*")
         .single();
-      if (error) throw error;
+      
+      if (error) {
+        if (error.code === "23505") {
+          if (error.message?.includes("cpf")) {
+            setNovoErrors({ cpf: "Este CPF já está cadastrado" });
+          } else {
+            toast.error("Paciente já cadastrado");
+          }
+          return;
+        }
+        throw error;
+      }
+
       const pac = data as Paciente;
       setPacienteSelecionado(pac);
       setPacienteQuery("");
@@ -859,15 +919,23 @@ function RecepcaoPage() {
       </div>
 
       {/* Dialog de cadastro rápido de paciente */}
-      <Dialog open={novoOpen} onOpenChange={setNovoOpen}>
-        <DialogContent>
+      <Dialog 
+        open={novoOpen} 
+        onOpenChange={(open) => {
+          setNovoOpen(open);
+          if (!open) {
+            setNovoErrors({});
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Novo paciente</DialogTitle>
             <DialogDescription>
-              Cadastre rapidamente para vincular à senha. Outros dados podem ser completados depois em Pacientes.
+              Cadastre rapidamente para vincular à senha.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-4 py-2">
             <div>
               <Label htmlFor="novo-nome" className="mb-1.5 block">
                 Nome completo <span className="text-destructive">*</span>
@@ -875,38 +943,67 @@ function RecepcaoPage() {
               <Input
                 id="novo-nome"
                 value={novoNome}
-                onChange={(e) => setNovoNome(e.target.value)}
+                onChange={(e) => {
+                  setNovoNome(e.target.value);
+                  if (novoErrors.nome) setNovoErrors(prev => ({ ...prev, nome: undefined }));
+                }}
                 placeholder="Ex: Maria da Silva"
                 autoFocus
+                className={cn(novoErrors.nome && "border-destructive focus-visible:ring-destructive")}
               />
+              {novoErrors.nome && (
+                <p className="mt-1 text-xs font-medium text-destructive">{novoErrors.nome}</p>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="novo-cpf" className="mb-1.5 block">CPF</Label>
+                <Label htmlFor="novo-cpf" className="mb-1.5 block">
+                  CPF <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="novo-cpf"
                   value={novoCpf}
-                  onChange={(e) => setNovoCpf(e.target.value)}
-                  placeholder="Opcional"
+                  onChange={(e) => {
+                    setNovoCpf(maskCPF(e.target.value));
+                    if (novoErrors.cpf) setNovoErrors(prev => ({ ...prev, cpf: undefined }));
+                  }}
+                  placeholder="000.000.000-00"
                   inputMode="numeric"
+                  className={cn(novoErrors.cpf && "border-destructive focus-visible:ring-destructive")}
                 />
+                {novoErrors.cpf && (
+                  <p className="mt-1 text-xs font-medium text-destructive">{novoErrors.cpf}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="novo-tel" className="mb-1.5 block">Telefone</Label>
+                <Label htmlFor="novo-tel" className="mb-1.5 block">
+                  Telefone <span className="text-destructive">*</span>
+                </Label>
                 <Input
                   id="novo-tel"
                   value={novoTelefone}
-                  onChange={(e) => setNovoTelefone(maskTelefone(e.target.value))}
-                  placeholder="55 XX XXXXX-XXXX"
+                  onChange={(e) => {
+                    setNovoTelefone(maskTelefone(e.target.value));
+                    if (novoErrors.telefone) setNovoErrors(prev => ({ ...prev, telefone: undefined }));
+                  }}
+                  placeholder="(00) 00000-0000"
                   inputMode="tel"
+                  className={cn(novoErrors.telefone && "border-destructive focus-visible:ring-destructive")}
                 />
+                {novoErrors.telefone && (
+                  <p className="mt-1 text-xs font-medium text-destructive">{novoErrors.telefone}</p>
+                )}
               </div>
             </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button 
               variant="outline" 
-              onClick={() => setNovoOpen(false)} 
+              onClick={() => {
+                setNovoOpen(false);
+                setNovoErrors({});
+              }} 
               disabled={savingNovo}
               className="w-full sm:w-auto"
             >
