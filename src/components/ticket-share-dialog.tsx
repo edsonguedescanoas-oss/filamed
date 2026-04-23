@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
-import { MessageSquare, Copy, Check, Download, Share2, Printer } from "lucide-react";
+import { MessageSquare, Copy, Check, Share2, Printer } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
@@ -64,12 +64,86 @@ export function TicketShareDialog({
     window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
   };
 
+  const handlePrint = async () => {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(publicUrl, {
+        width: 128,
+        margin: 1,
+        color: { dark: "#000000", light: "#ffffff" },
+      });
+
+      const printWindow = window.open("", "_blank", "width=400,height=600");
+      if (!printWindow) {
+        toast.error("Bloqueador de pop-ups ativado. Por favor, permita pop-ups para imprimir.");
+        return;
+      }
+
+      const html = `
+        <html>
+          <head>
+            <title>Imprimir Senha - ${senha.codigo}</title>
+            <style>
+              @page { margin: 0; }
+              body { 
+                font-family: sans-serif; 
+                width: 80mm; 
+                margin: 0; 
+                padding: 10mm 5mm;
+                text-align: center;
+                color: #000;
+              }
+              .logo { max-width: 40mm; max-height: 20mm; object-contain: fit; margin-bottom: 5mm; }
+              .unidade { font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 8mm; line-height: 1.2; }
+              .label { font-size: 10pt; font-weight: bold; color: #000; letter-spacing: 2px; margin-bottom: 2mm; }
+              .senha { font-size: 60pt; font-weight: 900; margin: 2mm 0; line-height: 1; }
+              .paciente { font-size: 12pt; font-weight: bold; margin-bottom: 8mm; margin-top: 2mm; }
+              .qrcode-container { margin: 5mm 0; display: flex; flex-direction: column; align-items: center; }
+              .qrcode { width: 35mm; height: 35mm; }
+              .footer { font-size: 9pt; color: #000; margin-top: 8mm; border-top: 1px dashed #000; padding-top: 4mm; font-weight: bold; }
+              .timestamp { font-size: 8pt; margin-top: 2mm; }
+              @media print {
+                body { width: 80mm; }
+              }
+            </style>
+          </head>
+          <body>
+            ${logoUrl ? `<img src="${logoUrl}" class="logo" />` : ""}
+            <div class="unidade">${unidadeNome || ""}</div>
+            <div class="label">SUA SENHA</div>
+            <div class="senha">${senha.codigo}</div>
+            <div class="paciente">${paciente.nome_completo}</div>
+            <div class="qrcode-container">
+              <img src="${qrDataUrl}" class="qrcode" />
+              <div style="font-size: 8pt; margin-top: 3mm; font-weight: bold;">Escaneie para acompanhar</div>
+            </div>
+            <div class="footer">
+              FILAMED - GESTÃO DE FILAS
+              <div class="timestamp">${new Date().toLocaleString("pt-BR")}</div>
+            </div>
+            <script>
+              window.onload = () => {
+                window.print();
+                setTimeout(() => window.close(), 500);
+              };
+            </script>
+          </body>
+        </html>
+      `;
+      printWindow.document.write(html);
+      printWindow.document.close();
+      toast.success("Enviando para impressora...");
+    } catch (err) {
+      toast.error("Erro ao gerar impressão");
+      console.error(err);
+    }
+  };
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: "Sua Senha - FilaMed",
-          text: `Olá ${paciente.nome_completo}, sua senha é ${senha.codigo}`,
+          text: `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é ${senha.codigo}`,
           url: publicUrl,
         });
       } catch (err) {
@@ -129,15 +203,23 @@ export function TicketShareDialog({
               disabled={!paciente.telefone}
             >
               <MessageSquare className="h-4 w-4" />
-              WhatsApp
+              Enviar
+            </Button>
+            <Button
+              onClick={handlePrint}
+              variant="outline"
+              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
+            >
+              <Printer className="h-4 w-4" />
+              Imprimir
             </Button>
             <Button
               onClick={handleShare}
               variant="outline"
-              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
+              className="col-span-2 border-white/10 hover:bg-white/5 text-white gap-2 h-11"
             >
               <Share2 className="h-4 w-4" />
-              Compartilhar
+              Outras formas de enviar
             </Button>
             <Button
               onClick={handleCopy}
@@ -151,7 +233,7 @@ export function TicketShareDialog({
           
           {!paciente.telefone && (
             <p className="text-[11px] text-amber-400 text-center">
-              Atenção: Paciente sem telefone cadastrado. O envio por WhatsApp não estará disponível.
+              Atenção: Paciente sem telefone cadastrado. O envio direto não estará disponível.
             </p>
           )}
         </div>
