@@ -6,12 +6,30 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
-import { MessageSquare, Copy, Check, Share2, Printer, Loader2, AlertCircle } from "lucide-react";
+import { 
+  MessageSquare, 
+  Copy, 
+  Check, 
+  Share2, 
+  Printer, 
+  Loader2, 
+  AlertCircle,
+  Settings2,
+  Monitor
+} from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 type Props = {
   open: boolean;
@@ -50,6 +68,23 @@ export function TicketShareDialog({
     print: 'idle',
     share: 'idle'
   });
+  
+  const [selectedPrinter, setSelectedPrinter] = useState<string>(() => {
+    return localStorage.getItem('filamed_selected_printer') || 'standard_80';
+  });
+
+  const printers = [
+    { id: 'standard_80', name: 'Térmica 80mm (Padrão)', width: '80mm' },
+    { id: 'standard_58', name: 'Térmica 58mm (Padrão)', width: '58mm' },
+    { id: 'desk_1', name: 'Impressora Recepção 1', width: '80mm' },
+    { id: 'desk_2', name: 'Impressora Recepção 2', width: '80mm' },
+  ];
+
+  const currentPrinter = printers.find(p => p.id === selectedPrinter) || printers[0];
+
+  useEffect(() => {
+    localStorage.setItem('filamed_selected_printer', selectedPrinter);
+  }, [selectedPrinter]);
   
   const ticketRef = useRef<HTMLDivElement>(null);
   const printTriggered = useRef(false);
@@ -146,23 +181,23 @@ export function TicketShareDialog({
               @page { margin: 0; }
               body { 
                 font-family: sans-serif; 
-                width: 80mm; 
+                width: ${currentPrinter.width}; 
                 margin: 0; 
-                padding: 10mm 5mm;
+                padding: 5mm;
                 text-align: center;
                 color: #000;
               }
               .logo { max-width: 40mm; max-height: 20mm; object-contain: fit; margin-bottom: 5mm; }
-              .unidade { font-size: 12pt; font-weight: bold; text-transform: uppercase; margin-bottom: 8mm; line-height: 1.2; }
-              .label { font-size: 10pt; font-weight: bold; color: #000; letter-spacing: 2px; margin-bottom: 2mm; }
-              .senha { font-size: 60pt; font-weight: 900; margin: 2mm 0; line-height: 1; }
-              .paciente { font-size: 12pt; font-weight: bold; margin-bottom: 8mm; margin-top: 2mm; }
+              .unidade { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5mm; line-height: 1.2; }
+              .label { font-size: 9pt; font-weight: bold; color: #000; letter-spacing: 2px; margin-bottom: 2mm; }
+              .senha { font-size: ${currentPrinter.width === '58mm' ? '45pt' : '60pt'}; font-weight: 900; margin: 2mm 0; line-height: 1; }
+              .paciente { font-size: 11pt; font-weight: bold; margin-bottom: 5mm; margin-top: 2mm; }
               .qrcode-container { margin: 5mm 0; display: flex; flex-direction: column; align-items: center; }
-              .qrcode { width: 35mm; height: 35mm; }
-              .footer { font-size: 9pt; color: #000; margin-top: 8mm; border-top: 1px dashed #000; padding-top: 4mm; font-weight: bold; }
-              .timestamp { font-size: 8pt; margin-top: 2mm; }
+              .qrcode { width: 30mm; height: 30mm; }
+              .footer { font-size: 8pt; color: #000; margin-top: 5mm; border-top: 1px dashed #000; padding-top: 3mm; font-weight: bold; }
+              .timestamp { font-size: 7pt; margin-top: 2mm; }
               @media print {
-                body { width: 80mm; }
+                body { width: ${currentPrinter.width}; }
               }
             </style>
           </head>
@@ -227,15 +262,43 @@ export function TicketShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white overflow-hidden p-0">
+      <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white overflow-hidden p-0 max-h-[90vh] overflow-y-auto">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-white text-center">Prévia do Ticket (80mm)</DialogTitle>
+          <DialogTitle className="text-white text-center flex items-center justify-center gap-2">
+            <Printer className="h-5 w-5 text-primary" />
+            Prévia do Ticket
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 p-6">
+          <div className="w-full space-y-2">
+            <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <Settings2 className="h-3 w-3" />
+              Dispositivo de Impressão
+            </Label>
+            <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
+              <SelectTrigger className="bg-slate-900 border-white/10 text-white h-10">
+                <SelectValue placeholder="Selecione a impressora" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-white/10 text-white">
+                {printers.map((p) => (
+                  <SelectItem key={p.id} value={p.id} className="focus:bg-white/10 focus:text-white">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-slate-400" />
+                      <span>{p.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div 
             ref={ticketRef}
-            className="w-full max-w-[280px] bg-white text-slate-950 p-6 shadow-2xl flex flex-col items-center text-center font-sans rounded-sm relative"
+            className={cn(
+              "bg-white text-slate-950 p-6 shadow-2xl flex flex-col items-center text-center font-sans rounded-sm relative transition-all duration-300",
+              currentPrinter.width === '58mm' ? "w-[220px]" : "w-[280px]"
+            )}
           >
             <div className="absolute top-0 left-0 right-0 h-1 flex justify-between overflow-hidden">
               {Array.from({ length: 20 }).map((_, i) => (
@@ -294,18 +357,25 @@ export function TicketShareDialog({
               onClick={handlePrint}
               disabled={sending === 'print'}
               className={cn(
-                "bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold",
+                "bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold flex-col py-8",
                 lastStatus.print === 'sent' && "border-2 border-emerald-500"
               )}
             >
-              {sending === 'print' ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : lastStatus.print === 'sent' ? (
-                <Check className="h-5 w-5 text-emerald-600" />
-              ) : (
-                <Printer className="h-5 w-5" />
+              <div className="flex items-center gap-2">
+                {sending === 'print' ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : lastStatus.print === 'sent' ? (
+                  <Check className="h-5 w-5 text-emerald-600" />
+                ) : (
+                  <Printer className="h-5 w-5" />
+                )}
+                {lastStatus.print === 'sent' ? "Impresso" : "Imprimir Ticket"}
+              </div>
+              {!sending && lastStatus.print !== 'sent' && (
+                <span className="text-[10px] font-normal text-slate-500 -mt-1 uppercase tracking-tight">
+                  via {currentPrinter.name}
+                </span>
               )}
-              {lastStatus.print === 'sent' ? "Impresso" : "Imprimir Ticket"}
             </Button>
             
             <Button
