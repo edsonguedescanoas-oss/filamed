@@ -1662,6 +1662,32 @@ export type Database = {
         }
         Returns: boolean
       }
+      historico_ponto_atendimento: {
+        Args: {
+          _ate?: string
+          _busca?: string
+          _desde?: string
+          _limite?: number
+          _ponto_id?: string
+          _unidade_id: string
+        }
+        Returns: {
+          atendente_id: string
+          atendente_nome: string
+          duracao_segundos: number
+          evento_id: string
+          evento_tipo: string
+          fila_nome: string
+          observacoes: string
+          ocorrido_em: string
+          paciente_nome: string
+          ponto_id: string
+          ponto_nome: string
+          requer_retorno: boolean
+          senha_codigo: string
+          senha_id: string
+        }[]
+      }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       marcar_senhas_ausentes: { Args: never; Returns: number }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
