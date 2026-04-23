@@ -309,13 +309,12 @@ function PontosPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Administração
+            Gestão operacional
           </p>
-          <h1 className="mt-1 font-display text-3xl font-bold">Pontos de atendimento</h1>
+          <h1 className="mt-1 font-display text-3xl font-bold">Configurar pontos e permissões</h1>
           <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-            Cadastre as estações físicas onde os atendentes operam (Guichê 01,
-            Consultório 001, Ultrassom 001…). Cada usuário escolhe seu ponto no
-            início do turno e a TV passa a anunciar o destino exato da chamada.
+            Cadastre pontos, altere status e defina quais usuários podem operar cada guichê,
+            consultório ou sala de exame.
           </p>
         </div>
         <Button onClick={openNew} className="bg-gradient-primary">
@@ -323,11 +322,33 @@ function PontosPage() {
         </Button>
       </div>
 
+      <div className="mt-6 grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-[minmax(0,1fr)_12rem]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por usuário ou ponto"
+            className="pl-9"
+          />
+        </div>
+        <Select value={statusFiltro} onValueChange={(v) => setStatusFiltro(v as typeof statusFiltro)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            <SelectItem value="ativos">Ativos</SelectItem>
+            <SelectItem value="inativos">Inativos</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="mt-8 space-y-6">
-        {pontos.length === 0 && (
+        {pontosFiltrados.length === 0 && (
           <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             <MapPin className="mx-auto mb-3 h-8 w-8 text-muted-foreground/60" />
-            Nenhum ponto cadastrado. Comece criando o primeiro Guichê.
+            {pontos.length === 0 ? "Nenhum ponto cadastrado. Comece criando o primeiro Guichê." : "Nenhum ponto encontrado para os filtros atuais."}
           </div>
         )}
 
