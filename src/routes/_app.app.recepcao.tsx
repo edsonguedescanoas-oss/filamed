@@ -760,8 +760,8 @@ function RecepcaoPage() {
                 <Input
                   id="novo-tel"
                   value={novoTelefone}
-                  onChange={(e) => setNovoTelefone(e.target.value)}
-                  placeholder="Opcional"
+                  onChange={(e) => setNovoTelefone(maskTelefone(e.target.value))}
+                  placeholder="55 XX XXXXX-XXXX"
                   inputMode="tel"
                 />
               </div>
