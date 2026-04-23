@@ -639,7 +639,7 @@ function TvPage() {
           // Faz isso ANTES do beep pra TV de "Consultório 001" não tocar quando
           // a senha é chamada no "Guichê 02".
           const destinoChamada = (payload.new as { destino?: string })?.destino;
-          if (!matchDestino(destinoChamada)) {
+          if (!matchDestino(destinoChamada) || !matchModoExibicao(destinoChamada)) {
             console.log("[TV] Chamada ignorada por filtro multi-TV:", destinoChamada);
             return;
           }
@@ -714,7 +714,7 @@ function TvPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [unidade?.id, speak, matchDestino]);
+  }, [unidade?.id, speak, matchDestino, matchModoExibicao]);
 
   /**
    * Realtime de senhas — escutamos UPDATE para detectar quando uma senha sai
