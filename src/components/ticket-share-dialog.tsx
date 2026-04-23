@@ -357,18 +357,25 @@ export function TicketShareDialog({
               onClick={handlePrint}
               disabled={sending === 'print'}
               className={cn(
-                "bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold",
+                "bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold flex-col py-8",
                 lastStatus.print === 'sent' && "border-2 border-emerald-500"
               )}
             >
-              {sending === 'print' ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : lastStatus.print === 'sent' ? (
-                <Check className="h-5 w-5 text-emerald-600" />
-              ) : (
-                <Printer className="h-5 w-5" />
+              <div className="flex items-center gap-2">
+                {sending === 'print' ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : lastStatus.print === 'sent' ? (
+                  <Check className="h-5 w-5 text-emerald-600" />
+                ) : (
+                  <Printer className="h-5 w-5" />
+                )}
+                {lastStatus.print === 'sent' ? "Impresso" : "Imprimir Ticket"}
+              </div>
+              {!sending && lastStatus.print !== 'sent' && (
+                <span className="text-[10px] font-normal text-slate-500 -mt-1 uppercase tracking-tight">
+                  via {currentPrinter.name}
+                </span>
               )}
-              {lastStatus.print === 'sent' ? "Impresso" : "Imprimir Ticket"}
             </Button>
             
             <Button
