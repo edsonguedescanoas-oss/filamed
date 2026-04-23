@@ -349,19 +349,32 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
               </p>
             ) : (
               logs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between gap-3 text-xs border-b border-border/50 pb-2 last:border-0">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{log.paciente?.nome_completo}</p>
-                    <p className="text-muted-foreground truncate">{log.mensagem}</p>
+                <div key={log.id} className="flex flex-col gap-1 text-xs border-b border-border/50 pb-2 last:border-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
+                        {log.paciente?.nome_completo || log.destinatario}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 flex items-center gap-2">
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <Badge 
+                        variant={log.status === "enviada" ? "outline" : "destructive"} 
+                        className={cn("text-[9px] px-1 h-4", log.status === "enviada" ? "text-emerald-500 border-emerald-500/20" : "")}
+                        title={log.erro || undefined}
+                      >
+                        {log.status === "enviada" ? "sucesso" : "erro"}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <Badge variant={log.status === "enviada" ? "outline" : "destructive"} className="text-[9px] px-1 h-4">
-                      {log.status === "enviada" ? "sucesso" : log.status}
-                    </Badge>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                  <p className="text-muted-foreground truncate italic">"{log.mensagem}"</p>
+                  {log.erro && (
+                    <p className="text-[10px] text-destructive font-mono mt-1 bg-destructive/5 p-1 rounded border border-destructive/10">
+                      {log.erro}
                     </p>
-                  </div>
+                  )}
                 </div>
               ))
             )}
