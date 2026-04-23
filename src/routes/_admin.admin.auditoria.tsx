@@ -200,6 +200,8 @@ function exportarCsv(rows: AuditoriaRow[]) {
   URL.revokeObjectURL(url);
 }
 
+const PAGE_SIZE = 50;
+
 function AdminAuditoriaPage() {
   const [unidades, setUnidades] = useState<UnidadeOpt[]>([]);
   const [unidadeId, setUnidadeId] = useState<string>("todas");
@@ -209,7 +211,12 @@ function AdminAuditoriaPage() {
   const [buscaDebounced, setBuscaDebounced] = useState<string>("");
   const [eventos, setEventos] = useState<AuditoriaRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Token para invalidar requests obsoletas (filtros mudaram durante fetch).
+  const reqIdRef = useRef(0);
 
   // Debounce da busca textual
   useEffect(() => {
@@ -228,11 +235,9 @@ function AdminAuditoriaPage() {
     })();
   }, []);
 
-  // Carrega eventos sempre que filtros mudam
-  useEffect(() => {
-    let cancel = false;
-    setLoading(true);
-    void (async () => {
+  // Função de fetch paginada — usa created_at do último item como cursor (_ate).
+  const fetchPage = useCallback(
+    async (cursorAte: string | null, reqId: number) => {
       const desde = periodoDesde(periodo);
       const { data, error } = await (
         supabase.rpc as unknown as (
@@ -243,24 +248,57 @@ function AdminAuditoriaPage() {
         _unidade_id: unidadeId === "todas" ? null : unidadeId,
         _entidade: entidade === "todas" ? null : entidade,
         _desde: desde,
-        _ate: null,
-        _limite: 500,
+        _ate: cursorAte,
+        _limite: PAGE_SIZE,
         _busca: buscaDebounced || null,
         _ator_id: null,
       });
-      if (cancel) return;
+      if (reqId !== reqIdRef.current) return null; // request obsoleta
       if (error) {
         console.error(error);
-        setEventos([]);
-      } else {
-        setEventos(data ?? []);
+        return [];
       }
+      return data ?? [];
+    },
+    [unidadeId, entidade, periodo, buscaDebounced],
+  );
+
+  // Reload inicial sempre que filtros mudam
+  useEffect(() => {
+    const reqId = ++reqIdRef.current;
+    setLoading(true);
+    setHasMore(true);
+    setExpanded(new Set());
+    void (async () => {
+      const rows = await fetchPage(null, reqId);
+      if (rows === null) return;
+      setEventos(rows);
+      setHasMore(rows.length === PAGE_SIZE);
       setLoading(false);
     })();
-    return () => {
-      cancel = true;
-    };
-  }, [unidadeId, entidade, periodo, buscaDebounced]);
+  }, [fetchPage]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || loading || !hasMore || eventos.length === 0) return;
+    const last = eventos[eventos.length - 1];
+    // Cursor: created_at do último item; subtrai 1ms para evitar duplicar borda.
+    const cursorMs = new Date(last.created_at).getTime() - 1;
+    const cursor = new Date(cursorMs).toISOString();
+    setLoadingMore(true);
+    const reqId = reqIdRef.current;
+    const rows = await fetchPage(cursor, reqId);
+    if (rows === null) {
+      setLoadingMore(false);
+      return;
+    }
+    setEventos((prev) => {
+      const seen = new Set(prev.map((p) => p.id));
+      const fresh = rows.filter((r) => !seen.has(r.id));
+      return [...prev, ...fresh];
+    });
+    setHasMore(rows.length === PAGE_SIZE);
+    setLoadingMore(false);
+  }, [eventos, fetchPage, hasMore, loading, loadingMore]);
 
   const stats = useMemo(() => {
     let assinatura = 0;
@@ -288,6 +326,37 @@ function AdminAuditoriaPage() {
       return next;
     });
   };
+
+  // Virtualização da lista
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const itemCount = eventos.length + (hasMore || loadingMore ? 1 : 0);
+  const virtualizer = useVirtualizer({
+    count: itemCount,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) => {
+      if (index >= eventos.length) return 64;
+      const ev = eventos[index];
+      return expanded.has(ev.id) ? 360 : 96;
+    },
+    overscan: 6,
+    getItemKey: (index) =>
+      index >= eventos.length ? "__sentinel__" : eventos[index].id,
+  });
+
+  // Trigger de load-more quando o sentinela aparece
+  const virtualItems = virtualizer.getVirtualItems();
+  useEffect(() => {
+    const last = virtualItems[virtualItems.length - 1];
+    if (!last) return;
+    if (last.index >= eventos.length && hasMore && !loadingMore && !loading) {
+      void loadMore();
+    }
+  }, [virtualItems, eventos.length, hasMore, loadingMore, loading, loadMore]);
+
+  // Re-mede quando expanded muda (alturas variam)
+  useEffect(() => {
+    virtualizer.measure();
+  }, [expanded, virtualizer]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
