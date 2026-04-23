@@ -328,15 +328,8 @@ export function TicketShareDialog({
             </div>
 
             <div className="flex flex-col items-center gap-3">
-              <div className="bg-white p-1 border border-slate-100 relative group">
+              <div className="bg-white p-1 border border-slate-100">
                 <QrCode value={publicUrl} size={110} />
-                <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[10px] p-2"
-                     onClick={() => window.open(publicUrl, '_blank')}>
-                  <span className="font-bold text-primary mb-1">Verificar Link</span>
-                  <span className="text-[8px] text-slate-500 break-all text-center leading-tight">
-                    {publicUrl}
-                  </span>
-                </div>
               </div>
               <div className="text-[9px] text-slate-900 font-bold uppercase tracking-tight">
                 Escaneie para acompanhar
