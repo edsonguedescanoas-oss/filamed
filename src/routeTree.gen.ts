@@ -28,6 +28,7 @@ import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
+import { Route as AppAppUsuariosRouteImport } from './routes/_app.app.usuarios'
 import { Route as AppAppTvRouteImport } from './routes/_app.app.tv'
 import { Route as AppAppRelatoriosRouteImport } from './routes/_app.app.relatorios'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
@@ -138,6 +139,11 @@ const AppAppIndexRoute = AppAppIndexRouteImport.update({
 const AppAppVozRoute = AppAppVozRouteImport.update({
   id: '/voz',
   path: '/voz',
+  getParentRoute: () => AppAppRoute,
+} as any)
+const AppAppUsuariosRoute = AppAppUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
   getParentRoute: () => AppAppRoute,
 } as any)
 const AppAppTvRoute = AppAppTvRouteImport.update({
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
   '/app/tv': typeof AppAppTvRoute
+  '/app/usuarios': typeof AppAppUsuariosRoute
   '/app/voz': typeof AppAppVozRoute
   '/app/': typeof AppAppIndexRoute
   '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
@@ -301,6 +308,7 @@ export interface FileRoutesByTo {
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
   '/app/tv': typeof AppAppTvRoute
+  '/app/usuarios': typeof AppAppUsuariosRoute
   '/app/voz': typeof AppAppVozRoute
   '/app': typeof AppAppIndexRoute
   '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
@@ -341,6 +349,7 @@ export interface FileRoutesById {
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
   '/_app/app/relatorios': typeof AppAppRelatoriosRoute
   '/_app/app/tv': typeof AppAppTvRoute
+  '/_app/app/usuarios': typeof AppAppUsuariosRoute
   '/_app/app/voz': typeof AppAppVozRoute
   '/_app/app/': typeof AppAppIndexRoute
   '/_admin/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/app/recepcao'
     | '/app/relatorios'
     | '/app/tv'
+    | '/app/usuarios'
     | '/app/voz'
     | '/app/'
     | '/admin/unidades/$unidadeId'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/app/recepcao'
     | '/app/relatorios'
     | '/app/tv'
+    | '/app/usuarios'
     | '/app/voz'
     | '/app'
     | '/admin/unidades/$unidadeId'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/_app/app/recepcao'
     | '/_app/app/relatorios'
     | '/_app/app/tv'
+    | '/_app/app/usuarios'
     | '/_app/app/voz'
     | '/_app/app/'
     | '/_admin/admin/unidades/$unidadeId'
@@ -612,6 +624,13 @@ declare module '@tanstack/react-router' {
       path: '/voz'
       fullPath: '/app/voz'
       preLoaderRoute: typeof AppAppVozRouteImport
+      parentRoute: typeof AppAppRoute
+    }
+    '/_app/app/usuarios': {
+      id: '/_app/app/usuarios'
+      path: '/usuarios'
+      fullPath: '/app/usuarios'
+      preLoaderRoute: typeof AppAppUsuariosRouteImport
       parentRoute: typeof AppAppRoute
     }
     '/_app/app/tv': {
@@ -803,6 +822,7 @@ interface AppAppRouteChildren {
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
   AppAppRelatoriosRoute: typeof AppAppRelatoriosRoute
   AppAppTvRoute: typeof AppAppTvRoute
+  AppAppUsuariosRoute: typeof AppAppUsuariosRoute
   AppAppVozRoute: typeof AppAppVozRoute
   AppAppIndexRoute: typeof AppAppIndexRoute
 }
@@ -819,6 +839,7 @@ const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
   AppAppRelatoriosRoute: AppAppRelatoriosRoute,
   AppAppTvRoute: AppAppTvRoute,
+  AppAppUsuariosRoute: AppAppUsuariosRoute,
   AppAppVozRoute: AppAppVozRoute,
   AppAppIndexRoute: AppAppIndexRoute,
 }
