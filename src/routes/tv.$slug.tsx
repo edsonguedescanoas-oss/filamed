@@ -1144,14 +1144,31 @@ function TvPage() {
                         }}
                       >
                         <div className="min-w-0 flex-1">
+                          {/* Linha "C015 → Consultório 001" — direção visual no histórico. */}
+                          <div className="flex items-baseline gap-1.5 min-w-0">
+                            <span
+                              className="font-bold text-primary leading-tight shrink-0"
+                              style={{ fontSize: "clamp(0.875rem, 7cqi, 1.5rem)" }}
+                            >
+                              {chamada.senha?.codigo}
+                            </span>
+                            <span
+                              aria-hidden
+                              className="font-bold leading-none opacity-70 shrink-0"
+                              style={{ fontSize: "clamp(0.625rem, 4cqi, 1rem)", color: visual.cor_primaria }}
+                            >
+                              →
+                            </span>
+                            <span
+                              className="font-bold opacity-90 leading-tight truncate"
+                              style={{ fontSize: "clamp(0.6875rem, 4.5cqi, 1rem)" }}
+                              title={limparDestino(chamada.destino)}
+                            >
+                              {limparDestino(chamada.destino)}
+                            </span>
+                          </div>
                           <p
-                            className="font-bold text-primary leading-tight truncate"
-                            style={{ fontSize: "clamp(0.875rem, 7cqi, 1.5rem)" }}
-                          >
-                            {chamada.senha?.codigo}
-                          </p>
-                          <p
-                            className="font-medium opacity-50 uppercase truncate leading-snug"
+                            className="font-medium opacity-50 uppercase truncate leading-snug mt-0.5"
                             style={{ fontSize: "clamp(0.5rem, 2.5cqi, 0.75rem)" }}
                           >
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
@@ -1172,14 +1189,7 @@ function TvPage() {
                             );
                           })()}
                         </div>
-                        <div className="text-right shrink-0 min-w-0 max-w-[55%]">
-                          <p
-                            className="font-bold opacity-90 leading-tight truncate"
-                            style={{ fontSize: "clamp(0.6875rem, 4.5cqi, 1rem)" }}
-                            title={limparDestino(chamada.destino)}
-                          >
-                            {limparDestino(chamada.destino)}
-                          </p>
+                        <div className="text-right shrink-0">
                           <p
                             className="font-mono opacity-30"
                             style={{ fontSize: "clamp(0.5rem, 2.2cqi, 0.6875rem)" }}
