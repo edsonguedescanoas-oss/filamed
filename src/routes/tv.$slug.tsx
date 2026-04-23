@@ -79,12 +79,31 @@ interface VoiceConfig {
 
 type TvSearchParams = {
   debug?: boolean;
+  /**
+   * Filtro multi-TV: lista de pontos (por ID, slug ou nome literal) cujas
+   * chamadas devem ser exibidas nesta TV. Aceita vários separados por vírgula.
+   * Exemplos:
+   *   /tv/clinica?ponto=Consultório%20001
+   *   /tv/clinica?ponto=Consultório%20001,Consultório%20002
+   *   /tv/clinica?ponto=<uuid-do-ponto>
+   * Quando ausente, a TV exibe TODAS as chamadas da unidade (modo único).
+   */
+  ponto?: string;
+  /**
+   * Filtro alternativo por TIPO de ponto (guiche, consultorio, exame, outro).
+   * Útil pra TV genérica de "consultórios" sem listar 1 a 1.
+   *   /tv/clinica?tipos=consultorio
+   *   /tv/clinica?tipos=guiche,consultorio
+   */
+  tipos?: string;
 };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearchParams => {
     return {
       debug: search.debug === true || search.debug === "true",
+      ponto: typeof search.ponto === "string" ? search.ponto : undefined,
+      tipos: typeof search.tipos === "string" ? search.tipos : undefined,
     };
   },
   loader: async ({ params: { slug } }) => {
@@ -97,11 +116,21 @@ export const Route = createFileRoute("/tv/$slug")({
     }
 
     const unidade = uniData[0];
+
+    // Busca pontos da unidade pra resolver IDs/tipos do filtro client-side.
+    // Esta query usa a policy pública de leitura via RPC dedicada — caso ela
+    // não exista, ignoramos silenciosamente (filtro por nome continua valendo).
+    const { data: pontosData } = await supabase
+      .from("pontos_atendimento")
+      .select("id, nome, tipo, ativo")
+      .eq("unidade_id", unidade.id)
+      .eq("ativo", true);
+
     const { data: chamadasData, error: chamadasError } = await supabase
       .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: unidade.id });
-    
+
     if (chamadasError) console.error("Erro ao buscar chamadas:", chamadasError);
-    
+
     const chamadas = (chamadasData ?? []).map(c => ({
       ...c,
       senha: {
@@ -112,10 +141,56 @@ export const Route = createFileRoute("/tv/$slug")({
       }
     }));
 
-    return { unidade, initialChamadas: chamadas as Chamada[] };
+    return {
+      unidade,
+      initialChamadas: chamadas as Chamada[],
+      pontos: (pontosData ?? []) as Array<{ id: string; nome: string; tipo: string; ativo: boolean }>,
+    };
   },
   component: TvPage,
 });
+
+/**
+ * Resolve a lista de NOMES DE DESTINOS aceitos para esta TV, a partir dos
+ * filtros `?ponto=` e `?tipos=` cruzados com os pontos cadastrados.
+ *
+ * - Sem filtro → retorna `null` (= aceita tudo).
+ * - Com filtro → retorna `Set<string>` de nomes (case-insensitive, normalizado).
+ *
+ * Aceita no `?ponto=` tanto UUID quanto nome literal — útil pra setup manual
+ * em quem só sabe escrever "Consultório 001" no Fire TV.
+ */
+function resolverFiltroDestinos(
+  pontoParam: string | undefined,
+  tiposParam: string | undefined,
+  pontos: Array<{ id: string; nome: string; tipo: string }>,
+): Set<string> | null {
+  if (!pontoParam && !tiposParam) return null;
+
+  const norm = (s: string) => s.trim().toLowerCase();
+  const aceitos = new Set<string>();
+
+  if (pontoParam) {
+    const tokens = pontoParam.split(",").map((t) => t.trim()).filter(Boolean);
+    for (const tok of tokens) {
+      // Match por ID (UUID) ou nome
+      const porId = pontos.find((p) => p.id === tok);
+      const porNome = pontos.find((p) => norm(p.nome) === norm(tok));
+      if (porId) aceitos.add(norm(porId.nome));
+      else if (porNome) aceitos.add(norm(porNome.nome));
+      else aceitos.add(norm(tok)); // fallback: aceita literal mesmo sem cadastro
+    }
+  }
+
+  if (tiposParam) {
+    const tipos = new Set(tiposParam.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean));
+    for (const p of pontos) {
+      if (tipos.has(p.tipo.toLowerCase())) aceitos.add(norm(p.nome));
+    }
+  }
+
+  return aceitos.size > 0 ? aceitos : null;
+}
 
 function soletrar(codigo: string) {
   return codigo.split("").join(" ").replace(/0/g, "zero");
@@ -130,8 +205,39 @@ function formatarDestino(destino: string): string {
 }
 
 function TvPage() {
-  const { unidade, initialChamadas } = Route.useLoaderData();
-  const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
+  const { unidade, initialChamadas, pontos } = Route.useLoaderData();
+  const { ponto: pontoParam, tipos: tiposParam } = Route.useSearch();
+
+  /**
+   * Set de destinos aceitos por esta TV (case-insensitive). `null` = sem filtro.
+   * Reage à mudança de querystring sem reload — útil pra trocar a TV de papel
+   * remotamente (ex.: redirecionar /tv/clinica?ponto=X via URL).
+   */
+  const destinosAceitos = useMemo(
+    () => resolverFiltroDestinos(pontoParam, tiposParam, pontos),
+    [pontoParam, tiposParam, pontos],
+  );
+
+  /**
+   * Aplica o filtro de destinos. Quando não há filtro, mantém a chamada como
+   * está. Comparação por destino normalizado (lowercase + trim) — case e
+   * espaços não devem quebrar o match.
+   */
+  const matchDestino = useCallback(
+    (destino: string | null | undefined): boolean => {
+      if (!destinosAceitos) return true;
+      const d = limparDestino(destino).toLowerCase().trim();
+      if (!d) return false;
+      return destinosAceitos.has(d);
+    },
+    [destinosAceitos],
+  );
+
+  // Aplica filtro inicial às chamadas vindas do loader.
+  const [chamadas, setChamadas] = useState<Chamada[]>(() =>
+    destinosAceitos ? initialChamadas.filter((c) => matchDestino(c.destino)) : initialChamadas,
+  );
+
   /**
    * Mapa de senha_id -> status atual, populado via realtime de UPDATE em
    * `senhas`. Usado para:
@@ -481,7 +587,16 @@ function TvPage() {
         },
         async (payload) => {
           console.log("Nova chamada recebida:", payload.new);
-          
+
+          // Filtro multi-TV: ignora chamadas cujo destino não pertence a esta TV.
+          // Faz isso ANTES do beep pra TV de "Consultório 001" não tocar quando
+          // a senha é chamada no "Guichê 02".
+          const destinoChamada = (payload.new as { destino?: string })?.destino;
+          if (!matchDestino(destinoChamada)) {
+            console.log("[TV] Chamada ignorada por filtro multi-TV:", destinoChamada);
+            return;
+          }
+
           // 1. Toca o beep IMEDIATAMENTE para dar feedback instantâneo (0s de delay)
           if (beepRef.current) {
             try {
@@ -552,7 +667,7 @@ function TvPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [unidade?.id, speak]);
+  }, [unidade?.id, speak, matchDestino]);
 
   /**
    * Realtime de senhas — escutamos UPDATE para detectar quando uma senha sai
@@ -797,6 +912,15 @@ function TvPage() {
             <h1 className="text-base font-bold tracking-tight leading-none">{unidade?.nome}</h1>
             <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" title="Conectado" />
             <p className="text-[10px] font-medium opacity-60 uppercase tracking-widest leading-none">Painel de Chamadas</p>
+            {destinosAceitos && (
+              <span
+                className="ml-2 rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary"
+                title={`Esta TV exibe apenas: ${Array.from(destinosAceitos).join(", ")}`}
+              >
+                Filtro: {Array.from(destinosAceitos).slice(0, 2).join(" · ")}
+                {destinosAceitos.size > 2 ? ` +${destinosAceitos.size - 2}` : ""}
+              </span>
+            )}
           </div>
         </div>
 
@@ -892,31 +1016,56 @@ function TvPage() {
                       )}
                     </div>
                     
-                    {/* Senha — usa cqmin (menor dimensão do container) pra escalar
-                        proporcionalmente ao espaço disponível, garantindo que nunca
-                        ultrapasse vertical nem horizontalmente. clamp protege min/max
-                        e a escala_chamadas continua sendo o multiplicador final.
-                        A animação senha-pop dá um overshoot ao trocar de senha. */}
-                    <div 
+                    {/* Bloco principal: SENHA → DESTINO em uma linha visual única.
+                        A seta entre eles tem o mesmo peso visual da senha pra deixar
+                        claro que é um direcionamento (ex.: "C015 → Consultório 001"),
+                        não dois itens soltos. Em telas estreitas o flex quebra
+                        naturalmente. A animação senha-pop dá overshoot ao trocar. */}
+                    <div
                       key={`codigo-${ultimaChamada.senha?.id ?? ultimaChamada.id}`}
-                      className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl w-full px-2 animate-senha-pop"
-                      style={{ 
-                        fontSize: `clamp(2rem, ${22 * escChamada}cqmin, ${10 * escChamada}rem)`,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={ultimaChamada.senha?.codigo}
+                      className="flex w-full items-center justify-center flex-wrap animate-senha-pop"
+                      style={{ gap: `clamp(0.5rem, 2cqmin, 1.5rem)` }}
                     >
-                      {ultimaChamada.senha?.codigo}
+                      <div
+                        className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl"
+                        style={{
+                          fontSize: `clamp(2rem, ${22 * escChamada}cqmin, ${10 * escChamada}rem)`,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={ultimaChamada.senha?.codigo}
+                      >
+                        {ultimaChamada.senha?.codigo}
+                      </div>
+                      <div
+                        aria-hidden
+                        className="font-black leading-none opacity-80"
+                        style={{
+                          fontSize: `clamp(1.5rem, ${14 * escChamada}cqmin, ${6 * escChamada}rem)`,
+                          color: visual.cor_primaria,
+                        }}
+                      >
+                        →
+                      </div>
+                      <div
+                        className={`font-black uppercase leading-[0.95] text-white drop-shadow-2xl ${visual.historico_quebrar_texto ? "" : "truncate"}`}
+                        style={{
+                          fontSize: `clamp(1.25rem, ${14 * escChamada}cqmin, ${6 * escChamada}rem)`,
+                          maxWidth: "60%",
+                        }}
+                        title={limparDestino(ultimaChamada.destino)}
+                      >
+                        {limparDestino(ultimaChamada.destino)}
+                      </div>
                     </div>
-                    
-                    <div 
+
+                    <div
                       className="w-full"
                       style={{ marginTop: `clamp(0.15rem, 0.8cqmin, 0.5rem)` }}
                     >
                       {ultimaChamada.senha?.paciente_nome && (
-                        <p 
+                        <p
                           className={`font-bold text-white/90 px-2 ${visual.historico_quebrar_texto ? "" : "truncate"}`}
                           style={{ fontSize: `clamp(0.75rem, 4cqmin, 2rem)`, lineHeight: 1.1 }}
                           title={ultimaChamada.senha.paciente_nome}
@@ -924,22 +1073,14 @@ function TvPage() {
                           {ultimaChamada.senha.paciente_nome}
                         </p>
                       )}
-                      <p 
-                        className="font-medium opacity-60 uppercase tracking-widest"
-                        style={{ 
+                      <p
+                        className="font-medium opacity-50 uppercase tracking-widest"
+                        style={{
                           fontSize: `clamp(0.5rem, 1.8cqmin, 1.125rem)`,
                           marginTop: `clamp(0.1rem, 0.4cqmin, 0.3rem)`,
-                          marginBottom: `clamp(0.1rem, 0.4cqmin, 0.3rem)`,
                         }}
                       >
-                        Favor dirigir-se
-                      </p>
-                      <p 
-                        className={`font-bold uppercase px-2 ${visual.historico_quebrar_texto ? "" : "truncate"}`}
-                        style={{ fontSize: `clamp(1rem, 6cqmin, 3rem)`, lineHeight: 1.05 }}
-                        title={limparDestino(ultimaChamada.destino)}
-                      >
-                        {limparDestino(ultimaChamada.destino)}
+                        Favor dirigir-se ao destino indicado acima
                       </p>
                     </div>
                   </div>
@@ -1012,14 +1153,31 @@ function TvPage() {
                         }}
                       >
                         <div className="min-w-0 flex-1">
+                          {/* Linha "C015 → Consultório 001" — direção visual no histórico. */}
+                          <div className="flex items-baseline gap-1.5 min-w-0">
+                            <span
+                              className="font-bold text-primary leading-tight shrink-0"
+                              style={{ fontSize: "clamp(0.875rem, 7cqi, 1.5rem)" }}
+                            >
+                              {chamada.senha?.codigo}
+                            </span>
+                            <span
+                              aria-hidden
+                              className="font-bold leading-none opacity-70 shrink-0"
+                              style={{ fontSize: "clamp(0.625rem, 4cqi, 1rem)", color: visual.cor_primaria }}
+                            >
+                              →
+                            </span>
+                            <span
+                              className="font-bold opacity-90 leading-tight truncate"
+                              style={{ fontSize: "clamp(0.6875rem, 4.5cqi, 1rem)" }}
+                              title={limparDestino(chamada.destino)}
+                            >
+                              {limparDestino(chamada.destino)}
+                            </span>
+                          </div>
                           <p
-                            className="font-bold text-primary leading-tight truncate"
-                            style={{ fontSize: "clamp(0.875rem, 7cqi, 1.5rem)" }}
-                          >
-                            {chamada.senha?.codigo}
-                          </p>
-                          <p
-                            className="font-medium opacity-50 uppercase truncate leading-snug"
+                            className="font-medium opacity-50 uppercase truncate leading-snug mt-0.5"
                             style={{ fontSize: "clamp(0.5rem, 2.5cqi, 0.75rem)" }}
                           >
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
@@ -1040,14 +1198,7 @@ function TvPage() {
                             );
                           })()}
                         </div>
-                        <div className="text-right shrink-0 min-w-0 max-w-[55%]">
-                          <p
-                            className="font-bold opacity-90 leading-tight truncate"
-                            style={{ fontSize: "clamp(0.6875rem, 4.5cqi, 1rem)" }}
-                            title={limparDestino(chamada.destino)}
-                          >
-                            {limparDestino(chamada.destino)}
-                          </p>
+                        <div className="text-right shrink-0">
                           <p
                             className="font-mono opacity-30"
                             style={{ fontSize: "clamp(0.5rem, 2.2cqi, 0.6875rem)" }}
