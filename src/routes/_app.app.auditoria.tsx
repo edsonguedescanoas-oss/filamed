@@ -72,7 +72,7 @@ function AuditoriaPage() {
           status,
           paciente:pacientes(nome_completo),
           fila:filas(nome),
-          criador:profiles!senhas_criado_por_fkey(nome_completo)
+          criador:profiles(nome_completo)
         `)
         .eq("unidade_id", unidadeId)
         .order("created_at", { ascending: false })
