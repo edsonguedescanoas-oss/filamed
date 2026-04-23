@@ -252,9 +252,10 @@ function RecepcaoPage() {
     ? `${filaSelecionada.prefixo_senha}${String(filaSelecionada.contador_senha + 1).padStart(3, "0")}`
     : null;
 
-  const handleGerar = async () => {
+  const handleGerar = async (pacOverride?: Paciente) => {
+    const pac = pacOverride || pacienteSelecionado;
     if (!filaId || !canGerar) return;
-    if (!pacienteSelecionado) {
+    if (!pac) {
       toast.error("Selecione ou cadastre um paciente para gerar a senha");
       return;
     }
@@ -263,7 +264,7 @@ function RecepcaoPage() {
       const { data, error } = await supabase.rpc("gerar_senha", {
         _fila_id: filaId,
         _prioridade: prioridade,
-        _paciente_id: pacienteSelecionado.id,
+        _paciente_id: pac.id,
         _origem: "recepcao",
       });
       if (error) throw error;
