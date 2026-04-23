@@ -93,7 +93,9 @@ export type Database = {
           observacoes: string | null
           paciente_id: string | null
           profissional_id: string | null
+          requer_retorno: boolean
           senha_id: string
+          senha_retorno_id: string | null
           unidade_id: string
         }
         Insert: {
@@ -105,7 +107,9 @@ export type Database = {
           observacoes?: string | null
           paciente_id?: string | null
           profissional_id?: string | null
+          requer_retorno?: boolean
           senha_id: string
+          senha_retorno_id?: string | null
           unidade_id: string
         }
         Update: {
@@ -117,7 +121,9 @@ export type Database = {
           observacoes?: string | null
           paciente_id?: string | null
           profissional_id?: string | null
+          requer_retorno?: boolean
           senha_id?: string
+          senha_retorno_id?: string | null
           unidade_id?: string
         }
         Relationships: [
@@ -131,6 +137,13 @@ export type Database = {
           {
             foreignKeyName: "atendimentos_senha_id_fkey"
             columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "atendimentos_senha_retorno_id_fkey"
+            columns: ["senha_retorno_id"]
             isOneToOne: false
             referencedRelation: "senhas"
             referencedColumns: ["id"]
@@ -380,6 +393,81 @@ export type Database = {
           },
         ]
       }
+      guiche_atendimentos: {
+        Row: {
+          atendido_por: string | null
+          created_at: string
+          fila_destino_id: string | null
+          id: string
+          observacoes: string | null
+          ponto_atendimento_id: string | null
+          senha_destino_id: string | null
+          senha_id: string
+          tipo: string
+          unidade_id: string
+        }
+        Insert: {
+          atendido_por?: string | null
+          created_at?: string
+          fila_destino_id?: string | null
+          id?: string
+          observacoes?: string | null
+          ponto_atendimento_id?: string | null
+          senha_destino_id?: string | null
+          senha_id: string
+          tipo?: string
+          unidade_id: string
+        }
+        Update: {
+          atendido_por?: string | null
+          created_at?: string
+          fila_destino_id?: string | null
+          id?: string
+          observacoes?: string | null
+          ponto_atendimento_id?: string | null
+          senha_destino_id?: string | null
+          senha_id?: string
+          tipo?: string
+          unidade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guiche_atendimentos_fila_destino_id_fkey"
+            columns: ["fila_destino_id"]
+            isOneToOne: false
+            referencedRelation: "filas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guiche_atendimentos_ponto_atendimento_id_fkey"
+            columns: ["ponto_atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "pontos_atendimento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guiche_atendimentos_senha_destino_id_fkey"
+            columns: ["senha_destino_id"]
+            isOneToOne: false
+            referencedRelation: "senhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guiche_atendimentos_senha_id_fkey"
+            columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guiche_atendimentos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_settings: {
         Row: {
           key: string
@@ -586,6 +674,54 @@ export type Database = {
         }
         Relationships: []
       }
+      pontos_atendimento: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          fila_id: string | null
+          id: string
+          nome: string
+          tipo: Database["public"]["Enums"]["ponto_tipo"]
+          unidade_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          fila_id?: string | null
+          id?: string
+          nome: string
+          tipo?: Database["public"]["Enums"]["ponto_tipo"]
+          unidade_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          fila_id?: string | null
+          id?: string
+          nome?: string
+          tipo?: Database["public"]["Enums"]["ponto_tipo"]
+          unidade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pontos_atendimento_fila_id_fkey"
+            columns: ["fila_id"]
+            isOneToOne: false
+            referencedRelation: "filas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pontos_atendimento_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           ativo: boolean
@@ -593,6 +729,7 @@ export type Database = {
           created_at: string
           id: string
           nome_completo: string
+          ponto_atendimento_id: string | null
           telefone: string | null
           unidade_id: string | null
           updated_at: string
@@ -603,6 +740,7 @@ export type Database = {
           created_at?: string
           id: string
           nome_completo: string
+          ponto_atendimento_id?: string | null
           telefone?: string | null
           unidade_id?: string | null
           updated_at?: string
@@ -613,11 +751,19 @@ export type Database = {
           created_at?: string
           id?: string
           nome_completo?: string
+          ponto_atendimento_id?: string | null
           telefone?: string | null
           unidade_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_ponto_atendimento_id_fkey"
+            columns: ["ponto_atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "pontos_atendimento"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_unidade_id_fkey"
             columns: ["unidade_id"]
@@ -639,6 +785,7 @@ export type Database = {
           paciente_id: string | null
           posicao: number | null
           prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          senha_origem_id: string | null
           status: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado: number | null
           token_publico: string
@@ -656,6 +803,7 @@ export type Database = {
           paciente_id?: string | null
           posicao?: number | null
           prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          senha_origem_id?: string | null
           status?: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado?: number | null
           token_publico?: string
@@ -673,6 +821,7 @@ export type Database = {
           paciente_id?: string | null
           posicao?: number | null
           prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          senha_origem_id?: string | null
           status?: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado?: number | null
           token_publico?: string
@@ -699,6 +848,13 @@ export type Database = {
             columns: ["paciente_id"]
             isOneToOne: false
             referencedRelation: "pacientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "senhas_senha_origem_id_fkey"
+            columns: ["senha_origem_id"]
+            isOneToOne: false
+            referencedRelation: "senhas"
             referencedColumns: ["id"]
           },
           {
@@ -1269,6 +1425,10 @@ export type Database = {
         Args: { _unidade_id: string; _user_id: string }
         Returns: boolean
       }
+      chamar_senha_do_ponto: {
+        Args: { _ponto_atendimento_id: string; _senha_id: string }
+        Returns: string
+      }
       cleanup_expired_locks: { Args: never; Returns: undefined }
       cleanup_tts_cache: {
         Args: { _retention_days?: number; _service_role_key: string }
@@ -1278,6 +1438,48 @@ export type Database = {
         }[]
       }
       cleanup_tts_cache_scheduled: { Args: never; Returns: undefined }
+      encaminhar_do_guiche: {
+        Args: {
+          _fila_destino_id: string
+          _observacoes?: string
+          _prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          _senha_guiche_id: string
+          _tipo?: string
+        }
+        Returns: {
+          codigo: string
+          created_at: string
+          criado_por: string | null
+          fila_id: string
+          finalizada_em: string | null
+          id: string
+          origem: string | null
+          paciente_id: string | null
+          posicao: number | null
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          senha_origem_id: string | null
+          status: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado: number | null
+          token_publico: string
+          unidade_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "senhas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ensure_fila_guiche: { Args: { _unidade_id: string }; Returns: string }
+      finalizar_atendimento_com_retorno: {
+        Args: {
+          _atendimento_id: string
+          _observacoes?: string
+          _requer_retorno?: boolean
+        }
+        Returns: string
+      }
       gerar_senha: {
         Args: {
           _fila_id: string
@@ -1296,6 +1498,40 @@ export type Database = {
           paciente_id: string | null
           posicao: number | null
           prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          senha_origem_id: string | null
+          status: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado: number | null
+          token_publico: string
+          unidade_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "senhas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      gerar_senha_guiche: {
+        Args: {
+          _data_nascimento?: string
+          _nome: string
+          _prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          _telefone?: string
+          _unidade_id: string
+        }
+        Returns: {
+          codigo: string
+          created_at: string
+          criado_por: string | null
+          fila_id: string
+          finalizada_em: string | null
+          id: string
+          origem: string | null
+          paciente_id: string | null
+          posicao: number | null
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          senha_origem_id: string | null
           status: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado: number | null
           token_publico: string
@@ -1475,6 +1711,7 @@ export type Database = {
         | "outro"
         | "guiche"
       notificacao_status: "pendente" | "enviada" | "falhou" | "ignorado"
+      ponto_tipo: "guiche" | "consultorio" | "exame" | "outro"
       senha_prioridade: "normal" | "preferencial" | "urgente"
       senha_status:
         | "aguardando"
@@ -1640,6 +1877,7 @@ export const Constants = {
         "guiche",
       ],
       notificacao_status: ["pendente", "enviada", "falhou", "ignorado"],
+      ponto_tipo: ["guiche", "consultorio", "exame", "outro"],
       senha_prioridade: ["normal", "preferencial", "urgente"],
       senha_status: [
         "aguardando",
