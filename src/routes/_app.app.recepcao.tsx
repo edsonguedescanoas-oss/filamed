@@ -205,7 +205,14 @@ function RecepcaoPage() {
       toast.error("Erro ao carregar filas: " + error.message);
     } else {
       setFilas(data ?? []);
-      if (data && data.length > 0 && !filaId) setFilaId(data[0].id);
+      // Reseta filaId se a selecionada não estiver na nova lista ou se for a primeira carga
+      if (data && data.length > 0) {
+        if (!filaId || !data.some(f => f.id === filaId)) {
+          setFilaId(data[0].id);
+        }
+      } else {
+        setFilaId(null);
+      }
     }
     setLoadingFilas(false);
   };
