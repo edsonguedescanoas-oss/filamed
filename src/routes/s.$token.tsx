@@ -65,9 +65,10 @@ function PublicSenhaPage() {
       }
       setSenha(data as SenhaPub);
 
-      const [fRes, uRows, cRes] = await Promise.all([
-        supabase.from("filas").select("id,nome,cor").eq("id", data.fila_id).maybeSingle(),
+      const [fRes, uRows, vRes, cRes] = await Promise.all([
+        supabase.from("filas").select("id,nome,cor,tempo_espera_estimado").eq("id", data.fila_id).maybeSingle(),
         supabase.rpc("get_unidades_publicas"),
+        supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", data.unidade_id).maybeSingle(),
         // chamadas dos últimos 60s da unidade — filtramos pela senha no cliente
         supabase.rpc("get_chamadas_recentes", { _unidade_id: data.unidade_id }),
       ]);
@@ -78,6 +79,7 @@ function PublicSenhaPage() {
       const cMatch = cList.find((c) => (c as unknown as { senha_id: string }).senha_id === data.id) ?? null;
       setFila((fRes.data as FilaPub) ?? null);
       setUnidade(u);
+      setVisual(vRes.data ?? null);
       setChamada(cMatch);
       setLoading(false);
     })();
