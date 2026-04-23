@@ -57,11 +57,21 @@ function maskCPF(v: string): string {
 }
 
 function maskTelefone(v: string): string {
-  const d = onlyDigits(v).slice(0, 11);
-  if (d.length <= 10) {
-    return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d)/, "$1-$2");
+  const digits = onlyDigits(v);
+  // Garante que comece com 55 se não tiver nada
+  let d = digits;
+  if (d.length > 0 && !d.startsWith("55") && d.length <= 11) {
+    d = "55" + d;
   }
-  return d.replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
+  
+  d = d.slice(0, 13); // 55 + 2 + 9 = 13 digits
+  
+  if (d.length <= 4) return d;
+  if (d.length <= 6) return d.replace(/(\d{2})(\d{2})/, "$1 $2");
+  if (d.length <= 11) {
+    return d.replace(/(\d{2})(\d{2})(\d{1,})/, "$1 $2 $3");
+  }
+  return d.replace(/(\d{2})(\d{2})(\d{5})(\d{1,})/, "$1 $2 $3-$4");
 }
 
 function isValidCPF(cpf: string): boolean {
