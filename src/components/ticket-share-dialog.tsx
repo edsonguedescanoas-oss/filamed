@@ -157,7 +157,8 @@ export function TicketShareDialog({
       const { data, error } = await supabase.functions.invoke('wa-duck-notify', {
         body: { 
           senha_id: senha.id,
-          tipo: 'criacao'
+          tipo: 'criacao',
+          idempotency_key: crypto.randomUUID()
         }
       });
 
