@@ -28,6 +28,7 @@ const NAV = [
   { to: "/app/filas", label: "Filas", icon: ListOrdered, exact: false },
   { to: "/app/pacientes", label: "Pacientes", icon: Users, exact: false },
   { to: "/app/voz", label: "Voz", icon: Volume2, exact: false },
+  { to: "/app/notificacoes", label: "Notificações", icon: Ticket, exact: false }, // Use a proper icon later
   { to: "/app/relatorios", label: "Relatórios", icon: BarChart3, exact: false },
 ] as const;
 
