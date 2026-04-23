@@ -73,11 +73,10 @@ export function TicketShareDialog({
     if (!unidadeId || !senha?.id) return;
     
     try {
-      // Cast to any to bypass strict enum/property checks if they fail in TS
       const payload: any = {
         unidade_id: unidadeId,
         senha_id: senha.id,
-        canal: canal === 'print' || canal === 'share' ? 'push' : canal,
+        canal: (canal === 'print' || canal === 'share') ? 'push' : canal,
         destinatario: canal === 'whatsapp' ? (paciente.telefone || 'Sem telefone') : 'Ticket Físico',
         mensagem: `Ticket ${senha.codigo} por ${canal}`,
         status: status
@@ -168,18 +167,18 @@ export function TicketShareDialog({
             </style>
           </head>
           <body>
-            ${logoUrl ? \`<img src="\${logoUrl}" class="logo" />\` : ""}
-            <div class="unidade">\${unidadeNome || ""}</div>
+            ${logoUrl ? `<img src="${logoUrl}" class="logo" />` : ""}
+            <div class="unidade">${unidadeNome || ""}</div>
             <div class="label">SUA SENHA</div>
-            <div class="senha">\${senha.codigo}</div>
-            <div class="paciente">\${paciente.nome_completo}</div>
+            <div class="senha">${senha.codigo}</div>
+            <div class="paciente">${paciente.nome_completo}</div>
             <div class="qrcode-container">
-              <img src="\${qrDataUrl}" class="qrcode" />
+              <img src="${qrDataUrl}" class="qrcode" />
               <div style="font-size: 8pt; margin-top: 3mm; font-weight: bold;">Escaneie para acompanhar</div>
             </div>
             <div class="footer">
-              \${rodape || "FILAMED - GESTÃO DE FILAS"}
-              <div class="timestamp">\${new Date().toLocaleString("pt-BR")}</div>
+              ${rodape || "FILAMED - GESTÃO DE FILAS"}
+              <div class="timestamp">${new Date().toLocaleString("pt-BR")}</div>
             </div>
             <script>
               window.onload = () => {
@@ -189,7 +188,7 @@ export function TicketShareDialog({
             </script>
           </body>
         </html>
-      \`;
+      `;
       printWindow.document.write(html);
       printWindow.document.close();
       
@@ -210,7 +209,7 @@ export function TicketShareDialog({
       try {
         await navigator.share({
           title: "Sua Senha - FilaMed",
-          text: \`Olá \${paciente.nome_completo}, sua senha no \${unidadeNome || "nosso estabelecimento"} é \${senha.codigo}\`,
+          text: `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é ${senha.codigo}`,
           url: publicUrl,
         });
         await recordNotification('share', 'enviada');
@@ -234,12 +233,10 @@ export function TicketShareDialog({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 p-6">
-          {/* Ticket Preview 80mm Style */}
           <div 
             ref={ticketRef}
             className="w-full max-w-[280px] bg-white text-slate-950 p-6 shadow-2xl flex flex-col items-center text-center font-sans rounded-sm relative"
           >
-            {/* Serrilha simulada no topo */}
             <div className="absolute top-0 left-0 right-0 h-1 flex justify-between overflow-hidden">
               {Array.from({ length: 20 }).map((_, i) => (
                 <div key={i} className="w-2 h-2 rounded-full bg-slate-900 -mt-1" />
@@ -285,7 +282,6 @@ export function TicketShareDialog({
               </div>
             </div>
 
-            {/* Serrilha simulada no rodapé */}
             <div className="absolute bottom-0 left-0 right-0 h-1 flex justify-between overflow-hidden">
               {Array.from({ length: 20 }).map((_, i) => (
                 <div key={i} className="w-2 h-2 rounded-full bg-slate-900 -mb-1" />
