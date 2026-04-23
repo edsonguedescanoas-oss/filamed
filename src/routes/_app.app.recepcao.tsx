@@ -15,6 +15,7 @@ import {
   Trash2,
   MessageSquare,
   Share2,
+  Printer,
 } from "lucide-react";
 import { TicketShareDialog } from "@/components/ticket-share-dialog";
 import { toast } from "sonner";
@@ -135,6 +136,7 @@ function RecepcaoPage() {
 
   // compartilhamento
   const [shareOpen, setShareOpen] = useState(false);
+  const [shareAutoPrint, setShareAutoPrint] = useState(false);
   const [shareData, setShareData] = useState<{
     senha: { codigo: string; token_publico: string };
     paciente: { nome_completo: string; telefone: string | null };
@@ -278,6 +280,7 @@ function RecepcaoPage() {
           telefone: pacienteSelecionado.telefone,
         },
       });
+      setShareAutoPrint(true);
       setShareOpen(true);
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
@@ -772,6 +775,26 @@ function RecepcaoPage() {
                               telefone: s.paciente?.telefone ?? null,
                             },
                           });
+                          setShareAutoPrint(true);
+                          setShareOpen(true);
+                        }}
+                        title="Reimprimir Ticket (80mm)"
+                        className="text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShareData({
+                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            paciente: {
+                              nome_completo: s.paciente?.nome_completo ?? "Sem nome",
+                              telefone: s.paciente?.telefone ?? null,
+                            },
+                          });
+                          setShareAutoPrint(false);
                           setShareOpen(true);
                         }}
                         title="Enviar ou Imprimir"
@@ -865,12 +888,16 @@ function RecepcaoPage() {
       {/* Modal de compartilhamento */}
       <TicketShareDialog
         open={shareOpen}
-        onOpenChange={setShareOpen}
+        onOpenChange={(open) => {
+          setShareOpen(open);
+          if (!open) setShareAutoPrint(false);
+        }}
         senha={shareData?.senha ?? null}
         paciente={shareData?.paciente ?? null}
         unidadeNome={unidadeTicketConfig?.nome ?? null}
         logoUrl={unidadeTicketConfig?.logo_url ?? null}
         rodape={unidadeTicketConfig?.rodape ?? null}
+        autoPrint={shareAutoPrint}
       />
     </div>
   );

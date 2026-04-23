@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
 import { MessageSquare, Copy, Check, Share2, Printer } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 
@@ -25,6 +25,7 @@ type Props = {
   unidadeNome: string | null;
   logoUrl?: string | null;
   rodape?: string | null;
+  autoPrint?: boolean;
 };
 
 export function TicketShareDialog({
@@ -35,9 +36,21 @@ export function TicketShareDialog({
   unidadeNome,
   logoUrl,
   rodape,
+  autoPrint = false,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const ticketRef = useRef<HTMLDivElement>(null);
+  const printTriggered = useRef(false);
+
+  useEffect(() => {
+    if (open && autoPrint && senha && paciente && !printTriggered.current) {
+      printTriggered.current = true;
+      void handlePrint();
+    }
+    if (!open) {
+      printTriggered.current = false;
+    }
+  }, [open, autoPrint, senha, paciente]);
 
   if (!senha || !paciente) return null;
 
