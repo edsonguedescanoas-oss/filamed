@@ -529,7 +529,7 @@ function PacienteDialog({
                 id="pac-tel"
                 value={form.telefone ?? ""}
                 onChange={(e) => setForm({ ...form, telefone: maskTelefone(e.target.value) })}
-                placeholder="(11) 99999-9999"
+                placeholder="55 XX XXXXX-XXXX"
                 inputMode="tel"
               />
               {errors.telefone && (
