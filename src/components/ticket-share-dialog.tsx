@@ -34,6 +34,7 @@ export function TicketShareDialog({
   paciente,
   unidadeNome,
   logoUrl,
+  rodape,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const ticketRef = useRef<HTMLDivElement>(null);
