@@ -169,6 +169,7 @@ function RecepcaoPage() {
   const [novoDocumento, setNovoDocumento] = useState<File | null>(null);
   const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string }>({});
   const [savingNovo, setSavingNovo] = useState(false);
+  const [novoAutoImprimir, setNovoAutoImprimir] = useState(true);
 
   // compartilhamento
   const [shareOpen, setShareOpen] = useState(false);
