@@ -10,6 +10,8 @@ import {
   Activity,
   X,
   ArrowLeftRight,
+  MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -325,6 +327,14 @@ function AtendimentoPage() {
       toast.error("Já existe um atendimento em andamento.");
       return;
     }
+    // Sem ponto ativo o profissional não tem "endereço" pra atender — bloqueia
+    // antes de criar o atendimento pra evitar registro órfão.
+    if (!pontoAtivo) {
+      toast.error(
+        "Selecione seu ponto de atendimento (consultório/sala) no topo da tela antes de iniciar.",
+      );
+      return;
+    }
     setActionId(s.id);
     try {
       const { data: at, error: e1 } = await supabase
@@ -363,6 +373,15 @@ function AtendimentoPage() {
 
   const confirmarFinalizar = async () => {
     if (!finalizar) return;
+    // Sem ponto ativo o RPC `finalizar_atendimento_com_retorno` não consegue
+    // gerar a senha de retorno no guichê com origem correta. Bloqueia aqui
+    // pra dar mensagem clara em vez de erro genérico do banco.
+    if (!pontoAtivo) {
+      toast.error(
+        "Selecione seu ponto de atendimento no topo da tela antes de finalizar.",
+      );
+      return;
+    }
     setActionId(finalizar.atendimento.id);
     try {
       // RPC: finaliza atendimento e (se requer_retorno) gera senha no Guichê
@@ -456,16 +475,51 @@ function AtendimentoPage() {
         </div>
       </div>
 
-      {/* Seletor de ponto de atendimento (Consultório 001, Sala 02…) */}
-      <div className="mt-5 rounded-xl border border-border bg-card/50 px-4 py-3">
-        <PontoAtendimentoSelector
-          tipos={["consultorio", "exame", "outro"]}
-          label="Você está em"
-          onChange={(p) =>
-            setPontoAtivo(p ? { id: p.id, nome: p.nome, fila_id: p.fila_id } : null)
-          }
-          emptyHint="Nenhum consultório/sala cadastrado. Peça ao admin para criar em /app/pontos."
-        />
+      {/* Resumo do ponto ativo: nome + fila vinculada + alerta quando vazio.
+          O selector continua sendo a fonte de verdade — esse bloco só dá
+          contexto visual rico durante a sessão de atendimento (o profissional
+          precisa enxergar de relance "estou atendendo no Consultório 001 →
+          fila Cardiologia"). */}
+      <div
+        className={cn(
+          "mt-5 rounded-xl border px-4 py-3",
+          pontoAtivo
+            ? "border-primary/30 bg-primary/5"
+            : "border-amber-500/40 bg-amber-500/5",
+        )}
+      >
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <PontoAtendimentoSelector
+            tipos={["consultorio", "exame", "outro"]}
+            label="Você está em"
+            onChange={(p) =>
+              setPontoAtivo(p ? { id: p.id, nome: p.nome, fila_id: p.fila_id } : null)
+            }
+            emptyHint="Nenhum consultório/sala cadastrado. Peça ao admin para criar em /app/pontos."
+          />
+
+          {pontoAtivo ? (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-2.5 py-1 font-semibold text-primary">
+                <MapPin className="h-3.5 w-3.5" />
+                {pontoAtivo.nome}
+              </span>
+              <span className="text-muted-foreground" aria-hidden>
+                →
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 font-medium">
+                {pontoAtivo.fila_id
+                  ? (filaById.get(pontoAtivo.fila_id)?.nome ?? "Fila desconhecida")
+                  : "Sem fila vinculada"}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="h-4 w-4" />
+              Selecione um ponto para chamar e atender pacientes.
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Atendimento ativo */}
@@ -545,7 +599,8 @@ function AtendimentoPage() {
                   <Button
                     size="sm"
                     onClick={() => iniciarAtendimento(s)}
-                    disabled={actionId === s.id || !!atendimentoAtivo}
+                    disabled={actionId === s.id || !!atendimentoAtivo || !pontoAtivo}
+                    title={!pontoAtivo ? "Selecione um ponto de atendimento no topo da tela" : undefined}
                     className="bg-gradient-primary"
                   >
                     <Play className="h-3.5 w-3.5" /> Iniciar
@@ -620,7 +675,8 @@ function AtendimentoPage() {
                         <Button
                           size="sm"
                           onClick={() => abrirChamar(s)}
-                          disabled={actionId === s.id || !!atendimentoAtivo}
+                          disabled={actionId === s.id || !!atendimentoAtivo || !pontoAtivo}
+                          title={!pontoAtivo ? "Selecione um ponto de atendimento no topo da tela" : undefined}
                           className="bg-gradient-primary"
                         >
                           <Megaphone className="h-3.5 w-3.5" /> Chamar
