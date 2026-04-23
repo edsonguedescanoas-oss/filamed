@@ -489,7 +489,7 @@ export function TicketShareDialog({
             </Button>
             
             <Button
-              onClick={handleWhatsApp}
+              onClick={() => void handleWhatsApp(false)}
               variant="outline"
               disabled={!paciente.telefone || sending === 'whatsapp'}
               className={cn(
