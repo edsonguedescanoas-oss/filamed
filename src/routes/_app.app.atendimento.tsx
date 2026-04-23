@@ -81,6 +81,13 @@ function AtendimentoPage() {
   const [finalizar, setFinalizar] = useState<{ atendimento: Atendimento; senha: Senha } | null>(null);
   const [observacoes, setObservacoes] = useState("");
   const [requerRetorno, setRequerRetorno] = useState(false);
+  // Preview da senha de retorno (prefixo do guichê + próximo contador).
+  // Carregado sob demanda ao abrir a modal de finalização.
+  const [previewRetorno, setPreviewRetorno] = useState<{
+    prefixo: string;
+    proximoCodigo: string;
+    filaNome: string;
+  } | null>(null);
   // Ponto de atendimento ativo do usuário (Consultório 001, Sala 02…)
   const [pontoAtivo, setPontoAtivo] = useState<{
     id: string;
