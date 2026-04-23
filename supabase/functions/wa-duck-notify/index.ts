@@ -108,7 +108,18 @@ Avisaremos você quando for a sua vez!`;
       }),
     });
 
-    const responseData = await response.json();
+    let responseData = {};
+    const responseText = await response.text();
+    console.log(`WADuck Response Status: ${response.status}`);
+    console.log(`WADuck Response Text: ${responseText}`);
+
+    try {
+      if (responseText) {
+        responseData = JSON.parse(responseText);
+      }
+    } catch (e) {
+      console.error("Erro ao parsear resposta do WADuck:", e.message);
+    }
 
     // 5. Loga a notificação
     await supabaseClient.from("notificacoes_log").insert({
@@ -118,7 +129,7 @@ Avisaremos você quando for a sua vez!`;
       canal: "whatsapp",
       status: response.ok ? "sucesso" : "erro",
       mensagem: mensagem,
-      erro_detalhe: response.ok ? null : JSON.stringify(responseData),
+      erro_detalhe: response.ok ? null : (responseText || "Erro desconhecido"),
     });
 
     return new Response(JSON.stringify({ success: response.ok, data: responseData }), {
