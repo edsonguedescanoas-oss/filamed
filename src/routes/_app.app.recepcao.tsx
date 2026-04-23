@@ -399,9 +399,7 @@ function RecepcaoPage() {
       errors.nome = "Informe o nome completo do paciente";
     }
     
-    if (!cpfDigits) {
-      errors.cpf = "CPF é obrigatório";
-    } else if (!isValidCPF(cpfDigits)) {
+    if (cpfDigits && !isValidCPF(cpfDigits)) {
       errors.cpf = "CPF inválido";
     }
 
@@ -447,7 +445,7 @@ function RecepcaoPage() {
         .insert({
           unidade_id: unidadeId,
           nome_completo: nome,
-          cpf: cpfDigits,
+          cpf: cpfDigits || null,
           telefone: telDigits,
           identificacao_tipo: novoIdentificacaoTipo,
           identificacao_numero: novoIdentificacaoNumero,
@@ -1171,7 +1169,7 @@ function RecepcaoPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="novo-cpf" className="mb-1.5 block">
-                  CPF <span className="text-destructive">*</span>
+                  CPF
                 </Label>
                 <Input
                   id="novo-cpf"
