@@ -1,11 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessageCircle, Send, Bell, Phone, ArrowRight, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { 
+  MessageCircle, 
+  Send, 
+  Bell, 
+  Phone, 
+  ArrowRight, 
+  ExternalLink,
+  Save,
+  Loader2,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { RoleGuard } from "@/components/role-guard";
 import { RecursoGate } from "@/components/recurso-gate";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/app/notificacoes")({
   head: () => ({ meta: [{ title: "Notificações WhatsApp — FilaMed" }] }),
