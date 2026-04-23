@@ -126,11 +126,6 @@ function maskTelefone(v: string): string {
   }
   return d.replace(/(\d{2})(\d{2})(\d{5})(\d{1,})/, "$1 $2 $3-$4");
 }
-  if (d.length <= 11) {
-    return d.replace(/(\d{2})(\d{2})(\d{1,})/, "$1 $2 $3");
-  }
-  return d.replace(/(\d{2})(\d{2})(\d{5})(\d{1,})/, "$1 $2 $3-$4");
-}
 
 function RecepcaoPage() {
   const { profile, hasAnyRole } = useAuth();
@@ -160,6 +155,7 @@ function RecepcaoPage() {
   const [novoNome, setNovoNome] = useState("");
   const [novoCpf, setNovoCpf] = useState("");
   const [novoTelefone, setNovoTelefone] = useState("");
+  const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string }>({});
   const [savingNovo, setSavingNovo] = useState(false);
 
   // compartilhamento
