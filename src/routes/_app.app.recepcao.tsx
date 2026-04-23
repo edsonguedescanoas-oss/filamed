@@ -256,6 +256,16 @@ function RecepcaoPage() {
       toast.success(`Senha ${senha.codigo} emitida`, {
         description: `Vinculada a ${pacienteSelecionado.nome_completo}`,
       });
+
+      // Abre modal de compartilhamento
+      setShareData({
+        senha: { codigo: senha.codigo, token_publico: senha.token_publico! },
+        paciente: {
+          nome_completo: pacienteSelecionado.nome_completo,
+          telefone: pacienteSelecionado.telefone,
+        },
+      });
+      setShareOpen(true);
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
       setPacienteQuery("");
