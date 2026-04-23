@@ -24,6 +24,7 @@ type Props = {
   } | null;
   unidadeNome: string | null;
   logoUrl?: string | null;
+  rodape?: string | null;
 };
 
 export function TicketShareDialog({
