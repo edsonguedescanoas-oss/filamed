@@ -57,6 +57,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import type { Database } from "@/integrations/supabase/types";
 
 type Fila = Database["public"]["Tables"]["filas"]["Row"];
@@ -1189,6 +1190,18 @@ function RecepcaoPage() {
                   <p className="mt-1 text-xs font-medium text-destructive">{novoErrors.telefone}</p>
                 )}
               </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-white/5">
+              <div className="space-y-0.5">
+                <Label htmlFor="auto-print" className="text-sm font-semibold cursor-pointer">Imprimir automaticamente</Label>
+                <p className="text-[10px] text-muted-foreground">Abre a prévia do ticket após gerar a senha</p>
+              </div>
+              <Switch 
+                id="auto-print"
+                checked={novoAutoImprimir} 
+                onCheckedChange={setNovoAutoImprimir} 
+              />
             </div>
 
             <DialogFooter className="flex-col sm:flex-row gap-2 mt-6">
