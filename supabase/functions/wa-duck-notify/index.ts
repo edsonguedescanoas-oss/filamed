@@ -89,10 +89,11 @@ serve(async (req) => {
 
       if (tipo === "chamada") {
         const template = config.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.";
+        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(", ");
         mensagem = template
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{senha}}", senha.codigo)
-          .replace("{{local}}", mesa_nome || "atendimento");
+          .replace("{{local}}", localFormatado || "atendimento");
       } else {
         // 2. Calcula tempo estimado
         const { count } = await supabaseClient
