@@ -9,6 +9,7 @@ import {
   User as UserIcon,
   Clock4,
   AlertCircle,
+  CalendarCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -69,6 +70,7 @@ function GuichePage() {
   const [filasDestino, setFilasDestino] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
   const [pacientes, setPacientes] = useState<Map<string, Paciente>>(new Map());
+  const [buscaAgendamento, setBuscaAgendamento] = useState("");
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -157,6 +159,20 @@ function GuichePage() {
     return senhas.filter((s) => s.fila_id === filaGuiche.id && s.status === "chamada");
   }, [senhas, filaGuiche]);
 
+  const pacientesLista = useMemo(() => Array.from(pacientes.values()), [pacientes]);
+
+  const resultadosAgendamento = useMemo(() => {
+    const termo = buscaAgendamento.trim().toLowerCase();
+    if (termo.length < 2) return [];
+    return pacientesLista
+      .filter((p) =>
+        [p.nome_completo, p.telefone, p.cpf, p.identificacao_numero]
+          .filter(Boolean)
+          .some((valor) => String(valor).toLowerCase().includes(termo)),
+      )
+      .slice(0, 5);
+  }, [buscaAgendamento, pacientesLista]);
+
   const proximaSenha = senhasGuiche[0] ?? null;
 
   const handleChamarProxima = async () => {
@@ -183,6 +199,7 @@ function GuichePage() {
         prioridade: "normal",
         observacoes: "",
       });
+      setBuscaAgendamento("");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao chamar senha.");
     } finally {
