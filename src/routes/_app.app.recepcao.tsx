@@ -407,17 +407,17 @@ function RecepcaoPage() {
       </div>
 
       {/* Dialog compartilhamento / impressão */}
-      {shareData && unidadeSlug && (
+      {shareData && (
         <TicketShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
           autoPrint={shareAutoPrint}
+          unidadeId={unidadeId ?? null}
           senha={shareData.senha}
           paciente={shareData.paciente}
-          unidadeSlug={unidadeSlug}
           unidadeNome={unidadeTicketConfig?.nome ?? null}
-          unidadeLogoUrl={unidadeTicketConfig?.logo_url ?? null}
-          unidadeRodape={unidadeTicketConfig?.rodape ?? null}
+          logoUrl={unidadeTicketConfig?.logo_url ?? null}
+          rodape={unidadeTicketConfig?.rodape ?? null}
         />
       )}
     </div>
