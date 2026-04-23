@@ -207,7 +207,7 @@ Avisaremos você quando for a sua vez!`;
       if (responseText) {
         responseData = JSON.parse(responseText);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn("Erro ao parsear resposta do WADuck:", e.message);
     }
 
