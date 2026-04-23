@@ -156,13 +156,14 @@ export function HistoricoPonto({
     try {
       const desde = calcDesde(periodo);
       const pontoIdParam =
-        pontoFixoId ?? (pontoSel !== "__todos__" ? pontoSel : null);
+        pontoFixoId ?? (pontoSel !== "__todos__" ? pontoSel : undefined);
+      // RPC aceita null no banco mas o tipo gerado exige string | undefined.
+      // Passamos undefined para parâmetros opcionais não preenchidos.
       const { data, error } = await supabase.rpc("historico_ponto_atendimento", {
         _unidade_id: unidadeId,
         _ponto_id: pontoIdParam,
-        _busca: buscaAplicada || null,
-        _desde: desde,
-        _ate: null,
+        _busca: buscaAplicada || undefined,
+        _desde: desde ?? undefined,
         _limite: 200,
       });
       if (error) throw error;

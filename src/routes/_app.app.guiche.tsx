@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { RoleGuard } from "@/components/role-guard";
 import { PontoAtendimentoSelector } from "@/components/ponto-atendimento-selector";
+import { HistoricoPonto } from "@/components/historico-ponto";
 import type { Database } from "@/integrations/supabase/types";
 
 type Senha = Database["public"]["Tables"]["senhas"]["Row"];
@@ -567,6 +568,20 @@ function GuichePage() {
           )}
         </div>
       </div>
+
+      {/* Histórico do guichê — pré-filtrado pelo ponto selecionado quando houver
+          (recepção quer ver o que ELA fez); cai pra "todos os guichês" se não
+          houver ponto, pra que o supervisor consiga auditar o turno inteiro. */}
+      {unidadeId && (
+        <div className="mt-8">
+          <HistoricoPonto
+            unidadeId={unidadeId}
+            tiposPermitidos={tiposGuiche}
+            pontoFixoId={ponto?.id}
+            titulo={ponto ? `Histórico — ${ponto.nome}` : "Histórico dos guichês"}
+          />
+        </div>
+      )}
     </div>
   );
 }
