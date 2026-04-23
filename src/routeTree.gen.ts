@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TvIndexRouteImport } from './routes/tv.index'
 import { Route as TvSlugRouteImport } from './routes/tv.$slug'
 import { Route as TestLayoutsRouteImport } from './routes/test.layouts'
+import { Route as TestHorizontalRouteImport } from './routes/test.horizontal'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
@@ -83,6 +84,11 @@ const TvSlugRoute = TvSlugRouteImport.update({
 const TestLayoutsRoute = TestLayoutsRouteImport.update({
   id: '/test/layouts',
   path: '/test/layouts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestHorizontalRoute = TestHorizontalRouteImport.update({
+  id: '/test/horizontal',
+  path: '/test/horizontal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const STokenRoute = STokenRouteImport.update({
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
+  '/test/horizontal': typeof TestHorizontalRoute
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
+  '/test/horizontal': typeof TestHorizontalRoute
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv': typeof TvIndexRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
+  '/test/horizontal': typeof TestHorizontalRoute
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
@@ -268,6 +277,7 @@ export interface FileRouteTypes {
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
+    | '/test/horizontal'
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
+    | '/test/horizontal'
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
+    | '/test/horizontal'
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
@@ -351,6 +363,7 @@ export interface RootRouteChildren {
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
   STokenRoute: typeof STokenRoute
+  TestHorizontalRoute: typeof TestHorizontalRoute
   TestLayoutsRoute: typeof TestLayoutsRoute
   TvSlugRoute: typeof TvSlugRoute
   TvIndexRoute: typeof TvIndexRoute
@@ -426,6 +439,13 @@ declare module '@tanstack/react-router' {
       path: '/test/layouts'
       fullPath: '/test/layouts'
       preLoaderRoute: typeof TestLayoutsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test/horizontal': {
+      id: '/test/horizontal'
+      path: '/test/horizontal'
+      fullPath: '/test/horizontal'
+      preLoaderRoute: typeof TestHorizontalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/s/$token': {
@@ -623,6 +643,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
   STokenRoute: STokenRoute,
+  TestHorizontalRoute: TestHorizontalRoute,
   TestLayoutsRoute: TestLayoutsRoute,
   TvSlugRoute: TvSlugRoute,
   TvIndexRoute: TvIndexRoute,
