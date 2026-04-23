@@ -13,7 +13,10 @@ import {
   UserPlus,
   Tv,
   Trash2,
+  MessageSquare,
+  Share2,
 } from "lucide-react";
+import { TicketShareDialog } from "@/components/ticket-share-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -118,7 +121,7 @@ function RecepcaoPage() {
 
   // emissão + lista
   const [emitting, setEmitting] = useState(false);
-  const [recentes, setRecentes] = useState<(Senha & { paciente?: { nome_completo: string } | null })[]>([]);
+  const [recentes, setRecentes] = useState<(Senha & { paciente?: { nome_completo: string; telefone: string | null } | null })[]>([]);
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
@@ -162,7 +165,7 @@ function RecepcaoPage() {
     setLoadingRecentes(true);
     const { data, error } = await supabase
       .from("senhas")
-      .select("*, paciente:pacientes(nome_completo)")
+      .select("*, paciente:pacientes(nome_completo, telefone)")
       .eq("unidade_id", unidadeId)
       .order("created_at", { ascending: false })
       .limit(15);
@@ -721,19 +724,38 @@ function RecepcaoPage() {
                         {format(new Date(s.created_at), "HH:mm:ss", { locale: ptBR })}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => void copyToken(s.token_publico)}
-                      aria-label="Copiar token público"
-                      title="Copiar token público (link do paciente)"
-                    >
-                      {copiedToken === s.token_publico ? (
-                        <Check className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShareData({
+                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            paciente: {
+                              nome_completo: s.paciente?.nome_completo ?? "Sem nome",
+                              telefone: s.paciente?.telefone ?? null,
+                            },
+                          });
+                          setShareOpen(true);
+                        }}
+                        title="Compartilhar senha"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => void copyToken(s.token_publico)}
+                        aria-label="Copiar token público"
+                        title="Copiar link de acompanhamento"
+                      >
+                        {copiedToken === s.token_publico ? (
+                          <Check className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
@@ -804,6 +826,15 @@ function RecepcaoPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Modal de compartilhamento */}
+      <TicketShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        senha={shareData?.senha ?? null}
+        paciente={shareData?.paciente ?? null}
+        unidadeNome={unidadeNome}
+        logoUrl={visualConfig?.logo_url}
+      />
     </div>
   );
 }
