@@ -279,6 +279,36 @@ function RecepcaoPage() {
     return () => clearTimeout(timer);
   }, [pacienteQuery, unidadeId]);
 
+  // Atalho de teclado para Novo Paciente (tecla "N")
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isTyping = 
+        target.tagName === "INPUT" || 
+        target.tagName === "TEXTAREA" || 
+        target.isContentEditable;
+
+      if (!isTyping && (e.key === "n" || e.key === "N") && !novoOpen) {
+        e.preventDefault();
+        const q = pacienteQuery.trim();
+        const digits = onlyDigits(q);
+        if (digits.length === 11) {
+          setNovoCpf(maskCPF(digits));
+          setNovoNome("");
+        } else {
+          setNovoNome(q);
+          setNovoCpf("");
+        }
+        setNovoTelefone("");
+        setNovoOpen(true);
+      }
+    };
+
+    window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [novoOpen, pacienteQuery]);
+
   const filaSelecionada = useMemo(
     () => filas.find((f) => f.id === filaId) ?? null,
     [filas, filaId],
@@ -699,7 +729,7 @@ function RecepcaoPage() {
                 className="h-8 gap-1.5 text-xs font-semibold text-primary border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
               >
                 <UserPlus className="h-3.5 w-3.5" /> 
-                <span>Cadastro Rápido</span>
+                <span>Cadastro Rápido <kbd className="ml-1 hidden rounded border bg-muted px-1.5 font-sans text-[10px] font-medium text-muted-foreground opacity-100 sm:inline-block">N</kbd></span>
               </Button>
             </div>
             {pacienteSelecionado ? (
