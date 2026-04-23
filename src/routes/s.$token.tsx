@@ -245,11 +245,22 @@ function PublicSenhaPage() {
                   <span className="font-medium">Aguardando chamada</span>
                 </div>
                 {aguardandoNaFrente !== null && (
-                  <p className="text-sm text-slate-400">
-                    {aguardandoNaFrente === 0
-                      ? "Você é o próximo da fila."
-                      : `${aguardandoNaFrente} ${aguardandoNaFrente === 1 ? "pessoa" : "pessoas"} na sua frente`}
-                  </p>
+                  <div className="space-y-3">
+                    <p className="text-sm text-slate-400">
+                      {aguardandoNaFrente === 0
+                        ? "Você é o próximo da fila."
+                        : `${aguardandoNaFrente} ${aguardandoNaFrente === 1 ? "pessoa" : "pessoas"} na sua frente`}
+                    </p>
+                    
+                    {fila?.tempo_espera_estimado && aguardandoNaFrente > 0 && (
+                      <div className="rounded-2xl bg-white/5 border border-white/10 p-4 mt-4">
+                        <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Expectativa de espera</div>
+                        <div className="text-2xl font-display font-bold text-primary">
+                          ~{aguardandoNaFrente * fila.tempo_espera_estimado} min
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
