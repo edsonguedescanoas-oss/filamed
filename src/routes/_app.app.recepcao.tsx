@@ -274,7 +274,7 @@ function RecepcaoPage() {
 
       // Abre modal de compartilhamento
       setShareData({
-        senha: { codigo: senha.codigo, token_publico: senha.token_publico! },
+        senha: { id: senha.id, codigo: senha.codigo, token_publico: senha.token_publico! },
         paciente: {
           nome_completo: pacienteSelecionado.nome_completo,
           telefone: pacienteSelecionado.telefone,
