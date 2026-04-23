@@ -36,10 +36,10 @@ export function OrientationGuard() {
   if (!isMobileOrTablet || !isPortrait) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-900 p-8 text-center text-white">
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background p-8 text-center text-foreground">
       <div className="mb-8 animate-pulse">
         <div className="relative">
-          <Smartphone className="h-20 w-20 text-slate-500" />
+          <Smartphone className="h-20 w-20 text-muted-foreground/30" />
           <Smartphone className="absolute inset-0 h-20 w-20 rotate-90 text-primary animate-[spin_3s_ease-in-out_infinite]" />
         </div>
       </div>
@@ -48,14 +48,14 @@ export function OrientationGuard() {
         Gire seu dispositivo
       </h2>
       
-      <p className="text-slate-400 text-base leading-relaxed max-w-[280px] mx-auto">
+      <p className="text-muted-foreground text-base leading-relaxed max-w-[280px] mx-auto">
         Este sistema foi otimizado para visualização em modo <strong>paisagem</strong> (horizontal).
       </p>
       
-      <div className="mt-10 flex gap-2 items-center text-xs text-slate-500 uppercase tracking-widest font-semibold">
-        <div className="h-px w-8 bg-slate-800" />
+      <div className="mt-10 flex gap-2 items-center text-[10px] text-muted-foreground/50 uppercase tracking-widest font-semibold">
+        <div className="h-px w-8 bg-border" />
         Modo Horizontal Recomendado
-        <div className="h-px w-8 bg-slate-800" />
+        <div className="h-px w-8 bg-border" />
       </div>
     </div>
   );
