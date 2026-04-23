@@ -1236,7 +1236,7 @@ export type Database = {
         | "farmacia"
         | "laboratorio"
         | "outro"
-      notificacao_status: "pendente" | "enviada" | "falhou"
+      notificacao_status: "pendente" | "enviada" | "falhou" | "ignorado"
       senha_prioridade: "normal" | "preferencial" | "urgente"
       senha_status:
         | "aguardando"
@@ -1400,7 +1400,7 @@ export const Constants = {
         "laboratorio",
         "outro",
       ],
-      notificacao_status: ["pendente", "enviada", "falhou"],
+      notificacao_status: ["pendente", "enviada", "falhou", "ignorado"],
       senha_prioridade: ["normal", "preferencial", "urgente"],
       senha_status: [
         "aguardando",

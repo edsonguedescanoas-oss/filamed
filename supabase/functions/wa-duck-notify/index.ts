@@ -87,6 +87,19 @@ export const handler = async (req: Request) => {
 
       if (!paciente?.telefone) {
         console.log(`Paciente ${paciente?.nome_completo} não possui telefone. Ignorando.`);
+        
+        if (finalUnidadeId) {
+          await supabaseClient.from("notificacoes_log").insert({
+            unidade_id: finalUnidadeId,
+            senha_id: finalSenhaId,
+            canal: "whatsapp",
+            destinatario: "N/A",
+            status: "ignorado",
+            mensagem: mensagem || "(Vazia)",
+            erro: "Paciente sem telefone cadastrado",
+          });
+        }
+
         return new Response(JSON.stringify({ status: "ignored", reason: "no_phone" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -141,6 +154,20 @@ Avisaremos você quando for a sua vez!`;
 
       if (existingByKey && existingByKey.status === "enviada") {
         console.log(`Idempotency key ${idempotency_key} já processada com sucesso. Ignorando.`);
+        
+        if (finalUnidadeId) {
+          await supabaseClient.from("notificacoes_log").insert({
+            unidade_id: finalUnidadeId,
+            senha_id: finalSenhaId,
+            canal: "whatsapp",
+            destinatario: formattedTelefone,
+            status: "ignorado",
+            mensagem: mensagem,
+            erro: "Duplicidade via idempotency_key",
+            idempotency_key: idempotency_key,
+          });
+        }
+
         return new Response(JSON.stringify({ 
           success: true, 
           status: "ignored", 
@@ -173,6 +200,20 @@ Avisaremos você quando for a sua vez!`;
 
       if (existingLog) {
         console.log(`Notificação de chamada já enviada para senha_id ${finalSenhaId} com esta mensagem. Ignorando duplicata.`);
+        
+        if (finalUnidadeId) {
+          await supabaseClient.from("notificacoes_log").insert({
+            unidade_id: finalUnidadeId,
+            senha_id: finalSenhaId,
+            canal: "whatsapp",
+            destinatario: formattedTelefone,
+            status: "ignorado",
+            mensagem: mensagem,
+            erro: "Duplicata ignorada (mesma senha e mensagem)",
+            idempotency_key: idempotency_key,
+          });
+        }
+
         return new Response(JSON.stringify({ 
           success: true, 
           status: "ignored", 

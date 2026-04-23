@@ -362,11 +362,14 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                         {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       <Badge 
-                        variant={log.status === "enviada" ? "outline" : "destructive"} 
-                        className={cn("text-[9px] px-1 h-4", log.status === "enviada" ? "text-emerald-500 border-emerald-500/20" : "")}
+                        variant={log.status === "enviada" ? "outline" : log.status === "ignorado" ? "secondary" : "destructive"} 
+                        className={cn("text-[9px] px-1 h-4", 
+                          log.status === "enviada" ? "text-emerald-500 border-emerald-500/20" : 
+                          log.status === "ignorado" ? "text-amber-500 border-amber-600/20 dark:border-amber-500/20" : ""
+                        )}
                         title={log.erro || undefined}
                       >
-                        {log.status === "enviada" ? "sucesso" : "erro"}
+                        {log.status === "enviada" ? "sucesso" : log.status === "ignorado" ? "ignorado" : "erro"}
                       </Badge>
                     </div>
                   </div>
