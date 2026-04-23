@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Loader2,
   Megaphone,
@@ -225,6 +225,23 @@ function AtendimentoPage() {
     const ids = new Set(filasVisiveis.map((f) => f.id));
     return senhas.filter((s) => s.status === "aguardando" && ids.has(s.fila_id)).length;
   }, [filasVisiveis, senhas]);
+
+  const handlePontoAtivoChange = useCallback(
+    (p: { id: string; nome: string; fila_id: string | null } | null) => {
+      setPontoAtivo((prev) => {
+        const next = p ? { id: p.id, nome: p.nome, fila_id: p.fila_id } : null;
+        if (
+          prev?.id === next?.id &&
+          prev?.nome === next?.nome &&
+          prev?.fila_id === next?.fila_id
+        ) {
+          return prev;
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   // Ações
   const abrirChamar = (s: Senha) => {
@@ -535,9 +552,7 @@ function AtendimentoPage() {
           <PontoAtendimentoSelector
             tipos={["consultorio", "exame", "outro"]}
             label="Você está em"
-            onChange={(p) =>
-              setPontoAtivo(p ? { id: p.id, nome: p.nome, fila_id: p.fila_id } : null)
-            }
+            onChange={handlePontoAtivoChange}
             emptyHint="Nenhum consultório/sala cadastrado. Peça ao admin para criar em /app/pontos."
           />
 
