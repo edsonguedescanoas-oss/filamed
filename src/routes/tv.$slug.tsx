@@ -79,12 +79,31 @@ interface VoiceConfig {
 
 type TvSearchParams = {
   debug?: boolean;
+  /**
+   * Filtro multi-TV: lista de pontos (por ID, slug ou nome literal) cujas
+   * chamadas devem ser exibidas nesta TV. Aceita vários separados por vírgula.
+   * Exemplos:
+   *   /tv/clinica?ponto=Consultório%20001
+   *   /tv/clinica?ponto=Consultório%20001,Consultório%20002
+   *   /tv/clinica?ponto=<uuid-do-ponto>
+   * Quando ausente, a TV exibe TODAS as chamadas da unidade (modo único).
+   */
+  ponto?: string;
+  /**
+   * Filtro alternativo por TIPO de ponto (guiche, consultorio, exame, outro).
+   * Útil pra TV genérica de "consultórios" sem listar 1 a 1.
+   *   /tv/clinica?tipos=consultorio
+   *   /tv/clinica?tipos=guiche,consultorio
+   */
+  tipos?: string;
 };
 
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearchParams => {
     return {
       debug: search.debug === true || search.debug === "true",
+      ponto: typeof search.ponto === "string" ? search.ponto : undefined,
+      tipos: typeof search.tipos === "string" ? search.tipos : undefined,
     };
   },
   loader: async ({ params: { slug } }) => {
@@ -97,11 +116,21 @@ export const Route = createFileRoute("/tv/$slug")({
     }
 
     const unidade = uniData[0];
+
+    // Busca pontos da unidade pra resolver IDs/tipos do filtro client-side.
+    // Esta query usa a policy pública de leitura via RPC dedicada — caso ela
+    // não exista, ignoramos silenciosamente (filtro por nome continua valendo).
+    const { data: pontosData } = await supabase
+      .from("pontos_atendimento")
+      .select("id, nome, tipo, ativo")
+      .eq("unidade_id", unidade.id)
+      .eq("ativo", true);
+
     const { data: chamadasData, error: chamadasError } = await supabase
       .rpc("get_chamadas_recentes_detalhadas", { _unidade_id: unidade.id });
-    
+
     if (chamadasError) console.error("Erro ao buscar chamadas:", chamadasError);
-    
+
     const chamadas = (chamadasData ?? []).map(c => ({
       ...c,
       senha: {
@@ -112,10 +141,56 @@ export const Route = createFileRoute("/tv/$slug")({
       }
     }));
 
-    return { unidade, initialChamadas: chamadas as Chamada[] };
+    return {
+      unidade,
+      initialChamadas: chamadas as Chamada[],
+      pontos: (pontosData ?? []) as Array<{ id: string; nome: string; tipo: string; ativo: boolean }>,
+    };
   },
   component: TvPage,
 });
+
+/**
+ * Resolve a lista de NOMES DE DESTINOS aceitos para esta TV, a partir dos
+ * filtros `?ponto=` e `?tipos=` cruzados com os pontos cadastrados.
+ *
+ * - Sem filtro → retorna `null` (= aceita tudo).
+ * - Com filtro → retorna `Set<string>` de nomes (case-insensitive, normalizado).
+ *
+ * Aceita no `?ponto=` tanto UUID quanto nome literal — útil pra setup manual
+ * em quem só sabe escrever "Consultório 001" no Fire TV.
+ */
+function resolverFiltroDestinos(
+  pontoParam: string | undefined,
+  tiposParam: string | undefined,
+  pontos: Array<{ id: string; nome: string; tipo: string }>,
+): Set<string> | null {
+  if (!pontoParam && !tiposParam) return null;
+
+  const norm = (s: string) => s.trim().toLowerCase();
+  const aceitos = new Set<string>();
+
+  if (pontoParam) {
+    const tokens = pontoParam.split(",").map((t) => t.trim()).filter(Boolean);
+    for (const tok of tokens) {
+      // Match por ID (UUID) ou nome
+      const porId = pontos.find((p) => p.id === tok);
+      const porNome = pontos.find((p) => norm(p.nome) === norm(tok));
+      if (porId) aceitos.add(norm(porId.nome));
+      else if (porNome) aceitos.add(norm(porNome.nome));
+      else aceitos.add(norm(tok)); // fallback: aceita literal mesmo sem cadastro
+    }
+  }
+
+  if (tiposParam) {
+    const tipos = new Set(tiposParam.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean));
+    for (const p of pontos) {
+      if (tipos.has(p.tipo.toLowerCase())) aceitos.add(norm(p.nome));
+    }
+  }
+
+  return aceitos.size > 0 ? aceitos : null;
+}
 
 function soletrar(codigo: string) {
   return codigo.split("").join(" ").replace(/0/g, "zero");
