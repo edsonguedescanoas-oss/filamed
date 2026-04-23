@@ -622,8 +622,14 @@ function RecepcaoPage() {
                 <Input
                   value={pacienteQuery}
                   onChange={(e) => setPacienteQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !pacienteSelecionado && pacienteQuery.trim().length >= 2 && pacientes.length === 0 && !searchingPac) {
+                      setNovoNome(pacienteQuery.trim());
+                      setNovoOpen(true);
+                    }
+                  }}
                   placeholder="Buscar por nome ou CPF…"
-                  className="pl-9"
+                  className="pl-9 h-11"
                 />
                 {pacienteQuery.trim().length >= 2 && (
                   <div className="absolute z-10 mt-1 w-full rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
