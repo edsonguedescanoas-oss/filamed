@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { RoleGuard } from "@/components/role-guard";
+import { HistoricoPonto } from "@/components/historico-ponto";
 import type { Database } from "@/integrations/supabase/types";
 
 type PontoTipo = Database["public"]["Enums"]["ponto_tipo"];
@@ -314,6 +315,17 @@ function PontosPage() {
           );
         })}
       </div>
+
+      {/* Histórico unificado de TODOS os pontos da unidade — admin pode filtrar
+          por qualquer ponto/período/senha aqui (visão de auditoria operacional). */}
+      {unidadeId && (
+        <div className="mt-10">
+          <HistoricoPonto
+            unidadeId={unidadeId}
+            titulo="Histórico de chamadas e finalizações"
+          />
+        </div>
+      )}
 
       {/* Dialog edição */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
