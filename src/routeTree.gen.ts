@@ -43,6 +43,7 @@ import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
 import { Route as AdminAdminAuditoriaRouteImport } from './routes/_admin.admin.auditoria'
 import { Route as AdminAdminAlertasRouteImport } from './routes/_admin.admin.alertas'
 import { Route as AdminAdminUnidadesUnidadeIdRouteImport } from './routes/_admin.admin.unidades.$unidadeId'
+import { Route as AdminAdminUnidadesUnidadeIdMetricasRouteImport } from './routes/_admin.admin.unidades.$unidadeId.metricas'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -213,6 +214,12 @@ const AdminAdminUnidadesUnidadeIdRoute =
     path: '/unidades/$unidadeId',
     getParentRoute: () => AdminAdminRoute,
   } as any)
+const AdminAdminUnidadesUnidadeIdMetricasRoute =
+  AdminAdminUnidadesUnidadeIdMetricasRouteImport.update({
+    id: '/metricas',
+    path: '/metricas',
+    getParentRoute: () => AdminAdminUnidadesUnidadeIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -246,7 +253,8 @@ export interface FileRoutesByFullPath {
   '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app/': typeof AppAppIndexRoute
-  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
+  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
+  '/admin/unidades/$unidadeId/metricas': typeof AdminAdminUnidadesUnidadeIdMetricasRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -279,7 +287,8 @@ export interface FileRoutesByTo {
   '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app': typeof AppAppIndexRoute
-  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
+  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
+  '/admin/unidades/$unidadeId/metricas': typeof AdminAdminUnidadesUnidadeIdMetricasRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -316,7 +325,8 @@ export interface FileRoutesById {
   '/_app/app/tv': typeof AppAppTvRoute
   '/_app/app/voz': typeof AppAppVozRoute
   '/_app/app/': typeof AppAppIndexRoute
-  '/_admin/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
+  '/_admin/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
+  '/_admin/admin/unidades/$unidadeId/metricas': typeof AdminAdminUnidadesUnidadeIdMetricasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -353,6 +363,7 @@ export interface FileRouteTypes {
     | '/app/voz'
     | '/app/'
     | '/admin/unidades/$unidadeId'
+    | '/admin/unidades/$unidadeId/metricas'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/app/voz'
     | '/app'
     | '/admin/unidades/$unidadeId'
+    | '/admin/unidades/$unidadeId/metricas'
   id:
     | '__root__'
     | '/'
@@ -422,6 +434,7 @@ export interface FileRouteTypes {
     | '/_app/app/voz'
     | '/_app/app/'
     | '/_admin/admin/unidades/$unidadeId'
+    | '/_admin/admin/unidades/$unidadeId/metricas'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -682,8 +695,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminUnidadesUnidadeIdRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/unidades/$unidadeId/metricas': {
+      id: '/_admin/admin/unidades/$unidadeId/metricas'
+      path: '/metricas'
+      fullPath: '/admin/unidades/$unidadeId/metricas'
+      preLoaderRoute: typeof AdminAdminUnidadesUnidadeIdMetricasRouteImport
+      parentRoute: typeof AdminAdminUnidadesUnidadeIdRoute
+    }
   }
 }
+
+interface AdminAdminUnidadesUnidadeIdRouteChildren {
+  AdminAdminUnidadesUnidadeIdMetricasRoute: typeof AdminAdminUnidadesUnidadeIdMetricasRoute
+}
+
+const AdminAdminUnidadesUnidadeIdRouteChildren: AdminAdminUnidadesUnidadeIdRouteChildren =
+  {
+    AdminAdminUnidadesUnidadeIdMetricasRoute:
+      AdminAdminUnidadesUnidadeIdMetricasRoute,
+  }
+
+const AdminAdminUnidadesUnidadeIdRouteWithChildren =
+  AdminAdminUnidadesUnidadeIdRoute._addFileChildren(
+    AdminAdminUnidadesUnidadeIdRouteChildren,
+  )
 
 interface AdminAdminRouteChildren {
   AdminAdminAlertasRoute: typeof AdminAdminAlertasRoute
@@ -691,7 +726,7 @@ interface AdminAdminRouteChildren {
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminMetricasRoute: typeof AdminAdminMetricasRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
-  AdminAdminUnidadesUnidadeIdRoute: typeof AdminAdminUnidadesUnidadeIdRoute
+  AdminAdminUnidadesUnidadeIdRoute: typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
 }
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
@@ -700,7 +735,8 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminMetricasRoute: AdminAdminMetricasRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
-  AdminAdminUnidadesUnidadeIdRoute: AdminAdminUnidadesUnidadeIdRoute,
+  AdminAdminUnidadesUnidadeIdRoute:
+    AdminAdminUnidadesUnidadeIdRouteWithChildren,
 }
 
 const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
