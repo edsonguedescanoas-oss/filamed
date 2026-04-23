@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AuditoriaDiff } from "@/components/admin/auditoria-diff";
 
 export const Route = createFileRoute("/_admin/admin/auditoria")({
   head: () => ({
