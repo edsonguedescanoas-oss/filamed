@@ -1,7 +1,8 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, QrCode as QrIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { QrCode } from "@/components/qr-code";
 
 type SenhaStatus =
   | "aguardando"
@@ -22,9 +23,10 @@ type SenhaPub = {
   updated_at: string;
 };
 
-type FilaPub = { id: string; nome: string; cor: string | null };
+type FilaPub = { id: string; nome: string; cor: string | null; tempo_espera_estimado: number };
 type UnidadePub = { id: string; nome: string; slug: string };
 type ChamadaPub = { id: string; destino: string; created_at: string };
+type VisualPub = { logo_url: string | null };
 
 export const Route = createFileRoute("/s/$token")({
   head: () => ({
