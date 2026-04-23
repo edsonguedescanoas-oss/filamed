@@ -78,6 +78,13 @@ function AtendimentoPage() {
   const [destino, setDestino] = useState("");
   const [finalizar, setFinalizar] = useState<{ atendimento: Atendimento; senha: Senha } | null>(null);
   const [observacoes, setObservacoes] = useState("");
+  const [requerRetorno, setRequerRetorno] = useState(false);
+  // Ponto de atendimento ativo do usuário (Consultório 001, Sala 02…)
+  const [pontoAtivo, setPontoAtivo] = useState<{
+    id: string;
+    nome: string;
+    fila_id: string | null;
+  } | null>(null);
 
   // Timer ticker
   const [tick, setTick] = useState(0);
