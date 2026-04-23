@@ -315,7 +315,7 @@ Avisaremos você quando for a sua vez!`;
 
     // 5. Loga a notificação (apenas se tivermos uma unidade)
     if (finalUnidadeId) {
-      const { error: logError } = await supabaseClient.from("notificacoes_log").insert({
+      const logData: any = {
         unidade_id: finalUnidadeId,
         senha_id: finalSenhaId,
         canal: "whatsapp",
@@ -324,10 +324,15 @@ Avisaremos você quando for a sua vez!`;
         mensagem: mensagem,
         erro: response.ok ? null : (responseText || "Erro desconhecido"),
         idempotency_key: idempotency_key,
-      });
+      };
+
+      // Se temos idempotency_key, usamos upsert para não duplicar logs de reenvio
+      const { error: logError } = await supabaseClient
+        .from("notificacoes_log")
+        .upsert(logData, { onConflict: 'idempotency_key' });
 
       if (logError) {
-        console.error("Erro ao inserir log de notificação:", logError.message);
+        console.error("Erro ao inserir/atualizar log de notificação:", logError.message);
       }
     }
 
