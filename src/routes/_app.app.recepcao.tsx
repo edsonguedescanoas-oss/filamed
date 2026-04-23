@@ -15,6 +15,7 @@ import {
   Trash2,
   MessageSquare,
   Share2,
+  Printer,
 } from "lucide-react";
 import { TicketShareDialog } from "@/components/ticket-share-dialog";
 import { toast } from "sonner";
