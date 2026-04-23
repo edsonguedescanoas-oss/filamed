@@ -292,8 +292,9 @@ function RecepcaoPage() {
       setPrioridade("normal");
       // refresh fila para atualizar contador exibido
       void fetchFilas();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Falha ao gerar senha";
+    } catch (err: any) {
+      console.error("Erro ao gerar senha:", err);
+      const msg = err?.message || err?.error_description || "Falha ao gerar senha";
       toast.error(msg);
     } finally {
       setEmitting(false);
