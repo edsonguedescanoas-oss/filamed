@@ -63,6 +63,11 @@ export function OrientationGuard() {
       console.error("Failed to force landscape:", error);
     }
   };
+61: 
+62:   const handleSkip = () => {
+63:     setHasSkipped(true);
+64:     localStorage.setItem("orientation-guard-skipped", "true");
+65:   };
 
   // Se não for mobile/tablet ou já estiver na horizontal ou tiver ignorado, não faz nada
   if (!isMobileOrTablet || !isPortrait || hasSkipped) return null;
