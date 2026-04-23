@@ -6,9 +6,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
-import { MessageSquare, Copy, Check, Download, Share2 } from "lucide-react";
+import { MessageSquare, Copy, Check, Download, Share2, Printer } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import QRCode from "qrcode";
 
 type Props = {
   open: boolean;
