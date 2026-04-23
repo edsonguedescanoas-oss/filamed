@@ -144,10 +144,52 @@ function ContaPage() {
       if (!error) setFaturas((data ?? []) as FaturaRow[]);
       setLoadingFaturas(false);
     })();
-    return () => {
-      cancel = true;
-    };
+  const [ticketConfig, setTicketConfig] = useState({
+    logo_url: "",
+    unidade_nome: "",
+    rodape: "",
+  });
+  const [savingTicket, setSavingTicket] = useState(false);
+
+  useEffect(() => {
+    if (!profile?.unidade_id) return;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("unidades")
+        .select("nome, ticket_logo_url, ticket_unidade_nome, ticket_rodape")
+        .eq("id", profile.unidade_id)
+        .single();
+      if (!error && data) {
+        setTicketConfig({
+          logo_url: data.ticket_logo_url || "",
+          unidade_nome: data.ticket_unidade_nome || data.nome || "",
+          rodape: data.ticket_rodape || "",
+        });
+      }
+    })();
   }, [profile?.unidade_id]);
+
+  const handleSaveTicket = async () => {
+    if (!profile?.unidade_id) return;
+    setSavingTicket(true);
+    try {
+      const { error } = await supabase
+        .from("unidades")
+        .update({
+          ticket_logo_url: ticketConfig.logo_url || null,
+          ticket_unidade_nome: ticketConfig.unidade_nome || null,
+          ticket_rodape: ticketConfig.rodape || null,
+        })
+        .eq("id", profile.unidade_id);
+      if (error) throw error;
+      toast.success("Configurações do ticket salvas!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + err.message);
+    } finally {
+      setSavingTicket(false);
+    }
+  };
+
 
   const recursosAtivos = useMemo(() => {
     const list = plano?.recursos
