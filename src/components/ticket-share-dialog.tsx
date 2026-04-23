@@ -36,9 +36,21 @@ export function TicketShareDialog({
   unidadeNome,
   logoUrl,
   rodape,
+  autoPrint = false,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const ticketRef = useRef<HTMLDivElement>(null);
+  const printTriggered = useRef(false);
+
+  useEffect(() => {
+    if (open && autoPrint && senha && paciente && !printTriggered.current) {
+      printTriggered.current = true;
+      void handlePrint();
+    }
+    if (!open) {
+      printTriggered.current = false;
+    }
+  }, [open, autoPrint, senha, paciente]);
 
   if (!senha || !paciente) return null;
 
