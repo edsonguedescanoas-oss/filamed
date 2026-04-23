@@ -24,7 +24,16 @@ export const handler = async (req: Request) => {
       console.error("Erro ao parsear o JSON do request:", e.message);
       throw new Error("Invalid JSON body");
     }
-    const { senha_id, tipo = "criacao", mesa_nome, telefone: testTelefone, mensagem: testMensagem, unidade_id: testUnidadeId, config: testConfig } = body;
+    const { 
+      senha_id, 
+      tipo = "criacao", 
+      mesa_nome, 
+      telefone: testTelefone, 
+      mensagem: testMensagem, 
+      unidade_id: testUnidadeId, 
+      config: testConfig,
+      idempotency_key 
+    } = body;
     
     if (tipo !== "teste" && !senha_id) {
       throw new Error("senha_id is required for non-test types");
