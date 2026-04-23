@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AuditoriaDiff } from "@/components/admin/auditoria-diff";
 
 export const Route = createFileRoute("/_admin/admin/auditoria")({
   head: () => ({
@@ -466,13 +467,8 @@ function AdminAuditoriaPage() {
                     </button>
 
                     {isOpen && hasPayload && (
-                      <div className="mt-3 ml-12 grid gap-3 sm:grid-cols-2">
-                        {ev.dados_antes && (
-                          <PayloadBlock title="Antes" data={ev.dados_antes} />
-                        )}
-                        {ev.dados_depois && (
-                          <PayloadBlock title="Depois" data={ev.dados_depois} />
-                        )}
+                      <div className="mt-3 ml-12">
+                        <AuditoriaDiff before={ev.dados_antes} after={ev.dados_depois} />
                       </div>
                     )}
                   </li>
@@ -516,15 +512,3 @@ function ResumoCard({
   );
 }
 
-function PayloadBlock({ title, data }: { title: string; data: Record<string, unknown> }) {
-  return (
-    <div className="rounded-md border border-border bg-muted/40 p-3">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </p>
-      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-snug text-foreground/80">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
-  );
-}
