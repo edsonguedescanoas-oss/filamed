@@ -9,7 +9,7 @@ type Step = {
   id: string;
   title: string;
   desc: string;
-  to: "/app/filas" | "/app/recepcao" | "/app/voz" | "/tv";
+  to: "/app/conta" | "/app/filas" | "/app/recepcao" | "/app/voz" | "/app/notificacoes" | "/tv";
   done: boolean;
 };
 
@@ -35,28 +35,49 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
   useEffect(() => {
     let cancelled = false;
     async function check() {
-      const [filasRes, senhasRes, vozRes, tvRes] = await Promise.all([
+      const [unidadeRes, filasRes, senhasRes, vozRes, notificacoesRes] = await Promise.all([
+        supabase.from("unidades").select("telefone, endereco, whatsapp_config, google_review_url").eq("id", unidadeId).maybeSingle(),
         supabase.from("filas").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
         supabase.from("senhas").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
         supabase.from("unidade_voice_config").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
-        supabase.from("chamadas").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
+        supabase.from("notificacoes_log").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
       ]);
       if (cancelled) return;
 
+      const unidade = unidadeRes.data;
+      const whatsappConfig = (unidade?.whatsapp_config ?? {}) as {
+        api_url?: string;
+        api_key?: string;
+        instance_id?: string;
+        template_chamada?: string;
+        template_finalizacao?: string;
+      };
+      const unidadeConfigurada = Boolean(unidade?.telefone || unidade?.endereco);
+      const notificacoesConfiguradas = Boolean(
+        whatsappConfig.api_url && whatsappConfig.api_key && whatsappConfig.instance_id,
+      );
+
       const next: Step[] = [
         {
+          id: "unidade",
+          title: "Complete os dados da unidade",
+          desc: "Nome público, telefone, endereço e dados exibidos nos comprovantes.",
+          to: "/app/conta",
+          done: unidadeConfigurada,
+        },
+        {
           id: "fila",
-          title: "Crie sua primeira fila",
-          desc: "Defina prefixo (CONS, EXM…), cor e ordem de exibição.",
+          title: "Crie as filas de atendimento",
+          desc: "Separe recepção, consultas, exames e prioridades por prefixo.",
           to: "/app/filas",
           done: (filasRes.count ?? 0) > 0,
         },
         {
-          id: "senha",
-          title: "Gere uma senha de teste",
-          desc: "Pela recepção, emita uma senha pra ver o fluxo completo.",
-          to: "/app/recepcao",
-          done: (senhasRes.count ?? 0) > 0,
+          id: "notificacoes",
+          title: "Configure os canais de notificação",
+          desc: "Conecte WhatsApp, mensagem final e link de avaliação no Google.",
+          to: "/app/notificacoes",
+          done: notificacoesConfiguradas,
         },
         {
           id: "voz",
@@ -66,11 +87,11 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
           done: (vozRes.count ?? 0) > 0,
         },
         {
-          id: "tv",
-          title: "Abra a TV e chame a senha",
-          desc: "Cole a URL pública na Smart TV e faça a primeira chamada.",
-          to: "/tv",
-          done: (tvRes.count ?? 0) > 0,
+          id: "teste",
+          title: "Faça um teste de ponta a ponta",
+          desc: "Gere uma senha, aceite no guichê e confirme as notificações.",
+          to: "/app/recepcao",
+          done: (senhasRes.count ?? 0) > 0 && (notificacoesRes.count ?? 0) > 0,
         },
       ];
       setSteps(next);
