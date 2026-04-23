@@ -728,8 +728,9 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
           if (!user) return;
           const { data } = await supabase
             .from("atendimentos")
+            // Hint explícito da FK senha_id porque agora existe também senha_retorno_id apontando para senhas
             .select(
-              "id,iniciado_em,senha_id,paciente_id,senhas!inner(codigo,filas(nome)),pacientes(nome_completo)",
+              "id,iniciado_em,senha_id,paciente_id,senhas!atendimentos_senha_id_fkey!inner(codigo,filas(nome)),pacientes(nome_completo)",
             )
             .eq("unidade_id", unidadeId)
             .eq("profissional_id", user.id)

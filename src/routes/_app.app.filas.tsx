@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_app/app/filas")({
   ),
 });
 
-const TIPOS: { value: FilaTipo; label: string }[] = [
+const TIPOS: { value: Exclude<FilaTipo, "guiche">; label: string }[] = [
   { value: "consulta", label: "Consulta" },
   { value: "exame", label: "Exame" },
   { value: "enfermagem", label: "Enfermagem" },
@@ -60,6 +60,8 @@ const TIPOS: { value: FilaTipo; label: string }[] = [
   { value: "laboratorio", label: "Laboratório" },
   { value: "outro", label: "Outro" },
 ];
+// Tipo de fila editável pela UI (exclui "guiche", criado/gerenciado pelo sistema)
+type FilaTipoEditavel = Exclude<FilaTipo, "guiche">;
 
 const PALETA = [
   "#0EA5E9", // sky
@@ -397,7 +399,8 @@ function FilaDialog({
       if (editing) {
         setForm({
           nome: editing.nome,
-          tipo: editing.tipo,
+          // Fila do guichê não é editada por aqui; cai para "outro" como fallback seguro
+          tipo: (editing.tipo === "guiche" ? "outro" : editing.tipo) as FilaTipoEditavel,
           prefixo_senha: editing.prefixo_senha,
           cor: editing.cor ?? PALETA[0],
         });
@@ -485,7 +488,7 @@ function FilaDialog({
               <Label htmlFor="fila-tipo">Tipo *</Label>
               <Select
                 value={form.tipo}
-                onValueChange={(v) => setForm({ ...form, tipo: v as FilaTipo })}
+                onValueChange={(v) => setForm({ ...form, tipo: v as FilaTipoEditavel })}
               >
                 <SelectTrigger id="fila-tipo">
                   <SelectValue />
