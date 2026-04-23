@@ -140,7 +140,7 @@ function maskTelefone(v: string): string {
 function RecepcaoPage() {
   const { profile, hasAnyRole } = useAuth();
   const unidadeId = profile?.unidade_id;
-  const canGerar = hasAnyRole(["admin", "recepcao"]);
+  const canGerar = hasAnyRole(["admin", "recepcao", "super_admin"]);
 
   const [filas, setFilas] = useState<Fila[]>([]);
   const [loadingFilas, setLoadingFilas] = useState(true);
