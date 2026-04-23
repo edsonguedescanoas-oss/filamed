@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Smartphone } from "lucide-react";
+import { Smartphone, ChevronRight } from "lucide-react";
 
 export function OrientationGuard() {
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  const [hasSkipped, setHasSkipped] = useState(false);
 
   useEffect(() => {
     const checkOrientation = () => {
@@ -58,8 +59,8 @@ export function OrientationGuard() {
     }
   };
 
-  // Se não for mobile/tablet ou já estiver na horizontal, não faz nada
-  if (!isMobileOrTablet || !isPortrait) return null;
+  // Se não for mobile/tablet ou já estiver na horizontal ou tiver ignorado, não faz nada
+  if (!isMobileOrTablet || !isPortrait || hasSkipped) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm p-8 text-center text-foreground">
@@ -72,26 +73,37 @@ export function OrientationGuard() {
       </div>
       
       <h2 className="font-display text-3xl font-bold mb-4 tracking-tight">
-        Modo Paisagem Necessário
+        Modo Paisagem Recomendado
       </h2>
       
       <p className="text-muted-foreground text-lg leading-relaxed max-w-[320px] mx-auto mb-10">
-        Para uma melhor experiência de gestão, por favor gire seu dispositivo para a <strong>horizontal</strong>.
+        Para uma melhor experiência de gestão, recomendamos girar seu dispositivo para a <strong>horizontal</strong>.
       </p>
 
-      <button
-        onClick={handleManualOrientation}
-        className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-semibold shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center gap-2"
-      >
-        <Smartphone className="h-5 w-5 rotate-90" />
-        Tentar Orientar Agora
-      </button>
+      <div className="flex flex-col gap-4 w-full max-w-[280px]">
+        <button
+          onClick={handleManualOrientation}
+          className="w-full px-6 py-4 bg-primary text-primary-foreground rounded-2xl font-semibold shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 flex items-center justify-center gap-2 group"
+        >
+          <Smartphone className="h-5 w-5 rotate-90 group-hover:rotate-0 transition-transform duration-500" />
+          Otimizar Visualização
+        </button>
+
+        <button
+          onClick={() => setHasSkipped(true)}
+          className="w-full px-6 py-3 bg-secondary/50 text-secondary-foreground rounded-xl font-medium hover:bg-secondary/80 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+        >
+          Continuar em modo retrato
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
       
-      <div className="mt-12 flex gap-3 items-center text-[11px] text-muted-foreground/40 uppercase tracking-[0.2em] font-bold">
-        <div className="h-px w-10 bg-border" />
-        Visualização Otimizada
-        <div className="h-px w-10 bg-border" />
+      <div className="mt-16 flex gap-3 items-center text-[11px] text-muted-foreground/30 uppercase tracking-[0.2em] font-bold">
+        <div className="h-px w-8 bg-border/50" />
+        Plataforma Profissional
+        <div className="h-px w-8 bg-border/50" />
       </div>
     </div>
   );
 }
+
