@@ -121,7 +121,40 @@ Avisaremos você quando for a sua vez!`;
       }
     }
 
+    // Normalização do telefone para verificação e envio
+    let formattedTelefone = telefone.replace(/\D/g, "");
+    if (formattedTelefone.length <= 11 && !formattedTelefone.startsWith("55")) {
+      formattedTelefone = "55" + formattedTelefone;
+    }
+
+    // 2. Verificação de duplicidade para chamadas (mesma senha, mesmo local, mesmo destinatário)
+    if (tipo === "chamada" && finalSenhaId) {
+      const { data: existingLog } = await supabaseClient
+        .from("notificacoes_log")
+        .select("id")
+        .eq("senha_id", finalSenhaId)
+        .eq("destinatario", formattedTelefone)
+        .eq("status", "enviada")
+        .eq("mensagem", mensagem)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingLog) {
+        console.log(`Notificação de chamada já enviada para senha_id ${finalSenhaId} com esta mensagem. Ignorando duplicata.`);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          status: "ignored", 
+          reason: "duplicate",
+          message: "Notificação de chamada já enviada anteriormente para este local." 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
     let api_url = config.api_url || Deno.env.get("WADUCK_API_URL") || "";
+
     const api_key = config.api_key || Deno.env.get("WADUCK_API_KEY");
     const instance_id = config.instance_id || Deno.env.get("WADUCK_INSTANCE_ID");
 
@@ -138,13 +171,8 @@ Avisaremos você quando for a sua vez!`;
     const endpoint = api_url.endsWith("/") ? api_url : `${api_url}/`;
     const fullUrl = `${endpoint}message/sendText/${instance_id}`;
     
-    // Formata o telefone: remove tudo que não for dígito e adiciona 55 se necessário
-    let formattedTelefone = telefone.replace(/\D/g, "");
-    if (formattedTelefone.length <= 11 && !formattedTelefone.startsWith("55")) {
-      formattedTelefone = "55" + formattedTelefone;
-    }
-
     const bodyData = {
+
       number: formattedTelefone,
       text: mensagem,
       // Compatibility for newer Evolution API versions
