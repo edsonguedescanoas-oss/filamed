@@ -144,6 +144,24 @@ export type Database = {
           },
         ]
       }
+      atomic_locks: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          key: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          key: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       chamadas: {
         Row: {
           chamado_por: string | null
@@ -1037,6 +1055,7 @@ export type Database = {
         Args: { _unidade_id: string; _user_id: string }
         Returns: boolean
       }
+      cleanup_expired_locks: { Args: never; Returns: undefined }
       cleanup_tts_cache: {
         Args: { _retention_days?: number; _service_role_key: string }
         Returns: {

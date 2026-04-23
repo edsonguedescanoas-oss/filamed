@@ -143,42 +143,71 @@ Avisaremos você quando for a sua vez!`;
       }
     }
 
-    // 2. Verificação de idempotency_key (prioridade máxima se presente)
-    if (idempotency_key) {
-      const { data: existingByKey } = await supabaseClient
-        .from("notificacoes_log")
-        .select("id, status")
-        .eq("idempotency_key", idempotency_key)
-        .limit(1)
-        .maybeSingle();
+    // 2. Trava Atômica e Idempotência por (paciente/senha/local)
+    const lockKey = `lock_wa_${finalSenhaId}_${tipo}_${mesa_nome || 'unidade'}`;
+    const generatedIdempotencyKey = idempotency_key || `idemp_${finalSenhaId}_${tipo}_${mesa_nome || 'unidade'}_${Date.now()}`;
+    
+    // Tenta adquirir a trava atômica (válida por 60 segundos)
+    const { data: lockAcquired, error: lockError } = await supabaseClient
+      .from("atomic_locks")
+      .insert({ 
+        key: lockKey, 
+        expires_at: new Date(Date.now() + 60000).toISOString() 
+      })
+      .select();
 
-      if (existingByKey && existingByKey.status === "enviada") {
-        console.log(`Idempotency key ${idempotency_key} já processada com sucesso. Ignorando.`);
-        
-        if (finalUnidadeId) {
-          await supabaseClient.from("notificacoes_log").insert({
-            unidade_id: finalUnidadeId,
-            senha_id: finalSenhaId,
-            canal: "whatsapp",
-            destinatario: formattedTelefone,
-            status: "ignorado",
-            mensagem: mensagem,
-            erro: "Duplicidade via idempotency_key",
-            idempotency_key: idempotency_key,
-          });
-        }
-
+    if (lockError && lockError.code === '23505') { // Unique constraint violation
+      // Verifica se o bloqueio ainda é válido ou se já foi concluído
+      const { data: currentLock } = await supabaseClient
+        .from("atomic_locks")
+        .select("expires_at")
+        .eq("key", lockKey)
+        .single();
+      
+      if (currentLock && new Date(currentLock.expires_at) > new Date()) {
+        console.log(`Bloqueio atômico ativo para ${lockKey}. Ignorando solicitação duplicada em processamento.`);
         return new Response(JSON.stringify({ 
           success: true, 
           status: "ignored", 
-          reason: "idempotency",
-          message: "Esta solicitação já foi processada anteriormente." 
+          reason: "locked",
+          message: "Esta notificação está sendo processada por outra instância." 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
+      } else {
+        // Bloqueio expirado, remove e tenta novamente (raro devido ao cleanup)
+        await supabaseClient.from("atomic_locks").delete().eq("key", lockKey);
       }
     }
+
+    // Verificação de log existente para garantir idempotência permanente
+    const permanentIdempotencyKey = idempotency_key || `msg_${finalSenhaId}_${tipo}_${mesa_nome || 'unidade'}`;
+    const { data: existingLog } = await supabaseClient
+      .from("notificacoes_log")
+      .select("id, status")
+      .eq("idempotency_key", permanentIdempotencyKey)
+      .eq("status", "enviada")
+      .maybeSingle();
+
+    if (existingLog) {
+      console.log(`Notificação já enviada anteriormente (idempotency: ${permanentIdempotencyKey}). Ignorando.`);
+      // Libera a trava antes de retornar
+      await supabaseClient.from("atomic_locks").delete().eq("key", lockKey);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        status: "ignored", 
+        reason: "idempotency",
+        message: "Esta notificação já foi enviada com sucesso." 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    const currentIdempotencyKey = idempotency_key || permanentIdempotencyKey;
+
 
     // Normalização do telefone para verificação e envio
     let formattedTelefone = telefone.replace(/\D/g, "");
@@ -186,132 +215,74 @@ Avisaremos você quando for a sua vez!`;
       formattedTelefone = "55" + formattedTelefone;
     }
 
-    // 2. Verificação de duplicidade para chamadas (legacy check - only if no idempotency key)
-    if (tipo === "chamada" && finalSenhaId && !idempotency_key) {
-      const { data: existingLog } = await supabaseClient
-        .from("notificacoes_log")
-        .select("id")
-        .eq("senha_id", finalSenhaId)
-        .eq("destinatario", formattedTelefone)
-        .eq("status", "enviada")
-        .eq("mensagem", mensagem)
-        .limit(1)
-        .maybeSingle();
-
-      if (existingLog) {
-        console.log(`Notificação de chamada já enviada para senha_id ${finalSenhaId} com esta mensagem. Ignorando duplicata.`);
-        
-        if (finalUnidadeId) {
-          await supabaseClient.from("notificacoes_log").insert({
-            unidade_id: finalUnidadeId,
-            senha_id: finalSenhaId,
-            canal: "whatsapp",
-            destinatario: formattedTelefone,
-            status: "ignorado",
-            mensagem: mensagem,
-            erro: "Duplicata ignorada (mesma senha e mensagem)",
-            idempotency_key: idempotency_key,
-          });
-        }
-
-        return new Response(JSON.stringify({ 
-          success: true, 
-          status: "ignored", 
-          reason: "duplicate",
-          message: "Notificação de chamada já enviada anteriormente para este local." 
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
-      }
-    }
-
-    let api_url = config.api_url || Deno.env.get("WADUCK_API_URL") || "";
-
-    const api_key = config.api_key || Deno.env.get("WADUCK_API_KEY");
-    const instance_id = config.instance_id || Deno.env.get("WADUCK_INSTANCE_ID");
-
-    if (!api_url || !api_key || !instance_id) {
-      throw new Error("WADuck API não configurada corretamente.");
-    }
-
-    // Normalização da URL: Se for WADuck e não tiver /v1, adiciona
-    if (api_url.includes("waduck.pro") && !api_url.includes("/v1")) {
-      api_url = api_url.endsWith("/") ? `${api_url}v1` : `${api_url}/v1`;
-    }
-
-    // 4. Envia para o WADuck
-    const endpoint = api_url.endsWith("/") ? api_url : `${api_url}/`;
-    const fullUrl = `${endpoint}message/sendText/${instance_id}`;
-    
-    const bodyData = {
-
-      number: formattedTelefone,
-      text: mensagem,
-      // Compatibility for newer Evolution API versions
-      textMessage: {
-        text: mensagem
-      },
-      options: {
-        delay: 0,
-        presence: "composing",
-        linkPreview: false
-      }
-    };
-
-    console.log(`Enviando WhatsApp para ${formattedTelefone} via ${fullUrl}`);
-    console.log(`Payload: ${JSON.stringify(bodyData)}`);
-
     let response: Response | null = null;
     let responseText = "";
-    let retries = 0;
-    const maxRetries = 2; // Tenta até 3 vezes (inicial + 2 reenvios)
+    let responseData = {};
 
-    while (retries <= maxRetries) {
-      try {
-        response = await fetch(fullUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": api_key,
-          },
-          body: JSON.stringify(bodyData),
-        });
+    try {
+      let api_url = config.api_url || Deno.env.get("WADUCK_API_URL") || "";
+      const api_key = config.api_key || Deno.env.get("WADUCK_API_KEY");
+      const instance_id = config.instance_id || Deno.env.get("WADUCK_INSTANCE_ID");
 
-        responseText = await response.text();
-        console.log(`WADuck Attempt ${retries + 1} - Status: ${response?.status}`);
+      if (!api_url || !api_key || !instance_id) {
+        throw new Error("WADuck API não configurada corretamente.");
+      }
 
-        if (response.ok) {
-          console.log("Mensagem enviada com sucesso!");
-          break;
+      // Normalização da URL
+      if (api_url.includes("waduck.pro") && !api_url.includes("/v1")) {
+        api_url = api_url.endsWith("/") ? `${api_url}v1` : `${api_url}/v1`;
+      }
+
+      const endpoint = api_url.endsWith("/") ? api_url : `${api_url}/`;
+      const fullUrl = `${endpoint}message/sendText/${instance_id}`;
+      
+      const bodyData = {
+        number: formattedTelefone,
+        text: mensagem,
+        textMessage: { text: mensagem },
+        options: { delay: 0, presence: "composing", linkPreview: false }
+      };
+
+      console.log(`Enviando WhatsApp para ${formattedTelefone} via ${fullUrl}`);
+
+      let retries = 0;
+      const maxRetries = 2;
+
+      while (retries <= maxRetries) {
+        try {
+          response = await fetch(fullUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": api_key },
+            body: JSON.stringify(bodyData),
+          });
+
+          responseText = await response.text();
+          if (response.ok) break;
+        } catch (e: any) {
+          responseText = e.message;
         }
 
-        console.warn(`Falha no envio (Status ${response.status}). Resposta: ${responseText}`);
+        retries++;
+        if (retries <= maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retries * 2000));
+        }
+      }
+
+      if (!response) throw new Error("Não foi possível obter resposta da API após retries: " + responseText);
+
+      try {
+        if (responseText && responseText.trim().startsWith("{")) {
+          responseData = JSON.parse(responseText);
+        }
       } catch (e: any) {
-        console.error(`Erro na tentativa ${retries + 1}:`, e.message);
-        responseText = e.message;
+        console.warn("Erro ao parsear resposta do WADuck:", e.message);
       }
 
-      retries++;
-      if (retries <= maxRetries) {
-        const delay = retries * 2000; // Delay progressivo: 2s, 4s
-        console.log(`Aguardando ${delay}ms para próxima tentativa...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
+    } finally {
+      // Libera a trava atômica
+      await supabaseClient.from("atomic_locks").delete().eq("key", lockKey);
     }
 
-    if (!response) {
-      throw new Error("Não foi possível obter resposta da API após retries: " + responseText);
-    }
-
-    let responseData = {};
-    try {
-      if (responseText && responseText.trim().startsWith("{")) {
-        responseData = JSON.parse(responseText);
-      }
-    } catch (e: any) {
-      console.warn("Erro ao parsear resposta do WADuck:", e.message);
-    }
 
     // 5. Loga a notificação (apenas se tivermos uma unidade)
     if (finalUnidadeId) {
@@ -320,10 +291,10 @@ Avisaremos você quando for a sua vez!`;
         senha_id: finalSenhaId,
         canal: "whatsapp",
         destinatario: formattedTelefone,
-        status: response.ok ? "enviada" : "falhou",
+        status: response?.ok ? "enviada" : "falhou",
         mensagem: mensagem,
-        erro: response.ok ? null : (responseText || "Erro desconhecido"),
-        idempotency_key: idempotency_key,
+        erro: response?.ok ? null : (responseText || "Erro desconhecido"),
+        idempotency_key: currentIdempotencyKey,
       };
 
       // Se temos idempotency_key, usamos upsert para não duplicar logs de reenvio
@@ -336,10 +307,11 @@ Avisaremos você quando for a sua vez!`;
       }
     }
 
-    return new Response(JSON.stringify({ success: response.ok, data: responseData, error: response.ok ? null : responseText }), {
+    return new Response(JSON.stringify({ success: response?.ok, data: responseData, error: response?.ok ? null : responseText }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+
   } catch (error: any) {
     console.error("Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
