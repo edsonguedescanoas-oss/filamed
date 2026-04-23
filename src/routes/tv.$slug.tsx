@@ -667,7 +667,7 @@ function TvPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [unidade?.id, speak]);
+  }, [unidade?.id, speak, matchDestino]);
 
   /**
    * Realtime de senhas — escutamos UPDATE para detectar quando uma senha sai
