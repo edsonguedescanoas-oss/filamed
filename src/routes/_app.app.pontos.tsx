@@ -322,10 +322,11 @@ function PontosPage() {
               <ul className="divide-y divide-border">
                 {arr.map((p) => {
                   const fila = p.fila_id ? filaById.get(p.fila_id) : null;
+                  const usuariosPermitidos = permissoesPorPonto.get(p.id) ?? new Set<string>();
                   return (
                     <li
                       key={p.id}
-                      className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 hover:bg-muted/30"
+                      className="grid gap-4 px-5 py-4 hover:bg-muted/30 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,1.2fr)_auto] lg:items-start"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <MapPin
@@ -340,6 +341,41 @@ function PontosPage() {
                             {!p.ativo && " · Inativo"}
                           </div>
                         </div>
+                      </div>
+                      <div className="rounded-lg border border-border bg-background/60 p-3">
+                        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                          <Users className="h-3.5 w-3.5" /> Usuários permitidos
+                          {usuariosPermitidos.size > 0 && (
+                            <Badge variant="outline" className="ml-auto text-[10px]">
+                              {usuariosPermitidos.size}
+                            </Badge>
+                          )}
+                        </div>
+                        {usuarios.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">Nenhum usuário ativo na unidade.</p>
+                        ) : (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {usuarios.map((usuario) => (
+                              <label
+                                key={usuario.id}
+                                className="flex items-center gap-2 text-xs text-foreground"
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="h-3.5 w-3.5 accent-primary"
+                                  checked={usuariosPermitidos.has(usuario.id)}
+                                  onChange={(e) =>
+                                    void handleTogglePermissao(p.id, usuario.id, e.target.checked)
+                                  }
+                                />
+                                <span className="truncate">{usuario.nome_completo}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          Sem usuários marcados, qualquer usuário da equipe pode ocupar este ponto.
+                        </p>
                       </div>
                       <div className="flex gap-1">
                         <Button
