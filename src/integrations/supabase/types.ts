@@ -1192,6 +1192,7 @@ export type Database = {
         Args: { _fatura_id: string; _metodo?: string }
         Returns: undefined
       }
+      admin_metricas_globais: { Args: { _meses?: number }; Returns: Json }
       admin_unidade_integracao_status: {
         Args: { _unidade_id: string }
         Returns: {
