@@ -40,7 +40,14 @@ export const Route = createFileRoute("/_app/app/atendimento")({
 type Prioridade = "normal" | "preferencial" | "urgente";
 type Status = "aguardando" | "chamada" | "em_atendimento" | "finalizada" | "ausente" | "cancelada";
 
-type Fila = { id: string; nome: string; prefixo_senha: string; cor: string | null; ordem: number };
+type Fila = {
+  id: string;
+  nome: string;
+  prefixo_senha: string;
+  cor: string | null;
+  ordem: number;
+  tipo: Database["public"]["Enums"]["fila_tipo"];
+};
 type Paciente = { id: string; nome_completo: string };
 type Senha = {
   id: string;
@@ -112,7 +119,7 @@ function AtendimentoPage() {
       const [filasRes, senhasRes, pacRes, ativoRes] = await Promise.all([
         supabase
           .from("filas")
-          .select("id,nome,prefixo_senha,cor,ordem")
+          .select("id,nome,prefixo_senha,cor,ordem,tipo")
           .eq("unidade_id", unidadeId)
           .eq("ativa", true)
           .order("ordem"),
@@ -209,6 +216,15 @@ function AtendimentoPage() {
     [senhas],
   );
   const filaById = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
+  const filasVisiveis = useMemo(() => {
+    const filasAtendimento = filas.filter((f) => f.tipo !== "guiche");
+    if (!pontoAtivo?.fila_id) return filasAtendimento;
+    return filasAtendimento.filter((f) => f.id === pontoAtivo.fila_id);
+  }, [filas, pontoAtivo?.fila_id]);
+  const totalAguardandoVisivel = useMemo(() => {
+    const ids = new Set(filasVisiveis.map((f) => f.id));
+    return senhas.filter((s) => s.status === "aguardando" && ids.has(s.fila_id)).length;
+  }, [filasVisiveis, senhas]);
 
   // Ações
   const abrirChamar = (s: Senha) => {
