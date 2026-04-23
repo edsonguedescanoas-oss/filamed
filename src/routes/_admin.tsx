@@ -34,6 +34,34 @@ function AdminLayout() {
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [alertasCount, setAlertasCount] = useState<{ total: number; criticos: number }>({
+    total: 0,
+    criticos: 0,
+  });
+
+  // Resumo de alertas para badge no menu (atualiza a cada 60s)
+  useEffect(() => {
+    let cancel = false;
+    const carregar = async () => {
+      const { data } = await (
+        supabase.rpc as unknown as (
+          fn: string,
+          a: Record<string, unknown>,
+        ) => Promise<{
+          data: { total_alertas: number; criticos: number } | null;
+          error: unknown;
+        }>
+      )("admin_alertas_resumo", { _janela_horas: 24, _min_falhas: 2 });
+      if (cancel || !data) return;
+      setAlertasCount({ total: data.total_alertas ?? 0, criticos: data.criticos ?? 0 });
+    };
+    void carregar();
+    const t = setInterval(() => void carregar(), 60_000);
+    return () => {
+      cancel = true;
+      clearInterval(t);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -62,6 +90,7 @@ function AdminLayout() {
                 ? location.pathname === item.to
                 : location.pathname.startsWith(item.to);
               const Icon = item.icon;
+              const showBadge = item.alertBadge && alertasCount.total > 0;
               return (
                 <Link
                   key={item.to}
@@ -73,8 +102,26 @@ function AdminLayout() {
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon
+                    className={cn(
+                      "h-4 w-4",
+                      showBadge && alertasCount.criticos > 0 && "text-destructive",
+                    )}
+                  />
                   {item.label}
+                  {showBadge && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "h-5 min-w-[20px] justify-center px-1.5 text-[10px] font-bold",
+                        alertasCount.criticos > 0
+                          ? "border-destructive/40 bg-destructive/10 text-destructive"
+                          : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                      )}
+                    >
+                      {alertasCount.total}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
