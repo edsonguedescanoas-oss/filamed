@@ -80,6 +80,8 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
   const [saving, setSaving] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [testPhone, setTestPhone] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
 
   const fetchConfig = async () => {
     if (!unidadeId) return;
@@ -135,6 +137,39 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestAPI = async () => {
+    if (!testPhone) {
+      toast.error("Informe um número de telefone para o teste");
+      return;
+    }
+    
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("wa-duck-notify", {
+        body: {
+          tipo: "teste",
+          telefone: testPhone,
+          unidade_id: unidadeId,
+          config: config // Envia o config atual (mesmo que não salvo) para testar
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Mensagem de teste enviada com sucesso!");
+        void fetchLogs();
+      } else {
+        throw new Error(data?.error || "Erro desconhecido no envio");
+      }
+    } catch (err: any) {
+      console.error("Erro no teste de API:", err);
+      toast.error("Falha no teste: " + (err.message || "Erro de conexão"));
+    } finally {
+      setSendingTest(false);
     }
   };
 
@@ -201,6 +236,42 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                 </Button>
               </>
             )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-primary" />
+              Teste de API
+            </CardTitle>
+            <CardDescription>
+              Envie uma mensagem de teste para validar sua conexão.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="test_phone">Número de Telefone</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="test_phone"
+                  placeholder="Ex: 11999999999"
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                />
+                <Button 
+                  onClick={handleTestAPI} 
+                  disabled={sendingTest || !config.api_url}
+                  className="shrink-0 gap-2"
+                >
+                  {sendingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Testar
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Dica: O envio de teste gera um log que pode ser visualizado ao lado se houver erro.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -278,19 +349,32 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
               </p>
             ) : (
               logs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between gap-3 text-xs border-b border-border/50 pb-2 last:border-0">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{log.paciente?.nome_completo}</p>
-                    <p className="text-muted-foreground truncate">{log.mensagem}</p>
+                <div key={log.id} className="flex flex-col gap-1 text-xs border-b border-border/50 pb-2 last:border-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
+                        {log.paciente?.nome_completo || log.destinatario}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 flex items-center gap-2">
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <Badge 
+                        variant={log.status === "enviada" ? "outline" : "destructive"} 
+                        className={cn("text-[9px] px-1 h-4", log.status === "enviada" ? "text-emerald-500 border-emerald-500/20" : "")}
+                        title={log.erro || undefined}
+                      >
+                        {log.status === "enviada" ? "sucesso" : "erro"}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <Badge variant={log.status === "enviada" ? "outline" : "destructive"} className="text-[9px] px-1 h-4">
-                      {log.status === "enviada" ? "sucesso" : log.status}
-                    </Badge>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                  <p className="text-muted-foreground truncate italic">"{log.mensagem}"</p>
+                  {log.erro && (
+                    <p className="text-[10px] text-destructive font-mono mt-1 bg-destructive/5 p-1 rounded border border-destructive/10">
+                      {log.erro}
                     </p>
-                  </div>
+                  )}
                 </div>
               ))
             )}
