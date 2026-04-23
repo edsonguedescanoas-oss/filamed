@@ -168,9 +168,9 @@ Avisaremos você quando for a sua vez!`;
     const fullUrl = `${endpoint}message/sendText/${instance_id}`;
     
     // Formata o telefone: remove tudo que não for dígito e adiciona 55 se necessário
-    let telefone = paciente.telefone.replace(/\D/g, "");
-    if (telefone.length <= 11 && !telefone.startsWith("55")) {
-      telefone = "55" + telefone;
+    let formattedTelefone = telefone.replace(/\D/g, "");
+    if (formattedTelefone.length <= 11 && !formattedTelefone.startsWith("55")) {
+      formattedTelefone = "55" + formattedTelefone;
     }
 
     const bodyData = {
