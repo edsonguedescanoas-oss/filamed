@@ -89,6 +89,29 @@ const PRIORIDADES: { value: Prioridade; label: string; ring: string; badge: stri
 
 const onlyDigits = (v: string) => v.replace(/\D/g, "");
 
+function maskCPF(v: string): string {
+  const d = onlyDigits(v).slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
+function isValidCPF(cpf: string): boolean {
+  const d = onlyDigits(cpf);
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += parseInt(d[i], 10) * (10 - i);
+  let r = (s * 10) % 11;
+  if (r === 10) r = 0;
+  if (r !== parseInt(d[9], 10)) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += parseInt(d[i], 10) * (11 - i);
+  r = (s * 10) % 11;
+  if (r === 10) r = 0;
+  return r === parseInt(d[10], 10);
+}
+
 function maskTelefone(v: string): string {
   const digits = onlyDigits(v);
   let d = digits;
@@ -98,6 +121,11 @@ function maskTelefone(v: string): string {
   d = d.slice(0, 13);
   if (d.length <= 4) return d;
   if (d.length <= 6) return d.replace(/(\d{2})(\d{2})/, "$1 $2");
+  if (d.length <= 11) {
+    return d.replace(/(\d{2})(\d{2})(\d{1,})/, "$1 $2 $3");
+  }
+  return d.replace(/(\d{2})(\d{2})(\d{5})(\d{1,})/, "$1 $2 $3-$4");
+}
   if (d.length <= 11) {
     return d.replace(/(\d{2})(\d{2})(\d{1,})/, "$1 $2 $3");
   }
