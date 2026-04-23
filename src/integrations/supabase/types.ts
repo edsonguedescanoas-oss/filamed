@@ -1051,12 +1051,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_alterar_plano_assinatura: {
+        Args: {
+          _ciclo?: Database["public"]["Enums"]["assinatura_ciclo"]
+          _novo_status?: Database["public"]["Enums"]["assinatura_estado"]
+          _plano_id: string
+          _unidade_id: string
+        }
+        Returns: string
+      }
       admin_atualizar_status_unidade: {
         Args: {
           _ativo?: boolean
           _novo_status: Database["public"]["Enums"]["assinatura_status"]
           _unidade_id: string
         }
+        Returns: undefined
+      }
+      admin_cancelar_assinatura: {
+        Args: { _imediato?: boolean; _unidade_id: string }
         Returns: undefined
       }
       admin_criar_unidade: {
@@ -1069,6 +1082,49 @@ export type Database = {
           _trial_dias?: number
         }
         Returns: string
+      }
+      admin_detalhe_assinatura: {
+        Args: { _unidade_id: string }
+        Returns: {
+          assinatura_id: string
+          cancelada_em: string
+          cancelar_no_fim_do_ciclo: boolean
+          ciclo: Database["public"]["Enums"]["assinatura_ciclo"]
+          gateway: string
+          gateway_customer_id: string
+          gateway_subscription_id: string
+          inicio_em: string
+          metadata: Json
+          moeda: string
+          plano_id: string
+          plano_nome: string
+          plano_slug: string
+          preco_anual_centavos: number
+          preco_mensal_centavos: number
+          proximo_ciclo_em: string
+          status: Database["public"]["Enums"]["assinatura_estado"]
+        }[]
+      }
+      admin_listar_faturas_unidade: {
+        Args: { _unidade_id: string }
+        Returns: {
+          created_at: string
+          gateway_invoice_id: string
+          id: string
+          linha_descricao: string
+          metodo_pagamento: string
+          moeda: string
+          numero: string
+          paga_em: string
+          status: Database["public"]["Enums"]["fatura_status"]
+          url_recibo: string
+          valor_centavos: number
+          vencimento: string
+        }[]
+      }
+      admin_marcar_fatura_paga: {
+        Args: { _fatura_id: string; _metodo?: string }
+        Returns: undefined
       }
       admin_unidade_integracao_status: {
         Args: { _unidade_id: string }
