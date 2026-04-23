@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
+import { OrientationGuard } from "@/components/orientation-guard";
 import { loadInitialAuth, type AuthSnapshot } from "@/lib/auth-store";
 
 export interface RouterContext {
