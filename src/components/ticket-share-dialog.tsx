@@ -25,6 +25,7 @@ type Props = {
   unidadeNome: string | null;
   logoUrl?: string | null;
   rodape?: string | null;
+  autoPrint?: boolean;
 };
 
 export function TicketShareDialog({
