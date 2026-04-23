@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
 import { MessageSquare, Copy, Check, Share2, Printer } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 
