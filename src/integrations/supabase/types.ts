@@ -1679,6 +1679,15 @@ export type Database = {
           slug: string
         }[]
       }
+      get_unidade_publica_detalhe: {
+        Args: { _unidade_id: string }
+        Returns: {
+          google_review_url: string
+          id: string
+          nome: string
+          slug: string
+        }[]
+      }
       get_unidade_trial_status: {
         Args: { _unidade_id: string }
         Returns: {
