@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, Loader2, Search, Filter, AlertCircle, CheckCircle2, XCircle, Info, ExternalLink } from "lucide-react";
+import { Activity, Loader2, Search, Filter, AlertCircle, CheckCircle2, XCircle, Info, ExternalLink, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,9 +44,18 @@ function fmtDate(iso: string): string {
 
 function AdminLogsPage() {
   const [logs, setLogs] = useState<LogRow[]>([]);
+  const [unidades, setUnidades] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [unidadeFilter, setUnidadeFilter] = useState<string>("all");
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase.from("unidades").select("id, nome").order("nome");
+      if (data) setUnidades(data);
+    })();
+  }, []);
 
   useEffect(() => {
     let cancel = false;
@@ -62,6 +71,14 @@ function AdminLogsPage() {
         .order("created_at", { ascending: false })
         .limit(100);
 
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter as any);
+      }
+      
+      if (unidadeFilter !== "all") {
+        query = query.eq("unidade_id", unidadeFilter);
+      }
+
       const { data, error } = await query;
       
       if (cancel) return;
@@ -75,7 +92,7 @@ function AdminLogsPage() {
     return () => {
       cancel = true;
     };
-  }, []);
+  }, [statusFilter, unidadeFilter]);
 
   const filtered = logs.filter((log) => {
     const matchesQuery = 
@@ -84,9 +101,7 @@ function AdminLogsPage() {
       log.unidade?.nome.toLowerCase().includes(q.toLowerCase()) ||
       log.senha?.codigo.toLowerCase().includes(q.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || log.status === statusFilter;
-    
-    return matchesQuery && matchesStatus;
+    return matchesQuery;
   });
 
   return (
@@ -112,12 +127,27 @@ function AdminLogsPage() {
             <div className="relative w-full sm:w-64">
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar destinatário, mensagem ou unidade…"
+                placeholder="Buscar destinatário, mensagem ou senha…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 className="pl-9"
               />
             </div>
+
+            <Select value={unidadeFilter} onValueChange={setUnidadeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Todas Unidades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Unidades</SelectItem>
+                {unidades.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
@@ -125,7 +155,7 @@ function AdminLogsPage() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">Todos Status</SelectItem>
                 <SelectItem value="enviada">Enviadas</SelectItem>
                 <SelectItem value="falhou">Falhas</SelectItem>
                 <SelectItem value="ignorado">Ignoradas</SelectItem>
