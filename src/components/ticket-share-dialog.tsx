@@ -95,10 +95,14 @@ export function TicketShareDialog({
   
   const ticketRef = useRef<HTMLDivElement>(null);
   const printTriggered = useRef(false);
+  const autoNotifyTriggered = useRef(false);
 
   useEffect(() => {
-    // We removed the automatic handleWhatsApp call because it's already handled by a database trigger (tr_on_new_ticket)
-    // on the 'senhas' table, avoiding duplicate messages.
+    if (open && senha && paciente?.telefone && !autoNotifyTriggered.current) {
+      autoNotifyTriggered.current = true;
+      setAutoSent(true);
+      void handleWhatsApp(true);
+    }
     
     if (open && autoPrint && senha && paciente && !printTriggered.current) {
       printTriggered.current = true;
@@ -107,6 +111,7 @@ export function TicketShareDialog({
     
     if (!open) {
       printTriggered.current = false;
+      autoNotifyTriggered.current = false;
       setAutoSent(false);
       setLastStatus({ whatsapp: 'idle', print: 'idle', share: 'idle' });
     }
