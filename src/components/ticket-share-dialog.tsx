@@ -171,62 +171,87 @@ export function TicketShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white">
-        <DialogHeader>
-          <DialogTitle className="text-white">Compartilhar Senha</DialogTitle>
+      <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white overflow-hidden p-0">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="text-white text-center">Prévia do Ticket (80mm)</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-6 py-4">
-          {/* Ticket Preview 9x16 */}
+        <div className="flex flex-col items-center gap-6 p-6">
+          {/* Ticket Preview 80mm Style */}
           <div 
             ref={ticketRef}
-            className="relative aspect-[9/16] w-64 rounded-3xl overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950 border border-white/10 shadow-2xl flex flex-col p-6 text-center"
+            className="w-full max-w-[280px] bg-white text-slate-950 p-6 shadow-2xl flex flex-col items-center text-center font-sans rounded-sm relative"
           >
+            {/* Serrilha simulada no topo */}
+            <div className="absolute top-0 left-0 right-0 h-1 flex justify-between overflow-hidden">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-full bg-slate-900 -mt-1" />
+              ))}
+            </div>
+
             {logoUrl && (
-              <div className="mb-4 flex justify-center">
-                <img src={logoUrl} alt="Logo" className="h-10 w-auto object-contain opacity-80" />
+              <div className="mb-4 mt-2 flex justify-center">
+                <img src={logoUrl} alt="Logo" className="max-h-12 w-auto object-contain" />
               </div>
             )}
             
-            <div className="text-[10px] uppercase tracking-[0.3em] text-slate-500 mb-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-800 mb-1">
               {unidadeNome}
             </div>
-            <div className="text-[10px] text-slate-400 mb-6">Acompanhe seu atendimento</div>
+            <div className="text-[9px] text-slate-500 mb-6">Acompanhe seu atendimento</div>
 
-            <div className="flex-1 flex flex-col justify-center">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold mb-2">Sua Senha</div>
-              <div className="text-5xl font-display font-black tracking-tighter text-white mb-2 tabular-nums">
+            <div className="flex flex-col items-center mb-6">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-1">Sua Senha</div>
+              <div className="text-6xl font-black tracking-tighter text-slate-900 mb-1 tabular-nums">
                 {senha.codigo}
               </div>
-              <div className="text-xs text-slate-400 font-medium">{paciente.nome_completo}</div>
+              <div className="text-xs text-slate-700 font-bold px-2 py-1 bg-slate-100 rounded">
+                {paciente.nome_completo}
+              </div>
             </div>
 
-            <div className="mt-auto flex flex-col items-center gap-4">
-              <div className="bg-white p-2 rounded-xl">
-                <QrCode value={publicUrl} size={100} />
+            <div className="flex flex-col items-center gap-3">
+              <div className="bg-white p-1 border border-slate-100">
+                <QrCode value={publicUrl} size={110} />
               </div>
-              <div className="text-[9px] text-slate-500 max-w-[140px] leading-relaxed line-clamp-2">
-                {rodape || "Escaneie para acompanhar ou acesse pelo link enviado."}
+              <div className="text-[9px] text-slate-900 font-bold uppercase tracking-tight">
+                Escaneie para acompanhar
               </div>
+            </div>
+
+            <div className="w-full border-t border-dashed border-slate-300 mt-6 pt-4">
+              <div className="text-[10px] font-medium text-slate-600 leading-tight">
+                {rodape || "FILAMED - GESTÃO DE FILAS"}
+              </div>
+              <div className="text-[8px] mt-2 text-slate-400">
+                {new Date().toLocaleString("pt-BR")}
+              </div>
+            </div>
+
+            {/* Serrilha simulada no rodapé */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 flex justify-between overflow-hidden">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-full bg-slate-900 -mb-1" />
+              ))}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 w-full mt-2">
             <Button
+              onClick={handlePrint}
+              className="bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold"
+            >
+              <Printer className="h-5 w-5" />
+              Imprimir Ticket
+            </Button>
+            <Button
               onClick={handleWhatsApp}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-12"
+              variant="outline"
+              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
               disabled={!paciente.telefone}
             >
               <MessageSquare className="h-4 w-4" />
-              Enviar
-            </Button>
-            <Button
-              onClick={handlePrint}
-              variant="outline"
-              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
-            >
-              <Printer className="h-4 w-4" />
-              Imprimir
+              Enviar WhatsApp
             </Button>
             <Button
               onClick={handleShare}

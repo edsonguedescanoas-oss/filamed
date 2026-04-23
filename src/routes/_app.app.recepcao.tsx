@@ -280,7 +280,7 @@ function RecepcaoPage() {
           telefone: pacienteSelecionado.telefone,
         },
       });
-      setShareAutoPrint(true);
+      setShareAutoPrint(false);
       setShareOpen(true);
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
