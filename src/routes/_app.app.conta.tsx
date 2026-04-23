@@ -12,12 +12,18 @@ import {
   Building2,
   Settings,
   RefreshCw,
+  Image,
+  Ticket,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlanoAtual } from "@/hooks/use-plano-atual";
 import { supabase } from "@/integrations/supabase/client";
@@ -98,6 +104,14 @@ function ContaPage() {
   const [openingPortal, setOpeningPortal] = useState(false);
   const [renewOpen, setRenewOpen] = useState(false);
 
+  // Ticket config
+  const [ticketConfig, setTicketConfig] = useState({
+    logo_url: "",
+    unidade_nome: "",
+    rodape: "",
+  });
+  const [savingTicket, setSavingTicket] = useState(false);
+
   // Detecta assinatura anual à vista (one-off): metadata.tipo === 'anual_oneoff'
   // ou heurística pelo cancelar_no_fim_do_ciclo + ciclo anual (sem auto-renovação)
   const isAnualOneOff = useMemo(() => {
@@ -144,21 +158,15 @@ function ContaPage() {
       if (!error) setFaturas((data ?? []) as FaturaRow[]);
       setLoadingFaturas(false);
     })();
-  const [ticketConfig, setTicketConfig] = useState({
-    logo_url: "",
-    unidade_nome: "",
-    rodape: "",
-  });
-  const [savingTicket, setSavingTicket] = useState(false);
 
-  useEffect(() => {
-    if (!profile?.unidade_id) return;
+    // Fetch ticket config
     void (async () => {
       const { data, error } = await supabase
         .from("unidades")
         .select("nome, ticket_logo_url, ticket_unidade_nome, ticket_rodape")
-        .eq("id", profile.unidade_id)
+        .eq("id", unidadeId)
         .single();
+      if (cancel) return;
       if (!error && data) {
         setTicketConfig({
           logo_url: data.ticket_logo_url || "",
@@ -167,6 +175,10 @@ function ContaPage() {
         });
       }
     })();
+
+    return () => {
+      cancel = true;
+    };
   }, [profile?.unidade_id]);
 
   const handleSaveTicket = async () => {
@@ -189,7 +201,6 @@ function ContaPage() {
       setSavingTicket(false);
     }
   };
-
 
   const recursosAtivos = useMemo(() => {
     const list = plano?.recursos
@@ -359,6 +370,93 @@ function ContaPage() {
           </CardContent>
         )}
       </Card>
+
+      {/* Configuração do Ticket */}
+      <RecursoGate
+        recurso="admin"
+        titulo="Configuração do Ticket"
+        descricao="Personalize o cabeçalho e rodapé do seu ticket impresso (80mm)."
+        modo="card"
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5" />
+              Ticket Térmico (80mm)
+            </CardTitle>
+            <CardDescription>
+              Ajuste como a senha impressa aparece para o paciente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ticket_nome">Nome da Unidade no Ticket</Label>
+                  <Input
+                    id="ticket_nome"
+                    placeholder="Ex: Clínica FilaMed Matriz"
+                    value={ticketConfig.unidade_nome}
+                    onChange={(e) => setTicketConfig({ ...ticketConfig, unidade_nome: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ticket_logo">URL da Logo (opcional)</Label>
+                  <Input
+                    id="ticket_logo"
+                    placeholder="https://sua-logo.com/logo.png"
+                    value={ticketConfig.logo_url}
+                    onChange={(e) => setTicketConfig({ ...ticketConfig, logo_url: e.target.value })}
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Use uma imagem com fundo branco e boa resolução.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ticket_rodape">Rodapé Personalizado</Label>
+                  <Textarea
+                    id="ticket_rodape"
+                    placeholder="Ex: Obrigado pela preferência! Atendimento humanizado."
+                    className="min-h-[80px]"
+                    value={ticketConfig.rodape}
+                    onChange={(e) => setTicketConfig({ ...ticketConfig, rodape: e.target.value })}
+                  />
+                </div>
+                <Button 
+                  className="w-full gap-2 bg-gradient-primary" 
+                  onClick={handleSaveTicket}
+                  disabled={savingTicket}
+                >
+                  {savingTicket ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Salvar Configurações
+                </Button>
+              </div>
+
+              {/* Preview simulado */}
+              <div className="hidden md:flex flex-col items-center justify-center rounded-xl bg-muted/30 p-6 border-2 border-dashed border-border">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-4">Pré-visualização aproximada</p>
+                <div className="w-[180px] bg-white text-black p-4 shadow-xl text-center font-sans">
+                  {ticketConfig.logo_url && (
+                    <img src={ticketConfig.logo_url} className="mx-auto h-8 w-auto mb-2 grayscale" />
+                  )}
+                  <div className="text-[9px] font-bold uppercase mb-4 leading-tight">
+                    {ticketConfig.unidade_nome || "NOME DA UNIDADE"}
+                  </div>
+                  <div className="text-[8px] font-bold mb-1">SUA SENHA</div>
+                  <div className="text-4xl font-black mb-1 leading-none">A-101</div>
+                  <div className="text-[9px] font-bold mb-4">JOÃO DA SILVA</div>
+                  <div className="aspect-square w-16 bg-slate-100 mx-auto mb-4 flex items-center justify-center">
+                    <span className="text-[8px] text-slate-400">QR CODE</span>
+                  </div>
+                  <div className="text-[8px] border-t border-dashed border-black pt-2 font-bold leading-tight uppercase">
+                    {ticketConfig.rodape || "FILAMED - GESTÃO DE FILAS"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </RecursoGate>
 
       {/* Renovação manual — somente para assinaturas anuais à vista (one-off) */}
       {isAnualOneOff && plano && (
