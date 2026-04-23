@@ -6,15 +6,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
-import { MessageSquare, Copy, Check, Share2, Printer } from "lucide-react";
+import { MessageSquare, Copy, Check, Share2, Printer, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
+import { supabase } from "@/integrations/supabase/client";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  unidadeId: string | null;
   senha: {
+    id: string;
     codigo: string;
     token_publico: string;
   } | null;
