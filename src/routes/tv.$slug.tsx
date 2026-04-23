@@ -98,6 +98,8 @@ type TvSearchParams = {
   tipos?: string;
 };
 
+type TvModoExibicao = "ambos" | "guiches" | "atendimentos";
+
 export const Route = createFileRoute("/tv/$slug")({
   validateSearch: (search: Record<string, unknown>): TvSearchParams => {
     return {
@@ -192,6 +194,17 @@ function resolverFiltroDestinos(
   return aceitos.size > 0 ? aceitos : null;
 }
 
+function destinoEhGuiche(
+  destino: string | null | undefined,
+  pontos: Array<{ nome: string; tipo: string }>,
+): boolean {
+  const destinoNormalizado = limparDestino(destino).toLowerCase().trim();
+  if (!destinoNormalizado) return false;
+  const ponto = pontos.find((p) => p.nome.trim().toLowerCase() === destinoNormalizado);
+  if (ponto) return ponto.tipo.toLowerCase() === "guiche";
+  return destinoNormalizado.startsWith("guich") || destinoNormalizado.includes("guichê") || destinoNormalizado.includes("guiche");
+}
+
 function soletrar(codigo: string) {
   return codigo.split("").join(" ").replace(/0/g, "zero");
 }
@@ -233,9 +246,43 @@ function TvPage() {
     [destinosAceitos],
   );
 
+  const [modoExibicao, setModoExibicao] = useState<TvModoExibicao>(() => {
+    if (typeof window === "undefined") return "ambos";
+    const saved = window.localStorage.getItem(`tv-modo-exibicao-${unidade.id}`);
+    return saved === "guiches" || saved === "atendimentos" || saved === "ambos" ? saved : "ambos";
+  });
+  const [showModoPopup, setShowModoPopup] = useState(true);
+
+  const matchModoExibicao = useCallback(
+    (destino: string | null | undefined): boolean => {
+      if (modoExibicao === "ambos") return true;
+      const isGuiche = destinoEhGuiche(destino, pontos);
+      return modoExibicao === "guiches" ? isGuiche : !isGuiche;
+    },
+    [modoExibicao, pontos],
+  );
+
+  const chamadaVisivel = useCallback(
+    (chamada: Chamada): boolean => matchDestino(chamada.destino) && matchModoExibicao(chamada.destino),
+    [matchDestino, matchModoExibicao],
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem(`tv-modo-exibicao-${unidade.id}`, modoExibicao);
+    setChamadas((prev) => prev.filter(chamadaVisivel));
+    setShowModoPopup(true);
+    const timer = window.setTimeout(() => setShowModoPopup(false), 7000);
+    return () => window.clearTimeout(timer);
+  }, [modoExibicao, chamadaVisivel, unidade.id]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowModoPopup(false), 10000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // Aplica filtro inicial às chamadas vindas do loader.
   const [chamadas, setChamadas] = useState<Chamada[]>(() =>
-    destinosAceitos ? initialChamadas.filter((c) => matchDestino(c.destino)) : initialChamadas,
+    initialChamadas.filter((c) => matchDestino(c.destino) && matchModoExibicao(c.destino)),
   );
 
   /**
@@ -592,7 +639,7 @@ function TvPage() {
           // Faz isso ANTES do beep pra TV de "Consultório 001" não tocar quando
           // a senha é chamada no "Guichê 02".
           const destinoChamada = (payload.new as { destino?: string })?.destino;
-          if (!matchDestino(destinoChamada)) {
+          if (!matchDestino(destinoChamada) || !matchModoExibicao(destinoChamada)) {
             console.log("[TV] Chamada ignorada por filtro multi-TV:", destinoChamada);
             return;
           }
@@ -667,7 +714,7 @@ function TvPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [unidade?.id, speak, matchDestino]);
+  }, [unidade?.id, speak, matchDestino, matchModoExibicao]);
 
   /**
    * Realtime de senhas — escutamos UPDATE para detectar quando uma senha sai
@@ -890,6 +937,31 @@ function TvPage() {
     >
       {/* Overlay se tiver imagem de fundo */}
       {visual.fundo_url && <div className="absolute inset-0 bg-black/40 pointer-events-none" />}
+
+      <div
+        className={`absolute left-1/2 top-5 z-40 w-[min(92vw,34rem)] -translate-x-1/2 rounded-2xl border border-white/15 bg-black/75 p-3 text-white shadow-2xl backdrop-blur-md transition-all duration-500 ${showModoPopup ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-4 opacity-0"}`}
+        onMouseEnter={() => setShowModoPopup(true)}
+      >
+        <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.25em] text-white/60">
+          Exibição da TV
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { value: "guiches", label: "Guichês" },
+            { value: "atendimentos", label: "Atendimento" },
+            { value: "ambos", label: "Ambos" },
+          ].map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setModoExibicao(option.value as TvModoExibicao)}
+              className={`rounded-xl border px-3 py-3 text-sm font-black uppercase tracking-wide transition-colors ${modoExibicao === option.value ? "border-primary bg-primary text-primary-foreground" : "border-white/15 bg-white/5 text-white hover:bg-white/10"}`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Header */}
       <header 
