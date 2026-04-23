@@ -1007,31 +1007,56 @@ function TvPage() {
                       )}
                     </div>
                     
-                    {/* Senha — usa cqmin (menor dimensão do container) pra escalar
-                        proporcionalmente ao espaço disponível, garantindo que nunca
-                        ultrapasse vertical nem horizontalmente. clamp protege min/max
-                        e a escala_chamadas continua sendo o multiplicador final.
-                        A animação senha-pop dá um overshoot ao trocar de senha. */}
-                    <div 
+                    {/* Bloco principal: SENHA → DESTINO em uma linha visual única.
+                        A seta entre eles tem o mesmo peso visual da senha pra deixar
+                        claro que é um direcionamento (ex.: "C015 → Consultório 001"),
+                        não dois itens soltos. Em telas estreitas o flex quebra
+                        naturalmente. A animação senha-pop dá overshoot ao trocar. */}
+                    <div
                       key={`codigo-${ultimaChamada.senha?.id ?? ultimaChamada.id}`}
-                      className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl w-full px-2 animate-senha-pop"
-                      style={{ 
-                        fontSize: `clamp(2rem, ${22 * escChamada}cqmin, ${10 * escChamada}rem)`,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={ultimaChamada.senha?.codigo}
+                      className="flex w-full items-center justify-center flex-wrap animate-senha-pop"
+                      style={{ gap: `clamp(0.5rem, 2cqmin, 1.5rem)` }}
                     >
-                      {ultimaChamada.senha?.codigo}
+                      <div
+                        className="font-black leading-[0.9] tracking-tighter text-primary drop-shadow-2xl"
+                        style={{
+                          fontSize: `clamp(2rem, ${22 * escChamada}cqmin, ${10 * escChamada}rem)`,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={ultimaChamada.senha?.codigo}
+                      >
+                        {ultimaChamada.senha?.codigo}
+                      </div>
+                      <div
+                        aria-hidden
+                        className="font-black leading-none opacity-80"
+                        style={{
+                          fontSize: `clamp(1.5rem, ${14 * escChamada}cqmin, ${6 * escChamada}rem)`,
+                          color: visual.cor_primaria,
+                        }}
+                      >
+                        →
+                      </div>
+                      <div
+                        className={`font-black uppercase leading-[0.95] text-white drop-shadow-2xl ${visual.historico_quebrar_texto ? "" : "truncate"}`}
+                        style={{
+                          fontSize: `clamp(1.25rem, ${14 * escChamada}cqmin, ${6 * escChamada}rem)`,
+                          maxWidth: "60%",
+                        }}
+                        title={limparDestino(ultimaChamada.destino)}
+                      >
+                        {limparDestino(ultimaChamada.destino)}
+                      </div>
                     </div>
-                    
-                    <div 
+
+                    <div
                       className="w-full"
                       style={{ marginTop: `clamp(0.15rem, 0.8cqmin, 0.5rem)` }}
                     >
                       {ultimaChamada.senha?.paciente_nome && (
-                        <p 
+                        <p
                           className={`font-bold text-white/90 px-2 ${visual.historico_quebrar_texto ? "" : "truncate"}`}
                           style={{ fontSize: `clamp(0.75rem, 4cqmin, 2rem)`, lineHeight: 1.1 }}
                           title={ultimaChamada.senha.paciente_nome}
@@ -1039,22 +1064,14 @@ function TvPage() {
                           {ultimaChamada.senha.paciente_nome}
                         </p>
                       )}
-                      <p 
-                        className="font-medium opacity-60 uppercase tracking-widest"
-                        style={{ 
+                      <p
+                        className="font-medium opacity-50 uppercase tracking-widest"
+                        style={{
                           fontSize: `clamp(0.5rem, 1.8cqmin, 1.125rem)`,
                           marginTop: `clamp(0.1rem, 0.4cqmin, 0.3rem)`,
-                          marginBottom: `clamp(0.1rem, 0.4cqmin, 0.3rem)`,
                         }}
                       >
-                        Favor dirigir-se
-                      </p>
-                      <p 
-                        className={`font-bold uppercase px-2 ${visual.historico_quebrar_texto ? "" : "truncate"}`}
-                        style={{ fontSize: `clamp(1rem, 6cqmin, 3rem)`, lineHeight: 1.05 }}
-                        title={limparDestino(ultimaChamada.destino)}
-                      >
-                        {limparDestino(ultimaChamada.destino)}
+                        Favor dirigir-se ao destino indicado acima
                       </p>
                     </div>
                   </div>
