@@ -75,7 +75,9 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
     api_key: "",
     instance_id: "",
     template_chamada: "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.",
+    template_finalizacao: "Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado. Obrigado pela visita!",
   });
+  const [googleReviewUrl, setGoogleReviewUrl] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
@@ -88,7 +90,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
     setLoadingConfig(true);
     const { data, error } = await supabase
       .from("unidades")
-      .select("whatsapp_config")
+      .select("whatsapp_config, google_review_url")
       .eq("id", unidadeId)
       .single();
 
@@ -99,8 +101,10 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
         api_key: c.api_key || "",
         instance_id: c.instance_id || "",
         template_chamada: c.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.",
+        template_finalizacao: c.template_finalizacao || "Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado. Obrigado pela visita!",
       });
     }
+    setGoogleReviewUrl((data as { google_review_url?: string | null } | null)?.google_review_url || "");
     setLoadingConfig(false);
   };
 
@@ -129,7 +133,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
     try {
       const { error } = await supabase
         .from("unidades")
-        .update({ whatsapp_config: config })
+        .update({ whatsapp_config: config, google_review_url: googleReviewUrl || null } as never)
         .eq("id", unidadeId);
       if (error) throw error;
       toast.success("Configurações salvas com sucesso!");
