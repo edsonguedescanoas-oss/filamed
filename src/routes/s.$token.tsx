@@ -32,19 +32,19 @@ type VisualPub = { logo_url: string | null };
 export const Route = createFileRoute("/s/$token")({
   head: () => ({
     meta: [
-      { title: "Sua Senha de Atendimento — FilaMed" },
-      { name: "description", content: "Acompanhe sua senha de atendimento em tempo real. Não perca sua vez!" },
+      { title: "Acompanhe sua Senha — FilaMed" },
+      { name: "description", content: "Sua senha de atendimento está aqui. Acompanhe em tempo real e não perca sua vez!" },
       { name: "robots", content: "noindex" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
       // Open Graph / Social Preview
       { property: "og:type", content: "website" },
-      { property: "og:title", content: "Sua Senha de Atendimento — FilaMed" },
-      { property: "og:description", content: "Acesse para acompanhar o status da sua senha em tempo real." },
-      { property: "og:image", content: "https://images.unsplash.com/photo-1612349317150-e413f6a5b1f8?q=80&w=1200&auto=format&fit=crop" },
+      { property: "og:title", content: "Sua Vez Está Chegando! 🎫" },
+      { property: "og:description", content: "Clique para acompanhar sua senha de atendimento em tempo real. FilaMed: Cuidando do seu tempo." },
+      { property: "og:image", content: "https://images.unsplash.com/photo-1584982324675-97613c161f65?q=80&w=1200&auto=format&fit=crop" },
       { property: "twitter:card", content: "summary_large_image" },
-      { property: "twitter:title", content: "Sua Senha de Atendimento — FilaMed" },
-      { property: "twitter:description", content: "Acesse para acompanhar o status da sua senha em tempo real." },
-      { property: "twitter:image", content: "https://images.unsplash.com/photo-1612349317150-e413f6a5b1f8?q=80&w=1200&auto=format&fit=crop" },
+      { property: "twitter:title", content: "Sua Vez Está Chegando! 🎫" },
+      { property: "twitter:description", content: "Acompanhe sua senha de atendimento em tempo real." },
+      { property: "twitter:image", content: "https://images.unsplash.com/photo-1584982324675-97613c161f65?q=80&w=1200&auto=format&fit=crop" },
     ],
   }),
   component: PublicSenhaPage,
