@@ -1204,12 +1204,19 @@ function RecepcaoPage() {
             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-white/5">
               <div className="space-y-0.5">
                 <Label htmlFor="auto-print" className="text-sm font-semibold cursor-pointer">Imprimir automaticamente</Label>
-                <p className="text-[10px] text-muted-foreground">Abre a prévia do ticket após gerar a senha</p>
+                <p id="auto-print-desc" className="text-[10px] text-muted-foreground">Abre a prévia do ticket após gerar a senha</p>
               </div>
               <Switch 
                 id="auto-print"
+                aria-describedby="auto-print-desc"
                 checked={novoAutoImprimir} 
                 onCheckedChange={setNovoAutoImprimir} 
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setNovoAutoImprimir(!novoAutoImprimir);
+                  }
+                }}
               />
             </div>
 
