@@ -313,6 +313,30 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                 </Badge>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="template_finalizacao">Mensagem final</Label>
+              <Textarea
+                id="template_finalizacao"
+                placeholder="Ex: Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado..."
+                value={config.template_finalizacao}
+                onChange={(e) => setConfig({ ...config, template_finalizacao: e.target.value })}
+                rows={3}
+                className="text-sm"
+              />
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <Badge variant="secondary" className="text-[10px] cursor-help">{"{{nome}}"}</Badge>
+                <Badge variant="secondary" className="text-[10px] cursor-help">{"{{unidade}}"}</Badge>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="google_review_url">Link Google Meu Negócio</Label>
+              <Input
+                id="google_review_url"
+                placeholder="https://g.page/r/.../review"
+                value={googleReviewUrl}
+                onChange={(e) => setGoogleReviewUrl(e.target.value)}
+              />
+            </div>
             
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
               <p className="text-[10px] font-semibold text-primary uppercase tracking-wider mb-2">Exemplo de visualização:</p>
