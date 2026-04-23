@@ -185,13 +185,20 @@ function RecepcaoPage() {
     void fetchRecentes();
     if (unidadeId) {
       void (async () => {
-        const [uRes, vRes] = await Promise.all([
-          supabase.from("unidades").select("slug, nome").eq("id", unidadeId).maybeSingle(),
-          supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", unidadeId).maybeSingle(),
-        ]);
-        setUnidadeSlug(uRes.data?.slug ?? null);
-        setUnidadeNome(uRes.data?.nome ?? null);
-        setVisualConfig(vRes.data ?? null);
+        const { data: u, error } = await supabase
+          .from("unidades")
+          .select("slug, nome, ticket_logo_url, ticket_unidade_nome, ticket_rodape")
+          .eq("id", unidadeId)
+          .maybeSingle();
+        
+        if (!error && u) {
+          setUnidadeSlug(u.slug ?? null);
+          setUnidadeTicketConfig({
+            logo_url: u.ticket_logo_url || null,
+            nome: u.ticket_unidade_nome || u.nome || null,
+            rodape: u.ticket_rodape || null,
+          });
+        }
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
