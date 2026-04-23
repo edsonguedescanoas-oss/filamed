@@ -1,0 +1,1 @@
+ALTER FUNCTION public.gerar_senha(uuid, public.senha_prioridade, uuid, text) SET search_path = public;
