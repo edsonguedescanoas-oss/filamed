@@ -170,7 +170,14 @@ function RecepcaoPage() {
   const [novoDocumento, setNovoDocumento] = useState<File | null>(null);
   const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string }>({});
   const [savingNovo, setSavingNovo] = useState(false);
-  const [novoAutoImprimir, setNovoAutoImprimir] = useState(true);
+  const [novoAutoImprimir, setNovoAutoImprimir] = useState(() => {
+    const saved = localStorage.getItem("recepcao_auto_imprimir");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("recepcao_auto_imprimir", String(novoAutoImprimir));
+  }, [novoAutoImprimir]);
 
   // compartilhamento
   const [shareOpen, setShareOpen] = useState(false);
