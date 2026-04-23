@@ -493,12 +493,41 @@ function GuichePage() {
                       onChange={(e) => setBuscaAgendamento(e.target.value)}
                       placeholder="Nome, telefone, CPF ou documento"
                     />
+                    <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                      <Input
+                        type="date"
+                        className="h-8 text-xs"
+                        value={filtroBuscaData}
+                        onChange={(e) => setFiltroBuscaData(e.target.value)}
+                      />
+                      <Select value={filtroBuscaTipo} onValueChange={(v) => setFiltroBuscaTipo(v as typeof filtroBuscaTipo)}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="agendamento">Agendamento</SelectItem>
+                          <SelectItem value="paciente">Paciente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={ordenacaoBusca} onValueChange={(v) => setOrdenacaoBusca(v as typeof ordenacaoBusca)}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="relevancia">Relevância</SelectItem>
+                          <SelectItem value="data_desc">Mais recentes</SelectItem>
+                          <SelectItem value="data_asc">Mais antigos</SelectItem>
+                          <SelectItem value="nome">Nome</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     {buscaAgendamento.trim().length >= 2 && (
                       <div className="mt-2 space-y-1">
                         {resultadosAgendamento.length === 0 ? (
                           <p className="text-xs text-muted-foreground">Nenhum registro encontrado.</p>
                         ) : (
-                          resultadosAgendamento.map((p) => (
+                          resultadosAgendamento.map(({ paciente: p, tipo, data, matches }) => (
                             <button
                               key={p.id}
                               type="button"
@@ -516,8 +545,14 @@ function GuichePage() {
                                 }))
                               }
                             >
-                              <span className="font-medium">{p.nome_completo}</span>
-                              {p.telefone && <span className="text-muted-foreground"> · {p.telefone}</span>}
+                              <span className="font-medium">{highlightTerm(p.nome_completo, buscaAgendamento)}</span>
+                              {p.telefone && <span className="text-muted-foreground"> · {highlightTerm(p.telefone, buscaAgendamento)}</span>}
+                              <span className="ml-2 rounded border border-border px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
+                                {tipo === "agendamento" ? "Agendamento" : "Paciente"} · {new Date(data).toLocaleDateString("pt-BR")}
+                              </span>
+                              <span className="mt-1 block text-[11px] text-muted-foreground">
+                                Campos: {matches.map((m) => `${m.rotulo}: ${m.valor}`).join(" · ")}
+                              </span>
                             </button>
                           ))
                         )}
