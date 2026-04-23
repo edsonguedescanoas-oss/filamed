@@ -252,9 +252,13 @@ function RecepcaoPage() {
     ? `${filaSelecionada.prefixo_senha}${String(filaSelecionada.contador_senha + 1).padStart(3, "0")}`
     : null;
 
-  const handleGerar = async () => {
+  const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent) => {
+    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent) 
+      ? (pacOrEvent as Paciente) 
+      : pacienteSelecionado;
+
     if (!filaId || !canGerar) return;
-    if (!pacienteSelecionado) {
+    if (!pac) {
       toast.error("Selecione ou cadastre um paciente para gerar a senha");
       return;
     }
@@ -263,21 +267,21 @@ function RecepcaoPage() {
       const { data, error } = await supabase.rpc("gerar_senha", {
         _fila_id: filaId,
         _prioridade: prioridade,
-        _paciente_id: pacienteSelecionado.id,
+        _paciente_id: pac.id,
         _origem: "recepcao",
       });
       if (error) throw error;
       const senha = data as unknown as Senha;
       toast.success(`Senha ${senha.codigo} emitida`, {
-        description: `Vinculada a ${pacienteSelecionado.nome_completo}`,
+        description: `Vinculada a ${pac.nome_completo}`,
       });
 
       // Abre modal de compartilhamento
       setShareData({
         senha: { id: senha.id, codigo: senha.codigo, token_publico: senha.token_publico! },
         paciente: {
-          nome_completo: pacienteSelecionado.nome_completo,
-          telefone: pacienteSelecionado.telefone,
+          nome_completo: pac.nome_completo,
+          telefone: pac.telefone,
         },
       });
       setShareAutoPrint(false);
@@ -296,7 +300,7 @@ function RecepcaoPage() {
     }
   };
 
-  const handleSalvarNovoPaciente = async () => {
+  const handleSalvarNovoPaciente = async (emitirSenha = false) => {
     if (!unidadeId) return;
     const nome = novoNome.trim();
     if (nome.length < 2) {
@@ -316,7 +320,8 @@ function RecepcaoPage() {
         .select("*")
         .single();
       if (error) throw error;
-      setPacienteSelecionado(data as Paciente);
+      const pac = data as Paciente;
+      setPacienteSelecionado(pac);
       setPacienteQuery("");
       setPacientes([]);
       setNovoOpen(false);
@@ -324,6 +329,10 @@ function RecepcaoPage() {
       setNovoCpf("");
       setNovoTelefone("");
       toast.success("Paciente cadastrado", { description: nome });
+
+      if (emitirSenha) {
+        await handleGerar(pac);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha ao cadastrar paciente";
       toast.error(msg);
@@ -565,19 +574,22 @@ function RecepcaoPage() {
           {/* paciente (obrigatório) */}
           <div className="mt-5">
             <div className="mb-2 flex items-center justify-between">
-              <Label>
+              <Label className="text-sm font-semibold">
                 Paciente <span className="text-destructive">*</span>
               </Label>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setNovoNome(pacienteQuery.trim());
                   setNovoOpen(true);
                 }}
-                className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+                className="h-8 gap-1.5 text-xs font-semibold text-primary border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
               >
-                <UserPlus className="h-3.5 w-3.5" /> Novo paciente
-              </button>
+                <UserPlus className="h-3.5 w-3.5" /> 
+                <span>Cadastro Rápido</span>
+              </Button>
             </div>
             {pacienteSelecionado ? (
               <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
@@ -610,8 +622,14 @@ function RecepcaoPage() {
                 <Input
                   value={pacienteQuery}
                   onChange={(e) => setPacienteQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !pacienteSelecionado && pacienteQuery.trim().length >= 2 && pacientes.length === 0 && !searchingPac) {
+                      setNovoNome(pacienteQuery.trim());
+                      setNovoOpen(true);
+                    }
+                  }}
                   placeholder="Buscar por nome ou CPF…"
-                  className="pl-9"
+                  className="pl-9 h-11"
                 />
                 {pacienteQuery.trim().length >= 2 && (
                   <div className="absolute z-10 mt-1 w-full rounded-xl border border-border bg-popover shadow-lg overflow-hidden">
@@ -884,20 +902,43 @@ function RecepcaoPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNovoOpen(false)} disabled={savingNovo}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setNovoOpen(false)} 
+              disabled={savingNovo}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
-            <Button onClick={() => void handleSalvarNovoPaciente()} disabled={savingNovo}>
-              {savingNovo ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4" />
-                  Cadastrar e usar
-                </>
-              )}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                variant="secondary"
+                onClick={() => void handleSalvarNovoPaciente(false)} 
+                disabled={savingNovo}
+                className="w-full sm:w-auto"
+              >
+                {savingNovo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Apenas cadastrar"
+                )}
+              </Button>
+              <Button 
+                onClick={() => void handleSalvarNovoPaciente(true)} 
+                disabled={savingNovo}
+                className="w-full sm:w-auto bg-gradient-primary"
+              >
+                {savingNovo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Cadastrar e Gerar Senha
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
