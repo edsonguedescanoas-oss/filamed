@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+export const handler = async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -20,7 +20,7 @@ serve(async (req) => {
     let body;
     try {
       body = await req.json();
-    } catch (e) {
+    } catch (e: any) {
       console.error("Erro ao parsear o JSON do request:", e.message);
       throw new Error("Invalid JSON body");
     }
@@ -207,7 +207,7 @@ Avisaremos você quando for a sua vez!`;
       if (responseText) {
         responseData = JSON.parse(responseText);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn("Erro ao parsear resposta do WADuck:", e.message);
     }
 
@@ -232,11 +232,13 @@ Avisaremos você quando for a sua vez!`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
   }
-});
+};
+
+serve(handler);
