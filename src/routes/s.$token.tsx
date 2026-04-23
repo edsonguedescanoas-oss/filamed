@@ -283,8 +283,21 @@ function PublicSenhaPage() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Esta página atualiza automaticamente. Mantenha-a aberta.
+        <div className="mt-10 flex flex-col items-center">
+          <div className="bg-white p-3 rounded-2xl shadow-xl">
+            <QrCode 
+              value={typeof window !== 'undefined' ? window.location.href : ''} 
+              size={120} 
+              className="mx-auto"
+            />
+          </div>
+          <p className="mt-4 text-center text-xs text-slate-500 max-w-[200px]">
+            Escaneie o QR Code ou mantenha esta página aberta para acompanhar sua chamada.
+          </p>
+        </div>
+
+        <p className="mt-auto pt-10 pb-6 text-center text-[10px] uppercase tracking-widest text-slate-600">
+          Powered by FilaMed
         </p>
       </div>
     </div>
