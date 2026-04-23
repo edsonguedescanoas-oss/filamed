@@ -136,6 +136,7 @@ function RecepcaoPage() {
 
   // compartilhamento
   const [shareOpen, setShareOpen] = useState(false);
+  const [shareAutoPrint, setShareAutoPrint] = useState(false);
   const [shareData, setShareData] = useState<{
     senha: { codigo: string; token_publico: string };
     paciente: { nome_completo: string; telefone: string | null };
