@@ -785,7 +785,7 @@ function RecepcaoPage() {
                         size="icon"
                         onClick={() => {
                           setShareData({
-                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            senha: { id: s.id, codigo: s.codigo, token_publico: s.token_publico! },
                             paciente: {
                               nome_completo: s.paciente?.nome_completo ?? "Sem nome",
                               telefone: s.paciente?.telefone ?? null,
@@ -804,7 +804,7 @@ function RecepcaoPage() {
                         size="icon"
                         onClick={() => {
                           setShareData({
-                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            senha: { id: s.id, codigo: s.codigo, token_publico: s.token_publico! },
                             paciente: {
                               nome_completo: s.paciente?.nome_completo ?? "Sem nome",
                               telefone: s.paciente?.telefone ?? null,
