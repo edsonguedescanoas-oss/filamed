@@ -8,6 +8,7 @@ import {
   Trash2,
   Power,
   PowerOff,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +50,12 @@ import type { Database } from "@/integrations/supabase/types";
 type PontoTipo = Database["public"]["Enums"]["ponto_tipo"];
 type Ponto = Database["public"]["Tables"]["pontos_atendimento"]["Row"];
 type Fila = { id: string; nome: string; tipo: Database["public"]["Enums"]["fila_tipo"] };
+type ProfileOption = { id: string; nome_completo: string };
+type PontoPermissao = {
+  id: string;
+  ponto_atendimento_id: string;
+  user_id: string;
+};
 
 const TIPOS: { value: PontoTipo; label: string; descricao: string }[] = [
   { value: "guiche", label: "Guichê", descricao: "Pré-atendimento e classificação" },
@@ -60,7 +67,7 @@ const TIPOS: { value: PontoTipo; label: string; descricao: string }[] = [
 export const Route = createFileRoute("/_app/app/pontos")({
   head: () => ({ meta: [{ title: "Pontos de Atendimento — FilaMed" }] }),
   component: () => (
-    <RoleGuard allow={["admin"]} path="/app/pontos">
+    <RoleGuard allow={["admin", "gestor"]} path="/app/pontos">
       <PontosPage />
     </RoleGuard>
   ),
@@ -72,6 +79,8 @@ function PontosPage() {
 
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [filas, setFilas] = useState<Fila[]>([]);
+  const [usuarios, setUsuarios] = useState<ProfileOption[]>([]);
+  const [permissoes, setPermissoes] = useState<PontoPermissao[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [editOpen, setEditOpen] = useState(false);
