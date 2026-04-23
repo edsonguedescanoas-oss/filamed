@@ -44,6 +44,7 @@ function PublicSenhaPage() {
   const [senha, setSenha] = useState<SenhaPub | null>(null);
   const [fila, setFila] = useState<FilaPub | null>(null);
   const [unidade, setUnidade] = useState<UnidadePub | null>(null);
+  const [visual, setVisual] = useState<VisualPub | null>(null);
   const [chamada, setChamada] = useState<ChamadaPub | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
