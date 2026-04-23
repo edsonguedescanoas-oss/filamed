@@ -50,6 +50,7 @@ function PublicSenhaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
 
   const fetchInitialData = useCallback(async (isRetry = false) => {
     // RPC pública: busca a própria senha por token, sem expor a tabela inteira ao anon
@@ -93,6 +94,41 @@ function PublicSenhaPage() {
     setLoading(false);
   }, [token]);
 
+  const playNotificationSound = useCallback((type: 'next' | 'called') => {
+    try {
+      const context = audioContext || new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (!audioContext) setAudioContext(context);
+      
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(context.destination);
+
+      if (type === 'next') {
+        // Som suave para "você é o próximo"
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(440, context.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.1, context.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.3);
+      } else {
+        // Som mais forte para quando for chamado
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(880, context.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(440, context.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0.1, context.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.5);
+      }
+    } catch (err) {
+      console.error('Erro ao tocar som:', err);
+    }
+  }, [audioContext]);
+
   useEffect(() => {
     void fetchInitialData();
   }, [fetchInitialData]);
@@ -106,7 +142,15 @@ function PublicSenhaPage() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "senhas", filter: `id=eq.${senha.id}` },
         (payload) => {
+          const oldStatus = senha.status;
+          const newStatus = payload.new.status as SenhaStatus;
+          
           setSenha((prev) => ({ ...(prev as SenhaPub), ...(payload.new as SenhaPub) }));
+          
+          // Som se o status mudar para "chamada"
+          if (oldStatus !== 'chamada' && newStatus === 'chamada') {
+            playNotificationSound('called');
+          }
         },
       )
       .on(
@@ -114,6 +158,7 @@ function PublicSenhaPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `senha_id=eq.${senha.id}` },
         (payload) => {
           setChamada(payload.new as ChamadaPub);
+          playNotificationSound('called');
           // vibração leve quando for chamado
           if (typeof navigator !== "undefined" && "vibrate" in navigator) {
             try {
@@ -128,7 +173,7 @@ function PublicSenhaPage() {
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [senha?.id]);
+  }, [senha?.id, playNotificationSound]);
 
   // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
   const refreshPosition = useCallback(async () => {
@@ -142,8 +187,16 @@ function PublicSenhaPage() {
       .eq("fila_id", senha.fila_id)
       .eq("status", "aguardando")
       .lt("created_at", senha.created_at);
-    setAguardandoNaFrente(count ?? 0);
-  }, [senha?.id, senha?.status, senha?.fila_id, senha?.created_at]);
+    
+    const newPos = count ?? 0;
+    
+    // Som se mudar para "você é o próximo" (pos 0)
+    if (aguardandoNaFrente !== null && aguardandoNaFrente > 0 && newPos === 0) {
+      playNotificationSound('next');
+    }
+    
+    setAguardandoNaFrente(newPos);
+  }, [senha?.id, senha?.status, senha?.fila_id, senha?.created_at, aguardandoNaFrente, playNotificationSound]);
 
   useEffect(() => {
     void refreshPosition();
