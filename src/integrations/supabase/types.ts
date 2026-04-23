@@ -612,6 +612,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "senhas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "senhas_fila_id_fkey"
             columns: ["fila_id"]
             isOneToOne: false
