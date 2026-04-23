@@ -172,13 +172,21 @@ function PublicSenhaPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8">
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto max-w-md flex flex-col min-h-full">
+        {visual?.logo_url && (
+          <div className="mb-6 flex justify-center">
+            <img src={visual.logo_url} alt="Logo" className="max-h-16 w-auto object-contain" />
+          </div>
+        )}
+        
         {unidade && (
           <div className="text-center text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">
             {unidade.nome}
           </div>
         )}
-        <h1 className="text-center text-sm text-slate-300 mb-6">Acompanhe sua senha</h1>
+        <h1 className="text-center text-sm text-slate-300 mb-6 font-display font-medium tracking-wide">
+          Acompanhe sua senha em tempo real
+        </h1>
 
         <div
           className={`rounded-3xl border p-8 text-center shadow-xl ${
