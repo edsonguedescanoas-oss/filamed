@@ -238,6 +238,42 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
             )}
           </CardContent>
         </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-primary" />
+              Teste de API
+            </CardTitle>
+            <CardDescription>
+              Envie uma mensagem de teste para validar sua conexão.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="test_phone">Número de Telefone</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="test_phone"
+                  placeholder="Ex: 11999999999"
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                />
+                <Button 
+                  onClick={handleTestAPI} 
+                  disabled={sendingTest || !config.api_url}
+                  className="shrink-0 gap-2"
+                >
+                  {sendingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Testar
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Dica: O envio de teste gera um log que pode ser visualizado ao lado se houver erro.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
