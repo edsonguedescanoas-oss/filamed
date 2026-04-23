@@ -184,22 +184,16 @@ function getStorageClient() {
   return createClient(url, key);
 }
 
-async function getPublicUrl(hash: string): Promise<string | null> {
+async function getSignedCacheUrl(hash: string): Promise<string | null> {
   const client = getStorageClient();
   if (!client) return null;
-  
-  // Verifica se o arquivo existe antes de retornar a URL
+
   const { data, error } = await client.storage
     .from(CACHE_BUCKET)
-    .list("", { search: `${hash}.mp3` });
+    .createSignedUrl(`${hash}.mp3`, 60 * 10);
 
-  if (error || !data || data.length === 0) return null;
-
-  const { data: { publicUrl } } = client.storage
-    .from(CACHE_BUCKET)
-    .getPublicUrl(`${hash}.mp3`);
-
-  return publicUrl;
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
 }
 
 async function writeCache(hash: string, base64: string): Promise<string | null> {
@@ -222,11 +216,12 @@ async function writeCache(hash: string, base64: string): Promise<string | null> 
     return null;
   }
 
-  const { data: { publicUrl } } = client.storage
+  const { data, error: signedError } = await client.storage
     .from(CACHE_BUCKET)
-    .getPublicUrl(`${hash}.mp3`);
+    .createSignedUrl(`${hash}.mp3`, 60 * 10);
 
-  return publicUrl;
+  if (signedError || !data?.signedUrl) return null;
+  return data.signedUrl;
 }
 
 // --- handler -----------------------------------------------------------------
@@ -266,7 +261,7 @@ Deno.serve(async (req) => {
 
     // 1) Cache lookup
     const hash = await sha256Hex(cacheKey({ text, provider, voiceId, rate, pitch }));
-    const cachedUrl = await getPublicUrl(hash);
+    const cachedUrl = await getSignedCacheUrl(hash);
     if (cachedUrl) {
       console.log(`[tts] Cache hit: ${hash}`);
       return new Response(
@@ -297,12 +292,12 @@ Deno.serve(async (req) => {
 
     // 3) Cache write
     // Salvamos no storage e retornamos a URL pública para o player
-    const publicUrl = await writeCache(hash, result.audioContent);
+    const signedUrl = await writeCache(hash, result.audioContent);
 
     return new Response(
       JSON.stringify({ 
-        audioUrl: publicUrl || null, 
-        audioContent: publicUrl ? null : result.audioContent, // Fallback se o upload falhar
+        audioUrl: signedUrl || null, 
+        audioContent: signedUrl ? null : result.audioContent, // Fallback se o upload falhar
         mime: result.mime, 
         cached: false 
       }),

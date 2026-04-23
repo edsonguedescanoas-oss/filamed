@@ -1,0 +1,12 @@
+REVOKE EXECUTE ON FUNCTION net._await_response(bigint) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net._encode_url_with_params_array(text, text[]) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net._http_collect_response(bigint, boolean) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net._urlencode_string(character varying) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.check_worker_is_up() FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.http_collect_response(bigint, boolean) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.http_delete(text, jsonb, jsonb, integer, jsonb) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.http_get(text, jsonb, jsonb, integer) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.http_post(text, jsonb, jsonb, jsonb, integer) FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.wait_until_running() FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.wake() FROM public, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION net.worker_restart() FROM public, anon, authenticated;
