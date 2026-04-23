@@ -514,9 +514,7 @@ function AtendimentoPage() {
         </div>
         <div className="text-right">
           <div className="text-xs uppercase tracking-wider text-muted-foreground">Aguardando</div>
-          <div className="font-display text-2xl font-bold">
-            {senhas.filter((s) => s.status === "aguardando").length}
-          </div>
+          <div className="font-display text-2xl font-bold">{totalAguardandoVisivel}</div>
         </div>
       </div>
 
@@ -670,12 +668,12 @@ function AtendimentoPage() {
         <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           Aguardando atendimento
         </h2>
-        {filas.length === 0 && (
+        {filasVisiveis.length === 0 && (
           <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            Nenhuma fila ativa configurada.
+            Nenhuma fila ativa configurada para este ponto.
           </div>
         )}
-        {filas.map((f) => {
+        {filasVisiveis.map((f) => {
           const arr = grupos.get(f.id) ?? [];
           return (
             <div key={f.id} className="rounded-2xl border border-border bg-card overflow-hidden">
