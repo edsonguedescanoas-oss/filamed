@@ -205,11 +205,39 @@ function formatarDestino(destino: string): string {
 }
 
 function TvPage() {
-  const { unidade, initialChamadas } = Route.useLoaderData();
-  const [chamadas, setChamadas] = useState<Chamada[]>(initialChamadas);
+  const { unidade, initialChamadas, pontos } = Route.useLoaderData();
+  const { ponto: pontoParam, tipos: tiposParam } = Route.useSearch();
+
   /**
-   * Mapa de senha_id -> status atual, populado via realtime de UPDATE em
-   * `senhas`. Usado para:
+   * Set de destinos aceitos por esta TV (case-insensitive). `null` = sem filtro.
+   * Reage à mudança de querystring sem reload — útil pra trocar a TV de papel
+   * remotamente (ex.: redirecionar /tv/clinica?ponto=X via URL).
+   */
+  const destinosAceitos = useMemo(
+    () => resolverFiltroDestinos(pontoParam, tiposParam, pontos),
+    [pontoParam, tiposParam, pontos],
+  );
+
+  /**
+   * Aplica o filtro de destinos. Quando não há filtro, mantém a chamada como
+   * está. Comparação por destino normalizado (lowercase + trim) — case e
+   * espaços não devem quebrar o match.
+   */
+  const matchDestino = useCallback(
+    (destino: string | null | undefined): boolean => {
+      if (!destinosAceitos) return true;
+      const d = limparDestino(destino).toLowerCase().trim();
+      if (!d) return false;
+      return destinosAceitos.has(d);
+    },
+    [destinosAceitos],
+  );
+
+  // Aplica filtro inicial às chamadas vindas do loader.
+  const [chamadas, setChamadas] = useState<Chamada[]>(() =>
+    destinosAceitos ? initialChamadas.filter((c) => matchDestino(c.destino)) : initialChamadas,
+  );
+
    *  - Esconder do "Chamando agora" quando a senha sai do estado "chamada"
    *    (vira em_atendimento/finalizada/ausente/cancelada).
    *  - Mostrar um badge no histórico indicando o status final ("Em atendimento",
