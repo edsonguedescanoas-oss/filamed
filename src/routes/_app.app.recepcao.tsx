@@ -902,20 +902,43 @@ function RecepcaoPage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNovoOpen(false)} disabled={savingNovo}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setNovoOpen(false)} 
+              disabled={savingNovo}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
-            <Button onClick={() => void handleSalvarNovoPaciente()} disabled={savingNovo}>
-              {savingNovo ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4" />
-                  Cadastrar e usar
-                </>
-              )}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                variant="secondary"
+                onClick={() => void handleSalvarNovoPaciente(false)} 
+                disabled={savingNovo}
+                className="w-full sm:w-auto"
+              >
+                {savingNovo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Apenas cadastrar"
+                )}
+              </Button>
+              <Button 
+                onClick={() => void handleSalvarNovoPaciente(true)} 
+                disabled={savingNovo}
+                className="w-full sm:w-auto bg-gradient-primary"
+              >
+                {savingNovo ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Cadastrar e Gerar Senha
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
