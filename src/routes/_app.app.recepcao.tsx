@@ -888,7 +888,10 @@ function RecepcaoPage() {
       {/* Modal de compartilhamento */}
       <TicketShareDialog
         open={shareOpen}
-        onOpenChange={setShareOpen}
+        onOpenChange={(open) => {
+          setShareOpen(open);
+          if (!open) setShareAutoPrint(false);
+        }}
         senha={shareData?.senha ?? null}
         paciente={shareData?.paciente ?? null}
         unidadeNome={unidadeTicketConfig?.nome ?? null}
