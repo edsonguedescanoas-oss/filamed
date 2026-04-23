@@ -196,7 +196,7 @@ export function TicketShareDialog({
               .logo { 
                 max-width: 40mm; 
                 max-height: 20mm; 
-                object-contain: fit; 
+                object-fit: contain; 
                 margin-bottom: 5mm; 
                 filter: contrast(${logoContrast}%);
                 transform: scale(${logoScale / 100});
