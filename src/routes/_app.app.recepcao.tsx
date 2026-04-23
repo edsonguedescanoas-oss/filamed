@@ -139,8 +139,11 @@ function RecepcaoPage() {
     senha: { codigo: string; token_publico: string };
     paciente: { nome_completo: string; telefone: string | null };
   } | null>(null);
-  const [visualConfig, setVisualConfig] = useState<{ logo_url: string | null } | null>(null);
-  const [unidadeNome, setUnidadeNome] = useState<string | null>(null);
+  const [unidadeTicketConfig, setUnidadeTicketConfig] = useState<{
+    logo_url: string | null;
+    nome: string | null;
+    rodape: string | null;
+  } | null>(null);
 
   const fetchFilas = async () => {
     if (!unidadeId) return;
