@@ -1,6 +1,7 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, QrCode as QrIcon } from "lucide-react";
+import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, Star } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
@@ -25,7 +26,7 @@ type SenhaPub = {
 };
 
 type FilaPub = { id: string; nome: string; cor: string | null; tempo_espera_estimado: number };
-type UnidadePub = { id: string; nome: string; slug: string };
+type UnidadePub = { id: string; nome: string; slug: string; google_review_url?: string | null };
 type ChamadaPub = { id: string; destino: string; created_at: string };
 type VisualPub = { logo_url: string | null };
 
@@ -86,14 +87,13 @@ function PublicSenhaPage() {
 
     const [fRes, uRows, vRes, cRes] = await Promise.all([
       supabase.from("filas").select("id,nome,cor,tempo_espera_estimado").eq("id", senhaData.fila_id).maybeSingle(),
-      supabase.rpc("get_unidades_publicas"),
+      supabase.from("unidades").select("id,nome,slug,google_review_url").eq("id", senhaData.unidade_id).maybeSingle(),
       supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", senhaData.unidade_id).maybeSingle(),
       // chamadas dos últimos 60s da unidade — filtramos pela senha no cliente
       supabase.rpc("get_chamadas_recentes", { _unidade_id: senhaData.unidade_id }),
     ]);
 
-    const uList = (uRows.data ?? []) as UnidadePub[];
-    const u = uList.find((x) => x.id === senhaData.unidade_id) ?? null;
+    const u = (uRows.data as UnidadePub | null) ?? null;
     const cList = (cRes.data ?? []) as ChamadaPub[];
     const cMatch = cList.find((c) => (c as unknown as { senha_id: string }).senha_id === senhaData.id) ?? null;
     
@@ -155,7 +155,19 @@ function PublicSenhaPage() {
           const oldStatus = senha.status;
           const newStatus = payload.new.status as SenhaStatus;
           
-          setSenha((prev) => ({ ...(prev as SenhaPub), ...(payload.new as SenhaPub) }));
+          const nextSenha = payload.new as SenhaPub;
+          setSenha((prev) => ({ ...(prev as SenhaPub), ...nextSenha }));
+          if (nextSenha.fila_id !== senha.fila_id) {
+            void supabase
+              .from("filas")
+              .select("id,nome,cor,tempo_espera_estimado")
+              .eq("id", nextSenha.fila_id)
+              .maybeSingle()
+              .then(({ data }) => data && setFila(data as FilaPub));
+            toast.info(`Sua senha foi atualizada para ${nextSenha.codigo}.`);
+          } else if (oldStatus !== newStatus) {
+            toast.info(statusMessage(newStatus));
+          }
           
           // Som se o status mudar para "chamada"
           if (oldStatus !== 'chamada' && newStatus === 'chamada') {
@@ -360,9 +372,22 @@ function PublicSenhaPage() {
             )}
 
             {isFinalized && (
-              <div className="inline-flex items-center gap-2 text-emerald-300">
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="font-medium">Atendimento finalizado</span>
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 text-emerald-300">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-medium">Atendimento finalizado</span>
+                </div>
+                {unidade?.google_review_url && (
+                  <a
+                    href={unidade.google_review_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mx-auto flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-xl"
+                  >
+                    <Star className="h-4 w-4" />
+                    Avaliar atendimento
+                  </a>
+                )}
               </div>
             )}
 
@@ -396,4 +421,16 @@ function PublicSenhaPage() {
       </div>
     </div>
   );
+}
+
+function statusMessage(status: SenhaStatus): string {
+  const map: Record<SenhaStatus, string> = {
+    aguardando: "Sua senha voltou para a fila de espera.",
+    chamada: "Você foi chamado. Verifique o local indicado.",
+    em_atendimento: "Seu atendimento começou.",
+    finalizada: "Seu atendimento foi finalizado.",
+    ausente: "Sua senha foi marcada como ausente.",
+    cancelada: "Sua senha foi cancelada.",
+  };
+  return map[status];
 }
