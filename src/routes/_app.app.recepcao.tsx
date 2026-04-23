@@ -643,7 +643,16 @@ function RecepcaoPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setNovoNome(pacienteQuery.trim());
+                  const q = pacienteQuery.trim();
+                  const digits = onlyDigits(q);
+                  if (digits.length === 11) {
+                    setNovoCpf(maskCPF(digits));
+                    setNovoNome("");
+                  } else {
+                    setNovoNome(q);
+                    setNovoCpf("");
+                  }
+                  setNovoTelefone("");
                   setNovoOpen(true);
                 }}
                 className="h-8 gap-1.5 text-xs font-semibold text-primary border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
