@@ -153,7 +153,8 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
           tipo: "teste",
           telefone: testPhone,
           unidade_id: unidadeId,
-          config: config // Envia o config atual (mesmo que não salvo) para testar
+          config: config, // Envia o config atual (mesmo que não salvo) para testar
+          idempotency_key: crypto.randomUUID()
         }
       });
 
