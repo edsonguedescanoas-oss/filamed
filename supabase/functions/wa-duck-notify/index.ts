@@ -111,7 +111,22 @@ Avisaremos você quando for a sua vez!`;
       telefone = "55" + telefone;
     }
 
+    const bodyData = {
+      number: telefone,
+      text: mensagem,
+      // Compatibility for newer Evolution API versions
+      textMessage: {
+        text: mensagem
+      },
+      options: {
+        delay: 0,
+        presence: "composing",
+        linkPreview: false
+      }
+    };
+
     console.log(`Enviando WhatsApp para ${telefone} via ${fullUrl}`);
+    console.log(`Payload: ${JSON.stringify(bodyData)}`);
 
     const response = await fetch(fullUrl, {
       method: "POST",
@@ -119,10 +134,7 @@ Avisaremos você quando for a sua vez!`;
         "Content-Type": "application/json",
         "apikey": api_key,
       },
-      body: JSON.stringify({
-        number: telefone,
-        text: mensagem,
-      }),
+      body: JSON.stringify(bodyData),
     });
 
     const responseText = await response.text();
