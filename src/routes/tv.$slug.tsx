@@ -912,6 +912,15 @@ function TvPage() {
             <h1 className="text-base font-bold tracking-tight leading-none">{unidade?.nome}</h1>
             <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" title="Conectado" />
             <p className="text-[10px] font-medium opacity-60 uppercase tracking-widest leading-none">Painel de Chamadas</p>
+            {destinosAceitos && (
+              <span
+                className="ml-2 rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary"
+                title={`Esta TV exibe apenas: ${Array.from(destinosAceitos).join(", ")}`}
+              >
+                Filtro: {Array.from(destinosAceitos).slice(0, 2).join(" · ")}
+                {destinosAceitos.size > 2 ? ` +${destinosAceitos.size - 2}` : ""}
+              </span>
+            )}
           </div>
         </div>
 
