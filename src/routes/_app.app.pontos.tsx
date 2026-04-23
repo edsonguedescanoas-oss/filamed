@@ -244,6 +244,32 @@ function PontosPage() {
     setDeleteId(null);
   };
 
+  const handleTogglePermissao = async (pontoId: string, userId: string, checked: boolean) => {
+    if (!unidadeId) return;
+    if (checked) {
+      const { error } = await supabase.from("ponto_atendimento_permissoes" as never).insert({
+        unidade_id: unidadeId,
+        ponto_atendimento_id: pontoId,
+        user_id: userId,
+      } as never);
+      if (error) {
+        toast.error("Falha ao permitir usuário: " + error.message);
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("ponto_atendimento_permissoes" as never)
+        .delete()
+        .eq("ponto_atendimento_id", pontoId)
+        .eq("user_id", userId);
+      if (error) {
+        toast.error("Falha ao remover permissão: " + error.message);
+        return;
+      }
+    }
+    await fetchAll();
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
