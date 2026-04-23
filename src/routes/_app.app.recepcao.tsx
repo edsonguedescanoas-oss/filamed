@@ -300,7 +300,7 @@ function RecepcaoPage() {
     }
   };
 
-  const handleSalvarNovoPaciente = async () => {
+  const handleSalvarNovoPaciente = async (emitirSenha = false) => {
     if (!unidadeId) return;
     const nome = novoNome.trim();
     if (nome.length < 2) {
@@ -320,7 +320,8 @@ function RecepcaoPage() {
         .select("*")
         .single();
       if (error) throw error;
-      setPacienteSelecionado(data as Paciente);
+      const pac = data as Paciente;
+      setPacienteSelecionado(pac);
       setPacienteQuery("");
       setPacientes([]);
       setNovoOpen(false);
@@ -328,6 +329,10 @@ function RecepcaoPage() {
       setNovoCpf("");
       setNovoTelefone("");
       toast.success("Paciente cadastrado", { description: nome });
+
+      if (emitirSenha) {
+        await handleGerar(pac);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha ao cadastrar paciente";
       toast.error(msg);
