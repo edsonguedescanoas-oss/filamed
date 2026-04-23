@@ -1,8 +1,9 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, QrCode as QrIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
+import { useRealtimeTable } from "@/hooks/use-realtime-table";
 
 type SenhaStatus =
   | "aguardando"
@@ -50,45 +51,53 @@ function PublicSenhaPage() {
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      // RPC pública: busca a própria senha por token, sem expor a tabela inteira ao anon
-      const { data: rows, error: e } = await supabase
-        .rpc("get_senha_por_token", { _token: token });
-      const data = (rows ?? [])[0] ?? null;
-      if (!mounted) return;
-      if (e || !data) {
-        setError("Senha não encontrada ou expirada.");
-        setLoading(false);
-        return;
-      }
-      setSenha(data as SenhaPub);
+  const fetchInitialData = useCallback(async (isRetry = false) => {
+    // RPC pública: busca a própria senha por token, sem expor a tabela inteira ao anon
+    const { data: rows, error: e } = await supabase
+      .rpc("get_senha_por_token", { _token: token });
+    
+    const data = (rows ?? [])[0] ?? null;
+    
+    // Se não encontrou e for a primeira vez, tenta mais uma vez após 1s (evita race condition de record novo)
+    if (!data && !isRetry) {
+      await new Promise(r => setTimeout(r, 1000));
+      return fetchInitialData(true);
+    }
 
-      const [fRes, uRows, vRes, cRes] = await Promise.all([
-        supabase.from("filas").select("id,nome,cor,tempo_espera_estimado").eq("id", data.fila_id).maybeSingle(),
-        supabase.rpc("get_unidades_publicas"),
-        supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", data.unidade_id).maybeSingle(),
-        // chamadas dos últimos 60s da unidade — filtramos pela senha no cliente
-        supabase.rpc("get_chamadas_recentes", { _unidade_id: data.unidade_id }),
-      ]);
-      if (!mounted) return;
-      const uList = (uRows.data ?? []) as UnidadePub[];
-      const u = uList.find((x) => x.id === data.unidade_id) ?? null;
-      const cList = (cRes.data ?? []) as ChamadaPub[];
-      const cMatch = cList.find((c) => (c as unknown as { senha_id: string }).senha_id === data.id) ?? null;
-      setFila((fRes.data as FilaPub) ?? null);
-      setUnidade(u);
-      setVisual(vRes.data ?? null);
-      setChamada(cMatch);
+    if (e || !data) {
+      setError("Senha não encontrada ou expirada.");
       setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
+      return;
+    }
+
+    const senhaData = data as SenhaPub;
+    setSenha(senhaData);
+
+    const [fRes, uRows, vRes, cRes] = await Promise.all([
+      supabase.from("filas").select("id,nome,cor,tempo_espera_estimado").eq("id", senhaData.fila_id).maybeSingle(),
+      supabase.rpc("get_unidades_publicas"),
+      supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", senhaData.unidade_id).maybeSingle(),
+      // chamadas dos últimos 60s da unidade — filtramos pela senha no cliente
+      supabase.rpc("get_chamadas_recentes", { _unidade_id: senhaData.unidade_id }),
+    ]);
+
+    const uList = (uRows.data ?? []) as UnidadePub[];
+    const u = uList.find((x) => x.id === senhaData.unidade_id) ?? null;
+    const cList = (cRes.data ?? []) as ChamadaPub[];
+    const cMatch = cList.find((c) => (c as unknown as { senha_id: string }).senha_id === senhaData.id) ?? null;
+    
+    setFila((fRes.data as FilaPub) ?? null);
+    setUnidade(u);
+    setVisual(vRes.data ?? null);
+    setChamada(cMatch);
+    setLoading(false);
   }, [token]);
 
-  // Realtime: acompanha mudanças na própria senha
+  useEffect(() => {
+    void fetchInitialData();
+  }, [fetchInitialData]);
+
+  // Realtime: acompanha mudanças na própria senha e chamadas
   useEffect(() => {
     if (!senha) return;
     const ch = supabase
@@ -122,28 +131,50 @@ function PublicSenhaPage() {
   }, [senha?.id]);
 
   // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
-  useEffect(() => {
+  const refreshPosition = useCallback(async () => {
     if (!senha || senha.status !== "aguardando") {
       setAguardandoNaFrente(null);
       return;
     }
-    let mounted = true;
-    const refresh = async () => {
-      const { count } = await supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("fila_id", senha.fila_id)
-        .eq("status", "aguardando")
-        .lt("created_at", senha.created_at);
-      if (mounted) setAguardandoNaFrente(count ?? 0);
-    };
-    void refresh();
-    const t = setInterval(refresh, 15000);
-    return () => {
-      mounted = false;
-      clearInterval(t);
-    };
+    const { count } = await supabase
+      .from("senhas")
+      .select("id", { count: "exact", head: true })
+      .eq("fila_id", senha.fila_id)
+      .eq("status", "aguardando")
+      .lt("created_at", senha.created_at);
+    setAguardandoNaFrente(count ?? 0);
   }, [senha?.id, senha?.status, senha?.fila_id, senha?.created_at]);
+
+  useEffect(() => {
+    void refreshPosition();
+  }, [refreshPosition]);
+
+  // Realtime para atualizar posição IMEDIATAMENTE quando a fila anda
+  useRealtimeTable({
+    table: "senhas",
+    filter: senha ? `fila_id=eq.${senha.fila_id}` : undefined,
+    channelKey: `pub:fila:${senha?.fila_id}`,
+    enabled: !!senha?.fila_id,
+    onChange: () => {
+      void refreshPosition();
+    },
+  });
+
+  // Realtime para atualizar dados da fila (tempo estimado)
+  useRealtimeTable({
+    table: "filas",
+    filter: senha ? `id=eq.${senha.fila_id}` : undefined,
+    channelKey: `pub:fila_data:${senha?.fila_id}`,
+    enabled: !!senha?.fila_id,
+    onChange: async () => {
+      const { data } = await supabase
+        .from("filas")
+        .select("id,nome,cor,tempo_espera_estimado")
+        .eq("id", senha!.fila_id)
+        .maybeSingle();
+      if (data) setFila(data as FilaPub);
+    },
+  });
 
   if (loading) {
     return (
