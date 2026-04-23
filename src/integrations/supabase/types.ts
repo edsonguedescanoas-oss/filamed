@@ -150,6 +150,7 @@ export type Database = {
           created_at: string
           destino: string
           id: string
+          idempotency_key: string | null
           observacao: string | null
           senha_id: string
           unidade_id: string
@@ -159,6 +160,7 @@ export type Database = {
           created_at?: string
           destino: string
           id?: string
+          idempotency_key?: string | null
           observacao?: string | null
           senha_id: string
           unidade_id: string
@@ -168,6 +170,7 @@ export type Database = {
           created_at?: string
           destino?: string
           id?: string
+          idempotency_key?: string | null
           observacao?: string | null
           senha_id?: string
           unidade_id?: string
@@ -343,6 +346,7 @@ export type Database = {
           enviada_em: string | null
           erro: string | null
           id: string
+          idempotency_key: string | null
           mensagem: string
           senha_id: string | null
           status: Database["public"]["Enums"]["notificacao_status"]
@@ -355,6 +359,7 @@ export type Database = {
           enviada_em?: string | null
           erro?: string | null
           id?: string
+          idempotency_key?: string | null
           mensagem: string
           senha_id?: string | null
           status?: Database["public"]["Enums"]["notificacao_status"]
@@ -367,6 +372,7 @@ export type Database = {
           enviada_em?: string | null
           erro?: string | null
           id?: string
+          idempotency_key?: string | null
           mensagem?: string
           senha_id?: string | null
           status?: Database["public"]["Enums"]["notificacao_status"]

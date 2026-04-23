@@ -787,6 +787,7 @@ export function AtendimentoWidgets({ unidadeId }: { unidadeId: string }) {
         senha_id: chamarSenha.id,
         destino: destino.trim(),
         chamado_por: user.id,
+        idempotency_key: crypto.randomUUID(),
       });
       if (e2) throw e2;
       toast.success(`${chamarSenha.codigo} chamada para ${destino.trim()}.`);

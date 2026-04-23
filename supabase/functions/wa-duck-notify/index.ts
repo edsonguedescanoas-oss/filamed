@@ -24,7 +24,16 @@ export const handler = async (req: Request) => {
       console.error("Erro ao parsear o JSON do request:", e.message);
       throw new Error("Invalid JSON body");
     }
-    const { senha_id, tipo = "criacao", mesa_nome, telefone: testTelefone, mensagem: testMensagem, unidade_id: testUnidadeId, config: testConfig } = body;
+    const { 
+      senha_id, 
+      tipo = "criacao", 
+      mesa_nome, 
+      telefone: testTelefone, 
+      mensagem: testMensagem, 
+      unidade_id: testUnidadeId, 
+      config: testConfig,
+      idempotency_key 
+    } = body;
     
     if (tipo !== "teste" && !senha_id) {
       throw new Error("senha_id is required for non-test types");
@@ -121,14 +130,37 @@ Avisaremos você quando for a sua vez!`;
       }
     }
 
+    // 2. Verificação de idempotency_key (prioridade máxima se presente)
+    if (idempotency_key) {
+      const { data: existingByKey } = await supabaseClient
+        .from("notificacoes_log")
+        .select("id, status")
+        .eq("idempotency_key", idempotency_key)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingByKey && existingByKey.status === "enviada") {
+        console.log(`Idempotency key ${idempotency_key} já processada com sucesso. Ignorando.`);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          status: "ignored", 
+          reason: "idempotency",
+          message: "Esta solicitação já foi processada anteriormente." 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
     // Normalização do telefone para verificação e envio
     let formattedTelefone = telefone.replace(/\D/g, "");
     if (formattedTelefone.length <= 11 && !formattedTelefone.startsWith("55")) {
       formattedTelefone = "55" + formattedTelefone;
     }
 
-    // 2. Verificação de duplicidade para chamadas (mesma senha, mesmo local, mesmo destinatário)
-    if (tipo === "chamada" && finalSenhaId) {
+    // 2. Verificação de duplicidade para chamadas (legacy check - only if no idempotency key)
+    if (tipo === "chamada" && finalSenhaId && !idempotency_key) {
       const { data: existingLog } = await supabaseClient
         .from("notificacoes_log")
         .select("id")
@@ -221,6 +253,7 @@ Avisaremos você quando for a sua vez!`;
         status: response.ok ? "enviada" : "falhou",
         mensagem: mensagem,
         erro: response.ok ? null : (responseText || "Erro desconhecido"),
+        idempotency_key: idempotency_key,
       });
 
       if (logError) {

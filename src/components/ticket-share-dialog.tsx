@@ -126,7 +126,8 @@ export function TicketShareDialog({
         canal: (canal === 'print' || canal === 'share') ? 'push' : canal,
         destinatario: canal === 'whatsapp' ? (paciente.telefone || 'Sem telefone') : 'Ticket Físico',
         mensagem: `Ticket ${senha.codigo} por ${canal}`,
-        status: status
+        status: status,
+        idempotency_key: crypto.randomUUID()
       };
       await supabase.from('notificacoes_log').insert(payload);
     } catch (err) {
@@ -157,7 +158,8 @@ export function TicketShareDialog({
       const { data, error } = await supabase.functions.invoke('wa-duck-notify', {
         body: { 
           senha_id: senha.id,
-          tipo: 'criacao'
+          tipo: 'criacao',
+          idempotency_key: crypto.randomUUID()
         }
       });
 
