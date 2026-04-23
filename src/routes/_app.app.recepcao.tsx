@@ -694,7 +694,16 @@ function RecepcaoPage() {
                   onChange={(e) => setPacienteQuery(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !pacienteSelecionado && pacienteQuery.trim().length >= 2 && pacientes.length === 0 && !searchingPac) {
-                      setNovoNome(pacienteQuery.trim());
+                      const q = pacienteQuery.trim();
+                      const digits = onlyDigits(q);
+                      if (digits.length === 11) {
+                        setNovoCpf(maskCPF(digits));
+                        setNovoNome("");
+                      } else {
+                        setNovoNome(q);
+                        setNovoCpf("");
+                      }
+                      setNovoTelefone("");
                       setNovoOpen(true);
                     }
                   }}
