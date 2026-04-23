@@ -5,7 +5,7 @@ import type { AppRole } from "@/hooks/use-auth";
  * - admin: acesso total (incluindo /app/pontos para cadastro de pontos de atendimento)
  * - recepcao: pré-atendimento + guichê (chama, classifica e encaminha)
  * - medico/enfermeiro: foco no atendimento clínico
- * - gestor: visão de gestão (filas + pacientes), sem operar atendimento
+ * - gestor: visão de gestão (filas + pacientes + pontos), sem operar atendimento
  */
 export const ROLE_ROUTES: Record<AppRole, string[]> = {
   admin: [
@@ -25,7 +25,7 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
   recepcao: ["/app", "/app/recepcao", "/app/guiche", "/app/filas", "/app/pacientes", "/app/notificacoes"],
   medico: ["/app", "/app/atendimento", "/app/pacientes"],
   enfermeiro: ["/app", "/app/atendimento", "/app/pacientes"],
-  gestor: ["/app", "/app/filas", "/app/pacientes", "/app/notificacoes", "/app/relatorios", "/app/auditoria"],
+  gestor: ["/app", "/app/filas", "/app/pontos", "/app/pacientes", "/app/notificacoes", "/app/relatorios", "/app/auditoria"],
   super_admin: [], // super_admin opera em /admin, não em /app
 };
 
