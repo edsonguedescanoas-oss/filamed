@@ -774,6 +774,26 @@ function RecepcaoPage() {
                               telefone: s.paciente?.telefone ?? null,
                             },
                           });
+                          setShareAutoPrint(true);
+                          setShareOpen(true);
+                        }}
+                        title="Reimprimir Ticket (80mm)"
+                        className="text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShareData({
+                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            paciente: {
+                              nome_completo: s.paciente?.nome_completo ?? "Sem nome",
+                              telefone: s.paciente?.telefone ?? null,
+                            },
+                          });
+                          setShareAutoPrint(false);
                           setShareOpen(true);
                         }}
                         title="Enviar ou Imprimir"
