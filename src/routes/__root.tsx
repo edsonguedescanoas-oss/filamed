@@ -116,6 +116,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   return (
     <AuthProvider>
+      <OrientationGuard />
       <Outlet />
       <Toaster richColors position="top-right" />
     </AuthProvider>
