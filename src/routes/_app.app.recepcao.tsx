@@ -335,7 +335,8 @@ function RecepcaoPage() {
     : null;
 
   const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent, autoPrintOverride?: boolean) => {
-    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent) 
+    // Se for um evento (clique no botão), pacOrEvent é o evento e não tem id de paciente
+    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent && !('_reactName' in pacOrEvent)) 
       ? (pacOrEvent as Paciente) 
       : pacienteSelecionado;
 
