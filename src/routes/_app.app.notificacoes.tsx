@@ -300,20 +300,3 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
     </div>
   );
 }
-  return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold">{titulo}</p>
-          <p className="text-[10px] text-muted-foreground">{evento}</p>
-        </div>
-        <Badge variant="secondary" className="text-[9px] h-4">
-          Ativo
-        </Badge>
-      </div>
-      <div className="mt-2 rounded-md border border-primary/20 bg-primary/5 px-2 py-1.5 text-[11px] leading-relaxed italic">
-        "{mensagem}"
-      </div>
-    </div>
-  );
-}
