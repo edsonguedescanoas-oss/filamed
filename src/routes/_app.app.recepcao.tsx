@@ -643,7 +643,16 @@ function RecepcaoPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setNovoNome(pacienteQuery.trim());
+                  const q = pacienteQuery.trim();
+                  const digits = onlyDigits(q);
+                  if (digits.length === 11) {
+                    setNovoCpf(maskCPF(digits));
+                    setNovoNome("");
+                  } else {
+                    setNovoNome(q);
+                    setNovoCpf("");
+                  }
+                  setNovoTelefone("");
                   setNovoOpen(true);
                 }}
                 className="h-8 gap-1.5 text-xs font-semibold text-primary border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
@@ -685,7 +694,16 @@ function RecepcaoPage() {
                   onChange={(e) => setPacienteQuery(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !pacienteSelecionado && pacienteQuery.trim().length >= 2 && pacientes.length === 0 && !searchingPac) {
-                      setNovoNome(pacienteQuery.trim());
+                      const q = pacienteQuery.trim();
+                      const digits = onlyDigits(q);
+                      if (digits.length === 11) {
+                        setNovoCpf(maskCPF(digits));
+                        setNovoNome("");
+                      } else {
+                        setNovoNome(q);
+                        setNovoCpf("");
+                      }
+                      setNovoTelefone("");
                       setNovoOpen(true);
                     }
                   }}
@@ -706,7 +724,16 @@ function RecepcaoPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setNovoNome(pacienteQuery.trim());
+                            const q = pacienteQuery.trim();
+                            const digits = onlyDigits(q);
+                            if (digits.length === 11) {
+                              setNovoCpf(maskCPF(digits));
+                              setNovoNome("");
+                            } else {
+                              setNovoNome(q);
+                              setNovoCpf("");
+                            }
+                            setNovoTelefone("");
                             setNovoOpen(true);
                           }}
                         >
@@ -935,7 +962,13 @@ function RecepcaoPage() {
               Cadastre rapidamente para vincular à senha.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSalvarNovoPaciente(true);
+            }}
+            className="space-y-4 py-2"
+          >
             <div>
               <Label htmlFor="novo-nome" className="mb-1.5 block">
                 Nome completo <span className="text-destructive">*</span>
@@ -996,48 +1029,51 @@ function RecepcaoPage() {
                 )}
               </div>
             </div>
-          </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setNovoOpen(false);
-                setNovoErrors({});
-              }} 
-              disabled={savingNovo}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+
+            <DialogFooter className="flex-col sm:flex-row gap-2 mt-6">
               <Button 
-                variant="secondary"
-                onClick={() => void handleSalvarNovoPaciente(false)} 
+                type="button"
+                variant="outline" 
+                onClick={() => {
+                  setNovoOpen(false);
+                  setNovoErrors({});
+                }} 
                 disabled={savingNovo}
                 className="w-full sm:w-auto"
               >
-                {savingNovo ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Apenas cadastrar"
-                )}
+                Cancelar
               </Button>
-              <Button 
-                onClick={() => void handleSalvarNovoPaciente(true)} 
-                disabled={savingNovo}
-                className="w-full sm:w-auto bg-gradient-primary"
-              >
-                {savingNovo ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    Cadastrar e Gerar Senha
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogFooter>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button 
+                  type="button"
+                  variant="secondary"
+                  onClick={() => void handleSalvarNovoPaciente(false)} 
+                  disabled={savingNovo}
+                  className="w-full sm:w-auto"
+                >
+                  {savingNovo ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Cadastrar e Selecionar"
+                  )}
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={savingNovo}
+                  className="w-full sm:w-auto bg-gradient-primary"
+                >
+                  {savingNovo ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Cadastrar e Gerar Senha
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
       {/* Modal de compartilhamento */}
