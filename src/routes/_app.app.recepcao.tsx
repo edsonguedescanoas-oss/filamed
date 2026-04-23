@@ -908,6 +908,7 @@ function RecepcaoPage() {
           setShareOpen(open);
           if (!open) setShareAutoPrint(false);
         }}
+        unidadeId={unidadeId ?? null}
         senha={shareData?.senha ?? null}
         paciente={shareData?.paciente ?? null}
         unidadeNome={unidadeTicketConfig?.nome ?? null}
