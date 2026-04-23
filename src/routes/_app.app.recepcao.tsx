@@ -399,9 +399,7 @@ function RecepcaoPage() {
       errors.nome = "Informe o nome completo do paciente";
     }
     
-    if (!cpfDigits) {
-      errors.cpf = "CPF é obrigatório";
-    } else if (!isValidCPF(cpfDigits)) {
+    if (cpfDigits && !isValidCPF(cpfDigits)) {
       errors.cpf = "CPF inválido";
     }
 
