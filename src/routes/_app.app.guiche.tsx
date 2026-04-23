@@ -459,6 +459,49 @@ function GuichePage() {
                       Nasc: {new Date(pacienteChamado.data_nascimento).toLocaleDateString("pt-BR")}
                     </div>
                   )}
+                  <div className="mt-4 rounded-xl border border-border bg-background/60 p-3">
+                    <Label htmlFor="busca-agendamento" className="flex items-center gap-2 text-xs">
+                      <CalendarCheck className="h-3.5 w-3.5 text-primary" />
+                      Buscar agendamento/paciente prévio
+                    </Label>
+                    <Input
+                      id="busca-agendamento"
+                      className="mt-2 h-9"
+                      value={buscaAgendamento}
+                      onChange={(e) => setBuscaAgendamento(e.target.value)}
+                      placeholder="Nome, telefone, CPF ou documento"
+                    />
+                    {buscaAgendamento.trim().length >= 2 && (
+                      <div className="mt-2 space-y-1">
+                        {resultadosAgendamento.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">Nenhum registro encontrado.</p>
+                        ) : (
+                          resultadosAgendamento.map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              className="block w-full rounded-md border border-border bg-card px-3 py-2 text-left text-xs hover:bg-muted/40"
+                              onClick={() =>
+                                setClassificacao((c) => ({
+                                  ...c,
+                                  tipo: "agendado",
+                                  observacoes: [
+                                    c.observacoes,
+                                    `Agendamento prévio localizado: ${p.nome_completo}${p.telefone ? ` · ${p.telefone}` : ""}`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join("\n"),
+                                }))
+                              }
+                            >
+                              <span className="font-medium">{p.nome_completo}</span>
+                              {p.telefone && <span className="text-muted-foreground"> · {p.telefone}</span>}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <Button
                   size="sm"
