@@ -72,7 +72,7 @@ export const handler = async (req: Request) => {
           *,
           paciente:pacientes(nome_completo, telefone),
           fila:filas(nome, prefixo_senha, tempo_espera_estimado),
-          unidade:unidades(id, nome, whatsapp_config)
+          unidade:unidades(id, nome, whatsapp_config, google_review_url)
         `)
         .eq("id", senha_id)
         .single();
@@ -116,6 +116,20 @@ export const handler = async (req: Request) => {
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{senha}}", senha.codigo)
           .replace("{{local}}", localFormatado || "atendimento");
+      } else if (tipo === "encaminhamento") {
+        const publicUrl = `https://filamed.lovable.app/s/${senha.token_publico}`;
+        mensagem = `Olá *${paciente.nome_completo}*, sua senha foi atualizada no *${unidade.nome}*.
+
+🎫 Nova senha: *${senha.codigo}*
+📍 Fila: *${fila.nome}*
+
+Acompanhe em tempo real pelo mesmo link:
+${publicUrl}`;
+      } else if (tipo === "finalizacao") {
+        const reviewUrl = unidade.google_review_url;
+        mensagem = `Olá *${paciente.nome_completo}*, seu atendimento no *${unidade.nome}* foi finalizado.
+
+Obrigado pela visita!${reviewUrl ? `\n\nSe puder, avalie nossa clínica no Google:\n${reviewUrl}` : ""}`;
       } else {
         // 2. Calcula tempo estimado
         const { count } = await supabaseClient
