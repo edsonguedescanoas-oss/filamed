@@ -24,6 +24,7 @@ type Props = {
   } | null;
   unidadeNome: string | null;
   logoUrl?: string | null;
+  rodape?: string | null;
 };
 
 export function TicketShareDialog({
@@ -33,6 +34,7 @@ export function TicketShareDialog({
   paciente,
   unidadeNome,
   logoUrl,
+  rodape,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -117,7 +119,7 @@ export function TicketShareDialog({
               <div style="font-size: 8pt; margin-top: 3mm; font-weight: bold;">Escaneie para acompanhar</div>
             </div>
             <div class="footer">
-              FILAMED - GESTÃO DE FILAS
+              ${rodape || "FILAMED - GESTÃO DE FILAS"}
               <div class="timestamp">${new Date().toLocaleString("pt-BR")}</div>
             </div>
             <script>
@@ -190,8 +192,8 @@ export function TicketShareDialog({
               <div className="bg-white p-2 rounded-xl">
                 <QrCode value={publicUrl} size={100} />
               </div>
-              <div className="text-[9px] text-slate-500 max-w-[140px] leading-relaxed">
-                Escaneie para acompanhar ou acesse pelo link enviado.
+              <div className="text-[9px] text-slate-500 max-w-[140px] leading-relaxed line-clamp-2">
+                {rodape || "Escaneie para acompanhar ou acesse pelo link enviado."}
               </div>
             </div>
           </div>

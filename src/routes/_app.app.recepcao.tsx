@@ -139,8 +139,11 @@ function RecepcaoPage() {
     senha: { codigo: string; token_publico: string };
     paciente: { nome_completo: string; telefone: string | null };
   } | null>(null);
-  const [visualConfig, setVisualConfig] = useState<{ logo_url: string | null } | null>(null);
-  const [unidadeNome, setUnidadeNome] = useState<string | null>(null);
+  const [unidadeTicketConfig, setUnidadeTicketConfig] = useState<{
+    logo_url: string | null;
+    nome: string | null;
+    rodape: string | null;
+  } | null>(null);
 
   const fetchFilas = async () => {
     if (!unidadeId) return;
@@ -182,13 +185,20 @@ function RecepcaoPage() {
     void fetchRecentes();
     if (unidadeId) {
       void (async () => {
-        const [uRes, vRes] = await Promise.all([
-          supabase.from("unidades").select("slug, nome").eq("id", unidadeId).maybeSingle(),
-          supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", unidadeId).maybeSingle(),
-        ]);
-        setUnidadeSlug(uRes.data?.slug ?? null);
-        setUnidadeNome(uRes.data?.nome ?? null);
-        setVisualConfig(vRes.data ?? null);
+        const { data: u, error } = await supabase
+          .from("unidades")
+          .select("slug, nome, ticket_logo_url, ticket_unidade_nome, ticket_rodape")
+          .eq("id", unidadeId)
+          .maybeSingle();
+        
+        if (!error && u) {
+          setUnidadeSlug(u.slug ?? null);
+          setUnidadeTicketConfig({
+            logo_url: u.ticket_logo_url || null,
+            nome: u.ticket_unidade_nome || u.nome || null,
+            rodape: u.ticket_rodape || null,
+          });
+        }
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -832,8 +842,9 @@ function RecepcaoPage() {
         onOpenChange={setShareOpen}
         senha={shareData?.senha ?? null}
         paciente={shareData?.paciente ?? null}
-        unidadeNome={unidadeNome}
-        logoUrl={visualConfig?.logo_url}
+        unidadeNome={unidadeTicketConfig?.nome ?? null}
+        logoUrl={unidadeTicketConfig?.logo_url ?? null}
+        rodape={unidadeTicketConfig?.rodape ?? null}
       />
     </div>
   );
