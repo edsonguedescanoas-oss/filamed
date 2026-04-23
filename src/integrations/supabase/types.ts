@@ -1148,29 +1148,55 @@ export type Database = {
           status: Database["public"]["Enums"]["assinatura_estado"]
         }[]
       }
-      admin_listar_auditoria: {
-        Args: {
-          _ate?: string
-          _desde?: string
-          _entidade?: string
-          _limite?: number
-          _unidade_id?: string
-        }
-        Returns: {
-          acao: string
-          ator_id: string
-          ator_nome: string
-          created_at: string
-          dados_antes: Json
-          dados_depois: Json
-          entidade: string
-          entidade_id: string
-          id: string
-          resumo: string
-          unidade_id: string
-          unidade_nome: string
-        }[]
-      }
+      admin_listar_auditoria:
+        | {
+            Args: {
+              _ate?: string
+              _desde?: string
+              _entidade?: string
+              _limite?: number
+              _unidade_id?: string
+            }
+            Returns: {
+              acao: string
+              ator_id: string
+              ator_nome: string
+              created_at: string
+              dados_antes: Json
+              dados_depois: Json
+              entidade: string
+              entidade_id: string
+              id: string
+              resumo: string
+              unidade_id: string
+              unidade_nome: string
+            }[]
+          }
+        | {
+            Args: {
+              _ate?: string
+              _ator_id?: string
+              _busca?: string
+              _desde?: string
+              _entidade?: string
+              _limite?: number
+              _unidade_id?: string
+            }
+            Returns: {
+              acao: string
+              ator_id: string
+              ator_nome: string
+              created_at: string
+              dados_antes: Json
+              dados_depois: Json
+              entidade: string
+              entidade_id: string
+              id: string
+              resumo: string
+              unidade_id: string
+              unidade_nome: string
+            }[]
+          }
       admin_listar_faturas_unidade: {
         Args: { _unidade_id: string }
         Returns: {

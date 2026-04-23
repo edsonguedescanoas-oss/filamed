@@ -12,12 +12,17 @@ import {
   User as UserIcon,
   ChevronDown,
   ChevronRight,
+  Search,
+  Download,
+  CreditCard,
+  Power,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -55,6 +60,8 @@ interface UnidadeOpt {
 
 const ENTIDADES = [
   { value: "todas", label: "Todas as entidades" },
+  { value: "assinatura", label: "Assinaturas / Planos" },
+  { value: "unidade", label: "Unidades (suspensão/reativação)" },
   { value: "fila", label: "Filas" },
   { value: "chamada", label: "Chamadas" },
   { value: "notificacao", label: "Notificações" },
@@ -120,6 +127,23 @@ function entidadeMeta(entidade: string, acao: string) {
       tone: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
     };
   }
+  if (entidade === "assinatura") {
+    return {
+      icon: CreditCard,
+      label: "Assinatura",
+      tone: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+    };
+  }
+  if (entidade === "unidade") {
+    const isSuspender = acao === "suspender";
+    return {
+      icon: Power,
+      label: isSuspender ? "Unidade suspensa" : "Unidade",
+      tone: isSuspender
+        ? "bg-destructive/10 text-destructive border-destructive/20"
+        : "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20",
+    };
+  }
   return {
     icon: Activity,
     label: entidade,
@@ -127,14 +151,69 @@ function entidadeMeta(entidade: string, acao: string) {
   };
 }
 
+function escapeCsv(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const str = typeof value === "string" ? value : JSON.stringify(value);
+  if (/[",\n;]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function exportarCsv(rows: AuditoriaRow[]) {
+  const headers = [
+    "data",
+    "entidade",
+    "acao",
+    "unidade",
+    "ator",
+    "resumo",
+    "dados_antes",
+    "dados_depois",
+  ];
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    lines.push(
+      [
+        escapeCsv(new Date(r.created_at).toISOString()),
+        escapeCsv(r.entidade),
+        escapeCsv(r.acao),
+        escapeCsv(r.unidade_nome ?? ""),
+        escapeCsv(r.ator_nome ?? (r.ator_id ? "Usuário" : "Sistema")),
+        escapeCsv(r.resumo),
+        escapeCsv(r.dados_antes ?? ""),
+        escapeCsv(r.dados_depois ?? ""),
+      ].join(","),
+    );
+  }
+  const csv = "\uFEFF" + lines.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function AdminAuditoriaPage() {
   const [unidades, setUnidades] = useState<UnidadeOpt[]>([]);
   const [unidadeId, setUnidadeId] = useState<string>("todas");
   const [entidade, setEntidade] = useState<string>("todas");
   const [periodo, setPeriodo] = useState<string>("7d");
+  const [busca, setBusca] = useState<string>("");
+  const [buscaDebounced, setBuscaDebounced] = useState<string>("");
   const [eventos, setEventos] = useState<AuditoriaRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Debounce da busca textual
+  useEffect(() => {
+    const t = setTimeout(() => setBuscaDebounced(busca.trim()), 300);
+    return () => clearTimeout(t);
+  }, [busca]);
 
   // Carrega unidades para o filtro
   useEffect(() => {
@@ -163,7 +242,9 @@ function AdminAuditoriaPage() {
         _entidade: entidade === "todas" ? null : entidade,
         _desde: desde,
         _ate: null,
-        _limite: 300,
+        _limite: 500,
+        _busca: buscaDebounced || null,
+        _ator_id: null,
       });
       if (cancel) return;
       if (error) {
@@ -177,22 +258,24 @@ function AdminAuditoriaPage() {
     return () => {
       cancel = true;
     };
-  }, [unidadeId, entidade, periodo]);
+  }, [unidadeId, entidade, periodo, buscaDebounced]);
 
   const stats = useMemo(() => {
-    let filas = 0;
+    let assinatura = 0;
+    let unidade = 0;
     let chamadas = 0;
     let notif_ok = 0;
     let notif_falha = 0;
     for (const e of eventos) {
-      if (e.entidade === "fila") filas++;
+      if (e.entidade === "assinatura") assinatura++;
+      else if (e.entidade === "unidade") unidade++;
       else if (e.entidade === "chamada") chamadas++;
       else if (e.entidade === "notificacao") {
         if (e.acao === "falhar") notif_falha++;
         else notif_ok++;
       }
     }
-    return { filas, chamadas, notif_ok, notif_falha };
+    return { assinatura, unidade, chamadas, notif_ok, notif_falha };
   }, [eventos]);
 
   const toggle = (id: string) => {
@@ -210,23 +293,35 @@ function AdminAuditoriaPage() {
         <div>
           <h1 className="font-display text-2xl font-bold sm:text-3xl">Auditoria global</h1>
           <p className="text-sm text-muted-foreground">
-            Trilha de eventos sensíveis do SaaS — mudanças em filas, chamadas e envio de notificações.
+            Trilha de eventos críticos do SaaS — mudanças de plano, suspensões, falhas de integração e operações por unidade.
           </p>
         </div>
-        <Badge variant="outline" className="gap-1.5">
-          <Activity className="h-3.5 w-3.5" />
-          {eventos.length} evento{eventos.length === 1 ? "" : "s"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="gap-1.5">
+            <Activity className="h-3.5 w-3.5" />
+            {eventos.length} evento{eventos.length === 1 ? "" : "s"}
+          </Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => exportarCsv(eventos)}
+            disabled={loading || eventos.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+        </div>
       </header>
 
       {/* Resumo */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <ResumoCard icon={ListTree} label="Mudanças em filas" value={stats.filas} tone="text-sky-600" />
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <ResumoCard icon={CreditCard} label="Planos / Assinaturas" value={stats.assinatura} tone="text-amber-600" />
+        <ResumoCard icon={Power} label="Suspensões / Unidades" value={stats.unidade} tone="text-indigo-600" />
         <ResumoCard icon={PhoneCall} label="Chamadas" value={stats.chamadas} tone="text-violet-600" />
         <ResumoCard icon={Send} label="Notificações enviadas" value={stats.notif_ok} tone="text-emerald-600" />
         <ResumoCard
           icon={AlertTriangle}
-          label="Notificações com falha"
+          label="Falhas de integração"
           value={stats.notif_falha}
           tone="text-destructive"
           highlight={stats.notif_falha > 0}
@@ -240,9 +335,21 @@ function AdminAuditoriaPage() {
             <Filter className="h-4 w-4" />
             Filtros
           </CardTitle>
-          <CardDescription>Refine a trilha por unidade, tipo de evento ou período.</CardDescription>
+          <CardDescription>Refine a trilha por unidade, tipo de evento, período ou busca textual.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-1.5 lg:col-span-1">
+            <Label className="text-xs">Buscar</Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="resumo, unidade, ator…"
+                className="pl-8"
+              />
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Unidade</Label>
             <Select value={unidadeId} onValueChange={setUnidadeId}>
