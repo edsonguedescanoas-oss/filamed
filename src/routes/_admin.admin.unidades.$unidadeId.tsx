@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2 as LoaderIcon } from "lucide-react";
 import type { AssinaturaStatus } from "@/hooks/use-auth";
+import { CanaisDiagnostico } from "@/components/admin/canais-diagnostico";
 
 export const Route = createFileRoute("/_admin/admin/unidades/$unidadeId")({
   head: () => ({
