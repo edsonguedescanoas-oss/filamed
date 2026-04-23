@@ -62,26 +62,35 @@ export function OrientationGuard() {
   if (!isMobileOrTablet || !isPortrait) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background p-8 text-center text-foreground">
-      <div className="mb-8 animate-pulse">
-        <div className="relative">
-          <Smartphone className="h-20 w-20 text-muted-foreground/30" />
-          <Smartphone className="absolute inset-0 h-20 w-20 rotate-90 text-primary animate-[spin_3s_ease-in-out_infinite]" />
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm p-8 text-center text-foreground">
+      <div className="mb-8 relative">
+        <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150" />
+        <div className="relative animate-pulse">
+          <Smartphone className="h-24 w-24 text-muted-foreground/30" />
+          <Smartphone className="absolute inset-0 h-24 w-24 rotate-90 text-primary animate-[spin_4s_ease-in-out_infinite]" />
         </div>
       </div>
       
-      <h2 className="font-display text-2xl font-bold mb-3 tracking-tight">
-        Gire seu dispositivo
+      <h2 className="font-display text-3xl font-bold mb-4 tracking-tight">
+        Modo Paisagem Necessário
       </h2>
       
-      <p className="text-muted-foreground text-base leading-relaxed max-w-[280px] mx-auto">
-        Este sistema foi otimizado para visualização em modo <strong>paisagem</strong> (horizontal).
+      <p className="text-muted-foreground text-lg leading-relaxed max-w-[320px] mx-auto mb-10">
+        Para uma melhor experiência de gestão, por favor gire seu dispositivo para a <strong>horizontal</strong>.
       </p>
+
+      <button
+        onClick={handleManualOrientation}
+        className="px-6 py-3 bg-primary text-primary-foreground rounded-full font-semibold shadow-lg hover:bg-primary/90 transition-all active:scale-95 flex items-center gap-2"
+      >
+        <Smartphone className="h-5 w-5 rotate-90" />
+        Tentar Orientar Agora
+      </button>
       
-      <div className="mt-10 flex gap-2 items-center text-[10px] text-muted-foreground/50 uppercase tracking-widest font-semibold">
-        <div className="h-px w-8 bg-border" />
-        Modo Horizontal Recomendado
-        <div className="h-px w-8 bg-border" />
+      <div className="mt-12 flex gap-3 items-center text-[11px] text-muted-foreground/40 uppercase tracking-[0.2em] font-bold">
+        <div className="h-px w-10 bg-border" />
+        Visualização Otimizada
+        <div className="h-px w-10 bg-border" />
       </div>
     </div>
   );
