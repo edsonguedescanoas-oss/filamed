@@ -16,7 +16,16 @@ import {
   MessageSquare,
   Share2,
   Printer,
+  FileUp,
+  Upload,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TicketShareDialog } from "@/components/ticket-share-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
