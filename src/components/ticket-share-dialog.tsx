@@ -15,7 +15,9 @@ import {
   Loader2, 
   AlertCircle,
   Settings2,
-  Monitor
+  Monitor,
+  Maximize2,
+  Contrast
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
@@ -30,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 type Props = {
   open: boolean;
@@ -68,6 +71,9 @@ export function TicketShareDialog({
     print: 'idle',
     share: 'idle'
   });
+  
+  const [logoContrast, setLogoContrast] = useState(100);
+  const [logoScale, setLogoScale] = useState(100);
   
   const [selectedPrinter, setSelectedPrinter] = useState<string>(() => {
     return localStorage.getItem('filamed_selected_printer') || 'standard_80';
@@ -187,7 +193,17 @@ export function TicketShareDialog({
                 text-align: center;
                 color: #000;
               }
-              .logo { max-width: 40mm; max-height: 20mm; object-contain: fit; margin-bottom: 5mm; }
+              .logo { 
+                max-width: 40mm; 
+                max-height: 20mm; 
+                object-fit: contain; 
+                margin-bottom: 5mm; 
+                filter: contrast(${logoContrast}%);
+                transform: scale(${logoScale / 100});
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+              }
               .unidade { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5mm; line-height: 1.2; }
               .label { font-size: 9pt; font-weight: bold; color: #000; letter-spacing: 2px; margin-bottom: 2mm; }
               .senha { font-size: ${currentPrinter.width === '58mm' ? '45pt' : '60pt'}; font-weight: 900; margin: 2mm 0; line-height: 1; }
@@ -271,26 +287,65 @@ export function TicketShareDialog({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 p-6">
-          <div className="w-full space-y-2">
-            <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-              <Settings2 className="h-3 w-3" />
-              Dispositivo de Impressão
-            </Label>
-            <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
-              <SelectTrigger className="bg-slate-900 border-white/10 text-white h-10">
-                <SelectValue placeholder="Selecione a impressora" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-white/10 text-white">
-                {printers.map((p) => (
-                  <SelectItem key={p.id} value={p.id} className="focus:bg-white/10 focus:text-white">
-                    <div className="flex items-center gap-2">
-                      <Monitor className="h-4 w-4 text-slate-400" />
-                      <span>{p.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <Monitor className="h-3 w-3" />
+                Impressora
+              </Label>
+              <Select value={selectedPrinter} onValueChange={setSelectedPrinter}>
+                <SelectTrigger className="bg-slate-900 border-white/10 text-white h-10">
+                  <SelectValue placeholder="Selecione a impressora" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/10 text-white">
+                  {printers.map((p) => (
+                    <SelectItem key={p.id} value={p.id} className="focus:bg-white/10 focus:text-white">
+                      <div className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4 text-slate-400" />
+                        <span>{p.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 p-3 bg-slate-900/50 rounded-lg border border-white/5">
+              <Label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
+                <Settings2 className="h-3 w-3" />
+                Ajustes do Logo
+              </Label>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold">Contraste</span>
+                    <span className="text-[10px] text-primary font-mono font-bold">{logoContrast}%</span>
+                  </div>
+                  <Slider 
+                    value={[logoContrast]} 
+                    onValueChange={(v) => setLogoContrast(v[0])}
+                    min={50}
+                    max={200}
+                    step={5}
+                    className="py-1"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold">Escala</span>
+                    <span className="text-[10px] text-primary font-mono font-bold">{logoScale}%</span>
+                  </div>
+                  <Slider 
+                    value={[logoScale]} 
+                    onValueChange={(v) => setLogoScale(v[0])}
+                    min={50}
+                    max={150}
+                    step={5}
+                    className="py-1"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div 
@@ -307,8 +362,16 @@ export function TicketShareDialog({
             </div>
 
             {logoUrl && (
-              <div className="mb-4 mt-2 flex justify-center">
-                <img src={logoUrl} alt="Logo" className="max-h-12 w-auto object-contain" />
+              <div className="mb-4 mt-2 flex justify-center overflow-hidden h-12 w-full items-center">
+                <img 
+                  src={logoUrl} 
+                  alt="Logo" 
+                  className="max-h-12 w-auto object-contain transition-all duration-200" 
+                  style={{ 
+                    filter: `contrast(${logoContrast}%)`,
+                    transform: `scale(${logoScale / 100})`
+                  }}
+                />
               </div>
             )}
             
