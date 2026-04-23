@@ -341,7 +341,7 @@ function RecepcaoPage() {
     if (!unidadeId) return;
     
     // Validações
-    const errors: { nome?: string; cpf?: string; telefone?: string } = {};
+    const errors: { nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string } = {};
     const nome = novoNome.trim();
     const cpfDigits = onlyDigits(novoCpf);
     const telDigits = onlyDigits(novoTelefone);
@@ -370,6 +370,29 @@ function RecepcaoPage() {
     setNovoErrors({});
     setSavingNovo(true);
     try {
+      let documento_url = null;
+      
+      // Upload do documento se fornecido
+      if (novoDocumento) {
+        const fileExt = novoDocumento.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `${unidadeId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('pacientes-documentos')
+          .upload(filePath, novoDocumento);
+
+        if (uploadError) {
+          throw new Error("Erro ao fazer upload do documento: " + uploadError.message);
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('pacientes-documentos')
+          .getPublicUrl(filePath);
+        
+        documento_url = publicUrl;
+      }
+
       const { data, error } = await supabase
         .from("pacientes")
         .insert({
@@ -377,6 +400,9 @@ function RecepcaoPage() {
           nome_completo: nome,
           cpf: cpfDigits,
           telefone: telDigits,
+          identificacao_tipo: novoIdentificacaoTipo,
+          identificacao_numero: novoIdentificacaoNumero,
+          documento_url: documento_url,
         })
         .select("*")
         .single();
@@ -401,6 +427,9 @@ function RecepcaoPage() {
       setNovoNome("");
       setNovoCpf("");
       setNovoTelefone("");
+      setNovoIdentificacaoTipo("rg");
+      setNovoIdentificacaoNumero("");
+      setNovoDocumento(null);
       toast.success("Paciente cadastrado", { description: nome });
 
       if (emitirSenha) {
