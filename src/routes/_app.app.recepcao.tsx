@@ -57,6 +57,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 import type { Database } from "@/integrations/supabase/types";
 
 type Fila = Database["public"]["Tables"]["filas"]["Row"];
@@ -169,6 +170,14 @@ function RecepcaoPage() {
   const [novoDocumento, setNovoDocumento] = useState<File | null>(null);
   const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string }>({});
   const [savingNovo, setSavingNovo] = useState(false);
+  const [novoAutoImprimir, setNovoAutoImprimir] = useState(() => {
+    const saved = localStorage.getItem("recepcao_auto_imprimir");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("recepcao_auto_imprimir", String(novoAutoImprimir));
+  }, [novoAutoImprimir]);
 
   // compartilhamento
   const [shareOpen, setShareOpen] = useState(false);
@@ -318,7 +327,7 @@ function RecepcaoPage() {
     ? `${filaSelecionada.prefixo_senha}${String(filaSelecionada.contador_senha + 1).padStart(3, "0")}`
     : null;
 
-  const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent) => {
+  const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent, autoPrintOverride?: boolean) => {
     const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent) 
       ? (pacOrEvent as Paciente) 
       : pacienteSelecionado;
@@ -350,8 +359,10 @@ function RecepcaoPage() {
           telefone: pac.telefone,
         },
       });
-      setShareAutoPrint(false);
-      setShareOpen(true);
+      setShareAutoPrint(autoPrintOverride ?? false);
+      if (autoPrintOverride !== false) {
+        setShareOpen(true);
+      }
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
       setPacienteQuery("");
@@ -463,7 +474,7 @@ function RecepcaoPage() {
       toast.success("Paciente cadastrado", { description: nome });
 
       if (emitirSenha) {
-        await handleGerar(pac);
+        await handleGerar(pac, novoAutoImprimir);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha ao cadastrar paciente";
@@ -1188,6 +1199,18 @@ function RecepcaoPage() {
                   <p className="mt-1 text-xs font-medium text-destructive">{novoErrors.telefone}</p>
                 )}
               </div>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-white/5">
+              <div className="space-y-0.5">
+                <Label htmlFor="auto-print" className="text-sm font-semibold cursor-pointer">Imprimir automaticamente</Label>
+                <p className="text-[10px] text-muted-foreground">Abre a prévia do ticket após gerar a senha</p>
+              </div>
+              <Switch 
+                id="auto-print"
+                checked={novoAutoImprimir} 
+                onCheckedChange={setNovoAutoImprimir} 
+              />
             </div>
 
             <DialogFooter className="flex-col sm:flex-row gap-2 mt-6">
