@@ -239,4 +239,6 @@ Avisaremos você quando for a sua vez!`;
       status: 500,
     });
   }
-});
+};
+
+serve(handler);
