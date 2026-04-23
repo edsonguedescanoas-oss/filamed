@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Activity,
   Calendar,
+  LineChart as LineChartIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,9 +147,17 @@ function AdminUnidadeDetalhes() {
             </div>
           </div>
         </div>
-        <Badge variant="outline" className={variant.className}>
-          {variant.label}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link to="/admin/unidades/$unidadeId/metricas" params={{ unidadeId: unidade.id }}>
+              <LineChartIcon className="h-4 w-4" />
+              Ver métricas
+            </Link>
+          </Button>
+          <Badge variant="outline" className={variant.className}>
+            {variant.label}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

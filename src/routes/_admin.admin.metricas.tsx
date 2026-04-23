@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Activity,
@@ -439,6 +439,9 @@ function MetricasPage() {
       <Card>
         <CardHeader>
           <CardTitle>Top 10 unidades por uso (mês atual)</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Clique em uma unidade para abrir as métricas detalhadas (drill-down).
+          </p>
         </CardHeader>
         <CardContent>
           <Table>
@@ -448,19 +451,28 @@ function MetricasPage() {
                 <TableHead>Plano</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Senhas no mês</TableHead>
+                <TableHead className="w-[1%]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {top_unidades.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
                     Sem dados de uso no mês.
                   </TableCell>
                 </TableRow>
               ) : (
                 top_unidades.map((u) => (
-                  <TableRow key={u.unidade_id}>
-                    <TableCell className="font-medium">{u.nome}</TableCell>
+                  <TableRow key={u.unidade_id} className="cursor-pointer hover:bg-muted/50">
+                    <TableCell className="font-medium">
+                      <Link
+                        to="/admin/unidades/$unidadeId/metricas"
+                        params={{ unidadeId: u.unidade_id }}
+                        className="hover:underline"
+                      >
+                        {u.nome}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {u.plano_nome ?? "—"}
                     </TableCell>
@@ -468,6 +480,17 @@ function MetricasPage() {
                       <StatusBadge status={u.status_assinatura} />
                     </TableCell>
                     <TableCell className="text-right font-mono">{u.senhas_mes}</TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild size="sm" variant="ghost">
+                        <Link
+                          to="/admin/unidades/$unidadeId/metricas"
+                          params={{ unidadeId: u.unidade_id }}
+                          aria-label={`Ver métricas de ${u.nome}`}
+                        >
+                          <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
