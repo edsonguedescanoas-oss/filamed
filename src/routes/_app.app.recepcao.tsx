@@ -445,7 +445,7 @@ function RecepcaoPage() {
         .insert({
           unidade_id: unidadeId,
           nome_completo: nome,
-          cpf: cpfDigits,
+          cpf: cpfDigits || null,
           telefone: telDigits,
           identificacao_tipo: novoIdentificacaoTipo,
           identificacao_numero: novoIdentificacaoNumero,
