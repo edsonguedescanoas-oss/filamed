@@ -456,6 +456,18 @@ function AtendimentoPage() {
         </div>
       </div>
 
+      {/* Seletor de ponto de atendimento (Consultório 001, Sala 02…) */}
+      <div className="mt-5 rounded-xl border border-border bg-card/50 px-4 py-3">
+        <PontoAtendimentoSelector
+          tipos={["consultorio", "exame", "outro"]}
+          label="Você está em"
+          onChange={(p) =>
+            setPontoAtivo(p ? { id: p.id, nome: p.nome, fila_id: p.fila_id } : null)
+          }
+          emptyHint="Nenhum consultório/sala cadastrado. Peça ao admin para criar em /app/pontos."
+        />
+      </div>
+
       {/* Atendimento ativo */}
       {atendimentoAtivo && senhaAtiva && (
         <div
@@ -645,19 +657,11 @@ function AtendimentoPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="destino">Destino *</Label>
-              <Input
-                id="destino"
-                autoFocus
-                value={destino}
-                onChange={(e) => setDestino(e.target.value)}
-                placeholder="Consultório 1, Sala 3, Guichê 2..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void confirmarChamar();
-                }}
-              />
+              <Label htmlFor="destino">Destino</Label>
+              <Input id="destino" value={destino} disabled readOnly />
               <p className="text-xs text-muted-foreground">
-                Será exibido em destaque no painel de TV e enviado via Realtime.
+                Definido automaticamente pelo ponto que você selecionou no topo da tela.
+                Para mudar, troque o ponto no seletor.
               </p>
             </div>
             <div className="flex justify-end gap-2">
@@ -713,6 +717,21 @@ function AtendimentoPage() {
                 placeholder="Anotações clínicas, encaminhamentos, próximos passos…"
               />
             </div>
+
+            <div className="flex items-start justify-between rounded-xl border border-border bg-muted/20 p-3 gap-3">
+              <div className="flex items-start gap-2 min-w-0">
+                <ArrowLeftRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">Requer retorno ao guichê?</div>
+                  <div className="text-xs text-muted-foreground">
+                    Se ativo, o sistema gera automaticamente uma nova senha no
+                    Guichê para o paciente fazer marcação de retorno.
+                  </div>
+                </div>
+              </div>
+              <Switch checked={requerRetorno} onCheckedChange={setRequerRetorno} />
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setFinalizar(null)}>
                 Cancelar
