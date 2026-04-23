@@ -66,6 +66,7 @@ export function TicketShareDialog({
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
+  const [autoSent, setAutoSent] = useState(false);
   const [lastStatus, setLastStatus] = useState<Record<string, 'sent' | 'failed' | 'idle'>>({
     whatsapp: 'idle',
     print: 'idle',
@@ -96,12 +97,19 @@ export function TicketShareDialog({
   const printTriggered = useRef(false);
 
   useEffect(() => {
+    if (open && senha && !autoSent) {
+      void handleWhatsApp(true);
+      setAutoSent(true);
+    }
+    
     if (open && autoPrint && senha && paciente && !printTriggered.current) {
       printTriggered.current = true;
       void handlePrint();
     }
+    
     if (!open) {
       printTriggered.current = false;
+      setAutoSent(false);
       setLastStatus({ whatsapp: 'idle', print: 'idle', share: 'idle' });
     }
   }, [open, autoPrint, senha, paciente]);
@@ -139,26 +147,44 @@ export function TicketShareDialog({
     }
   };
 
-  const handleWhatsApp = async () => {
+  const handleWhatsApp = async (isAuto = false) => {
     if (!paciente.telefone) {
-      toast.error("Paciente sem telefone cadastrado");
+      if (!isAuto) toast.error("Paciente sem telefone cadastrado");
       return;
     }
     
     setSending('whatsapp');
     try {
-      const tel = paciente.telefone.replace(/\D/g, "");
-      const text = encodeURIComponent(
-        `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é: *${senha.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
-      );
-      window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
-      
-      await recordNotification('whatsapp', 'enviada');
+      // Usar a Edge Function wa-duck-notify para envio automático via API cadastrada
+      const { data, error } = await supabase.functions.invoke('wa-duck-notify', {
+        body: { 
+          senha_id: senha.id,
+          tipo: 'criacao'
+        }
+      });
+
+      if (error) throw error;
+
       setLastStatus(prev => ({ ...prev, whatsapp: 'sent' }));
-      toast.success("WhatsApp aberto!");
+      if (!isAuto) toast.success("Notificação enviada com sucesso!");
     } catch (err) {
-      await recordNotification('whatsapp', 'falhou');
-      setLastStatus(prev => ({ ...prev, whatsapp: 'failed' }));
+      console.error('Erro ao enviar notificação:', err);
+      
+      // Fallback para link direto se a API falhar (apenas se não for automático)
+      if (!isAuto) {
+        const tel = paciente.telefone.replace(/\D/g, "");
+        const text = encodeURIComponent(
+          `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é: *${senha.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
+        );
+        window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+        
+        await recordNotification('whatsapp', 'enviada');
+        setLastStatus(prev => ({ ...prev, whatsapp: 'sent' }));
+        toast.info("API indisponível, abrindo WhatsApp Web...");
+      } else {
+        await recordNotification('whatsapp', 'falhou');
+        setLastStatus(prev => ({ ...prev, whatsapp: 'failed' }));
+      }
     } finally {
       setSending(null);
     }
@@ -278,7 +304,7 @@ export function TicketShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white overflow-hidden p-0 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white p-0 max-h-[95vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-white text-center flex items-center justify-center gap-2">
             <Printer className="h-5 w-5 text-primary" />
@@ -463,7 +489,7 @@ export function TicketShareDialog({
             </Button>
             
             <Button
-              onClick={handleWhatsApp}
+              onClick={() => void handleWhatsApp(false)}
               variant="outline"
               disabled={!paciente.telefone || sending === 'whatsapp'}
               className={cn(
