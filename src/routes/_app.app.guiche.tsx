@@ -703,6 +703,20 @@ function GuichePage() {
   );
 }
 
+function highlightTerm(text: string, termo: string) {
+  const valor = termo.trim();
+  if (!valor) return text;
+  const index = text.toLowerCase().indexOf(valor.toLowerCase());
+  if (index < 0) return text;
+  return (
+    <>
+      {text.slice(0, index)}
+      <mark className="rounded bg-primary/15 px-0.5 text-primary">{text.slice(index, index + valor.length)}</mark>
+      {text.slice(index + valor.length)}
+    </>
+  );
+}
+
 function PrioBadge({ prioridade }: { prioridade: Database["public"]["Enums"]["senha_prioridade"] }) {
   const map = {
     normal: "bg-muted text-muted-foreground border-border",
