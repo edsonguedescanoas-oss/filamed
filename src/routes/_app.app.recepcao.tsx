@@ -335,12 +335,21 @@ function RecepcaoPage() {
     : null;
 
   const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent, autoPrintOverride?: boolean) => {
-    // Se for um evento (clique no botão), pacOrEvent é o evento e não tem id de paciente
-    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent && !('_reactName' in pacOrEvent)) 
+    // Se for um objeto com id e nome_completo, é um paciente. Caso contrário é o evento do clique.
+    const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent && 'nome_completo' in pacOrEvent) 
       ? (pacOrEvent as Paciente) 
       : pacienteSelecionado;
 
-    if (!filaId || !canGerar) return;
+    if (!canGerar) {
+      toast.error("Você não tem permissão para gerar senhas");
+      return;
+    }
+
+    if (!filaId) {
+      toast.error("Selecione uma fila para gerar a senha");
+      return;
+    }
+
     if (!pac) {
       toast.error("Selecione ou cadastre um paciente para gerar a senha");
       return;
@@ -387,28 +396,18 @@ function RecepcaoPage() {
   };
 
   const handleSalvarNovoPaciente = async (emitirSenha = false) => {
-    if (!unidadeId) return;
+    if (!unidadeId) {
+      toast.error("Unidade não identificada. Tente recarregar a página.");
+      return;
+    }
+
+    if (emitirSenha && !filaId) {
+      toast.error("Selecione uma fila antes de gerar a senha");
+      return;
+    }
     
     // Validações
-    const errors: { nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string } = {};
-    const nome = novoNome.trim();
-    const cpfDigits = onlyDigits(novoCpf);
-    const telDigits = onlyDigits(novoTelefone);
-
-    if (nome.length < 2) {
-      errors.nome = "Informe o nome completo do paciente";
-    }
-    
-    if (cpfDigits && !isValidCPF(cpfDigits)) {
-      errors.cpf = "CPF inválido";
-    }
-
-    if (!telDigits) {
-      errors.telefone = "Telefone é obrigatório";
-    } else if (telDigits.length < 10) {
-      errors.telefone = "Telefone inválido";
-    }
-
+...
     if (Object.keys(errors).length > 0) {
       setNovoErrors(errors);
       return;
@@ -1255,11 +1254,14 @@ function RecepcaoPage() {
                 </Button>
                 <Button 
                   type="submit"
-                  disabled={savingNovo}
+                  disabled={savingNovo || (novoOpen && !filaId)}
                   className="w-full sm:w-auto bg-gradient-primary"
                 >
                   {savingNovo ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Salvando...
+                    </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
