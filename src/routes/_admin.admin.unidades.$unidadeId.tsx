@@ -214,6 +214,9 @@ function AdminUnidadeDetalhes() {
           </CardContent>
         </Card>
 
+        {/* Diagnóstico detalhado por canal */}
+        <CanaisDiagnostico unidadeId={unidade.id} />
+
         {/* Métricas operacionais */}
         {integracao && (
           <Card className="lg:col-span-3">
