@@ -41,6 +41,7 @@ import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.plan
 import { Route as AdminAdminMetricasRouteImport } from './routes/_admin.admin.metricas'
 import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
 import { Route as AdminAdminAuditoriaRouteImport } from './routes/_admin.admin.auditoria'
+import { Route as AdminAdminAlertasRouteImport } from './routes/_admin.admin.alertas'
 import { Route as AdminAdminUnidadesUnidadeIdRouteImport } from './routes/_admin.admin.unidades.$unidadeId'
 
 const SetupRoute = SetupRouteImport.update({
@@ -201,6 +202,11 @@ const AdminAdminAuditoriaRoute = AdminAdminAuditoriaRouteImport.update({
   path: '/auditoria',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminAlertasRoute = AdminAdminAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminUnidadesUnidadeIdRoute =
   AdminAdminUnidadesUnidadeIdRouteImport.update({
     id: '/unidades/$unidadeId',
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv': typeof TvIndexRoute
+  '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/_admin/admin/alertas': typeof AdminAdminAlertasRoute
   '/_admin/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/_admin/admin/logs': typeof AdminAdminLogsRoute
   '/_admin/admin/metricas': typeof AdminAdminMetricasRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
+    | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/logs'
     | '/admin/metricas'
@@ -359,6 +369,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv'
+    | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/logs'
     | '/admin/metricas'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
+    | '/_admin/admin/alertas'
     | '/_admin/admin/auditoria'
     | '/_admin/admin/logs'
     | '/_admin/admin/metricas'
@@ -656,6 +668,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminAuditoriaRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/alertas': {
+      id: '/_admin/admin/alertas'
+      path: '/alertas'
+      fullPath: '/admin/alertas'
+      preLoaderRoute: typeof AdminAdminAlertasRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/unidades/$unidadeId': {
       id: '/_admin/admin/unidades/$unidadeId'
       path: '/unidades/$unidadeId'
@@ -667,6 +686,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminAdminRouteChildren {
+  AdminAdminAlertasRoute: typeof AdminAdminAlertasRoute
   AdminAdminAuditoriaRoute: typeof AdminAdminAuditoriaRoute
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminMetricasRoute: typeof AdminAdminMetricasRoute
@@ -675,6 +695,7 @@ interface AdminAdminRouteChildren {
 }
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+  AdminAdminAlertasRoute: AdminAdminAlertasRoute,
   AdminAdminAuditoriaRoute: AdminAdminAuditoriaRoute,
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminMetricasRoute: AdminAdminMetricasRoute,
