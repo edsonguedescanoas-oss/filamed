@@ -1,35 +1,9 @@
-// ... keep existing code
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Settings2, Monitor } from "lucide-react";
-
-// ... inside TicketShareDialog
-  const [selectedPrinter, setSelectedPrinter] = useState<string>(() => {
-    return localStorage.getItem('filamed_selected_printer') || 'standard_80';
-  });
-
-  const printers = [
-    { id: 'standard_80', name: 'Térmica 80mm (Padrão)', width: '80mm' },
-    { id: 'standard_58', name: 'Térmica 58mm (Padrão)', width: '58mm' },
-    { id: 'desk_1', name: 'Impressora Recepção 1', width: '80mm' },
-    { id: 'desk_2', name: 'Impressora Recepção 2', width: '80mm' },
-  ];
-
-  const currentPrinter = printers.find(p => p.id === selectedPrinter) || printers[0];
-
-  useEffect(() => {
-    localStorage.setItem('filamed_selected_printer', selectedPrinter);
-  }, [selectedPrinter]);
-
-// ... update handlePrint to use currentPrinter.width
-// ... update DialogContent to show the Select component
-
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
 import { 
