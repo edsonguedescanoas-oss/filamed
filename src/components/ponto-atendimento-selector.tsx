@@ -21,6 +21,11 @@ type Ponto = {
   fila_id: string | null;
 };
 
+type PontoPermissao = {
+  ponto_atendimento_id: string;
+  user_id: string;
+};
+
 interface Props {
   /** Filtra os pontos exibidos pelo tipo. */
   tipos: PontoTipo[];
@@ -43,7 +48,7 @@ export function PontoAtendimentoSelector({
   onChange,
   emptyHint = "Nenhum ponto cadastrado. Peça ao admin para criar em /app/pontos.",
 }: Props) {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, roles } = useAuth();
   const unidadeId = profile?.unidade_id;
   const [pontos, setPontos] = useState<Ponto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +75,35 @@ export function PontoAtendimentoSelector({
         toast.error("Erro ao carregar pontos: " + error.message);
         setPontos([]);
       } else {
-        setPontos((data ?? []) as Ponto[]);
+        const pontosCarregados = (data ?? []) as Ponto[];
+        const temAcessoTotal = roles.some((r) => r === "admin" || r === "gestor" || r === "super_admin");
+        if (temAcessoTotal || pontosCarregados.length === 0 || !profile?.id) {
+          setPontos(pontosCarregados);
+        } else {
+          const { data: permissoesData, error: permissoesError } = await supabase
+            .from("ponto_atendimento_permissoes" as never)
+            .select("ponto_atendimento_id,user_id")
+            .in(
+              "ponto_atendimento_id",
+              pontosCarregados.map((p) => p.id),
+            );
+          if (permissoesError) {
+            toast.error("Erro ao validar permissões dos pontos: " + permissoesError.message);
+            setPontos([]);
+          } else {
+            const permissoes = (permissoesData ?? []) as unknown as PontoPermissao[];
+            const pontosPermitidos = pontosCarregados.filter((ponto) => {
+              const permissoesDoPonto = permissoes.filter(
+                (perm) => perm.ponto_atendimento_id === ponto.id,
+              );
+              return (
+                permissoesDoPonto.length === 0 ||
+                permissoesDoPonto.some((perm) => perm.user_id === profile.id)
+              );
+            });
+            setPontos(pontosPermitidos);
+          }
+        }
       }
       setLoading(false);
     })();
@@ -79,7 +112,7 @@ export function PontoAtendimentoSelector({
     };
     // tipos é array, comparamos a string para evitar refetch inútil
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unidadeId, tipos.join(",")]);
+  }, [unidadeId, profile?.id, roles.join(","), tipos.join(",")]);
 
   // Mantém o selecionado em sincronia com o profile
   useEffect(() => {
