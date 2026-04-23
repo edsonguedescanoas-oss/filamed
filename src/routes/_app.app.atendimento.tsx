@@ -81,6 +81,13 @@ function AtendimentoPage() {
   const [finalizar, setFinalizar] = useState<{ atendimento: Atendimento; senha: Senha } | null>(null);
   const [observacoes, setObservacoes] = useState("");
   const [requerRetorno, setRequerRetorno] = useState(false);
+  // Preview da senha de retorno (prefixo do guichê + próximo contador).
+  // Carregado sob demanda ao abrir a modal de finalização.
+  const [previewRetorno, setPreviewRetorno] = useState<{
+    prefixo: string;
+    proximoCodigo: string;
+    filaNome: string;
+  } | null>(null);
   // Ponto de atendimento ativo do usuário (Consultório 001, Sala 02…)
   const [pontoAtivo, setPontoAtivo] = useState<{
     id: string;
@@ -362,13 +369,34 @@ function AtendimentoPage() {
     }
   };
 
-  const abrirFinalizar = () => {
+  const abrirFinalizar = async () => {
     if (!atendimentoAtivo) return;
     const senha = senhas.find((s) => s.id === atendimentoAtivo.senha_id);
     if (!senha) return;
     setFinalizar({ atendimento: atendimentoAtivo, senha });
     setObservacoes("");
     setRequerRetorno(false);
+    setPreviewRetorno(null);
+
+    // Carrega a fila do guichê para mostrar o preview da próxima senha.
+    // Mesmo cálculo que `gerar_senha_guiche` faz no banco: prefixo + (contador+1).
+    if (!profile?.unidade_id) return;
+    const { data, error } = await supabase
+      .from("filas")
+      .select("nome,prefixo_senha,contador_senha")
+      .eq("unidade_id", profile.unidade_id)
+      .eq("tipo", "guiche")
+      .eq("ativa", true)
+      .order("ordem")
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return;
+    const proximo = (data.contador_senha ?? 0) + 1;
+    setPreviewRetorno({
+      filaNome: data.nome,
+      prefixo: data.prefixo_senha,
+      proximoCodigo: `${data.prefixo_senha}${String(proximo).padStart(3, "0")}`,
+    });
   };
 
   const confirmarFinalizar = async () => {
@@ -402,6 +430,7 @@ function AtendimentoPage() {
       setFinalizar(null);
       setObservacoes("");
       setRequerRetorno(false);
+      setPreviewRetorno(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao finalizar atendimento.");
     } finally {
@@ -774,18 +803,38 @@ function AtendimentoPage() {
               />
             </div>
 
-            <div className="flex items-start justify-between rounded-xl border border-border bg-muted/20 p-3 gap-3">
-              <div className="flex items-start gap-2 min-w-0">
-                <ArrowLeftRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <div className="text-sm font-medium">Requer retorno ao guichê?</div>
-                  <div className="text-xs text-muted-foreground">
-                    Se ativo, o sistema gera automaticamente uma nova senha no
-                    Guichê para o paciente fazer marcação de retorno.
+            <div className="rounded-xl border border-border bg-muted/20 p-3 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2 min-w-0">
+                  <ArrowLeftRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">Requer retorno ao guichê?</div>
+                    <div className="text-xs text-muted-foreground">
+                      Se ativo, o sistema gera automaticamente uma nova senha no
+                      Guichê para o paciente fazer marcação de retorno.
+                    </div>
                   </div>
                 </div>
+                <Switch checked={requerRetorno} onCheckedChange={setRequerRetorno} />
               </div>
-              <Switch checked={requerRetorno} onCheckedChange={setRequerRetorno} />
+
+              {requerRetorno && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                      Próxima senha do guichê
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {previewRetorno
+                        ? `Será criada automaticamente na fila ${previewRetorno.filaNome}.`
+                        : "Calculando próximo código…"}
+                    </div>
+                  </div>
+                  <div className="font-display text-2xl font-bold tabular-nums text-primary">
+                    {previewRetorno?.proximoCodigo ?? "—"}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2">
