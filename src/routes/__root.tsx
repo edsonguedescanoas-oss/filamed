@@ -59,8 +59,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "FilaMed" },
       { name: "twitter:description", content: "FilaMed is a smart queue management system for healthcare units, enhancing efficiency and patient experience." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e67bc46c-29ad-48f0-b752-90031a456b5f/id-preview-7bcdc357--f9c526a2-791e-4734-b125-a453aaf7e0b3.lovable.app-1776469186793.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e67bc46c-29ad-48f0-b752-90031a456b5f/id-preview-7bcdc357--f9c526a2-791e-4734-b125-a453aaf7e0b3.lovable.app-1776469186793.png" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ef0031ec-99e5-4da0-838c-50302c6d1545/id-preview-ea0088b1--f9c526a2-791e-4734-b125-a453aaf7e0b3.lovable.app-1776956526002.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ef0031ec-99e5-4da0-838c-50302c6d1545/id-preview-ea0088b1--f9c526a2-791e-4734-b125-a453aaf7e0b3.lovable.app-1776956526002.png" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
