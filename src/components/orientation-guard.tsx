@@ -4,7 +4,12 @@ import { Smartphone, ChevronRight } from "lucide-react";
 export function OrientationGuard() {
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
-  const [hasSkipped, setHasSkipped] = useState(false);
+  const [hasSkipped, setHasSkipped] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("orientation-guard-skipped") === "true";
+    }
+    return false;
+  });
 
   useEffect(() => {
     const checkOrientation = () => {
