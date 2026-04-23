@@ -9,12 +9,14 @@ import {
   ExternalLink,
   Save,
   Loader2,
+  Settings,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { RoleGuard } from "@/components/role-guard";
 import { RecursoGate } from "@/components/recurso-gate";
@@ -72,6 +74,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
     api_url: "",
     api_key: "",
     instance_id: "",
+    template_chamada: "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.",
   });
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,6 +96,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
         api_url: c.api_url || "",
         api_key: c.api_key || "",
         instance_id: c.instance_id || "",
+        template_chamada: c.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.",
       });
     }
     setLoadingConfig(false);
@@ -126,7 +130,7 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
         .update({ whatsapp_config: config })
         .eq("id", unidadeId);
       if (error) throw error;
-      toast.success("Configuração do WADuck salva!");
+      toast.success("Configurações salvas com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
@@ -138,27 +142,27 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5 text-primary" />
-            Configuração WADuck
-            <Badge variant="outline" className={cn("ml-2 text-[10px]", config.api_url ? "text-emerald-500 border-emerald-500/20" : "")}>
-              {config.api_url ? "Configurado" : "Não configurado"}
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            Insira os dados da sua API WADuck para habilitar o envio automático de senhas.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {loadingConfig ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <>
-              <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="md:row-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-primary" />
+              Conexão WhatsApp
+              <Badge variant="outline" className={cn("ml-2 text-[10px]", config.api_url ? "text-emerald-500 border-emerald-500/20" : "")}>
+                {config.api_url ? "Configurado" : "Não configurado"}
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Dados da API WADuck para habilitar o envio automático.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loadingConfig ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
                 <div className="space-y-2">
                   <Label htmlFor="api_url">URL da API</Label>
                   <Input
@@ -177,49 +181,82 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
                     onChange={(e) => setConfig({ ...config, instance_id: e.target.value })}
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="api_key">Token (API Key)</Label>
-                <Input
-                  id="api_key"
-                  type="password"
-                  placeholder="Seu token WADuck"
-                  value={config.api_key}
-                  onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
-                />
-              </div>
-              <Button
-                className="w-full gap-2 bg-gradient-primary"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Salvar Configurações
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="api_key">Token (API Key)</Label>
+                  <Input
+                    id="api_key"
+                    type="password"
+                    placeholder="Seu token WADuck"
+                    value={config.api_key}
+                    onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
+                  />
+                </div>
+                <Button
+                  className="w-full gap-2 bg-gradient-primary mt-2"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Salvar Conexão
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Send className="h-5 w-5 text-primary" />
-              Templates Automáticos
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-primary" />
+              Personalizar Mensagem
             </CardTitle>
+            <CardDescription>
+              Personalize o texto que o paciente receberá.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <TemplatePreview
-              titulo="Senha Gerada"
-              evento="Enviado assim que o paciente recebe a senha"
-              mensagem="Olá {{nome}}, sua senha no estabelecimento é {{codigo}}. Tempo estimado: {{tempo}} min."
-            />
-            <TemplatePreview
-              titulo="Chamada (Em breve)"
-              evento="Quando a senha é chamada no painel"
-              mensagem="Olá {{nome}}, sua senha {{codigo}} foi chamada agora — dirija-se ao local indicado."
-            />
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="template_chamada">Template de Chamada</Label>
+              <Textarea
+                id="template_chamada"
+                placeholder="Ex: Olá {{nome}}, sua senha {{senha}} foi chamada..."
+                value={config.template_chamada}
+                onChange={(e) => setConfig({ ...config, template_chamada: e.target.value })}
+                rows={4}
+                className="text-sm"
+              />
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <Badge variant="secondary" className="text-[10px] cursor-help" title="Nome do paciente">
+                  {"{{nome}}"}
+                </Badge>
+                <Badge variant="secondary" className="text-[10px] cursor-help" title="Código da senha">
+                  {"{{senha}}"}
+                </Badge>
+                <Badge variant="secondary" className="text-[10px] cursor-help" title="Local de atendimento (Mesa/Guichê/Sala)">
+                  {"{{local}}"}
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <p className="text-[10px] font-semibold text-primary uppercase tracking-wider mb-2">Exemplo de visualização:</p>
+              <p className="text-xs italic leading-relaxed">
+                "{config.template_chamada
+                  .replace("{{nome}}", "João Silva")
+                  .replace("{{senha}}", "A-102")
+                  .replace("{{local}}", "Consultório 03")}"
+              </p>
+            </div>
+
+            <Button
+              className="w-full gap-2"
+              variant="outline"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Salvar Template
+            </Button>
           </CardContent>
         </Card>
 
@@ -232,11 +269,11 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
           </CardHeader>
           <CardContent className="space-y-2">
             {loadingLogs ? (
-              <div className="flex justify-center py-10">
+              <div className="flex justify-center py-6">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : logs.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground py-10">
+              <p className="text-center text-sm text-muted-foreground py-6">
                 Nenhum envio registrado.
               </p>
             ) : (
@@ -263,16 +300,6 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
     </div>
   );
 }
-
-function TemplatePreview({
-  titulo,
-  evento,
-  mensagem,
-}: {
-  titulo: string;
-  evento: string;
-  mensagem: string;
-}) {
   return (
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-start justify-between gap-3">
