@@ -1094,6 +1094,26 @@ export type Database = {
     }
     Functions: {
       _audit_ator_nome: { Args: { _user_id: string }; Returns: string }
+      admin_alertas_notificacoes: {
+        Args: { _janela_horas?: number; _min_falhas?: number }
+        Returns: {
+          canal: string
+          destinatario: string
+          notificacao_ids: string[]
+          primeira_falha: string
+          severidade: string
+          total_falhas: number
+          total_tentativas: number
+          ultima_falha: string
+          ultimo_erro: string
+          unidade_id: string
+          unidade_nome: string
+        }[]
+      }
+      admin_alertas_resumo: {
+        Args: { _janela_horas?: number; _min_falhas?: number }
+        Returns: Json
+      }
       admin_alterar_plano_assinatura: {
         Args: {
           _ciclo?: Database["public"]["Enums"]["assinatura_ciclo"]
@@ -1219,6 +1239,10 @@ export type Database = {
         Returns: undefined
       }
       admin_metricas_globais: { Args: { _meses?: number }; Returns: Json }
+      admin_unidade_canais_diagnostico: {
+        Args: { _unidade_id: string }
+        Returns: Json
+      }
       admin_unidade_integracao_status: {
         Args: { _unidade_id: string }
         Returns: {
