@@ -10,17 +10,28 @@ export function OrientationGuard() {
       // Detecta se é retrato
       const portrait = window.innerHeight > window.innerWidth;
       
-      // Detecta mobile/tablet baseado em viewport e DPI (evita notebooks com touch)
-      // Dispositivos mobile/tablet geralmente têm touch, DPI alto e largura de tela limitada
+      // Detecta mobile/tablet baseado em viewport e DPI
       const hasTouch = navigator.maxTouchPoints > 0;
       const isHighDPI = window.devicePixelRatio >= 2;
       const isMobileWidth = Math.max(window.screen.width, window.screen.height) <= 1366;
       
-      // Consideramos mobile/tablet se tiver touch E (DPI alto OU largura pequena)
       const mobileOrTablet = hasTouch && (isHighDPI || window.innerWidth < 768) && isMobileWidth;
       
       setIsPortrait(portrait);
       setIsMobileOrTablet(mobileOrTablet);
+
+      // Tenta orientar automaticamente para landscape se estiver em mobile/tablet e portrait
+      if (portrait && mobileOrTablet && screen.orientation && screen.orientation.lock) {
+        // Tenta dar lock silencioso (pode falhar por falta de user interaction, mas tentamos)
+        try {
+          // @ts-ignore - lock is still experimental in some browsers
+          screen.orientation.lock("landscape").catch(() => {
+            console.log("Auto-orientation lock failed (needs user interaction)");
+          });
+        } catch (e) {
+          // Ignore
+        }
+      }
     };
 
     checkOrientation();
@@ -32,6 +43,20 @@ export function OrientationGuard() {
       window.removeEventListener("orientationchange", checkOrientation);
     };
   }, []);
+
+  const handleManualOrientation = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+      if (screen.orientation && screen.orientation.lock) {
+        // @ts-ignore
+        await screen.orientation.lock("landscape");
+      }
+    } catch (error) {
+      console.error("Failed to force landscape:", error);
+    }
+  };
 
   // Se não for mobile/tablet ou já estiver na horizontal, não faz nada
   if (!isMobileOrTablet || !isPortrait) return null;
