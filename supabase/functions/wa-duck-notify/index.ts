@@ -262,22 +262,51 @@ Avisaremos você quando for a sua vez!`;
     console.log(`Enviando WhatsApp para ${formattedTelefone} via ${fullUrl}`);
     console.log(`Payload: ${JSON.stringify(bodyData)}`);
 
-    const response = await fetch(fullUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": api_key,
-      },
-      body: JSON.stringify(bodyData),
-    });
+    let response: Response | null = null;
+    let responseText = "";
+    let retries = 0;
+    const maxRetries = 2; // Tenta até 3 vezes (inicial + 2 reenvios)
 
-    const responseText = await response.text();
-    console.log(`WADuck Response Status: ${response.status}`);
-    console.log(`WADuck Response Text: ${responseText}`);
+    while (retries <= maxRetries) {
+      try {
+        response = await fetch(fullUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": api_key,
+          },
+          body: JSON.stringify(bodyData),
+        });
+
+        responseText = await response.text();
+        console.log(`WADuck Attempt ${retries + 1} - Status: ${response?.status}`);
+
+        if (response.ok) {
+          console.log("Mensagem enviada com sucesso!");
+          break;
+        }
+
+        console.warn(`Falha no envio (Status ${response.status}). Resposta: ${responseText}`);
+      } catch (e: any) {
+        console.error(`Erro na tentativa ${retries + 1}:`, e.message);
+        responseText = e.message;
+      }
+
+      retries++;
+      if (retries <= maxRetries) {
+        const delay = retries * 2000; // Delay progressivo: 2s, 4s
+        console.log(`Aguardando ${delay}ms para próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    if (!response) {
+      throw new Error("Não foi possível obter resposta da API após retries: " + responseText);
+    }
 
     let responseData = {};
     try {
-      if (responseText) {
+      if (responseText && responseText.trim().startsWith("{")) {
         responseData = JSON.parse(responseText);
       }
     } catch (e: any) {
@@ -286,7 +315,7 @@ Avisaremos você quando for a sua vez!`;
 
     // 5. Loga a notificação (apenas se tivermos uma unidade)
     if (finalUnidadeId) {
-      const { error: logError } = await supabaseClient.from("notificacoes_log").insert({
+      const logData: any = {
         unidade_id: finalUnidadeId,
         senha_id: finalSenhaId,
         canal: "whatsapp",
@@ -295,10 +324,15 @@ Avisaremos você quando for a sua vez!`;
         mensagem: mensagem,
         erro: response.ok ? null : (responseText || "Erro desconhecido"),
         idempotency_key: idempotency_key,
-      });
+      };
+
+      // Se temos idempotency_key, usamos upsert para não duplicar logs de reenvio
+      const { error: logError } = await supabaseClient
+        .from("notificacoes_log")
+        .upsert(logData, { onConflict: 'idempotency_key' });
 
       if (logError) {
-        console.error("Erro ao inserir log de notificação:", logError.message);
+        console.error("Erro ao inserir/atualizar log de notificação:", logError.message);
       }
     }
 
