@@ -340,6 +340,19 @@ function RecepcaoPage() {
     }
   };
 
+  const handleWhatsApp = (s: Senha & { paciente?: { nome_completo: string; telefone: string | null } | null }) => {
+    if (!s.paciente?.telefone) {
+      toast.error("Paciente sem telefone cadastrado");
+      return;
+    }
+    const publicUrl = `${window.location.origin}/s/${s.token_publico}`;
+    const tel = s.paciente.telefone.replace(/\D/g, "");
+    const text = encodeURIComponent(
+      `Olá ${s.paciente.nome_completo}, sua senha no ${unidadeTicketConfig?.nome || "nosso estabelecimento"} é: *${s.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
+    );
+    window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+  };
+
   const handleResetHistorico = async () => {
     if (!unidadeId) return;
     setResetting(true);
@@ -735,6 +748,19 @@ function RecepcaoPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleWhatsApp(s)}
+                        className={cn(
+                          "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50",
+                          !s.paciente?.telefone && "opacity-50 cursor-not-allowed"
+                        )}
+                        title={s.paciente?.telefone ? "Enviar via WhatsApp" : "Paciente sem telefone"}
+                        disabled={!s.paciente?.telefone}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
