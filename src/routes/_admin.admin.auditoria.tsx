@@ -512,15 +512,3 @@ function ResumoCard({
   );
 }
 
-function PayloadBlock({ title, data }: { title: string; data: Record<string, unknown> }) {
-  return (
-    <div className="rounded-md border border-border bg-muted/40 p-3">
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </p>
-      <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-snug text-foreground/80">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
-  );
-}
