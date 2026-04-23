@@ -842,8 +842,9 @@ function RecepcaoPage() {
         onOpenChange={setShareOpen}
         senha={shareData?.senha ?? null}
         paciente={shareData?.paciente ?? null}
-        unidadeNome={unidadeNome}
-        logoUrl={visualConfig?.logo_url}
+        unidadeNome={unidadeTicketConfig?.nome ?? null}
+        logoUrl={unidadeTicketConfig?.logo_url ?? null}
+        rodape={unidadeTicketConfig?.rodape ?? null}
       />
     </div>
   );
