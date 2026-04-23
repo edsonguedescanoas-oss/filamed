@@ -238,20 +238,20 @@ export function TicketShareDialog({
 
           <div className="grid grid-cols-2 gap-3 w-full mt-2">
             <Button
+              onClick={handlePrint}
+              className="bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold"
+            >
+              <Printer className="h-5 w-5" />
+              Imprimir Ticket
+            </Button>
+            <Button
               onClick={handleWhatsApp}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 h-12"
+              variant="outline"
+              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
               disabled={!paciente.telefone}
             >
               <MessageSquare className="h-4 w-4" />
-              Enviar
-            </Button>
-            <Button
-              onClick={handlePrint}
-              variant="outline"
-              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
-            >
-              <Printer className="h-4 w-4" />
-              Imprimir
+              Enviar WhatsApp
             </Button>
             <Button
               onClick={handleShare}
