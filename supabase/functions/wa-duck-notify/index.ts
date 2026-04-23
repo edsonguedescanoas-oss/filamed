@@ -253,6 +253,7 @@ Avisaremos você quando for a sua vez!`;
         status: response.ok ? "enviada" : "falhou",
         mensagem: mensagem,
         erro: response.ok ? null : (responseText || "Erro desconhecido"),
+        idempotency_key: idempotency_key,
       });
 
       if (logError) {
