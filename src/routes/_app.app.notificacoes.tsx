@@ -140,6 +140,39 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
     }
   };
 
+  const handleTestAPI = async () => {
+    if (!testPhone) {
+      toast.error("Informe um número de telefone para o teste");
+      return;
+    }
+    
+    setSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("wa-duck-notify", {
+        body: {
+          tipo: "teste",
+          telefone: testPhone,
+          unidade_id: unidadeId,
+          config: config // Envia o config atual (mesmo que não salvo) para testar
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success("Mensagem de teste enviada com sucesso!");
+        void fetchLogs();
+      } else {
+        throw new Error(data?.error || "Erro desconhecido no envio");
+      }
+    } catch (err: any) {
+      console.error("Erro no teste de API:", err);
+      toast.error("Falha no teste: " + (err.message || "Erro de conexão"));
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   if (!unidadeId) return null;
 
   return (
