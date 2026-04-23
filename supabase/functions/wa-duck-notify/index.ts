@@ -20,7 +20,7 @@ export const handler = async (req: Request) => {
     let body;
     try {
       body = await req.json();
-    } catch (e) {
+    } catch (e: any) {
       console.error("Erro ao parsear o JSON do request:", e.message);
       throw new Error("Invalid JSON body");
     }
