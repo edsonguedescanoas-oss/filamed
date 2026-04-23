@@ -78,6 +78,13 @@ function AtendimentoPage() {
   const [destino, setDestino] = useState("");
   const [finalizar, setFinalizar] = useState<{ atendimento: Atendimento; senha: Senha } | null>(null);
   const [observacoes, setObservacoes] = useState("");
+  const [requerRetorno, setRequerRetorno] = useState(false);
+  // Ponto de atendimento ativo do usuário (Consultório 001, Sala 02…)
+  const [pontoAtivo, setPontoAtivo] = useState<{
+    id: string;
+    nome: string;
+    fila_id: string | null;
+  } | null>(null);
 
   // Timer ticker
   const [tick, setTick] = useState(0);
@@ -200,33 +207,30 @@ function AtendimentoPage() {
       toast.error("Finalize o atendimento atual antes de chamar outra senha.");
       return;
     }
+    if (!pontoAtivo) {
+      toast.error("Selecione seu ponto de atendimento (consultório/sala) no topo da tela.");
+      return;
+    }
     setChamarSenha(s);
-    // Sugestão padrão: primeiro consultório livre = nome da fila
-    const fila = filaById.get(s.fila_id);
-    setDestino(fila ? `${fila.nome} 1` : "");
+    // Destino é fixado pelo ponto ativo; o input vira só visualização
+    setDestino(pontoAtivo.nome);
   };
 
   const confirmarChamar = async () => {
     if (!chamarSenha || !user || !profile?.unidade_id) return;
-    if (!destino.trim()) {
-      toast.error("Informe o destino (consultório, sala, guichê...).");
+    if (!pontoAtivo) {
+      toast.error("Você precisa estar em um ponto de atendimento para chamar.");
       return;
     }
     setActionId(chamarSenha.id);
     try {
-      const { error: e1 } = await supabase
-        .from("senhas")
-        .update({ status: "chamada", updated_at: new Date().toISOString() })
-        .eq("id", chamarSenha.id);
-      if (e1) throw e1;
-      const { error: e2 } = await supabase.from("chamadas").insert({
-        unidade_id: profile.unidade_id,
-        senha_id: chamarSenha.id,
-        destino: destino.trim(),
-        chamado_por: user.id,
+      // RPC oficial: registra chamada com destino = nome do ponto
+      const { error } = await supabase.rpc("chamar_senha_do_ponto", {
+        _senha_id: chamarSenha.id,
+        _ponto_atendimento_id: pontoAtivo.id,
       });
-      if (e2) throw e2;
-      toast.success(`${chamarSenha.codigo} chamada para ${destino.trim()}.`);
+      if (error) throw error;
+      toast.success(`${chamarSenha.codigo} chamada para ${pontoAtivo.nome}.`);
       setChamarSenha(null);
       setDestino("");
     } catch (err) {
@@ -354,33 +358,31 @@ function AtendimentoPage() {
     if (!senha) return;
     setFinalizar({ atendimento: atendimentoAtivo, senha });
     setObservacoes("");
+    setRequerRetorno(false);
   };
 
   const confirmarFinalizar = async () => {
     if (!finalizar) return;
     setActionId(finalizar.atendimento.id);
     try {
+      // RPC: finaliza atendimento e (se requer_retorno) gera senha no Guichê
+      const { error } = await supabase.rpc("finalizar_atendimento_com_retorno", {
+        _atendimento_id: finalizar.atendimento.id,
+        _observacoes: observacoes.trim() || undefined,
+        _requer_retorno: requerRetorno,
+      });
+      if (error) throw error;
       const ini = new Date(finalizar.atendimento.iniciado_em);
-      const fim = new Date();
-      const dur = Math.max(0, Math.round((fim.getTime() - ini.getTime()) / 1000));
-      const { error: e1 } = await supabase
-        .from("atendimentos")
-        .update({
-          finalizado_em: fim.toISOString(),
-          duracao_segundos: dur,
-          observacoes: observacoes.trim() || null,
-        })
-        .eq("id", finalizar.atendimento.id);
-      if (e1) throw e1;
-      const { error: e2 } = await supabase
-        .from("senhas")
-        .update({ status: "finalizada", finalizada_em: fim.toISOString(), updated_at: fim.toISOString() })
-        .eq("id", finalizar.senha.id);
-      if (e2) throw e2;
-      toast.success(`${finalizar.senha.codigo} finalizada (${formatDur(dur)}).`);
+      const dur = Math.max(0, Math.round((Date.now() - ini.getTime()) / 1000));
+      toast.success(
+        requerRetorno
+          ? `${finalizar.senha.codigo} finalizada (${formatDur(dur)}). Nova senha gerada no Guichê para retorno.`
+          : `${finalizar.senha.codigo} finalizada (${formatDur(dur)}).`,
+      );
       setAtendimentoAtivo(null);
       setFinalizar(null);
       setObservacoes("");
+      setRequerRetorno(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao finalizar atendimento.");
     } finally {
@@ -452,6 +454,18 @@ function AtendimentoPage() {
             {senhas.filter((s) => s.status === "aguardando").length}
           </div>
         </div>
+      </div>
+
+      {/* Seletor de ponto de atendimento (Consultório 001, Sala 02…) */}
+      <div className="mt-5 rounded-xl border border-border bg-card/50 px-4 py-3">
+        <PontoAtendimentoSelector
+          tipos={["consultorio", "exame", "outro"]}
+          label="Você está em"
+          onChange={(p) =>
+            setPontoAtivo(p ? { id: p.id, nome: p.nome, fila_id: p.fila_id } : null)
+          }
+          emptyHint="Nenhum consultório/sala cadastrado. Peça ao admin para criar em /app/pontos."
+        />
       </div>
 
       {/* Atendimento ativo */}
@@ -643,19 +657,11 @@ function AtendimentoPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="destino">Destino *</Label>
-              <Input
-                id="destino"
-                autoFocus
-                value={destino}
-                onChange={(e) => setDestino(e.target.value)}
-                placeholder="Consultório 1, Sala 3, Guichê 2..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void confirmarChamar();
-                }}
-              />
+              <Label htmlFor="destino">Destino</Label>
+              <Input id="destino" value={destino} disabled readOnly />
               <p className="text-xs text-muted-foreground">
-                Será exibido em destaque no painel de TV e enviado via Realtime.
+                Definido automaticamente pelo ponto que você selecionou no topo da tela.
+                Para mudar, troque o ponto no seletor.
               </p>
             </div>
             <div className="flex justify-end gap-2">
@@ -711,6 +717,21 @@ function AtendimentoPage() {
                 placeholder="Anotações clínicas, encaminhamentos, próximos passos…"
               />
             </div>
+
+            <div className="flex items-start justify-between rounded-xl border border-border bg-muted/20 p-3 gap-3">
+              <div className="flex items-start gap-2 min-w-0">
+                <ArrowLeftRight className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-sm font-medium">Requer retorno ao guichê?</div>
+                  <div className="text-xs text-muted-foreground">
+                    Se ativo, o sistema gera automaticamente uma nova senha no
+                    Guichê para o paciente fazer marcação de retorno.
+                  </div>
+                </div>
+              </div>
+              <Switch checked={requerRetorno} onCheckedChange={setRequerRetorno} />
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setFinalizar(null)}>
                 Cancelar

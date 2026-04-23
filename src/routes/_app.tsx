@@ -17,6 +17,8 @@ import {
   CreditCard,
   Sparkles,
   Monitor,
+  MapPin,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,8 +76,10 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/recepcao", label: "Recepção", icon: ClipboardList },
+  { to: "/app/guiche", label: "Guichê", icon: Building2 },
   { to: "/app/atendimento", label: "Atendimento", icon: Stethoscope },
   { to: "/app/filas", label: "Filas", icon: Headphones },
+  { to: "/app/pontos", label: "Pontos", icon: MapPin },
   { to: "/app/pacientes", label: "Pacientes", icon: Users },
   { to: "/app/voz", label: "Voz", icon: Volume2 },
   { to: "/app/tv", label: "TV / Painel", icon: Monitor },
