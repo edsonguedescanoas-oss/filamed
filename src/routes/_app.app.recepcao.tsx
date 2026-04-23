@@ -464,7 +464,7 @@ function RecepcaoPage() {
       toast.success("Paciente cadastrado", { description: nome });
 
       if (emitirSenha) {
-        await handleGerar(pac);
+        await handleGerar(pac, novoAutoImprimir);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha ao cadastrar paciente";
