@@ -8,6 +8,7 @@ import {
   Trash2,
   Power,
   PowerOff,
+  Search,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -82,6 +83,8 @@ function PontosPage() {
   const [usuarios, setUsuarios] = useState<ProfileOption[]>([]);
   const [permissoes, setPermissoes] = useState<PontoPermissao[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busca, setBusca] = useState("");
+  const [statusFiltro, setStatusFiltro] = useState<"todos" | "ativos" | "inativos">("todos");
 
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Ponto | null>(null);
@@ -137,17 +140,8 @@ function PontosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unidadeId]);
 
-  const grupos = useMemo(() => {
-    const m = new Map<PontoTipo, Ponto[]>();
-    for (const p of pontos) {
-      const arr = m.get(p.tipo) ?? [];
-      arr.push(p);
-      m.set(p.tipo, arr);
-    }
-    return m;
-  }, [pontos]);
-
   const filaById = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
+  const usuarioById = useMemo(() => new Map(usuarios.map((u) => [u.id, u])), [usuarios]);
 
   const permissoesPorPonto = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -158,6 +152,38 @@ function PontosPage() {
     }
     return map;
   }, [permissoes]);
+
+  const usuariosFiltrados = useMemo(() => {
+    const termo = normalizar(busca);
+    if (!termo) return usuarios;
+    return usuarios.filter((usuario) => normalizar(usuario.nome_completo).includes(termo));
+  }, [busca, usuarios]);
+
+  const pontosFiltrados = useMemo(() => {
+    const termo = normalizar(busca);
+    return pontos.filter((ponto) => {
+      if (statusFiltro === "ativos" && !ponto.ativo) return false;
+      if (statusFiltro === "inativos" && ponto.ativo) return false;
+      if (!termo) return true;
+
+      const fila = ponto.fila_id ? filaById.get(ponto.fila_id) : null;
+      const tipo = TIPOS.find((t) => t.value === ponto.tipo)?.label ?? ponto.tipo;
+      const usuariosDoPonto = Array.from(permissoesPorPonto.get(ponto.id) ?? [])
+        .map((userId) => usuarioById.get(userId)?.nome_completo ?? "")
+        .join(" ");
+      return normalizar([ponto.nome, tipo, fila?.nome, usuariosDoPonto].filter(Boolean).join(" ")).includes(termo);
+    });
+  }, [busca, filaById, permissoesPorPonto, pontos, statusFiltro, usuarioById]);
+
+  const grupos = useMemo(() => {
+    const m = new Map<PontoTipo, Ponto[]>();
+    for (const p of pontosFiltrados) {
+      const arr = m.get(p.tipo) ?? [];
+      arr.push(p);
+      m.set(p.tipo, arr);
+    }
+    return m;
+  }, [pontosFiltrados]);
 
   const openNew = () => {
     setEditing(null);
