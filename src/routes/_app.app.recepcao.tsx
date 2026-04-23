@@ -130,6 +130,15 @@ function RecepcaoPage() {
   const [novoTelefone, setNovoTelefone] = useState("");
   const [savingNovo, setSavingNovo] = useState(false);
 
+  // compartilhamento
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareData, setShareData] = useState<{
+    senha: { codigo: string; token_publico: string };
+    paciente: { nome_completo: string; telefone: string | null };
+  } | null>(null);
+  const [visualConfig, setVisualConfig] = useState<{ logo_url: string | null } | null>(null);
+  const [unidadeNome, setUnidadeNome] = useState<string | null>(null);
+
   const fetchFilas = async () => {
     if (!unidadeId) return;
     setLoadingFilas(true);
