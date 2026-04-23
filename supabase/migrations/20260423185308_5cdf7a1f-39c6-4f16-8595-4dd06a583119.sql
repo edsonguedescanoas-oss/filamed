@@ -1,0 +1,1 @@
+ALTER TYPE public.fila_tipo ADD VALUE IF NOT EXISTS 'guiche';
