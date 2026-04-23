@@ -17,7 +17,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { senha_id } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error("Erro ao parsear o JSON do request:", e.message);
+      throw new Error("Invalid JSON body");
+    }
+    const { senha_id } = body;
 
     if (!senha_id) {
       throw new Error("senha_id is required");
