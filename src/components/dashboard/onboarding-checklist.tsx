@@ -4,9 +4,12 @@ import { Check, ArrowRight, X, ListChecks, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 
 type Step = {
   id: string;
+  scope: "geral" | "usuario";
   title: string;
   desc: string;
   to: "/app/conta" | "/app/filas" | "/app/recepcao" | "/app/voz" | "/app/notificacoes" | "/tv";
@@ -26,6 +29,7 @@ interface Props {
  * dispensa explicitamente. Cada item leva pra rota onde se executa a ação.
  */
 export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
+  const { profile, roles } = useAuth();
   const [steps, setSteps] = useState<Step[] | null>(null);
   const [dismissed, setDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -35,12 +39,13 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
   useEffect(() => {
     let cancelled = false;
     async function check() {
-      const [unidadeRes, filasRes, senhasRes, vozRes, notificacoesRes] = await Promise.all([
+      const [unidadeRes, filasRes, senhasRes, vozRes, notificacoesRes, usuariosRes] = await Promise.all([
         supabase.from("unidades").select("telefone, endereco, whatsapp_config, google_review_url").eq("id", unidadeId).maybeSingle(),
         supabase.from("filas").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
         supabase.from("senhas").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
         supabase.from("unidade_voice_config").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
         supabase.from("notificacoes_log").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
+        supabase.from("profiles").select("id", { head: true, count: "exact" }).eq("unidade_id", unidadeId),
       ]);
       if (cancelled) return;
 
@@ -56,10 +61,12 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
       const notificacoesConfiguradas = Boolean(
         whatsappConfig.api_url && whatsappConfig.api_key && whatsappConfig.instance_id,
       );
+      const perfilConfigurado = Boolean(profile?.nome_completo && (profile.telefone || roles.includes("admin")));
 
       const next: Step[] = [
         {
           id: "unidade",
+          scope: "geral",
           title: "Complete os dados da unidade",
           desc: "Nome público, telefone, endereço e dados exibidos nos comprovantes.",
           to: "/app/conta",
@@ -67,6 +74,7 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
         },
         {
           id: "fila",
+          scope: "geral",
           title: "Crie as filas de atendimento",
           desc: "Separe recepção, consultas, exames e prioridades por prefixo.",
           to: "/app/filas",
@@ -74,6 +82,7 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
         },
         {
           id: "notificacoes",
+          scope: "geral",
           title: "Configure os canais de notificação",
           desc: "Conecte WhatsApp, mensagem final e link de avaliação no Google.",
           to: "/app/notificacoes",
@@ -81,13 +90,31 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
         },
         {
           id: "voz",
+          scope: "geral",
           title: "Configure a voz da chamada",
           desc: "Escolha provedor e timbre. Browser TTS funciona de cara.",
           to: "/app/voz",
           done: (vozRes.count ?? 0) > 0,
         },
         {
+          id: "usuarios",
+          scope: "usuario",
+          title: "Revise usuários e permissões",
+          desc: "Garanta que cada pessoa tenha função e acesso compatíveis com a rotina.",
+          to: "/app/conta",
+          done: (usuariosRes.count ?? 0) > 0,
+        },
+        {
+          id: "perfil",
+          scope: "usuario",
+          title: "Complete sua configuração individual",
+          desc: "Confira seus dados e, quando necessário, vincule ponto de atendimento.",
+          to: "/app/conta",
+          done: perfilConfigurado,
+        },
+        {
           id: "teste",
+          scope: "geral",
           title: "Faça um teste de ponta a ponta",
           desc: "Gere uma senha, aceite no guichê e confirme as notificações.",
           to: "/app/recepcao",
@@ -100,7 +127,7 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [unidadeId]);
+  }, [profile?.nome_completo, profile?.telefone, roles, unidadeId]);
 
   if (dismissed || !steps) return null;
   const completed = steps.filter((s) => s.done).length;
@@ -173,9 +200,17 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
                 {s.done ? <Check className="h-4 w-4" strokeWidth={3} /> : <Sparkles className="h-3.5 w-3.5" />}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${s.done ? "line-through text-muted-foreground" : ""}`}>
-                  {s.title}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className={`text-sm font-medium ${s.done ? "line-through text-muted-foreground" : ""}`}>
+                    {s.title}
+                  </p>
+                  <Badge variant={s.done ? "secondary" : "outline"} className="h-5 px-1.5 text-[10px] uppercase">
+                    {s.done ? "Concluído" : "Pendente"}
+                  </Badge>
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase text-muted-foreground">
+                    {s.scope === "geral" ? "Geral" : "Por usuário"}
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground truncate">{s.desc}</p>
               </div>
               {!s.done && (
