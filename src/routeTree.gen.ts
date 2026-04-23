@@ -38,6 +38,7 @@ import { Route as AppAppContaRouteImport } from './routes/_app.app.conta'
 import { Route as AppAppAuditoriaRouteImport } from './routes/_app.app.auditoria'
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
+import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -182,6 +183,11 @@ const AdminAdminPlanosRoute = AdminAdminPlanosRouteImport.update({
   path: '/planos',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminLogsRoute = AdminAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/auditoria': typeof AppAppAuditoriaRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv': typeof TvIndexRoute
+  '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/auditoria': typeof AppAppAuditoriaRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/_admin/admin/logs': typeof AdminAdminLogsRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
   '/_app/app/auditoria': typeof AppAppAuditoriaRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
+    | '/admin/logs'
     | '/admin/planos'
     | '/app/atendimento'
     | '/app/auditoria'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv'
+    | '/admin/logs'
     | '/admin/planos'
     | '/app/atendimento'
     | '/app/auditoria'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
+    | '/_admin/admin/logs'
     | '/_admin/admin/planos'
     | '/_app/app/atendimento'
     | '/_app/app/auditoria'
@@ -586,14 +598,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminPlanosRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/logs': {
+      id: '/_admin/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminAdminLogsRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
   }
 }
 
 interface AdminAdminRouteChildren {
+  AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
 }
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+  AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
 }
 
