@@ -72,7 +72,7 @@ function AdminLogsPage() {
         .limit(100);
 
       if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
+        query = query.eq("status", statusFilter as any);
       }
       
       if (unidadeFilter !== "all") {
@@ -133,6 +133,21 @@ function AdminLogsPage() {
                 className="pl-9"
               />
             </div>
+
+            <Select value={unidadeFilter} onValueChange={setUnidadeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Todas Unidades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Unidades</SelectItem>
+                {unidades.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
@@ -140,7 +155,7 @@ function AdminLogsPage() {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">Todos Status</SelectItem>
                 <SelectItem value="enviada">Enviadas</SelectItem>
                 <SelectItem value="falhou">Falhas</SelectItem>
                 <SelectItem value="ignorado">Ignoradas</SelectItem>
