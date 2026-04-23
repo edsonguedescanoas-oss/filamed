@@ -1239,6 +1239,10 @@ export type Database = {
         Returns: undefined
       }
       admin_metricas_globais: { Args: { _meses?: number }; Returns: Json }
+      admin_metricas_unidade: {
+        Args: { _meses?: number; _unidade_id: string }
+        Returns: Json
+      }
       admin_unidade_canais_diagnostico: {
         Args: { _unidade_id: string }
         Returns: Json
