@@ -1,7 +1,10 @@
 import { createFileRoute, Outlet, redirect, Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Activity, LogOut, Building2, Home, Package, ShieldCheck, BarChart3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, LogOut, Building2, Home, Package, ShieldCheck, BarChart3, Siren } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_admin")({
@@ -21,6 +24,7 @@ export const Route = createFileRoute("/_admin")({
 const NAV = [
   { to: "/admin", label: "Unidades", icon: Building2, exact: true },
   { to: "/admin/metricas", label: "Métricas", icon: BarChart3, exact: false },
+  { to: "/admin/alertas", label: "Alertas", icon: Siren, exact: false, alertBadge: true },
   { to: "/admin/planos", label: "Planos", icon: Package, exact: false },
   { to: "/admin/auditoria", label: "Auditoria", icon: ShieldCheck, exact: false },
   { to: "/admin/logs", label: "Logs de Notificações", icon: Activity, exact: false },
@@ -30,6 +34,34 @@ function AdminLayout() {
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [alertasCount, setAlertasCount] = useState<{ total: number; criticos: number }>({
+    total: 0,
+    criticos: 0,
+  });
+
+  // Resumo de alertas para badge no menu (atualiza a cada 60s)
+  useEffect(() => {
+    let cancel = false;
+    const carregar = async () => {
+      const { data } = await (
+        supabase.rpc as unknown as (
+          fn: string,
+          a: Record<string, unknown>,
+        ) => Promise<{
+          data: { total_alertas: number; criticos: number } | null;
+          error: unknown;
+        }>
+      )("admin_alertas_resumo", { _janela_horas: 24, _min_falhas: 2 });
+      if (cancel || !data) return;
+      setAlertasCount({ total: data.total_alertas ?? 0, criticos: data.criticos ?? 0 });
+    };
+    void carregar();
+    const t = setInterval(() => void carregar(), 60_000);
+    return () => {
+      cancel = true;
+      clearInterval(t);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -58,6 +90,7 @@ function AdminLayout() {
                 ? location.pathname === item.to
                 : location.pathname.startsWith(item.to);
               const Icon = item.icon;
+              const showBadge = item.alertBadge && alertasCount.total > 0;
               return (
                 <Link
                   key={item.to}
@@ -69,8 +102,26 @@ function AdminLayout() {
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon
+                    className={cn(
+                      "h-4 w-4",
+                      showBadge && alertasCount.criticos > 0 && "text-destructive",
+                    )}
+                  />
                   {item.label}
+                  {showBadge && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "h-5 min-w-[20px] justify-center px-1.5 text-[10px] font-bold",
+                        alertasCount.criticos > 0
+                          ? "border-destructive/40 bg-destructive/10 text-destructive"
+                          : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                      )}
+                    >
+                      {alertasCount.total}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
