@@ -10,16 +10,17 @@ export function OrientationGuard() {
       // Detecta se é retrato
       const portrait = window.innerHeight > window.innerWidth;
       
-      // Detecta mobile/tablet (incluindo iPads que se passam por desktop)
-      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
+      // Detecta mobile/tablet baseado em viewport e DPI (evita notebooks com touch)
+      // Dispositivos mobile/tablet geralmente têm touch, DPI alto e largura de tela limitada
+      const hasTouch = navigator.maxTouchPoints > 0;
+      const isHighDPI = window.devicePixelRatio >= 2;
+      const isMobileWidth = Math.max(window.screen.width, window.screen.height) <= 1366;
       
-      const tablet = (navigator.maxTouchPoints > 0 && Math.max(window.screen.width, window.screen.height) <= 1366);
+      // Consideramos mobile/tablet se tiver touch E (DPI alto OU largura pequena)
+      const mobileOrTablet = hasTouch && (isHighDPI || window.innerWidth < 768) && isMobileWidth;
       
-      // Só ativamos o bloqueio se for mobile/tablet em modo retrato
       setIsPortrait(portrait);
-      setIsMobileOrTablet(mobile || tablet);
+      setIsMobileOrTablet(mobileOrTablet);
     };
 
     checkOrientation();
