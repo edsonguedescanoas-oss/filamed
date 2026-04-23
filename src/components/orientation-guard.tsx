@@ -4,7 +4,12 @@ import { Smartphone, ChevronRight } from "lucide-react";
 export function OrientationGuard() {
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
-  const [hasSkipped, setHasSkipped] = useState(false);
+  const [hasSkipped, setHasSkipped] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("orientation-guard-skipped") === "true";
+    }
+    return false;
+  });
 
   useEffect(() => {
     const checkOrientation = () => {
@@ -21,11 +26,16 @@ export function OrientationGuard() {
       setIsPortrait(portrait);
       setIsMobileOrTablet(mobileOrTablet);
 
+      // Se o usuário girou para paisagem, marcamos como "pulado/orientado" para não mostrar mais o bloqueio
+      if (!portrait && mobileOrTablet) {
+        setHasSkipped(true);
+        localStorage.setItem("orientation-guard-skipped", "true");
+      }
+
       // Tenta orientar automaticamente para landscape se estiver em mobile/tablet e portrait
       if (portrait && mobileOrTablet && screen.orientation && screen.orientation.lock) {
-        // Tenta dar lock silencioso (pode falhar por falta de user interaction, mas tentamos)
         try {
-          // @ts-ignore - lock is still experimental in some browsers
+          // @ts-ignore
           screen.orientation.lock("landscape").catch(() => {
             console.log("Auto-orientation lock failed (needs user interaction)");
           });
@@ -54,9 +64,17 @@ export function OrientationGuard() {
         // @ts-ignore
         await screen.orientation.lock("landscape");
       }
+      // Marcar como skip/orientado após sucesso
+      setHasSkipped(true);
+      localStorage.setItem("orientation-guard-skipped", "true");
     } catch (error) {
       console.error("Failed to force landscape:", error);
     }
+  };
+
+  const handleSkip = () => {
+    setHasSkipped(true);
+    localStorage.setItem("orientation-guard-skipped", "true");
   };
 
   // Se não for mobile/tablet ou já estiver na horizontal ou tiver ignorado, não faz nada
@@ -90,7 +108,7 @@ export function OrientationGuard() {
         </button>
 
         <button
-          onClick={() => setHasSkipped(true)}
+          onClick={handleSkip}
           className="w-full px-6 py-3 bg-secondary/50 text-secondary-foreground rounded-xl font-medium hover:bg-secondary/80 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
         >
           Continuar em modo retrato
@@ -106,4 +124,3 @@ export function OrientationGuard() {
     </div>
   );
 }
-
