@@ -97,10 +97,8 @@ export function TicketShareDialog({
   const printTriggered = useRef(false);
 
   useEffect(() => {
-    if (open && senha && !autoSent) {
-      void handleWhatsApp(true);
-      setAutoSent(true);
-    }
+    // We removed the automatic handleWhatsApp call because it's already handled by a database trigger (tr_on_new_ticket)
+    // on the 'senhas' table, avoiding duplicate messages.
     
     if (open && autoPrint && senha && paciente && !printTriggered.current) {
       printTriggered.current = true;
