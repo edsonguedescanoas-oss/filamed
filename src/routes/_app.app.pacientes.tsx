@@ -110,7 +110,7 @@ const pacienteSchema = z.object({
     .string()
     .trim()
     .optional()
-    .refine((v) => !v || onlyDigits(v).length >= 10, "Telefone inválido"),
+    .refine((v) => !v || onlyDigits(v).length >= 12, "Telefone inválido (mínimo 12 dígitos com 55)"),
   email: z
     .string()
     .trim()
