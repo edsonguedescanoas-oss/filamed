@@ -119,7 +119,7 @@ export function TicketShareDialog({
               <div style="font-size: 8pt; margin-top: 3mm; font-weight: bold;">Escaneie para acompanhar</div>
             </div>
             <div class="footer">
-              FILAMED - GESTÃO DE FILAS
+              ${rodape || "FILAMED - GESTÃO DE FILAS"}
               <div class="timestamp">${new Date().toLocaleString("pt-BR")}</div>
             </div>
             <script>
