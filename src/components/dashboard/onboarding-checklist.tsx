@@ -200,9 +200,17 @@ export function OnboardingChecklist({ unidadeId, unidadeSlug }: Props) {
                 {s.done ? <Check className="h-4 w-4" strokeWidth={3} /> : <Sparkles className="h-3.5 w-3.5" />}
               </span>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${s.done ? "line-through text-muted-foreground" : ""}`}>
-                  {s.title}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className={`text-sm font-medium ${s.done ? "line-through text-muted-foreground" : ""}`}>
+                    {s.title}
+                  </p>
+                  <Badge variant={s.done ? "secondary" : "outline"} className="h-5 px-1.5 text-[10px] uppercase">
+                    {s.done ? "Concluído" : "Pendente"}
+                  </Badge>
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase text-muted-foreground">
+                    {s.scope === "geral" ? "Geral" : "Por usuário"}
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground truncate">{s.desc}</p>
               </div>
               {!s.done && (
