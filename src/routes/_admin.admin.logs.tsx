@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, Loader2, Search, Filter, AlertCircle, CheckCircle2, XCircle, Info, ExternalLink } from "lucide-react";
+import { Activity, Loader2, Search, Filter, AlertCircle, CheckCircle2, XCircle, Info, ExternalLink, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
