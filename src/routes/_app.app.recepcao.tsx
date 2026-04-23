@@ -319,7 +319,7 @@ function RecepcaoPage() {
     ? `${filaSelecionada.prefixo_senha}${String(filaSelecionada.contador_senha + 1).padStart(3, "0")}`
     : null;
 
-  const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent) => {
+  const handleGerar = async (pacOrEvent?: Paciente | React.MouseEvent, autoPrintOverride?: boolean) => {
     const pac = (pacOrEvent && typeof pacOrEvent === 'object' && 'id' in pacOrEvent) 
       ? (pacOrEvent as Paciente) 
       : pacienteSelecionado;
@@ -351,7 +351,7 @@ function RecepcaoPage() {
           telefone: pac.telefone,
         },
       });
-      setShareAutoPrint(false);
+      setShareAutoPrint(autoPrintOverride ?? false);
       setShareOpen(true);
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
