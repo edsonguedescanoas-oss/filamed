@@ -562,6 +562,7 @@ export type Database = {
         Row: {
           codigo: string
           created_at: string
+          criado_por: string | null
           fila_id: string
           finalizada_em: string | null
           id: string
@@ -578,6 +579,7 @@ export type Database = {
         Insert: {
           codigo: string
           created_at?: string
+          criado_por?: string | null
           fila_id: string
           finalizada_em?: string | null
           id?: string
@@ -594,6 +596,7 @@ export type Database = {
         Update: {
           codigo?: string
           created_at?: string
+          criado_por?: string | null
           fila_id?: string
           finalizada_em?: string | null
           id?: string
@@ -1036,6 +1039,7 @@ export type Database = {
         Returns: {
           codigo: string
           created_at: string
+          criado_por: string | null
           fila_id: string
           finalizada_em: string | null
           id: string
