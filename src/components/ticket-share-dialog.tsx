@@ -193,7 +193,17 @@ export function TicketShareDialog({
                 text-align: center;
                 color: #000;
               }
-              .logo { max-width: 40mm; max-height: 20mm; object-contain: fit; margin-bottom: 5mm; }
+              .logo { 
+                max-width: 40mm; 
+                max-height: 20mm; 
+                object-contain: fit; 
+                margin-bottom: 5mm; 
+                filter: contrast(${logoContrast}%);
+                transform: scale(${logoScale / 100});
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+              }
               .unidade { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5mm; line-height: 1.2; }
               .label { font-size: 9pt; font-weight: bold; color: #000; letter-spacing: 2px; margin-bottom: 2mm; }
               .senha { font-size: ${currentPrinter.width === '58mm' ? '45pt' : '60pt'}; font-weight: 900; margin: 2mm 0; line-height: 1; }
