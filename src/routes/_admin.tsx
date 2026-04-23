@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_admin")({
 const NAV = [
   { to: "/admin", label: "Unidades", icon: Building2, exact: true },
   { to: "/admin/planos", label: "Planos", icon: Package, exact: false },
+  { to: "/admin/logs", label: "Logs de Notificações", icon: Activity, exact: false },
 ];
 
 function AdminLayout() {
