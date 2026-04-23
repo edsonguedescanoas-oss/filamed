@@ -370,7 +370,9 @@ function AdminAuditoriaPage() {
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="gap-1.5">
             <Activity className="h-3.5 w-3.5" />
-            {eventos.length} evento{eventos.length === 1 ? "" : "s"}
+            {eventos.length}
+            {hasMore ? "+" : ""} evento{eventos.length === 1 ? "" : "s"} carregado
+            {eventos.length === 1 ? "" : "s"}
           </Badge>
           <Button
             size="sm"
