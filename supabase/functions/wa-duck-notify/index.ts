@@ -141,6 +141,20 @@ Avisaremos você quando for a sua vez!`;
 
       if (existingByKey && existingByKey.status === "enviada") {
         console.log(`Idempotency key ${idempotency_key} já processada com sucesso. Ignorando.`);
+        
+        if (finalUnidadeId) {
+          await supabaseClient.from("notificacoes_log").insert({
+            unidade_id: finalUnidadeId,
+            senha_id: finalSenhaId,
+            canal: "whatsapp",
+            destinatario: formattedTelefone,
+            status: "ignorado",
+            mensagem: mensagem,
+            erro: "Duplicidade via idempotency_key",
+            idempotency_key: idempotency_key,
+          });
+        }
+
         return new Response(JSON.stringify({ 
           success: true, 
           status: "ignored", 
