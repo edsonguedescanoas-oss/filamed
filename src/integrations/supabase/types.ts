@@ -1051,6 +1051,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_atualizar_status_unidade: {
+        Args: {
+          _ativo?: boolean
+          _novo_status: Database["public"]["Enums"]["assinatura_status"]
+          _unidade_id: string
+        }
+        Returns: undefined
+      }
+      admin_criar_unidade: {
+        Args: {
+          _cnpj?: string
+          _endereco?: string
+          _nome: string
+          _slug?: string
+          _telefone?: string
+          _trial_dias?: number
+        }
+        Returns: string
+      }
+      admin_unidade_integracao_status: {
+        Args: { _unidade_id: string }
+        Returns: {
+          faturas_pendentes: number
+          notificacoes_falhas_30d: number
+          plano_nome: string
+          status_assinatura: string
+          tem_assinatura: boolean
+          total_filas: number
+          total_notificacoes_30d: number
+          total_pacientes: number
+          total_senhas_30d: number
+          total_usuarios: number
+          tv_configurada: boolean
+          voz_configurada: boolean
+          whatsapp_configurado: boolean
+        }[]
+      }
       belongs_to_unidade: {
         Args: { _unidade_id: string; _user_id: string }
         Returns: boolean
