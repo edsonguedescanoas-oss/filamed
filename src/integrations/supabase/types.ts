@@ -1170,6 +1170,7 @@ export type Database = {
           cnpj: string | null
           created_at: string
           endereco: string | null
+          google_review_url: string | null
           id: string
           nome: string
           slug: string
@@ -1188,6 +1189,7 @@ export type Database = {
           cnpj?: string | null
           created_at?: string
           endereco?: string | null
+          google_review_url?: string | null
           id?: string
           nome: string
           slug: string
@@ -1206,6 +1208,7 @@ export type Database = {
           cnpj?: string | null
           created_at?: string
           endereco?: string | null
+          google_review_url?: string | null
           id?: string
           nome?: string
           slug?: string
