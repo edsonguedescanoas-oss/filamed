@@ -97,7 +97,7 @@ function PontosPage() {
   const fetchAll = async () => {
     if (!unidadeId) return;
     setLoading(true);
-    const [pRes, fRes] = await Promise.all([
+    const [pRes, fRes, uRes, permRes] = await Promise.all([
       supabase
         .from("pontos_atendimento")
         .select("*")
@@ -110,11 +110,25 @@ function PontosPage() {
         .eq("unidade_id", unidadeId)
         .eq("ativa", true)
         .order("nome"),
+      supabase
+        .from("profiles")
+        .select("id,nome_completo")
+        .eq("unidade_id", unidadeId)
+        .eq("ativo", true)
+        .order("nome_completo"),
+      supabase
+        .from("ponto_atendimento_permissoes" as never)
+        .select("id,ponto_atendimento_id,user_id")
+        .eq("unidade_id", unidadeId),
     ]);
     if (pRes.error) toast.error("Erro ao carregar pontos: " + pRes.error.message);
     if (fRes.error) toast.error("Erro ao carregar filas: " + fRes.error.message);
+    if (uRes.error) toast.error("Erro ao carregar usuários: " + uRes.error.message);
+    if (permRes.error) toast.error("Erro ao carregar permissões: " + permRes.error.message);
     setPontos(pRes.data ?? []);
     setFilas((fRes.data ?? []) as Fila[]);
+    setUsuarios((uRes.data ?? []) as ProfileOption[]);
+    setPermissoes((permRes.data ?? []) as unknown as PontoPermissao[]);
     setLoading(false);
   };
 
@@ -134,6 +148,16 @@ function PontosPage() {
   }, [pontos]);
 
   const filaById = useMemo(() => new Map(filas.map((f) => [f.id, f])), [filas]);
+
+  const permissoesPorPonto = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const perm of permissoes) {
+      const set = map.get(perm.ponto_atendimento_id) ?? new Set<string>();
+      set.add(perm.user_id);
+      map.set(perm.ponto_atendimento_id, set);
+    }
+    return map;
+  }, [permissoes]);
 
   const openNew = () => {
     setEditing(null);
