@@ -192,8 +192,8 @@ export function TicketShareDialog({
               <div className="bg-white p-2 rounded-xl">
                 <QrCode value={publicUrl} size={100} />
               </div>
-              <div className="text-[9px] text-slate-500 max-w-[140px] leading-relaxed">
-                Escaneie para acompanhar ou acesse pelo link enviado.
+              <div className="text-[9px] text-slate-500 max-w-[140px] leading-relaxed line-clamp-2">
+                {rodape || "Escaneie para acompanhar ou acesse pelo link enviado."}
               </div>
             </div>
           </div>
