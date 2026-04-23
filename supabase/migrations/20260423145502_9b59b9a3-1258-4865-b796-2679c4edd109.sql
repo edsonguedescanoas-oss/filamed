@@ -1,0 +1,1 @@
+ALTER FUNCTION public.retry_failed_notifications() SET search_path = public;
