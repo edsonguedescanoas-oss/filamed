@@ -467,13 +467,8 @@ function AdminAuditoriaPage() {
                     </button>
 
                     {isOpen && hasPayload && (
-                      <div className="mt-3 ml-12 grid gap-3 sm:grid-cols-2">
-                        {ev.dados_antes && (
-                          <PayloadBlock title="Antes" data={ev.dados_antes} />
-                        )}
-                        {ev.dados_depois && (
-                          <PayloadBlock title="Depois" data={ev.dados_depois} />
-                        )}
+                      <div className="mt-3 ml-12">
+                        <AuditoriaDiff before={ev.dados_antes} after={ev.dados_depois} />
                       </div>
                     )}
                   </li>
