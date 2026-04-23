@@ -154,9 +154,12 @@ function ContaPage() {
       ? Object.entries(plano.recursos).filter(([, v]) => v).map(([k]) => k)
       : [];
     
-    // Temporário: Considerar relatórios como ativo por enquanto
+    // Temporário: Considerar relatórios e whatsapp como ativos por enquanto
     if (!list.includes("relatorios_avancados")) {
       list.push("relatorios_avancados");
+    }
+    if (!list.includes("whatsapp")) {
+      list.push("whatsapp");
     }
     return list;
   }, [plano]);

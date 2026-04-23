@@ -16,8 +16,8 @@ export function useRecurso(chave: string) {
   let ativo = !!plano?.recursos?.[chave];
   let statusOk = plano?.status === "ativa" || plano?.status === "trialing";
 
-  // Temporário: Liberar relatórios para todos os planos por enquanto
-  if (chave === "relatorios_avancados") {
+  // Temporário: Liberar relatórios e whatsapp para todos os planos por enquanto
+  if (chave === "relatorios_avancados" || chave === "whatsapp") {
     ativo = true;
     statusOk = true;
   }

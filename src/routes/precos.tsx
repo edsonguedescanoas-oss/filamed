@@ -157,8 +157,9 @@ function buildFeatures(plano: PlanoRow): string[] {
 
   const recursos = { ...plano.recursos };
 
-  // Temporário: Mostrar relatórios em todos os planos
+  // Temporário: Mostrar relatórios e whatsapp em todos os planos
   recursos.relatorios_avancados = true;
+  recursos.whatsapp = true;
 
   for (const [chave, ativo] of Object.entries(recursos)) {
     if (ativo && RECURSO_LABEL[chave]) out.push(RECURSO_LABEL[chave]);
