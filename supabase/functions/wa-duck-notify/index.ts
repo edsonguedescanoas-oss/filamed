@@ -171,13 +171,8 @@ Avisaremos você quando for a sua vez!`;
     const endpoint = api_url.endsWith("/") ? api_url : `${api_url}/`;
     const fullUrl = `${endpoint}message/sendText/${instance_id}`;
     
-    // Formata o telefone: remove tudo que não for dígito e adiciona 55 se necessário
-    let formattedTelefone = telefone.replace(/\D/g, "");
-    if (formattedTelefone.length <= 11 && !formattedTelefone.startsWith("55")) {
-      formattedTelefone = "55" + formattedTelefone;
-    }
-
     const bodyData = {
+
       number: formattedTelefone,
       text: mensagem,
       // Compatibility for newer Evolution API versions
