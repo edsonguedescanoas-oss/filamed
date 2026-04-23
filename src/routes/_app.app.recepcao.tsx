@@ -179,12 +179,13 @@ function RecepcaoPage() {
     void fetchRecentes();
     if (unidadeId) {
       void (async () => {
-        const { data } = await supabase
-          .from("unidades")
-          .select("slug")
-          .eq("id", unidadeId)
-          .maybeSingle();
-        setUnidadeSlug(data?.slug ?? null);
+        const [uRes, vRes] = await Promise.all([
+          supabase.from("unidades").select("slug, nome").eq("id", unidadeId).maybeSingle(),
+          supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", unidadeId).maybeSingle(),
+        ]);
+        setUnidadeSlug(uRes.data?.slug ?? null);
+        setUnidadeNome(uRes.data?.nome ?? null);
+        setVisualConfig(vRes.data ?? null);
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
