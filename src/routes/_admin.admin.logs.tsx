@@ -44,9 +44,18 @@ function fmtDate(iso: string): string {
 
 function AdminLogsPage() {
   const [logs, setLogs] = useState<LogRow[]>([]);
+  const [unidades, setUnidades] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [unidadeFilter, setUnidadeFilter] = useState<string>("all");
+
+  useEffect(() => {
+    void (async () => {
+      const { data } = await supabase.from("unidades").select("id, nome").order("nome");
+      if (data) setUnidades(data);
+    })();
+  }, []);
 
   useEffect(() => {
     let cancel = false;
@@ -62,6 +71,14 @@ function AdminLogsPage() {
         .order("created_at", { ascending: false })
         .limit(100);
 
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+      
+      if (unidadeFilter !== "all") {
+        query = query.eq("unidade_id", unidadeFilter);
+      }
+
       const { data, error } = await query;
       
       if (cancel) return;
@@ -75,7 +92,7 @@ function AdminLogsPage() {
     return () => {
       cancel = true;
     };
-  }, []);
+  }, [statusFilter, unidadeFilter]);
 
   const filtered = logs.filter((log) => {
     const matchesQuery = 
@@ -84,9 +101,7 @@ function AdminLogsPage() {
       log.unidade?.nome.toLowerCase().includes(q.toLowerCase()) ||
       log.senha?.codigo.toLowerCase().includes(q.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || log.status === statusFilter;
-    
-    return matchesQuery && matchesStatus;
+    return matchesQuery;
   });
 
   return (
