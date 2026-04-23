@@ -674,6 +674,52 @@ export type Database = {
         }
         Relationships: []
       }
+      ponto_atendimento_permissoes: {
+        Row: {
+          created_at: string
+          id: string
+          ponto_atendimento_id: string
+          unidade_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ponto_atendimento_id: string
+          unidade_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ponto_atendimento_id?: string
+          unidade_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponto_atendimento_permissoes_ponto_atendimento_id_fkey"
+            columns: ["ponto_atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "pontos_atendimento"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ponto_atendimento_permissoes_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ponto_atendimento_permissoes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pontos_atendimento: {
         Row: {
           ativo: boolean
@@ -1690,6 +1736,10 @@ export type Database = {
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       marcar_senhas_ausentes: { Args: never; Returns: number }
+      pode_ocupar_ponto: {
+        Args: { _ponto_atendimento_id: string; _user_id: string }
+        Returns: boolean
+      }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
       retry_failed_notifications: { Args: never; Returns: undefined }
       setup_initial_unidade: {
