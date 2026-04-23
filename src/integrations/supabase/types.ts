@@ -885,6 +885,9 @@ export type Database = {
           slug: string
           status_assinatura: Database["public"]["Enums"]["assinatura_status"]
           telefone: string | null
+          ticket_logo_url: string | null
+          ticket_rodape: string | null
+          ticket_unidade_nome: string | null
           trial_ends_at: string
           updated_at: string
           whatsapp_config: Json | null
@@ -900,6 +903,9 @@ export type Database = {
           slug: string
           status_assinatura?: Database["public"]["Enums"]["assinatura_status"]
           telefone?: string | null
+          ticket_logo_url?: string | null
+          ticket_rodape?: string | null
+          ticket_unidade_nome?: string | null
           trial_ends_at?: string
           updated_at?: string
           whatsapp_config?: Json | null
@@ -915,6 +921,9 @@ export type Database = {
           slug?: string
           status_assinatura?: Database["public"]["Enums"]["assinatura_status"]
           telefone?: string | null
+          ticket_logo_url?: string | null
+          ticket_rodape?: string | null
+          ticket_unidade_nome?: string | null
           trial_ends_at?: string
           updated_at?: string
           whatsapp_config?: Json | null
