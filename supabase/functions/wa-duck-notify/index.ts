@@ -127,9 +127,11 @@ Acompanhe em tempo real pelo mesmo link:
 ${publicUrl}`;
       } else if (tipo === "finalizacao") {
         const reviewUrl = unidade.google_review_url;
-        mensagem = `Olá *${paciente.nome_completo}*, seu atendimento no *${unidade.nome}* foi finalizado.
-
-Obrigado pela visita!${reviewUrl ? `\n\nSe puder, avalie nossa clínica no Google:\n${reviewUrl}` : ""}`;
+        const template = config.template_finalizacao || "Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado. Obrigado pela visita!";
+        mensagem = template
+          .replace("{{nome}}", paciente.nome_completo)
+          .replace("{{unidade}}", unidade.nome);
+        if (reviewUrl) mensagem += `\n\nAvalie nossa clínica no Google:\n${reviewUrl}`;
       } else {
         // 2. Calcula tempo estimado
         const { count } = await supabaseClient
