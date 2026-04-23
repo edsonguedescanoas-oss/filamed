@@ -143,42 +143,71 @@ Avisaremos você quando for a sua vez!`;
       }
     }
 
-    // 2. Verificação de idempotency_key (prioridade máxima se presente)
-    if (idempotency_key) {
-      const { data: existingByKey } = await supabaseClient
-        .from("notificacoes_log")
-        .select("id, status")
-        .eq("idempotency_key", idempotency_key)
-        .limit(1)
-        .maybeSingle();
+    // 2. Trava Atômica e Idempotência por (paciente/senha/local)
+    const lockKey = `lock_wa_${finalSenhaId}_${tipo}_${mesa_nome || 'unidade'}`;
+    const generatedIdempotencyKey = idempotency_key || `idemp_${finalSenhaId}_${tipo}_${mesa_nome || 'unidade'}_${Date.now()}`;
+    
+    // Tenta adquirir a trava atômica (válida por 60 segundos)
+    const { data: lockAcquired, error: lockError } = await supabaseClient
+      .from("atomic_locks")
+      .insert({ 
+        key: lockKey, 
+        expires_at: new Date(Date.now() + 60000).toISOString() 
+      })
+      .select();
 
-      if (existingByKey && existingByKey.status === "enviada") {
-        console.log(`Idempotency key ${idempotency_key} já processada com sucesso. Ignorando.`);
-        
-        if (finalUnidadeId) {
-          await supabaseClient.from("notificacoes_log").insert({
-            unidade_id: finalUnidadeId,
-            senha_id: finalSenhaId,
-            canal: "whatsapp",
-            destinatario: formattedTelefone,
-            status: "ignorado",
-            mensagem: mensagem,
-            erro: "Duplicidade via idempotency_key",
-            idempotency_key: idempotency_key,
-          });
-        }
-
+    if (lockError && lockError.code === '23505') { // Unique constraint violation
+      // Verifica se o bloqueio ainda é válido ou se já foi concluído
+      const { data: currentLock } = await supabaseClient
+        .from("atomic_locks")
+        .select("expires_at")
+        .eq("key", lockKey)
+        .single();
+      
+      if (currentLock && new Date(currentLock.expires_at) > new Date()) {
+        console.log(`Bloqueio atômico ativo para ${lockKey}. Ignorando solicitação duplicada em processamento.`);
         return new Response(JSON.stringify({ 
           success: true, 
           status: "ignored", 
-          reason: "idempotency",
-          message: "Esta solicitação já foi processada anteriormente." 
+          reason: "locked",
+          message: "Esta notificação está sendo processada por outra instância." 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
         });
+      } else {
+        // Bloqueio expirado, remove e tenta novamente (raro devido ao cleanup)
+        await supabaseClient.from("atomic_locks").delete().eq("key", lockKey);
       }
     }
+
+    // Verificação de log existente para garantir idempotência permanente
+    const permanentIdempotencyKey = idempotency_key || `msg_${finalSenhaId}_${tipo}_${mesa_nome || 'unidade'}`;
+    const { data: existingLog } = await supabaseClient
+      .from("notificacoes_log")
+      .select("id, status")
+      .eq("idempotency_key", permanentIdempotencyKey)
+      .eq("status", "enviada")
+      .maybeSingle();
+
+    if (existingLog) {
+      console.log(`Notificação já enviada anteriormente (idempotency: ${permanentIdempotencyKey}). Ignorando.`);
+      // Libera a trava antes de retornar
+      await supabaseClient.from("atomic_locks").delete().eq("key", lockKey);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        status: "ignored", 
+        reason: "idempotency",
+        message: "Esta notificação já foi enviada com sucesso." 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    const currentIdempotencyKey = idempotency_key || permanentIdempotencyKey;
+
 
     // Normalização do telefone para verificação e envio
     let formattedTelefone = telefone.replace(/\D/g, "");
