@@ -87,13 +87,13 @@ function PublicSenhaPage() {
 
     const [fRes, uRows, vRes, cRes] = await Promise.all([
       supabase.from("filas").select("id,nome,cor,tempo_espera_estimado").eq("id", senhaData.fila_id).maybeSingle(),
-      supabase.from("unidades").select("id,nome,slug,google_review_url").eq("id", senhaData.unidade_id).maybeSingle(),
+      supabase.rpc("get_unidade_publica_detalhe" as never, { _unidade_id: senhaData.unidade_id } as never),
       supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", senhaData.unidade_id).maybeSingle(),
       // chamadas dos últimos 60s da unidade — filtramos pela senha no cliente
       supabase.rpc("get_chamadas_recentes", { _unidade_id: senhaData.unidade_id }),
     ]);
 
-    const u = (uRows.data as UnidadePub | null) ?? null;
+    const u = ((uRows.data as unknown as UnidadePub[] | null) ?? [])[0] ?? null;
     const cList = (cRes.data ?? []) as ChamadaPub[];
     const cMatch = cList.find((c) => (c as unknown as { senha_id: string }).senha_id === senhaData.id) ?? null;
     
