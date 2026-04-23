@@ -599,7 +599,8 @@ function AtendimentoPage() {
                   <Button
                     size="sm"
                     onClick={() => iniciarAtendimento(s)}
-                    disabled={actionId === s.id || !!atendimentoAtivo}
+                    disabled={actionId === s.id || !!atendimentoAtivo || !pontoAtivo}
+                    title={!pontoAtivo ? "Selecione um ponto de atendimento no topo da tela" : undefined}
                     className="bg-gradient-primary"
                   >
                     <Play className="h-3.5 w-3.5" /> Iniciar
@@ -674,7 +675,8 @@ function AtendimentoPage() {
                         <Button
                           size="sm"
                           onClick={() => abrirChamar(s)}
-                          disabled={actionId === s.id || !!atendimentoAtivo}
+                          disabled={actionId === s.id || !!atendimentoAtivo || !pontoAtivo}
+                          title={!pontoAtivo ? "Selecione um ponto de atendimento no topo da tela" : undefined}
                           className="bg-gradient-primary"
                         >
                           <Megaphone className="h-3.5 w-3.5" /> Chamar
