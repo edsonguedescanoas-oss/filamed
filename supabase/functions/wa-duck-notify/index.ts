@@ -24,13 +24,13 @@ serve(async (req) => {
       console.error("Erro ao parsear o JSON do request:", e.message);
       throw new Error("Invalid JSON body");
     }
-    const { senha_id } = body;
+    const { senha_id, tipo = "criacao", mesa_nome } = body;
 
     if (!senha_id) {
       throw new Error("senha_id is required");
     }
 
-    console.log(`Processando notificação para senha_id: ${senha_id}`);
+    console.log(`Processando notificação (${tipo}) para senha_id: ${senha_id}`);
 
     // 1. Busca dados da senha, paciente, fila e unidade
     const { data: senha, error: senhaError } = await supabaseClient
@@ -67,21 +67,29 @@ serve(async (req) => {
       throw new Error("WADuck API não configurada para esta unidade.");
     }
 
-    // 2. Calcula tempo estimado (simplificado: pessoas na frente * tempo por pessoa)
-    const { count } = await supabaseClient
-      .from("senhas")
-      .select("*", { count: "exact", head: true })
-      .eq("fila_id", senha.fila_id)
-      .eq("status", "aguardando")
-      .lt("created_at", senha.created_at);
+    let mensagem = "";
 
-    const pessoas_na_frente = count || 0;
-    const tempo_por_pessoa = fila.tempo_espera_estimado || 10;
-    const tempo_total = (pessoas_na_frente + 1) * tempo_por_pessoa;
+    if (tipo === "chamada") {
+      const template = config.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.";
+      mensagem = template
+        .replace("{{nome}}", paciente.nome_completo)
+        .replace("{{senha}}", senha.codigo)
+        .replace("{{local}}", mesa_nome || "atendimento");
+    } else {
+      // 2. Calcula tempo estimado
+      const { count } = await supabaseClient
+        .from("senhas")
+        .select("*", { count: "exact", head: true })
+        .eq("fila_id", senha.fila_id)
+        .eq("status", "aguardando")
+        .lt("created_at", senha.created_at);
 
-    // 3. Monta a mensagem
-    const publicUrl = `https://filamed.lovable.app/s/${senha.token_publico}`;
-    const mensagem = `Olá *${paciente.nome_completo}*, sua senha no *${unidade.nome}* foi gerada com sucesso!
+      const pessoas_na_frente = count || 0;
+      const tempo_por_pessoa = fila.tempo_espera_estimado || 10;
+      const tempo_total = (pessoas_na_frente + 1) * tempo_por_pessoa;
+
+      const publicUrl = `https://filamed.lovable.app/s/${senha.token_publico}`;
+      mensagem = `Olá *${paciente.nome_completo}*, sua senha no *${unidade.nome}* foi gerada com sucesso!
 
 🎫 Senha: *${senha.codigo}*
 🕒 Tempo estimado de espera: *${tempo_total} minutos*
@@ -91,11 +99,17 @@ Você pode acompanhar o status da sua senha em tempo real pelo link:
 ${publicUrl}
 
 Avisaremos você quando for a sua vez!`;
+    }
 
     // 4. Envia para o WADuck
     const endpoint = api_url.endsWith("/") ? api_url : `${api_url}/`;
     const fullUrl = `${endpoint}message/sendText/${instance_id}`;
-    const telefone = paciente.telefone.replace(/\D/g, "");
+    
+    // Formata o telefone: remove tudo que não for dígito e adiciona 55 se necessário
+    let telefone = paciente.telefone.replace(/\D/g, "");
+    if (telefone.length <= 11 && !telefone.startsWith("55")) {
+      telefone = "55" + telefone;
+    }
 
     console.log(`Enviando WhatsApp para ${telefone} via ${fullUrl}`);
 
