@@ -360,7 +360,9 @@ function RecepcaoPage() {
         },
       });
       setShareAutoPrint(autoPrintOverride ?? false);
-      setShareOpen(true);
+      if (autoPrintOverride !== false) {
+        setShareOpen(true);
+      }
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
       setPacienteQuery("");
