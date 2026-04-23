@@ -35,6 +35,7 @@ import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes
 import { Route as AppAppNotificacoesRouteImport } from './routes/_app.app.notificacoes'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
 import { Route as AppAppContaRouteImport } from './routes/_app.app.conta'
+import { Route as AppAppAuditoriaRouteImport } from './routes/_app.app.auditoria'
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 
@@ -166,6 +167,11 @@ const AppAppContaRoute = AppAppContaRouteImport.update({
   path: '/conta',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppAuditoriaRoute = AppAppAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppAtendimentoRoute = AppAppAtendimentoRouteImport.update({
   id: '/atendimento',
   path: '/atendimento',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/tv/': typeof TvIndexRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
+  '/app/auditoria': typeof AppAppAuditoriaRoute
   '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/notificacoes': typeof AppAppNotificacoesRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/tv': typeof TvIndexRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
+  '/app/auditoria': typeof AppAppAuditoriaRoute
   '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
   '/app/notificacoes': typeof AppAppNotificacoesRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/tv/': typeof TvIndexRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
+  '/_app/app/auditoria': typeof AppAppAuditoriaRoute
   '/_app/app/conta': typeof AppAppContaRoute
   '/_app/app/filas': typeof AppAppFilasRoute
   '/_app/app/notificacoes': typeof AppAppNotificacoesRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/tv/'
     | '/admin/planos'
     | '/app/atendimento'
+    | '/app/auditoria'
     | '/app/conta'
     | '/app/filas'
     | '/app/notificacoes'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/tv'
     | '/admin/planos'
     | '/app/atendimento'
+    | '/app/auditoria'
     | '/app/conta'
     | '/app/filas'
     | '/app/notificacoes'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/tv/'
     | '/_admin/admin/planos'
     | '/_app/app/atendimento'
+    | '/_app/app/auditoria'
     | '/_app/app/conta'
     | '/_app/app/filas'
     | '/_app/app/notificacoes'
@@ -553,6 +565,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppContaRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/auditoria': {
+      id: '/_app/app/auditoria'
+      path: '/auditoria'
+      fullPath: '/app/auditoria'
+      preLoaderRoute: typeof AppAppAuditoriaRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/atendimento': {
       id: '/_app/app/atendimento'
       path: '/atendimento'
@@ -594,6 +613,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppAppRouteChildren {
   AppAppAtendimentoRoute: typeof AppAppAtendimentoRoute
+  AppAppAuditoriaRoute: typeof AppAppAuditoriaRoute
   AppAppContaRoute: typeof AppAppContaRoute
   AppAppFilasRoute: typeof AppAppFilasRoute
   AppAppNotificacoesRoute: typeof AppAppNotificacoesRoute
@@ -607,6 +627,7 @@ interface AppAppRouteChildren {
 
 const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppAtendimentoRoute: AppAppAtendimentoRoute,
+  AppAppAuditoriaRoute: AppAppAuditoriaRoute,
   AppAppContaRoute: AppAppContaRoute,
   AppAppFilasRoute: AppAppFilasRoute,
   AppAppNotificacoesRoute: AppAppNotificacoesRoute,

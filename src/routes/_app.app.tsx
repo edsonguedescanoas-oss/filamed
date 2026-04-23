@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useLocation, redirect } from "@tanstack/react-router";
-import { LayoutDashboard, ListOrdered, Users, Ticket, Stethoscope, Volume2, BarChart3 } from "lucide-react";
+import { LayoutDashboard, ListOrdered, Users, Ticket, Stethoscope, Volume2, BarChart3, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { allowedRoutesFor, canAccessRoute } from "@/lib/permissions";
@@ -30,6 +30,7 @@ const NAV = [
   { to: "/app/voz", label: "Voz", icon: Volume2, exact: false },
   { to: "/app/notificacoes", label: "Notificações", icon: Ticket, exact: false }, // Use a proper icon later
   { to: "/app/relatorios", label: "Relatórios", icon: BarChart3, exact: false },
+  { to: "/app/auditoria", label: "Auditoria", icon: ShieldCheck, exact: false },
 ] as const;
 
 function AppShell() {

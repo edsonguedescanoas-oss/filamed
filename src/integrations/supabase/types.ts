@@ -562,6 +562,7 @@ export type Database = {
         Row: {
           codigo: string
           created_at: string
+          criado_por: string | null
           fila_id: string
           finalizada_em: string | null
           id: string
@@ -578,6 +579,7 @@ export type Database = {
         Insert: {
           codigo: string
           created_at?: string
+          criado_por?: string | null
           fila_id: string
           finalizada_em?: string | null
           id?: string
@@ -594,6 +596,7 @@ export type Database = {
         Update: {
           codigo?: string
           created_at?: string
+          criado_por?: string | null
           fila_id?: string
           finalizada_em?: string | null
           id?: string
@@ -608,6 +611,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "senhas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "senhas_fila_id_fkey"
             columns: ["fila_id"]
@@ -1036,6 +1046,7 @@ export type Database = {
         Returns: {
           codigo: string
           created_at: string
+          criado_por: string | null
           fila_id: string
           finalizada_em: string | null
           id: string
