@@ -15,7 +15,9 @@ import {
   Loader2, 
   AlertCircle,
   Settings2,
-  Monitor
+  Monitor,
+  Maximize2,
+  Contrast
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
@@ -30,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 
 type Props = {
   open: boolean;
