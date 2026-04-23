@@ -477,7 +477,8 @@ function AdminAuditoriaPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Trilha de eventos</CardTitle>
           <CardDescription>
-            Ordenado do mais recente para o mais antigo. Clique para ver os detalhes do payload.
+            Ordenado do mais recente para o mais antigo. Clique para ver os detalhes do payload. A
+            lista carrega mais registros automaticamente conforme você rola.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -490,63 +491,112 @@ function AdminAuditoriaPage() {
               Nenhum evento encontrado para os filtros selecionados.
             </div>
           ) : (
-            <ol className="divide-y divide-border">
-              {eventos.map((ev) => {
-                const meta = entidadeMeta(ev.entidade, ev.acao);
-                const Icon = meta.icon;
-                const isOpen = expanded.has(ev.id);
-                const hasPayload = !!(ev.dados_antes || ev.dados_depois);
-                return (
-                  <li key={ev.id} className="py-3">
-                    <button
-                      type="button"
-                      onClick={() => hasPayload && toggle(ev.id)}
-                      className={`flex w-full items-start gap-3 text-left ${
-                        hasPayload ? "cursor-pointer" : "cursor-default"
-                      }`}
+            <div
+              ref={scrollRef}
+              className="relative max-h-[70vh] min-h-[400px] overflow-auto rounded-md border border-border"
+            >
+              <div
+                style={{
+                  height: `${virtualizer.getTotalSize()}px`,
+                  width: "100%",
+                  position: "relative",
+                }}
+              >
+                {virtualItems.map((vRow) => {
+                  const isSentinel = vRow.index >= eventos.length;
+                  return (
+                    <div
+                      key={vRow.key}
+                      data-index={vRow.index}
+                      ref={virtualizer.measureElement}
+                      className="absolute left-0 top-0 w-full border-b border-border last:border-b-0"
+                      style={{ transform: `translateY(${vRow.start}px)` }}
                     >
-                      <div
-                        className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline" className={meta.tone}>
-                            {meta.label}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{fmtDateTime(ev.created_at)}</span>
-                        </div>
-                        <p className="mt-1 text-sm font-medium leading-snug">{ev.resumo}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                          {ev.unidade_nome && (
-                            <span className="inline-flex items-center gap-1">
-                              <Building2 className="h-3 w-3" />
-                              {ev.unidade_nome}
-                            </span>
+                      {isSentinel ? (
+                        <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+                          {hasMore ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Carregando mais eventos…
+                            </>
+                          ) : (
+                            <span>Fim da lista</span>
                           )}
-                          <span className="inline-flex items-center gap-1">
-                            <UserIcon className="h-3 w-3" />
-                            {ev.ator_nome ?? (ev.ator_id ? "Usuário" : "Sistema")}
-                          </span>
                         </div>
-                      </div>
-                      {hasPayload && (
-                        <span className="mt-1 text-muted-foreground">
-                          {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </span>
-                      )}
-                    </button>
+                      ) : (
+                        (() => {
+                          const ev = eventos[vRow.index];
+                          const meta = entidadeMeta(ev.entidade, ev.acao);
+                          const Icon = meta.icon;
+                          const isOpen = expanded.has(ev.id);
+                          const hasPayload = !!(ev.dados_antes || ev.dados_depois);
+                          return (
+                            <div className="px-3 py-3">
+                              <button
+                                type="button"
+                                onClick={() => hasPayload && toggle(ev.id)}
+                                className={`flex w-full items-start gap-3 text-left ${
+                                  hasPayload ? "cursor-pointer" : "cursor-default"
+                                }`}
+                              >
+                                <div
+                                  className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}
+                                >
+                                  <Icon className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline" className={meta.tone}>
+                                      {meta.label}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                      {fmtDateTime(ev.created_at)}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-sm font-medium leading-snug">
+                                    {ev.resumo}
+                                  </p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                    {ev.unidade_nome && (
+                                      <span className="inline-flex items-center gap-1">
+                                        <Building2 className="h-3 w-3" />
+                                        {ev.unidade_nome}
+                                      </span>
+                                    )}
+                                    <span className="inline-flex items-center gap-1">
+                                      <UserIcon className="h-3 w-3" />
+                                      {ev.ator_nome ?? (ev.ator_id ? "Usuário" : "Sistema")}
+                                    </span>
+                                  </div>
+                                </div>
+                                {hasPayload && (
+                                  <span className="mt-1 text-muted-foreground">
+                                    {isOpen ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
+                                    )}
+                                  </span>
+                                )}
+                              </button>
 
-                    {isOpen && hasPayload && (
-                      <div className="mt-3 ml-12">
-                        <AuditoriaDiff before={ev.dados_antes} after={ev.dados_depois} />
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
+                              {isOpen && hasPayload && (
+                                <div className="mt-3 ml-12">
+                                  <AuditoriaDiff
+                                    before={ev.dados_antes}
+                                    after={ev.dados_depois}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
