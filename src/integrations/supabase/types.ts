@@ -274,6 +274,7 @@ export type Database = {
           nome: string
           ordem: number
           prefixo_senha: string
+          tempo_espera_estimado: number | null
           tipo: Database["public"]["Enums"]["fila_tipo"]
           unidade_id: string
           updated_at: string
@@ -287,6 +288,7 @@ export type Database = {
           nome: string
           ordem?: number
           prefixo_senha: string
+          tempo_espera_estimado?: number | null
           tipo: Database["public"]["Enums"]["fila_tipo"]
           unidade_id: string
           updated_at?: string
@@ -300,6 +302,7 @@ export type Database = {
           nome?: string
           ordem?: number
           prefixo_senha?: string
+          tempo_espera_estimado?: number | null
           tipo?: Database["public"]["Enums"]["fila_tipo"]
           unidade_id?: string
           updated_at?: string

@@ -1,7 +1,8 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, QrCode as QrIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { QrCode } from "@/components/qr-code";
 
 type SenhaStatus =
   | "aguardando"
@@ -22,9 +23,10 @@ type SenhaPub = {
   updated_at: string;
 };
 
-type FilaPub = { id: string; nome: string; cor: string | null };
+type FilaPub = { id: string; nome: string; cor: string | null; tempo_espera_estimado: number };
 type UnidadePub = { id: string; nome: string; slug: string };
 type ChamadaPub = { id: string; destino: string; created_at: string };
+type VisualPub = { logo_url: string | null };
 
 export const Route = createFileRoute("/s/$token")({
   head: () => ({
@@ -42,6 +44,7 @@ function PublicSenhaPage() {
   const [senha, setSenha] = useState<SenhaPub | null>(null);
   const [fila, setFila] = useState<FilaPub | null>(null);
   const [unidade, setUnidade] = useState<UnidadePub | null>(null);
+  const [visual, setVisual] = useState<VisualPub | null>(null);
   const [chamada, setChamada] = useState<ChamadaPub | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,9 +65,10 @@ function PublicSenhaPage() {
       }
       setSenha(data as SenhaPub);
 
-      const [fRes, uRows, cRes] = await Promise.all([
-        supabase.from("filas").select("id,nome,cor").eq("id", data.fila_id).maybeSingle(),
+      const [fRes, uRows, vRes, cRes] = await Promise.all([
+        supabase.from("filas").select("id,nome,cor,tempo_espera_estimado").eq("id", data.fila_id).maybeSingle(),
         supabase.rpc("get_unidades_publicas"),
+        supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", data.unidade_id).maybeSingle(),
         // chamadas dos últimos 60s da unidade — filtramos pela senha no cliente
         supabase.rpc("get_chamadas_recentes", { _unidade_id: data.unidade_id }),
       ]);
@@ -75,6 +79,7 @@ function PublicSenhaPage() {
       const cMatch = cList.find((c) => (c as unknown as { senha_id: string }).senha_id === data.id) ?? null;
       setFila((fRes.data as FilaPub) ?? null);
       setUnidade(u);
+      setVisual(vRes.data ?? null);
       setChamada(cMatch);
       setLoading(false);
     })();
@@ -167,13 +172,21 @@ function PublicSenhaPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8">
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto max-w-md flex flex-col min-h-full">
+        {visual?.logo_url && (
+          <div className="mb-6 flex justify-center">
+            <img src={visual.logo_url} alt="Logo" className="max-h-16 w-auto object-contain" />
+          </div>
+        )}
+        
         {unidade && (
           <div className="text-center text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">
             {unidade.nome}
           </div>
         )}
-        <h1 className="text-center text-sm text-slate-300 mb-6">Acompanhe sua senha</h1>
+        <h1 className="text-center text-sm text-slate-300 mb-6 font-display font-medium tracking-wide">
+          Acompanhe sua senha em tempo real
+        </h1>
 
         <div
           className={`rounded-3xl border p-8 text-center shadow-xl ${
@@ -232,11 +245,22 @@ function PublicSenhaPage() {
                   <span className="font-medium">Aguardando chamada</span>
                 </div>
                 {aguardandoNaFrente !== null && (
-                  <p className="text-sm text-slate-400">
-                    {aguardandoNaFrente === 0
-                      ? "Você é o próximo da fila."
-                      : `${aguardandoNaFrente} ${aguardandoNaFrente === 1 ? "pessoa" : "pessoas"} na sua frente`}
-                  </p>
+                  <div className="space-y-3">
+                    <p className="text-sm text-slate-400">
+                      {aguardandoNaFrente === 0
+                        ? "Você é o próximo da fila."
+                        : `${aguardandoNaFrente} ${aguardandoNaFrente === 1 ? "pessoa" : "pessoas"} na sua frente`}
+                    </p>
+                    
+                    {fila?.tempo_espera_estimado && aguardandoNaFrente > 0 && (
+                      <div className="rounded-2xl bg-white/5 border border-white/10 p-4 mt-4">
+                        <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Expectativa de espera</div>
+                        <div className="text-2xl font-display font-bold text-primary">
+                          ~{aguardandoNaFrente * fila.tempo_espera_estimado} min
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -259,8 +283,21 @@ function PublicSenhaPage() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Esta página atualiza automaticamente. Mantenha-a aberta.
+        <div className="mt-10 flex flex-col items-center">
+          <div className="bg-white p-3 rounded-2xl shadow-xl">
+            <QrCode 
+              value={typeof window !== 'undefined' ? window.location.href : ''} 
+              size={120} 
+              className="mx-auto"
+            />
+          </div>
+          <p className="mt-4 text-center text-xs text-slate-500 max-w-[200px]">
+            Escaneie o QR Code ou mantenha esta página aberta para acompanhar sua chamada.
+          </p>
+        </div>
+
+        <p className="mt-auto pt-10 pb-6 text-center text-[10px] uppercase tracking-widest text-slate-600">
+          Powered by FilaMed
         </p>
       </div>
     </div>

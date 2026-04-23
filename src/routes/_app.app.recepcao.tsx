@@ -13,7 +13,10 @@ import {
   UserPlus,
   Tv,
   Trash2,
+  MessageSquare,
+  Share2,
 } from "lucide-react";
+import { TicketShareDialog } from "@/components/ticket-share-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -85,6 +88,21 @@ const PRIORIDADES: { value: Prioridade; label: string; ring: string; badge: stri
 
 const onlyDigits = (v: string) => v.replace(/\D/g, "");
 
+function maskTelefone(v: string): string {
+  const digits = onlyDigits(v);
+  let d = digits;
+  if (d.length > 0 && !d.startsWith("55") && d.length <= 11) {
+    d = "55" + d;
+  }
+  d = d.slice(0, 13);
+  if (d.length <= 4) return d;
+  if (d.length <= 6) return d.replace(/(\d{2})(\d{2})/, "$1 $2");
+  if (d.length <= 11) {
+    return d.replace(/(\d{2})(\d{2})(\d{1,})/, "$1 $2 $3");
+  }
+  return d.replace(/(\d{2})(\d{2})(\d{5})(\d{1,})/, "$1 $2 $3-$4");
+}
+
 function RecepcaoPage() {
   const { profile, hasAnyRole } = useAuth();
   const unidadeId = profile?.unidade_id;
@@ -103,7 +121,7 @@ function RecepcaoPage() {
 
   // emissão + lista
   const [emitting, setEmitting] = useState(false);
-  const [recentes, setRecentes] = useState<(Senha & { paciente?: { nome_completo: string } | null })[]>([]);
+  const [recentes, setRecentes] = useState<(Senha & { paciente?: { nome_completo: string; telefone: string | null } | null })[]>([]);
   const [loadingRecentes, setLoadingRecentes] = useState(true);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [unidadeSlug, setUnidadeSlug] = useState<string | null>(null);
@@ -114,6 +132,15 @@ function RecepcaoPage() {
   const [novoCpf, setNovoCpf] = useState("");
   const [novoTelefone, setNovoTelefone] = useState("");
   const [savingNovo, setSavingNovo] = useState(false);
+
+  // compartilhamento
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareData, setShareData] = useState<{
+    senha: { codigo: string; token_publico: string };
+    paciente: { nome_completo: string; telefone: string | null };
+  } | null>(null);
+  const [visualConfig, setVisualConfig] = useState<{ logo_url: string | null } | null>(null);
+  const [unidadeNome, setUnidadeNome] = useState<string | null>(null);
 
   const fetchFilas = async () => {
     if (!unidadeId) return;
@@ -138,7 +165,7 @@ function RecepcaoPage() {
     setLoadingRecentes(true);
     const { data, error } = await supabase
       .from("senhas")
-      .select("*, paciente:pacientes(nome_completo)")
+      .select("*, paciente:pacientes(nome_completo, telefone)")
       .eq("unidade_id", unidadeId)
       .order("created_at", { ascending: false })
       .limit(15);
@@ -155,12 +182,13 @@ function RecepcaoPage() {
     void fetchRecentes();
     if (unidadeId) {
       void (async () => {
-        const { data } = await supabase
-          .from("unidades")
-          .select("slug")
-          .eq("id", unidadeId)
-          .maybeSingle();
-        setUnidadeSlug(data?.slug ?? null);
+        const [uRes, vRes] = await Promise.all([
+          supabase.from("unidades").select("slug, nome").eq("id", unidadeId).maybeSingle(),
+          supabase.from("tv_visual_config").select("logo_url").eq("unidade_id", unidadeId).maybeSingle(),
+        ]);
+        setUnidadeSlug(uRes.data?.slug ?? null);
+        setUnidadeNome(uRes.data?.nome ?? null);
+        setVisualConfig(vRes.data ?? null);
       })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,6 +259,16 @@ function RecepcaoPage() {
       toast.success(`Senha ${senha.codigo} emitida`, {
         description: `Vinculada a ${pacienteSelecionado.nome_completo}`,
       });
+
+      // Abre modal de compartilhamento
+      setShareData({
+        senha: { codigo: senha.codigo, token_publico: senha.token_publico! },
+        paciente: {
+          nome_completo: pacienteSelecionado.nome_completo,
+          telefone: pacienteSelecionado.telefone,
+        },
+      });
+      setShareOpen(true);
       // limpa paciente, mantém fila/prioridade para próximo atendimento
       setPacienteSelecionado(null);
       setPacienteQuery("");
@@ -686,19 +724,38 @@ function RecepcaoPage() {
                         {format(new Date(s.created_at), "HH:mm:ss", { locale: ptBR })}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => void copyToken(s.token_publico)}
-                      aria-label="Copiar token público"
-                      title="Copiar token público (link do paciente)"
-                    >
-                      {copiedToken === s.token_publico ? (
-                        <Check className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShareData({
+                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            paciente: {
+                              nome_completo: s.paciente?.nome_completo ?? "Sem nome",
+                              telefone: s.paciente?.telefone ?? null,
+                            },
+                          });
+                          setShareOpen(true);
+                        }}
+                        title="Compartilhar senha"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => void copyToken(s.token_publico)}
+                        aria-label="Copiar token público"
+                        title="Copiar link de acompanhamento"
+                      >
+                        {copiedToken === s.token_publico ? (
+                          <Check className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </li>
                 );
               })}
@@ -745,8 +802,8 @@ function RecepcaoPage() {
                 <Input
                   id="novo-tel"
                   value={novoTelefone}
-                  onChange={(e) => setNovoTelefone(e.target.value)}
-                  placeholder="Opcional"
+                  onChange={(e) => setNovoTelefone(maskTelefone(e.target.value))}
+                  placeholder="55 XX XXXXX-XXXX"
                   inputMode="tel"
                 />
               </div>
@@ -769,6 +826,15 @@ function RecepcaoPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Modal de compartilhamento */}
+      <TicketShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        senha={shareData?.senha ?? null}
+        paciente={shareData?.paciente ?? null}
+        unidadeNome={unidadeNome}
+        logoUrl={visualConfig?.logo_url}
+      />
     </div>
   );
 }
