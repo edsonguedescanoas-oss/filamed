@@ -751,6 +751,19 @@ function RecepcaoPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => handleWhatsApp(s)}
+                        className={cn(
+                          "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50",
+                          !s.paciente?.telefone && "opacity-50 cursor-not-allowed"
+                        )}
+                        title={s.paciente?.telefone ? "Enviar via WhatsApp" : "Paciente sem telefone"}
+                        disabled={!s.paciente?.telefone}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           setShareData({
                             senha: { codigo: s.codigo, token_publico: s.token_publico! },
