@@ -43,7 +43,7 @@ serve(async (req) => {
       config = testConfig;
       finalUnidadeId = testUnidadeId;
 
-      if (!config && testUnidadeId) {
+      if ((!config || !config.api_url) && testUnidadeId) {
         const { data: unidade } = await supabaseClient
           .from("unidades")
           .select("whatsapp_config")
