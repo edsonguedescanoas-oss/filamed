@@ -21,11 +21,12 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
     "/app/notificacoes",
     "/app/relatorios",
     "/app/auditoria",
+    "/app/usuarios",
   ],
   recepcao: ["/app", "/app/recepcao", "/app/guiche", "/app/filas", "/app/pacientes", "/app/notificacoes"],
   medico: ["/app", "/app/atendimento", "/app/pacientes"],
   enfermeiro: ["/app", "/app/atendimento", "/app/pacientes"],
-  gestor: ["/app", "/app/filas", "/app/pontos", "/app/pacientes", "/app/notificacoes", "/app/relatorios", "/app/auditoria"],
+  gestor: ["/app", "/app/filas", "/app/pontos", "/app/pacientes", "/app/notificacoes", "/app/relatorios", "/app/auditoria", "/app/usuarios"],
   super_admin: [], // super_admin opera em /admin, não em /app
 };
 

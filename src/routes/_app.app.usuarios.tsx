@@ -1,0 +1,277 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Eye, Loader2, Save, ShieldCheck, Users, X } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RoleGuard } from "@/components/role-guard";
+import { useAuth, type AppRole } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { ROLE_ROUTES } from "@/lib/permissions";
+import { cn } from "@/lib/utils";
+
+type UnidadeRole = Exclude<AppRole, "super_admin">;
+
+type UsuarioRow = {
+  id: string;
+  nome_completo: string;
+  telefone: string | null;
+  ativo: boolean;
+  role: UnidadeRole | null;
+};
+
+const ROLE_LABELS: Record<UnidadeRole, string> = {
+  admin: "Admin",
+  gestor: "Gestor",
+  recepcao: "Recepção",
+  medico: "Médico",
+  enfermeiro: "Enfermeiro",
+};
+
+const ROLE_HELP: Record<UnidadeRole, string> = {
+  admin: "Configura unidade, usuários, filas, canais e opera todo o fluxo.",
+  gestor: "Acompanha gestão, relatórios, auditoria, filas, pontos e notificações.",
+  recepcao: "Gera senhas, faz pré-atendimento, guichê, pacientes e notificações.",
+  medico: "Atende pacientes e consulta histórico clínico liberado.",
+  enfermeiro: "Atende pacientes e consulta histórico clínico liberado.",
+};
+
+const ASSIGNABLE_ROLES: UnidadeRole[] = ["admin", "gestor", "recepcao", "medico", "enfermeiro"];
+
+const MODULES = [
+  { label: "Dashboard", path: "/app" },
+  { label: "Recepção", path: "/app/recepcao" },
+  { label: "Guichê", path: "/app/guiche" },
+  { label: "Atendimento", path: "/app/atendimento" },
+  { label: "Filas", path: "/app/filas" },
+  { label: "Pontos", path: "/app/pontos" },
+  { label: "Pacientes", path: "/app/pacientes" },
+  { label: "Voz", path: "/app/voz" },
+  { label: "TV / Painel", path: "/app/tv" },
+  { label: "Notificações", path: "/app/notificacoes" },
+  { label: "Relatórios", path: "/app/relatorios" },
+  { label: "Auditoria", path: "/app/auditoria" },
+  { label: "Usuários", path: "/app/usuarios" },
+];
+
+export const Route = createFileRoute("/_app/app/usuarios")({
+  head: () => ({ meta: [{ title: "Usuários e permissões — FilaMed" }] }),
+  component: () => (
+    <RoleGuard allow={["admin", "gestor"]} path="/app/usuarios">
+      <UsuariosPage />
+    </RoleGuard>
+  ),
+});
+
+function UsuariosPage() {
+  const { profile, roles } = useAuth();
+  const unidadeId = profile?.unidade_id ?? null;
+  const canManage = roles.includes("admin");
+  const [usuarios, setUsuarios] = useState<UsuarioRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingUserId, setSavingUserId] = useState<string | null>(null);
+
+  const carregarUsuarios = async () => {
+    if (!unidadeId) return;
+    setLoading(true);
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, nome_completo, telefone, ativo")
+        .eq("unidade_id", unidadeId)
+        .order("nome_completo"),
+      supabase.from("user_roles").select("user_id, role").eq("unidade_id", unidadeId),
+    ]);
+
+    if (profilesRes.error || rolesRes.error) {
+      toast.error(profilesRes.error?.message || rolesRes.error?.message || "Erro ao carregar usuários");
+      setLoading(false);
+      return;
+    }
+
+    const roleByUser = new Map<string, UnidadeRole>();
+    for (const item of rolesRes.data ?? []) {
+      if (item.role !== "super_admin") roleByUser.set(item.user_id, item.role as UnidadeRole);
+    }
+
+    setUsuarios(
+      (profilesRes.data ?? []).map((u) => ({
+        ...u,
+        role: roleByUser.get(u.id) ?? null,
+      })),
+    );
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void carregarUsuarios();
+  }, [unidadeId]);
+
+  const totals = useMemo(() => {
+    return ASSIGNABLE_ROLES.map((role) => ({
+      role,
+      total: usuarios.filter((u) => u.role === role).length,
+    }));
+  }, [usuarios]);
+
+  const alterarRole = async (usuario: UsuarioRow, role: UnidadeRole) => {
+    if (!unidadeId || !canManage || usuario.id === profile?.id) return;
+    setSavingUserId(usuario.id);
+    try {
+      const { error: deleteError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("unidade_id", unidadeId)
+        .eq("user_id", usuario.id)
+        .neq("role", "super_admin");
+      if (deleteError) throw deleteError;
+
+      const { error: insertError } = await supabase.from("user_roles").insert({
+        unidade_id: unidadeId,
+        user_id: usuario.id,
+        role,
+      });
+      if (insertError) throw insertError;
+
+      setUsuarios((prev) => prev.map((u) => (u.id === usuario.id ? { ...u, role } : u)));
+      toast.success("Permissão atualizada");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Não foi possível atualizar a permissão";
+      toast.error(msg);
+    } finally {
+      setSavingUserId(null);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 space-y-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Controle de acesso</p>
+          <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">Usuários e permissões</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Defina o perfil de cada pessoa e acompanhe quais módulos ficam liberados para admin, gestor e operadores.
+          </p>
+        </div>
+        <Badge variant={canManage ? "default" : "outline"} className="w-fit gap-1.5">
+          {canManage ? <ShieldCheck className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {canManage ? "Edição liberada" : "Somente leitura"}
+        </Badge>
+      </header>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {totals.map(({ role, total }) => (
+          <Card key={role}>
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">{ROLE_LABELS[role]}</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{total}</p>
+                </div>
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Matriz de permissões</CardTitle>
+          <CardDescription>Operadores incluem recepção, médico e enfermeiro, cada um com acesso ao seu fluxo.</CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="py-3 pr-4 font-semibold">Módulo</th>
+                {ASSIGNABLE_ROLES.map((role) => (
+                  <th key={role} className="px-3 py-3 text-center font-semibold">{ROLE_LABELS[role]}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {MODULES.map((mod) => (
+                <tr key={mod.path} className="border-b border-border/60 last:border-0">
+                  <td className="py-3 pr-4 font-medium">{mod.label}</td>
+                  {ASSIGNABLE_ROLES.map((role) => {
+                    const allowed = ROLE_ROUTES[role].includes(mod.path);
+                    return (
+                      <td key={role} className="px-3 py-3 text-center">
+                        {allowed ? (
+                          <Check className="mx-auto h-4 w-4 text-primary" />
+                        ) : (
+                          <X className="mx-auto h-4 w-4 text-muted-foreground/50" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Usuários da unidade</CardTitle>
+          <CardDescription>Admin pode alterar perfis. Gestor apenas visualiza a matriz e a distribuição.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : usuarios.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted-foreground">
+              Nenhum usuário encontrado nesta unidade.
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {usuarios.map((usuario) => {
+                const currentRole = usuario.role ?? "recepcao";
+                const saving = savingUserId === usuario.id;
+                const locked = !canManage || usuario.id === profile?.id;
+                return (
+                  <div key={usuario.id} className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{usuario.nome_completo}</p>
+                        <Badge variant="outline" className={cn("text-[10px]", usuario.ativo ? "" : "text-destructive")}>
+                          {usuario.ativo ? "Ativo" : "Inativo"}
+                        </Badge>
+                        {usuario.id === profile?.id && <Badge variant="secondary" className="text-[10px]">Você</Badge>}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{ROLE_HELP[currentRole]}</p>
+                      {usuario.telefone && <p className="mt-0.5 text-xs text-muted-foreground">{usuario.telefone}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 sm:w-[250px]">
+                      <Select
+                        value={currentRole}
+                        disabled={locked || saving}
+                        onValueChange={(value) => void alterarRole(usuario, value as UnidadeRole)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASSIGNABLE_ROLES.map((role) => (
+                            <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {saving && <Save className="h-4 w-4 animate-pulse text-primary" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
