@@ -109,6 +109,7 @@ function ContaPage() {
     logo_url: "",
     unidade_nome: "",
     rodape: "",
+    google_review_url: "",
   });
   const [savingTicket, setSavingTicket] = useState(false);
 
@@ -163,7 +164,7 @@ function ContaPage() {
     void (async () => {
       const { data, error } = await supabase
         .from("unidades")
-        .select("nome, ticket_logo_url, ticket_unidade_nome, ticket_rodape")
+          .select("nome, ticket_logo_url, ticket_unidade_nome, ticket_rodape, google_review_url")
         .eq("id", unidadeId)
         .single();
       if (cancel) return;
@@ -172,6 +173,7 @@ function ContaPage() {
           logo_url: data.ticket_logo_url || "",
           unidade_nome: data.ticket_unidade_nome || data.nome || "",
           rodape: data.ticket_rodape || "",
+            google_review_url: (data as { google_review_url?: string | null }).google_review_url || "",
         });
       }
     })();
@@ -191,7 +193,8 @@ function ContaPage() {
           ticket_logo_url: ticketConfig.logo_url || null,
           ticket_unidade_nome: ticketConfig.unidade_nome || null,
           ticket_rodape: ticketConfig.rodape || null,
-        })
+          google_review_url: ticketConfig.google_review_url || null,
+        } as never)
         .eq("id", profile.unidade_id);
       if (error) throw error;
       toast.success("Configurações do ticket salvas!");
@@ -420,6 +423,15 @@ function ContaPage() {
                     className="min-h-[80px]"
                     value={ticketConfig.rodape}
                     onChange={(e) => setTicketConfig({ ...ticketConfig, rodape: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="google_review_url">Link de avaliação Google</Label>
+                  <Input
+                    id="google_review_url"
+                    placeholder="https://g.page/r/.../review"
+                    value={ticketConfig.google_review_url}
+                    onChange={(e) => setTicketConfig({ ...ticketConfig, google_review_url: e.target.value })}
                   />
                 </div>
                 <Button 

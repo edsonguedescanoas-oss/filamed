@@ -459,6 +459,13 @@ function AtendimentoPage() {
           ? `${finalizar.senha.codigo} finalizada (${formatDur(dur)}). Nova senha gerada no Guichê para retorno.`
           : `${finalizar.senha.codigo} finalizada (${formatDur(dur)}).`,
       );
+      void supabase.functions.invoke("wa-duck-notify", {
+        body: {
+          senha_id: finalizar.senha.id,
+          tipo: "finalizacao",
+          idempotency_key: `finalizacao_${finalizar.senha.id}_${Date.now()}`,
+        },
+      });
       setAtendimentoAtivo(null);
       setFinalizar(null);
       setObservacoes("");

@@ -277,6 +277,14 @@ function GuichePage() {
       toast.success(`Senha ${novaSenha.codigo} criada`, {
         description: `Encaminhada para ${filaDest?.nome ?? "fila clínica"}`,
       });
+      void supabase.functions.invoke("wa-duck-notify", {
+        body: {
+          senha_id: novaSenha.id,
+          tipo: "encaminhamento",
+          mesa_nome: filaDest?.nome ?? "atendimento",
+          idempotency_key: `encaminhamento_${novaSenha.id}_${novaSenha.updated_at}`,
+        },
+      });
       setChamada(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Falha ao encaminhar.");
