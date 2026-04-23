@@ -993,6 +993,12 @@ function RecepcaoPage() {
           setNovoOpen(open);
           if (!open) {
             setNovoErrors({});
+            setNovoNome("");
+            setNovoCpf("");
+            setNovoTelefone("");
+            setNovoIdentificacaoTipo("rg");
+            setNovoIdentificacaoNumero("");
+            setNovoDocumento(null);
           }
         }}
       >
