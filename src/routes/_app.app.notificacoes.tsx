@@ -1,11 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessageCircle, Send, Bell, Phone, ArrowRight, ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
+import { 
+  MessageCircle, 
+  Send, 
+  Bell, 
+  Phone, 
+  ArrowRight, 
+  ExternalLink,
+  Save,
+  Loader2,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { RoleGuard } from "@/components/role-guard";
 import { RecursoGate } from "@/components/recurso-gate";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/app/notificacoes")({
   head: () => ({ meta: [{ title: "Notificações WhatsApp — FilaMed" }] }),
@@ -53,93 +68,198 @@ function NotificacoesPage() {
 }
 
 function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
+  const [config, setConfig] = useState({
+    api_url: "",
+    api_key: "",
+    instance_id: "",
+  });
+  const [loadingConfig, setLoadingConfig] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(true);
+
+  const fetchConfig = async () => {
+    if (!unidadeId) return;
+    setLoadingConfig(true);
+    const { data, error } = await supabase
+      .from("unidades")
+      .select("whatsapp_config")
+      .eq("id", unidadeId)
+      .single();
+
+    if (!error && data?.whatsapp_config) {
+      const c = data.whatsapp_config as any;
+      setConfig({
+        api_url: c.api_url || "",
+        api_key: c.api_key || "",
+        instance_id: c.instance_id || "",
+      });
+    }
+    setLoadingConfig(false);
+  };
+
+  const fetchLogs = async () => {
+    if (!unidadeId) return;
+    setLoadingLogs(true);
+    const { data, error } = await supabase
+      .from("notificacoes_log")
+      .select("*, paciente:pacientes(nome_completo), senha:senhas(codigo)")
+      .eq("unidade_id", unidadeId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (!error) setLogs(data || []);
+    setLoadingLogs(false);
+  };
+
+  useEffect(() => {
+    void fetchConfig();
+    void fetchLogs();
+  }, [unidadeId]);
+
+  const handleSave = async () => {
+    if (!unidadeId) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("unidades")
+        .update({ whatsapp_config: config })
+        .eq("id", unidadeId);
+      if (error) throw error;
+      toast.success("Configuração do WADuck salva!");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!unidadeId) return null;
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Phone className="h-5 w-5 text-primary" />
-            Conexão WhatsApp
-            <Badge variant="outline" className="ml-2 text-[10px]">
-              Não conectado
+            Configuração WADuck
+            <Badge variant="outline" className={cn("ml-2 text-[10px]", config.api_url ? "text-emerald-500 border-emerald-500/20" : "")}>
+              {config.api_url ? "Configurado" : "Não configurado"}
             </Badge>
           </CardTitle>
           <CardDescription>
-            Conecte um número de WhatsApp Business para começar a enviar notificações automáticas
-            para os pacientes.
+            Insira os dados da sua API WADuck para habilitar o envio automático de senhas.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center">
-            <Bell className="mx-auto h-8 w-8 text-muted-foreground/60" />
-            <p className="mt-3 text-sm font-medium">Nenhum número conectado ainda</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Conecte via WhatsApp Business API (Meta) ou via gateway parceiro.
-            </p>
-            <Button className="mt-4" asChild>
-              <a
-                href="mailto:contato@filamed.app?subject=Conectar%20WhatsApp"
-                rel="noopener"
+          {loadingConfig ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="api_url">URL da API</Label>
+                  <Input
+                    id="api_url"
+                    placeholder="https://api.waduck.com.br"
+                    value={config.api_url}
+                    onChange={(e) => setConfig({ ...config, api_url: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="instance_id">ID da Instância</Label>
+                  <Input
+                    id="instance_id"
+                    placeholder="Sua instância"
+                    value={config.instance_id}
+                    onChange={(e) => setConfig({ ...config, instance_id: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="api_key">Token (API Key)</Label>
+                <Input
+                  id="api_key"
+                  type="password"
+                  placeholder="Seu token WADuck"
+                  value={config.api_key}
+                  onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
+                />
+              </div>
+              <Button
+                className="w-full gap-2 bg-gradient-primary"
+                onClick={handleSave}
+                disabled={saving}
               >
-                Falar com suporte para conectar
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
-          </div>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Salvar Configurações
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Send className="h-5 w-5 text-primary" />
-            Templates de mensagem
-          </CardTitle>
-          <CardDescription>
-            Pré-visualize as mensagens que serão enviadas. Edição completa em breve.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <TemplatePreview
-            titulo="Próxima senha"
-            evento="Faltam 2 senhas para o paciente"
-            mensagem="Olá {{nome}}, sua senha {{codigo}} está próxima — faltam 2 pacientes na sua frente. Volte para a recepção em até 5 minutos."
-          />
-          <TemplatePreview
-            titulo="Chamada"
-            evento="Quando a senha é chamada"
-            mensagem="Olá {{nome}}, sua senha {{codigo}} foi chamada agora — dirija-se ao(à) {{destino}}."
-          />
-          <TemplatePreview
-            titulo="Ausência"
-            evento="Após 5 min sem comparecer"
-            mensagem="Olá {{nome}}, sua senha {{codigo}} foi marcada como ausente. Procure a recepção para reagendar."
-          />
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Send className="h-5 w-5 text-primary" />
+              Templates Automáticos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <TemplatePreview
+              titulo="Senha Gerada"
+              evento="Enviado assim que o paciente recebe a senha"
+              mensagem="Olá {{nome}}, sua senha no estabelecimento é {{codigo}}. Tempo estimado: {{tempo}} min."
+            />
+            <TemplatePreview
+              titulo="Chamada (Em breve)"
+              evento="Quando a senha é chamada no painel"
+              mensagem="Olá {{nome}}, sua senha {{codigo}} foi chamada agora — dirija-se ao local indicado."
+            />
+          </CardContent>
+        </Card>
 
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="flex flex-col gap-3 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-semibold">Veja o histórico de envios</p>
-            <p className="text-sm text-muted-foreground">
-              Todas as mensagens enviadas ficam registradas para auditoria.
-            </p>
-          </div>
-          <Button variant="outline" disabled>
-            Ver auditoria
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </CardContent>
-      </Card>
-
-      <p className="text-center text-xs text-muted-foreground">
-        Precisa de ajuda?{" "}
-        <Link to="/app/conta" className="underline hover:text-foreground">
-          Ver detalhes do meu plano
-        </Link>
-      </p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bell className="h-5 w-5 text-primary" />
+              Últimos Envios
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {loadingLogs ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : logs.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-10">
+                Nenhum envio registrado.
+              </p>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className="flex items-center justify-between gap-3 text-xs border-b border-border/50 pb-2 last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{log.paciente?.nome_completo}</p>
+                    <p className="text-muted-foreground truncate">{log.mensagem}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <Badge variant={log.status === "sucesso" ? "outline" : "destructive"} className="text-[9px] px-1 h-4">
+                      {log.status}
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -154,18 +274,18 @@ function TemplatePreview({
   mensagem: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">{titulo}</p>
-          <p className="text-xs text-muted-foreground">{evento}</p>
+          <p className="text-[10px] text-muted-foreground">{evento}</p>
         </div>
-        <Badge variant="secondary" className="text-[10px]">
+        <Badge variant="secondary" className="text-[9px] h-4">
           Ativo
         </Badge>
       </div>
-      <div className="mt-3 rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
-        {mensagem}
+      <div className="mt-2 rounded-md border border-primary/20 bg-primary/5 px-2 py-1.5 text-[11px] leading-relaxed italic">
+        "{mensagem}"
       </div>
     </div>
   );

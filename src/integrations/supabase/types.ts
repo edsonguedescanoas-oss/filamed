@@ -561,6 +561,7 @@ export type Database = {
           posicao: number | null
           prioridade: Database["public"]["Enums"]["senha_prioridade"]
           status: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado: number | null
           token_publico: string
           unidade_id: string
           updated_at: string
@@ -576,6 +577,7 @@ export type Database = {
           posicao?: number | null
           prioridade?: Database["public"]["Enums"]["senha_prioridade"]
           status?: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado?: number | null
           token_publico?: string
           unidade_id: string
           updated_at?: string
@@ -591,6 +593,7 @@ export type Database = {
           posicao?: number | null
           prioridade?: Database["public"]["Enums"]["senha_prioridade"]
           status?: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado?: number | null
           token_publico?: string
           unidade_id?: string
           updated_at?: string
@@ -884,6 +887,7 @@ export type Database = {
           telefone: string | null
           trial_ends_at: string
           updated_at: string
+          whatsapp_config: Json | null
         }
         Insert: {
           assinatura_id?: string | null
@@ -898,6 +902,7 @@ export type Database = {
           telefone?: string | null
           trial_ends_at?: string
           updated_at?: string
+          whatsapp_config?: Json | null
         }
         Update: {
           assinatura_id?: string | null
@@ -912,6 +917,7 @@ export type Database = {
           telefone?: string | null
           trial_ends_at?: string
           updated_at?: string
+          whatsapp_config?: Json | null
         }
         Relationships: [
           {
@@ -1020,6 +1026,7 @@ export type Database = {
           posicao: number | null
           prioridade: Database["public"]["Enums"]["senha_prioridade"]
           status: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado: number | null
           token_publico: string
           unidade_id: string
           updated_at: string
