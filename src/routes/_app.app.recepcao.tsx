@@ -339,6 +339,19 @@ function RecepcaoPage() {
       toast.error("Falha ao copiar");
     }
   };
+342: 
+343:   const handleWhatsApp = (s: Senha & { paciente?: { nome_completo: string; telefone: string | null } | null }) => {
+344:     if (!s.paciente?.telefone) {
+345:       toast.error("Paciente sem telefone cadastrado");
+346:       return;
+347:     }
+348:     const publicUrl = `${window.location.origin}/s/${s.token_publico}`;
+349:     const tel = s.paciente.telefone.replace(/\D/g, "");
+350:     const text = encodeURIComponent(
+351:       `Olá ${s.paciente.nome_completo}, sua senha no ${unidadeTicketConfig?.nome || "nosso estabelecimento"} é: *${s.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
+352:     );
+353:     window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+354:   };
 
   const handleResetHistorico = async () => {
     if (!unidadeId) return;
