@@ -574,19 +574,22 @@ function RecepcaoPage() {
           {/* paciente (obrigatório) */}
           <div className="mt-5">
             <div className="mb-2 flex items-center justify-between">
-              <Label>
+              <Label className="text-sm font-semibold">
                 Paciente <span className="text-destructive">*</span>
               </Label>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setNovoNome(pacienteQuery.trim());
                   setNovoOpen(true);
                 }}
-                className="text-xs font-medium text-primary hover:underline inline-flex items-center gap-1"
+                className="h-8 gap-1.5 text-xs font-semibold text-primary border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
               >
-                <UserPlus className="h-3.5 w-3.5" /> Novo paciente
-              </button>
+                <UserPlus className="h-3.5 w-3.5" /> 
+                <span>Cadastro Rápido</span>
+              </Button>
             </div>
             {pacienteSelecionado ? (
               <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/5 p-3">
