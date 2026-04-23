@@ -64,9 +64,9 @@ function RecepcaoPage() {
 
   const [emitting, setEmitting] = useState(false);
   const [autoImprimir, setAutoImprimir] = useState(() => {
-    if (typeof window === "undefined") return true;
+    if (typeof window === "undefined") return false;
     const saved = localStorage.getItem("recepcao_auto_imprimir");
-    return saved !== null ? saved === "true" : true;
+    return saved !== null ? saved === "true" : false;
   });
 
   // Recentes
