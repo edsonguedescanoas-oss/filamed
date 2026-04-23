@@ -145,17 +145,9 @@ function AdminUnidadeDetalhes() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className={variant.className}>
-            {variant.label}
-          </Badge>
-          <Button asChild size="sm">
-            <Link to="/admin/unidades/$unidadeId/assinatura" params={{ unidadeId: unidade.id }}>
-              <CreditCard className="h-4 w-4" />
-              Gerenciar assinatura
-            </Link>
-          </Button>
-        </div>
+        <Badge variant="outline" className={variant.className}>
+          {variant.label}
+        </Badge>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

@@ -162,6 +162,48 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          acao: string
+          ator_id: string | null
+          ator_nome: string | null
+          created_at: string
+          dados_antes: Json | null
+          dados_depois: Json | null
+          entidade: string
+          entidade_id: string | null
+          id: string
+          resumo: string
+          unidade_id: string | null
+        }
+        Insert: {
+          acao: string
+          ator_id?: string | null
+          ator_nome?: string | null
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          entidade: string
+          entidade_id?: string | null
+          id?: string
+          resumo: string
+          unidade_id?: string | null
+        }
+        Update: {
+          acao?: string
+          ator_id?: string | null
+          ator_nome?: string | null
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          entidade?: string
+          entidade_id?: string | null
+          id?: string
+          resumo?: string
+          unidade_id?: string | null
+        }
+        Relationships: []
+      }
       chamadas: {
         Row: {
           chamado_por: string | null
@@ -1051,6 +1093,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _audit_ator_nome: { Args: { _user_id: string }; Returns: string }
       admin_alterar_plano_assinatura: {
         Args: {
           _ciclo?: Database["public"]["Enums"]["assinatura_ciclo"]
@@ -1103,6 +1146,29 @@ export type Database = {
           preco_mensal_centavos: number
           proximo_ciclo_em: string
           status: Database["public"]["Enums"]["assinatura_estado"]
+        }[]
+      }
+      admin_listar_auditoria: {
+        Args: {
+          _ate?: string
+          _desde?: string
+          _entidade?: string
+          _limite?: number
+          _unidade_id?: string
+        }
+        Returns: {
+          acao: string
+          ator_id: string
+          ator_nome: string
+          created_at: string
+          dados_antes: Json
+          dados_depois: Json
+          entidade: string
+          entidade_id: string
+          id: string
+          resumo: string
+          unidade_id: string
+          unidade_nome: string
         }[]
       }
       admin_listar_faturas_unidade: {

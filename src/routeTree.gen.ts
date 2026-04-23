@@ -39,8 +39,8 @@ import { Route as AppAppAuditoriaRouteImport } from './routes/_app.app.auditoria
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
+import { Route as AdminAdminAuditoriaRouteImport } from './routes/_admin.admin.auditoria'
 import { Route as AdminAdminUnidadesUnidadeIdRouteImport } from './routes/_admin.admin.unidades.$unidadeId'
-import { Route as AdminAdminUnidadesUnidadeIdAssinaturaRouteImport } from './routes/_admin.admin.unidades.$unidadeId.assinatura'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -190,17 +190,16 @@ const AdminAdminLogsRoute = AdminAdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminAuditoriaRoute = AdminAdminAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminUnidadesUnidadeIdRoute =
   AdminAdminUnidadesUnidadeIdRouteImport.update({
     id: '/unidades/$unidadeId',
     path: '/unidades/$unidadeId',
     getParentRoute: () => AdminAdminRoute,
-  } as any)
-const AdminAdminUnidadesUnidadeIdAssinaturaRoute =
-  AdminAdminUnidadesUnidadeIdAssinaturaRouteImport.update({
-    id: '/assinatura',
-    path: '/assinatura',
-    getParentRoute: () => AdminAdminUnidadesUnidadeIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -219,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
@@ -232,8 +232,7 @@ export interface FileRoutesByFullPath {
   '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app/': typeof AppAppIndexRoute
-  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
-  '/admin/unidades/$unidadeId/assinatura': typeof AdminAdminUnidadesUnidadeIdAssinaturaRoute
+  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -250,6 +249,7 @@ export interface FileRoutesByTo {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv': typeof TvIndexRoute
+  '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
@@ -263,8 +263,7 @@ export interface FileRoutesByTo {
   '/app/tv': typeof AppAppTvRoute
   '/app/voz': typeof AppAppVozRoute
   '/app': typeof AppAppIndexRoute
-  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
-  '/admin/unidades/$unidadeId/assinatura': typeof AdminAdminUnidadesUnidadeIdAssinaturaRoute
+  '/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -285,6 +284,7 @@ export interface FileRoutesById {
   '/test/layouts': typeof TestLayoutsRoute
   '/tv/$slug': typeof TvSlugRoute
   '/tv/': typeof TvIndexRoute
+  '/_admin/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/_admin/admin/logs': typeof AdminAdminLogsRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
@@ -298,8 +298,7 @@ export interface FileRoutesById {
   '/_app/app/tv': typeof AppAppTvRoute
   '/_app/app/voz': typeof AppAppVozRoute
   '/_app/app/': typeof AppAppIndexRoute
-  '/_admin/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
-  '/_admin/admin/unidades/$unidadeId/assinatura': typeof AdminAdminUnidadesUnidadeIdAssinaturaRoute
+  '/_admin/admin/unidades/$unidadeId': typeof AdminAdminUnidadesUnidadeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -319,6 +318,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
+    | '/admin/auditoria'
     | '/admin/logs'
     | '/admin/planos'
     | '/app/atendimento'
@@ -333,7 +333,6 @@ export interface FileRouteTypes {
     | '/app/voz'
     | '/app/'
     | '/admin/unidades/$unidadeId'
-    | '/admin/unidades/$unidadeId/assinatura'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -350,6 +349,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv'
+    | '/admin/auditoria'
     | '/admin/logs'
     | '/admin/planos'
     | '/app/atendimento'
@@ -364,7 +364,6 @@ export interface FileRouteTypes {
     | '/app/voz'
     | '/app'
     | '/admin/unidades/$unidadeId'
-    | '/admin/unidades/$unidadeId/assinatura'
   id:
     | '__root__'
     | '/'
@@ -384,6 +383,7 @@ export interface FileRouteTypes {
     | '/test/layouts'
     | '/tv/$slug'
     | '/tv/'
+    | '/_admin/admin/auditoria'
     | '/_admin/admin/logs'
     | '/_admin/admin/planos'
     | '/_app/app/atendimento'
@@ -398,7 +398,6 @@ export interface FileRouteTypes {
     | '/_app/app/voz'
     | '/_app/app/'
     | '/_admin/admin/unidades/$unidadeId'
-    | '/_admin/admin/unidades/$unidadeId/assinatura'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -631,6 +630,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminLogsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/auditoria': {
+      id: '/_admin/admin/auditoria'
+      path: '/auditoria'
+      fullPath: '/admin/auditoria'
+      preLoaderRoute: typeof AdminAdminAuditoriaRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/unidades/$unidadeId': {
       id: '/_admin/admin/unidades/$unidadeId'
       path: '/unidades/$unidadeId'
@@ -638,42 +644,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminUnidadesUnidadeIdRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/_admin/admin/unidades/$unidadeId/assinatura': {
-      id: '/_admin/admin/unidades/$unidadeId/assinatura'
-      path: '/assinatura'
-      fullPath: '/admin/unidades/$unidadeId/assinatura'
-      preLoaderRoute: typeof AdminAdminUnidadesUnidadeIdAssinaturaRouteImport
-      parentRoute: typeof AdminAdminUnidadesUnidadeIdRoute
-    }
   }
 }
-
-interface AdminAdminUnidadesUnidadeIdRouteChildren {
-  AdminAdminUnidadesUnidadeIdAssinaturaRoute: typeof AdminAdminUnidadesUnidadeIdAssinaturaRoute
-}
-
-const AdminAdminUnidadesUnidadeIdRouteChildren: AdminAdminUnidadesUnidadeIdRouteChildren =
-  {
-    AdminAdminUnidadesUnidadeIdAssinaturaRoute:
-      AdminAdminUnidadesUnidadeIdAssinaturaRoute,
-  }
-
-const AdminAdminUnidadesUnidadeIdRouteWithChildren =
-  AdminAdminUnidadesUnidadeIdRoute._addFileChildren(
-    AdminAdminUnidadesUnidadeIdRouteChildren,
-  )
 
 interface AdminAdminRouteChildren {
+  AdminAdminAuditoriaRoute: typeof AdminAdminAuditoriaRoute
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
-  AdminAdminUnidadesUnidadeIdRoute: typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
+  AdminAdminUnidadesUnidadeIdRoute: typeof AdminAdminUnidadesUnidadeIdRoute
 }
 
 const AdminAdminRouteChildren: AdminAdminRouteChildren = {
+  AdminAdminAuditoriaRoute: AdminAdminAuditoriaRoute,
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
-  AdminAdminUnidadesUnidadeIdRoute:
-    AdminAdminUnidadesUnidadeIdRouteWithChildren,
+  AdminAdminUnidadesUnidadeIdRoute: AdminAdminUnidadesUnidadeIdRoute,
 }
 
 const AdminAdminRouteWithChildren = AdminAdminRoute._addFileChildren(
