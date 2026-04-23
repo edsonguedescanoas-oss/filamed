@@ -150,6 +150,7 @@ export type Database = {
           created_at: string
           destino: string
           id: string
+          idempotency_key: string | null
           observacao: string | null
           senha_id: string
           unidade_id: string
@@ -159,6 +160,7 @@ export type Database = {
           created_at?: string
           destino: string
           id?: string
+          idempotency_key?: string | null
           observacao?: string | null
           senha_id: string
           unidade_id: string
@@ -168,6 +170,7 @@ export type Database = {
           created_at?: string
           destino?: string
           id?: string
+          idempotency_key?: string | null
           observacao?: string | null
           senha_id?: string
           unidade_id?: string
