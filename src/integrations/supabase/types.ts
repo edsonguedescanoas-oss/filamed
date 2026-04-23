@@ -1170,6 +1170,7 @@ export type Database = {
           cnpj: string | null
           created_at: string
           endereco: string | null
+          google_review_url: string | null
           id: string
           nome: string
           slug: string
@@ -1188,6 +1189,7 @@ export type Database = {
           cnpj?: string | null
           created_at?: string
           endereco?: string | null
+          google_review_url?: string | null
           id?: string
           nome: string
           slug: string
@@ -1206,6 +1208,7 @@ export type Database = {
           cnpj?: string | null
           created_at?: string
           endereco?: string | null
+          google_review_url?: string | null
           id?: string
           nome?: string
           slug?: string
@@ -1671,6 +1674,15 @@ export type Database = {
       get_unidade_publica_by_slug: {
         Args: { _slug: string }
         Returns: {
+          id: string
+          nome: string
+          slug: string
+        }[]
+      }
+      get_unidade_publica_detalhe: {
+        Args: { _unidade_id: string }
+        Returns: {
+          google_review_url: string
           id: string
           nome: string
           slug: string
