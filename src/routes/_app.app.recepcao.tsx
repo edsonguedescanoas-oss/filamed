@@ -155,7 +155,10 @@ function RecepcaoPage() {
   const [novoNome, setNovoNome] = useState("");
   const [novoCpf, setNovoCpf] = useState("");
   const [novoTelefone, setNovoTelefone] = useState("");
-  const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string }>({});
+  const [novoIdentificacaoTipo, setNovoIdentificacaoTipo] = useState<string>("rg");
+  const [novoIdentificacaoNumero, setNovoIdentificacaoNumero] = useState("");
+  const [novoDocumento, setNovoDocumento] = useState<File | null>(null);
+  const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string }>({});
   const [savingNovo, setSavingNovo] = useState(false);
 
   // compartilhamento
