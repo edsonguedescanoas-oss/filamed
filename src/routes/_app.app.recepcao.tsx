@@ -138,7 +138,7 @@ function RecepcaoPage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareAutoPrint, setShareAutoPrint] = useState(false);
   const [shareData, setShareData] = useState<{
-    senha: { codigo: string; token_publico: string };
+    senha: { id: string; codigo: string; token_publico: string };
     paciente: { nome_completo: string; telefone: string | null };
   } | null>(null);
   const [unidadeTicketConfig, setUnidadeTicketConfig] = useState<{
@@ -274,7 +274,7 @@ function RecepcaoPage() {
 
       // Abre modal de compartilhamento
       setShareData({
-        senha: { codigo: senha.codigo, token_publico: senha.token_publico! },
+        senha: { id: senha.id, codigo: senha.codigo, token_publico: senha.token_publico! },
         paciente: {
           nome_completo: pacienteSelecionado.nome_completo,
           telefone: pacienteSelecionado.telefone,
@@ -343,7 +343,7 @@ function RecepcaoPage() {
     }
   };
 
-  const handleWhatsApp = (s: Senha & { paciente?: { nome_completo: string; telefone: string | null } | null }) => {
+  const handleWhatsApp = async (s: Senha & { paciente?: { nome_completo: string; telefone: string | null } | null }) => {
     if (!s.paciente?.telefone) {
       toast.error("Paciente sem telefone cadastrado");
       return;
@@ -354,6 +354,22 @@ function RecepcaoPage() {
       `Olá ${s.paciente.nome_completo}, sua senha no ${unidadeTicketConfig?.nome || "nosso estabelecimento"} é: *${s.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
     );
     window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+
+    if (unidadeId) {
+      try {
+        await supabase.from('notificacoes_log').insert({
+          unidade_id: unidadeId,
+          senha_id: s.id,
+          canal: 'whatsapp',
+          destinatario: s.paciente.telefone,
+          mensagem: `Ticket ${s.codigo} enviado via WhatsApp`,
+          status: 'enviada'
+        });
+        toast.success("Envio registrado no histórico");
+      } catch (err) {
+        console.error('Erro ao registrar histórico:', err);
+      }
+    }
   };
 
   const handleResetHistorico = async () => {
@@ -769,7 +785,7 @@ function RecepcaoPage() {
                         size="icon"
                         onClick={() => {
                           setShareData({
-                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            senha: { id: s.id, codigo: s.codigo, token_publico: s.token_publico! },
                             paciente: {
                               nome_completo: s.paciente?.nome_completo ?? "Sem nome",
                               telefone: s.paciente?.telefone ?? null,
@@ -788,7 +804,7 @@ function RecepcaoPage() {
                         size="icon"
                         onClick={() => {
                           setShareData({
-                            senha: { codigo: s.codigo, token_publico: s.token_publico! },
+                            senha: { id: s.id, codigo: s.codigo, token_publico: s.token_publico! },
                             paciente: {
                               nome_completo: s.paciente?.nome_completo ?? "Sem nome",
                               telefone: s.paciente?.telefone ?? null,
@@ -892,6 +908,7 @@ function RecepcaoPage() {
           setShareOpen(open);
           if (!open) setShareAutoPrint(false);
         }}
+        unidadeId={unidadeId ?? null}
         senha={shareData?.senha ?? null}
         paciente={shareData?.paciente ?? null}
         unidadeNome={unidadeTicketConfig?.nome ?? null}

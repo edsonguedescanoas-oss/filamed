@@ -6,15 +6,19 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { QrCode } from "@/components/qr-code";
-import { MessageSquare, Copy, Check, Share2, Printer } from "lucide-react";
+import { MessageSquare, Copy, Check, Share2, Printer, Loader2, AlertCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  unidadeId: string | null;
   senha: {
+    id: string;
     codigo: string;
     token_publico: string;
   } | null;
@@ -31,6 +35,7 @@ type Props = {
 export function TicketShareDialog({
   open,
   onOpenChange,
+  unidadeId,
   senha,
   paciente,
   unidadeNome,
@@ -39,6 +44,13 @@ export function TicketShareDialog({
   autoPrint = false,
 }: Props) {
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState<string | null>(null);
+  const [lastStatus, setLastStatus] = useState<Record<string, 'sent' | 'failed' | 'idle'>>({
+    whatsapp: 'idle',
+    print: 'idle',
+    share: 'idle'
+  });
+  
   const ticketRef = useRef<HTMLDivElement>(null);
   const printTriggered = useRef(false);
 
@@ -49,12 +61,31 @@ export function TicketShareDialog({
     }
     if (!open) {
       printTriggered.current = false;
+      setLastStatus({ whatsapp: 'idle', print: 'idle', share: 'idle' });
     }
   }, [open, autoPrint, senha, paciente]);
 
   if (!senha || !paciente) return null;
 
   const publicUrl = `${window.location.origin}/s/${senha.token_publico}`;
+
+  const recordNotification = async (canal: string, status: 'enviada' | 'falhou') => {
+    if (!unidadeId || !senha?.id) return;
+    
+    try {
+      const payload: any = {
+        unidade_id: unidadeId,
+        senha_id: senha.id,
+        canal: (canal === 'print' || canal === 'share') ? 'push' : canal,
+        destinatario: canal === 'whatsapp' ? (paciente.telefone || 'Sem telefone') : 'Ticket Físico',
+        mensagem: `Ticket ${senha.codigo} por ${canal}`,
+        status: status
+      };
+      await supabase.from('notificacoes_log').insert(payload);
+    } catch (err) {
+      console.error('Erro ao gravar log:', err);
+    }
+  };
 
   const handleCopy = async () => {
     try {
@@ -67,19 +98,33 @@ export function TicketShareDialog({
     }
   };
 
-  const handleWhatsApp = () => {
+  const handleWhatsApp = async () => {
     if (!paciente.telefone) {
       toast.error("Paciente sem telefone cadastrado");
       return;
     }
-    const tel = paciente.telefone.replace(/\D/g, "");
-    const text = encodeURIComponent(
-      `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é: *${senha.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
-    );
-    window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+    
+    setSending('whatsapp');
+    try {
+      const tel = paciente.telefone.replace(/\D/g, "");
+      const text = encodeURIComponent(
+        `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é: *${senha.codigo}*.\n\nAcompanhe o status do seu atendimento em tempo real clicando no link abaixo:\n${publicUrl}`
+      );
+      window.open(`https://wa.me/${tel}?text=${text}`, "_blank");
+      
+      await recordNotification('whatsapp', 'enviada');
+      setLastStatus(prev => ({ ...prev, whatsapp: 'sent' }));
+      toast.success("WhatsApp aberto!");
+    } catch (err) {
+      await recordNotification('whatsapp', 'falhou');
+      setLastStatus(prev => ({ ...prev, whatsapp: 'failed' }));
+    } finally {
+      setSending(null);
+    }
   };
 
   const handlePrint = async () => {
+    setSending('print');
     try {
       const qrDataUrl = await QRCode.toDataURL(publicUrl, {
         width: 128,
@@ -146,14 +191,20 @@ export function TicketShareDialog({
       `;
       printWindow.document.write(html);
       printWindow.document.close();
+      
+      await recordNotification('print', 'enviada');
+      setLastStatus(prev => ({ ...prev, print: 'sent' }));
       toast.success("Enviando para impressora...");
     } catch (err) {
+      setLastStatus(prev => ({ ...prev, print: 'failed' }));
       toast.error("Erro ao gerar impressão");
-      console.error(err);
+    } finally {
+      setSending(null);
     }
   };
 
   const handleShare = async () => {
+    setSending('share');
     if (navigator.share) {
       try {
         await navigator.share({
@@ -161,11 +212,16 @@ export function TicketShareDialog({
           text: `Olá ${paciente.nome_completo}, sua senha no ${unidadeNome || "nosso estabelecimento"} é ${senha.codigo}`,
           url: publicUrl,
         });
+        await recordNotification('share', 'enviada');
+        setLastStatus(prev => ({ ...prev, share: 'sent' }));
       } catch (err) {
         // user cancelled
+      } finally {
+        setSending(null);
       }
     } else {
       handleCopy();
+      setSending(null);
     }
   };
 
@@ -177,12 +233,10 @@ export function TicketShareDialog({
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-6 p-6">
-          {/* Ticket Preview 80mm Style */}
           <div 
             ref={ticketRef}
             className="w-full max-w-[280px] bg-white text-slate-950 p-6 shadow-2xl flex flex-col items-center text-center font-sans rounded-sm relative"
           >
-            {/* Serrilha simulada no topo */}
             <div className="absolute top-0 left-0 right-0 h-1 flex justify-between overflow-hidden">
               {Array.from({ length: 20 }).map((_, i) => (
                 <div key={i} className="w-2 h-2 rounded-full bg-slate-900 -mt-1" />
@@ -228,7 +282,6 @@ export function TicketShareDialog({
               </div>
             </div>
 
-            {/* Serrilha simulada no rodapé */}
             <div className="absolute bottom-0 left-0 right-0 h-1 flex justify-between overflow-hidden">
               {Array.from({ length: 20 }).map((_, i) => (
                 <div key={i} className="w-2 h-2 rounded-full bg-slate-900 -mb-1" />
@@ -239,41 +292,80 @@ export function TicketShareDialog({
           <div className="grid grid-cols-2 gap-3 w-full mt-2">
             <Button
               onClick={handlePrint}
-              className="bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold"
+              disabled={sending === 'print'}
+              className={cn(
+                "bg-white text-slate-950 hover:bg-slate-100 gap-2 h-12 text-base font-bold",
+                lastStatus.print === 'sent' && "border-2 border-emerald-500"
+              )}
             >
-              <Printer className="h-5 w-5" />
-              Imprimir Ticket
+              {sending === 'print' ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : lastStatus.print === 'sent' ? (
+                <Check className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <Printer className="h-5 w-5" />
+              )}
+              {lastStatus.print === 'sent' ? "Impresso" : "Imprimir Ticket"}
             </Button>
+            
             <Button
               onClick={handleWhatsApp}
               variant="outline"
-              className="border-white/10 hover:bg-white/5 text-white gap-2 h-12"
-              disabled={!paciente.telefone}
+              disabled={!paciente.telefone || sending === 'whatsapp'}
+              className={cn(
+                "border-white/10 hover:bg-white/5 text-white gap-2 h-12",
+                lastStatus.whatsapp === 'sent' && "border-emerald-500/50 bg-emerald-500/10"
+              )}
             >
-              <MessageSquare className="h-4 w-4" />
-              Enviar WhatsApp
+              {sending === 'whatsapp' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : lastStatus.whatsapp === 'sent' ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <MessageSquare className="h-4 w-4 text-emerald-400" />
+              )}
+              {lastStatus.whatsapp === 'sent' ? "Enviado" : "Enviar WhatsApp"}
             </Button>
+
             <Button
               onClick={handleShare}
               variant="outline"
-              className="col-span-2 border-white/10 hover:bg-white/5 text-white gap-2 h-11"
+              disabled={sending === 'share'}
+              className={cn(
+                "col-span-2 border-white/10 hover:bg-white/5 text-white gap-2 h-11",
+                lastStatus.share === 'sent' && "border-emerald-500/50 bg-emerald-500/10"
+              )}
             >
-              <Share2 className="h-4 w-4" />
-              Outras formas de enviar
+              {sending === 'share' ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : lastStatus.share === 'sent' ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <Share2 className="h-4 w-4" />
+              )}
+              {lastStatus.share === 'sent' ? "Compartilhado" : "Outras formas de enviar"}
             </Button>
+            
             <Button
               onClick={handleCopy}
               variant="secondary"
               className="col-span-2 gap-2 h-11 bg-slate-800 hover:bg-slate-700 text-slate-200 border-none"
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
               {copied ? "Link copiado" : "Copiar link de acompanhamento"}
             </Button>
           </div>
           
           {!paciente.telefone && (
-            <p className="text-[11px] text-amber-400 text-center">
-              Atenção: Paciente sem telefone cadastrado. O envio direto não estará disponível.
+            <p className="flex items-center gap-1.5 text-[11px] text-amber-400 text-center">
+              <AlertCircle className="h-3 w-3" />
+              Paciente sem telefone cadastrado.
+            </p>
+          )}
+
+          {Object.values(lastStatus).some(s => s === 'sent') && (
+            <p className="text-[10px] text-emerald-400 font-medium animate-in fade-in slide-in-from-bottom-1">
+              Ação registrada no histórico do atendimento
             </p>
           )}
         </div>
