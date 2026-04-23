@@ -243,10 +243,32 @@ function MetricasPage() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{kpis.churn_taxa}%</div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {kpis.churn_canceladas_mes} cancelamentos / {kpis.churn_base_inicio_mes} base
-            </p>
+            {kpis.churn_base_inicio_mes === 0 ? (
+              <>
+                <div
+                  className="flex items-baseline gap-2"
+                  title="Não havia assinaturas ativas no início do mês — taxa de churn não aplicável."
+                >
+                  <span className="text-2xl font-bold text-muted-foreground">0%</span>
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  >
+                    sem base
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sem assinaturas ativas no início do mês — churn não aplicável.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{kpis.churn_taxa}%</div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {kpis.churn_canceladas_mes} cancelamentos / {kpis.churn_base_inicio_mes} base
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
