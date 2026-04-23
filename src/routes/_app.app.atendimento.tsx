@@ -369,13 +369,34 @@ function AtendimentoPage() {
     }
   };
 
-  const abrirFinalizar = () => {
+  const abrirFinalizar = async () => {
     if (!atendimentoAtivo) return;
     const senha = senhas.find((s) => s.id === atendimentoAtivo.senha_id);
     if (!senha) return;
     setFinalizar({ atendimento: atendimentoAtivo, senha });
     setObservacoes("");
     setRequerRetorno(false);
+    setPreviewRetorno(null);
+
+    // Carrega a fila do guichê para mostrar o preview da próxima senha.
+    // Mesmo cálculo que `gerar_senha_guiche` faz no banco: prefixo + (contador+1).
+    if (!profile?.unidade_id) return;
+    const { data, error } = await supabase
+      .from("filas")
+      .select("nome,prefixo_senha,contador_senha")
+      .eq("unidade_id", profile.unidade_id)
+      .eq("tipo", "guiche")
+      .eq("ativa", true)
+      .order("ordem")
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return;
+    const proximo = (data.contador_senha ?? 0) + 1;
+    setPreviewRetorno({
+      filaNome: data.nome,
+      prefixo: data.prefixo_senha,
+      proximoCodigo: `${data.prefixo_senha}${String(proximo).padStart(3, "0")}`,
+    });
   };
 
   const confirmarFinalizar = async () => {
