@@ -120,12 +120,17 @@ Avisaremos você quando for a sua vez!`;
       }
     }
 
-    const api_url = config.api_url || Deno.env.get("WADUCK_API_URL");
+    let api_url = config.api_url || Deno.env.get("WADUCK_API_URL") || "";
     const api_key = config.api_key || Deno.env.get("WADUCK_API_KEY");
     const instance_id = config.instance_id || Deno.env.get("WADUCK_INSTANCE_ID");
 
     if (!api_url || !api_key || !instance_id) {
       throw new Error("WADuck API não configurada corretamente.");
+    }
+
+    // Normalização da URL: Se for WADuck e não tiver /v1, adiciona
+    if (api_url.includes("waduck.pro") && !api_url.includes("/v1")) {
+      api_url = api_url.endsWith("/") ? `${api_url}v1` : `${api_url}/v1`;
     }
 
     // 4. Envia para o WADuck
