@@ -394,8 +394,11 @@ export type Database = {
           cpf: string | null
           created_at: string
           data_nascimento: string | null
+          documento_url: string | null
           email: string | null
           id: string
+          identificacao_numero: string | null
+          identificacao_tipo: string | null
           nome_completo: string
           observacoes: string | null
           prontuario: string | null
@@ -407,8 +410,11 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
+          documento_url?: string | null
           email?: string | null
           id?: string
+          identificacao_numero?: string | null
+          identificacao_tipo?: string | null
           nome_completo: string
           observacoes?: string | null
           prontuario?: string | null
@@ -420,8 +426,11 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
+          documento_url?: string | null
           email?: string | null
           id?: string
+          identificacao_numero?: string | null
+          identificacao_tipo?: string | null
           nome_completo?: string
           observacoes?: string | null
           prontuario?: string | null

@@ -16,7 +16,16 @@ import {
   MessageSquare,
   Share2,
   Printer,
+  FileUp,
+  Upload,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { TicketShareDialog } from "@/components/ticket-share-dialog";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -155,7 +164,10 @@ function RecepcaoPage() {
   const [novoNome, setNovoNome] = useState("");
   const [novoCpf, setNovoCpf] = useState("");
   const [novoTelefone, setNovoTelefone] = useState("");
-  const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string }>({});
+  const [novoIdentificacaoTipo, setNovoIdentificacaoTipo] = useState<string>("rg");
+  const [novoIdentificacaoNumero, setNovoIdentificacaoNumero] = useState("");
+  const [novoDocumento, setNovoDocumento] = useState<File | null>(null);
+  const [novoErrors, setNovoErrors] = useState<{ nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string }>({});
   const [savingNovo, setSavingNovo] = useState(false);
 
   // compartilhamento
@@ -329,7 +341,7 @@ function RecepcaoPage() {
     if (!unidadeId) return;
     
     // Validações
-    const errors: { nome?: string; cpf?: string; telefone?: string } = {};
+    const errors: { nome?: string; cpf?: string; telefone?: string; identificacao_numero?: string } = {};
     const nome = novoNome.trim();
     const cpfDigits = onlyDigits(novoCpf);
     const telDigits = onlyDigits(novoTelefone);
@@ -358,6 +370,29 @@ function RecepcaoPage() {
     setNovoErrors({});
     setSavingNovo(true);
     try {
+      let documento_url = null;
+      
+      // Upload do documento se fornecido
+      if (novoDocumento) {
+        const fileExt = novoDocumento.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `${unidadeId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('pacientes-documentos')
+          .upload(filePath, novoDocumento);
+
+        if (uploadError) {
+          throw new Error("Erro ao fazer upload do documento: " + uploadError.message);
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('pacientes-documentos')
+          .getPublicUrl(filePath);
+        
+        documento_url = publicUrl;
+      }
+
       const { data, error } = await supabase
         .from("pacientes")
         .insert({
@@ -365,6 +400,9 @@ function RecepcaoPage() {
           nome_completo: nome,
           cpf: cpfDigits,
           telefone: telDigits,
+          identificacao_tipo: novoIdentificacaoTipo,
+          identificacao_numero: novoIdentificacaoNumero,
+          documento_url: documento_url,
         })
         .select("*")
         .single();
@@ -389,6 +427,9 @@ function RecepcaoPage() {
       setNovoNome("");
       setNovoCpf("");
       setNovoTelefone("");
+      setNovoIdentificacaoTipo("rg");
+      setNovoIdentificacaoNumero("");
+      setNovoDocumento(null);
       toast.success("Paciente cadastrado", { description: nome });
 
       if (emitirSenha) {
@@ -952,6 +993,12 @@ function RecepcaoPage() {
           setNovoOpen(open);
           if (!open) {
             setNovoErrors({});
+            setNovoNome("");
+            setNovoCpf("");
+            setNovoTelefone("");
+            setNovoIdentificacaoTipo("rg");
+            setNovoIdentificacaoNumero("");
+            setNovoDocumento(null);
           }
         }}
       >
@@ -987,6 +1034,89 @@ function RecepcaoPage() {
               {novoErrors.nome && (
                 <p className="mt-1 text-xs font-medium text-destructive">{novoErrors.nome}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="novo-id-tipo" className="mb-1.5 block">
+                  Tipo de Identificação
+                </Label>
+                <Select
+                  value={novoIdentificacaoTipo}
+                  onValueChange={(val) => setNovoIdentificacaoTipo(val)}
+                >
+                  <SelectTrigger id="novo-id-tipo">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rg">RG</SelectItem>
+                    <SelectItem value="cnh">CNH</SelectItem>
+                    <SelectItem value="conselho">Conselho Profissional</SelectItem>
+                    <SelectItem value="passaporte">Passaporte</SelectItem>
+                    <SelectItem value="outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="novo-id-num" className="mb-1.5 block">
+                  Número
+                </Label>
+                <Input
+                  id="novo-id-num"
+                  value={novoIdentificacaoNumero}
+                  onChange={(e) => setNovoIdentificacaoNumero(e.target.value)}
+                  placeholder="Ex: 12.345.678-9"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="novo-doc" className="mb-1.5 block">
+                Anexar documento (opcional)
+              </Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex justify-start font-normal text-muted-foreground"
+                  onClick={() => document.getElementById('novo-doc')?.click()}
+                >
+                  {novoDocumento ? (
+                    <span className="truncate text-foreground font-medium">
+                      {novoDocumento.name}
+                    </span>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Escolher arquivo...
+                    </>
+                  )}
+                </Button>
+                <input
+                  id="novo-doc"
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setNovoDocumento(file);
+                  }}
+                  accept="image/*,application/pdf"
+                />
+                {novoDocumento && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setNovoDocumento(null)}
+                    className="h-10 w-10 shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Formatos aceitos: Imagens (JPG, PNG) ou PDF.
+              </p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
