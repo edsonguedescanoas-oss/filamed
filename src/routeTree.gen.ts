@@ -31,8 +31,10 @@ import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
 import { Route as AppAppTvRouteImport } from './routes/_app.app.tv'
 import { Route as AppAppRelatoriosRouteImport } from './routes/_app.app.relatorios'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
+import { Route as AppAppPontosRouteImport } from './routes/_app.app.pontos'
 import { Route as AppAppPacientesRouteImport } from './routes/_app.app.pacientes'
 import { Route as AppAppNotificacoesRouteImport } from './routes/_app.app.notificacoes'
+import { Route as AppAppGuicheRouteImport } from './routes/_app.app.guiche'
 import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
 import { Route as AppAppContaRouteImport } from './routes/_app.app.conta'
 import { Route as AppAppAuditoriaRouteImport } from './routes/_app.app.auditoria'
@@ -153,6 +155,11 @@ const AppAppRecepcaoRoute = AppAppRecepcaoRouteImport.update({
   path: '/recepcao',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppPontosRoute = AppAppPontosRouteImport.update({
+  id: '/pontos',
+  path: '/pontos',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppPacientesRoute = AppAppPacientesRouteImport.update({
   id: '/pacientes',
   path: '/pacientes',
@@ -161,6 +168,11 @@ const AppAppPacientesRoute = AppAppPacientesRouteImport.update({
 const AppAppNotificacoesRoute = AppAppNotificacoesRouteImport.update({
   id: '/notificacoes',
   path: '/notificacoes',
+  getParentRoute: () => AppAppRoute,
+} as any)
+const AppAppGuicheRoute = AppAppGuicheRouteImport.update({
+  id: '/guiche',
+  path: '/guiche',
   getParentRoute: () => AppAppRoute,
 } as any)
 const AppAppFilasRoute = AppAppFilasRouteImport.update({
@@ -246,8 +258,10 @@ export interface FileRoutesByFullPath {
   '/app/auditoria': typeof AppAppAuditoriaRoute
   '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
+  '/app/guiche': typeof AppAppGuicheRoute
   '/app/notificacoes': typeof AppAppNotificacoesRoute
   '/app/pacientes': typeof AppAppPacientesRoute
+  '/app/pontos': typeof AppAppPontosRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
   '/app/tv': typeof AppAppTvRoute
@@ -280,8 +294,10 @@ export interface FileRoutesByTo {
   '/app/auditoria': typeof AppAppAuditoriaRoute
   '/app/conta': typeof AppAppContaRoute
   '/app/filas': typeof AppAppFilasRoute
+  '/app/guiche': typeof AppAppGuicheRoute
   '/app/notificacoes': typeof AppAppNotificacoesRoute
   '/app/pacientes': typeof AppAppPacientesRoute
+  '/app/pontos': typeof AppAppPontosRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
   '/app/tv': typeof AppAppTvRoute
@@ -318,8 +334,10 @@ export interface FileRoutesById {
   '/_app/app/auditoria': typeof AppAppAuditoriaRoute
   '/_app/app/conta': typeof AppAppContaRoute
   '/_app/app/filas': typeof AppAppFilasRoute
+  '/_app/app/guiche': typeof AppAppGuicheRoute
   '/_app/app/notificacoes': typeof AppAppNotificacoesRoute
   '/_app/app/pacientes': typeof AppAppPacientesRoute
+  '/_app/app/pontos': typeof AppAppPontosRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
   '/_app/app/relatorios': typeof AppAppRelatoriosRoute
   '/_app/app/tv': typeof AppAppTvRoute
@@ -355,8 +373,10 @@ export interface FileRouteTypes {
     | '/app/auditoria'
     | '/app/conta'
     | '/app/filas'
+    | '/app/guiche'
     | '/app/notificacoes'
     | '/app/pacientes'
+    | '/app/pontos'
     | '/app/recepcao'
     | '/app/relatorios'
     | '/app/tv'
@@ -389,8 +409,10 @@ export interface FileRouteTypes {
     | '/app/auditoria'
     | '/app/conta'
     | '/app/filas'
+    | '/app/guiche'
     | '/app/notificacoes'
     | '/app/pacientes'
+    | '/app/pontos'
     | '/app/recepcao'
     | '/app/relatorios'
     | '/app/tv'
@@ -426,8 +448,10 @@ export interface FileRouteTypes {
     | '/_app/app/auditoria'
     | '/_app/app/conta'
     | '/_app/app/filas'
+    | '/_app/app/guiche'
     | '/_app/app/notificacoes'
     | '/_app/app/pacientes'
+    | '/_app/app/pontos'
     | '/_app/app/recepcao'
     | '/_app/app/relatorios'
     | '/_app/app/tv'
@@ -611,6 +635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppRecepcaoRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/pontos': {
+      id: '/_app/app/pontos'
+      path: '/pontos'
+      fullPath: '/app/pontos'
+      preLoaderRoute: typeof AppAppPontosRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/pacientes': {
       id: '/_app/app/pacientes'
       path: '/pacientes'
@@ -623,6 +654,13 @@ declare module '@tanstack/react-router' {
       path: '/notificacoes'
       fullPath: '/app/notificacoes'
       preLoaderRoute: typeof AppAppNotificacoesRouteImport
+      parentRoute: typeof AppAppRoute
+    }
+    '/_app/app/guiche': {
+      id: '/_app/app/guiche'
+      path: '/guiche'
+      fullPath: '/app/guiche'
+      preLoaderRoute: typeof AppAppGuicheRouteImport
       parentRoute: typeof AppAppRoute
     }
     '/_app/app/filas': {
@@ -758,8 +796,10 @@ interface AppAppRouteChildren {
   AppAppAuditoriaRoute: typeof AppAppAuditoriaRoute
   AppAppContaRoute: typeof AppAppContaRoute
   AppAppFilasRoute: typeof AppAppFilasRoute
+  AppAppGuicheRoute: typeof AppAppGuicheRoute
   AppAppNotificacoesRoute: typeof AppAppNotificacoesRoute
   AppAppPacientesRoute: typeof AppAppPacientesRoute
+  AppAppPontosRoute: typeof AppAppPontosRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
   AppAppRelatoriosRoute: typeof AppAppRelatoriosRoute
   AppAppTvRoute: typeof AppAppTvRoute
@@ -772,8 +812,10 @@ const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppAuditoriaRoute: AppAppAuditoriaRoute,
   AppAppContaRoute: AppAppContaRoute,
   AppAppFilasRoute: AppAppFilasRoute,
+  AppAppGuicheRoute: AppAppGuicheRoute,
   AppAppNotificacoesRoute: AppAppNotificacoesRoute,
   AppAppPacientesRoute: AppAppPacientesRoute,
+  AppAppPontosRoute: AppAppPontosRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
   AppAppRelatoriosRoute: AppAppRelatoriosRoute,
   AppAppTvRoute: AppAppTvRoute,
