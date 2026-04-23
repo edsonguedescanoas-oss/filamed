@@ -9,6 +9,7 @@ import {
   Clock4,
   Activity,
   X,
+  ArrowLeftRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,7 +19,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { PontoAtendimentoSelector } from "@/components/ponto-atendimento-selector";
 import { cn } from "@/lib/utils";
+import type { Database } from "@/integrations/supabase/types";
 
 import { RoleGuard } from "@/components/role-guard";
 
