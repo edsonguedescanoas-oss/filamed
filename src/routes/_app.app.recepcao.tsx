@@ -327,11 +327,35 @@ function RecepcaoPage() {
 
   const handleSalvarNovoPaciente = async (emitirSenha = false) => {
     if (!unidadeId) return;
+    
+    // Validações
+    const errors: { nome?: string; cpf?: string; telefone?: string } = {};
     const nome = novoNome.trim();
+    const cpfDigits = onlyDigits(novoCpf);
+    const telDigits = onlyDigits(novoTelefone);
+
     if (nome.length < 2) {
-      toast.error("Informe o nome completo do paciente");
+      errors.nome = "Informe o nome completo do paciente";
+    }
+    
+    if (!cpfDigits) {
+      errors.cpf = "CPF é obrigatório";
+    } else if (!isValidCPF(cpfDigits)) {
+      errors.cpf = "CPF inválido";
+    }
+
+    if (!telDigits) {
+      errors.telefone = "Telefone é obrigatório";
+    } else if (telDigits.length < 10) {
+      errors.telefone = "Telefone inválido";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setNovoErrors(errors);
       return;
     }
+
+    setNovoErrors({});
     setSavingNovo(true);
     try {
       const { data, error } = await supabase
@@ -339,12 +363,24 @@ function RecepcaoPage() {
         .insert({
           unidade_id: unidadeId,
           nome_completo: nome,
-          cpf: onlyDigits(novoCpf) || null,
-          telefone: onlyDigits(novoTelefone) || null,
+          cpf: cpfDigits,
+          telefone: telDigits,
         })
         .select("*")
         .single();
-      if (error) throw error;
+      
+      if (error) {
+        if (error.code === "23505") {
+          if (error.message?.includes("cpf")) {
+            setNovoErrors({ cpf: "Este CPF já está cadastrado" });
+          } else {
+            toast.error("Paciente já cadastrado");
+          }
+          return;
+        }
+        throw error;
+      }
+
       const pac = data as Paciente;
       setPacienteSelecionado(pac);
       setPacienteQuery("");
