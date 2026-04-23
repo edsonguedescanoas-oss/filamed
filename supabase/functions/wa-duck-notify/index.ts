@@ -187,6 +187,20 @@ Avisaremos você quando for a sua vez!`;
 
       if (existingLog) {
         console.log(`Notificação de chamada já enviada para senha_id ${finalSenhaId} com esta mensagem. Ignorando duplicata.`);
+        
+        if (finalUnidadeId) {
+          await supabaseClient.from("notificacoes_log").insert({
+            unidade_id: finalUnidadeId,
+            senha_id: finalSenhaId,
+            canal: "whatsapp",
+            destinatario: formattedTelefone,
+            status: "ignorado",
+            mensagem: mensagem,
+            erro: "Duplicata ignorada (mesma senha e mensagem)",
+            idempotency_key: idempotency_key,
+          });
+        }
+
         return new Response(JSON.stringify({ 
           success: true, 
           status: "ignored", 
