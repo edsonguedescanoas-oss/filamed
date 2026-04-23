@@ -246,9 +246,43 @@ function TvPage() {
     [destinosAceitos],
   );
 
+  const [modoExibicao, setModoExibicao] = useState<TvModoExibicao>(() => {
+    if (typeof window === "undefined") return "ambos";
+    const saved = window.localStorage.getItem(`tv-modo-exibicao-${unidade.id}`);
+    return saved === "guiches" || saved === "atendimentos" || saved === "ambos" ? saved : "ambos";
+  });
+  const [showModoPopup, setShowModoPopup] = useState(true);
+
+  const matchModoExibicao = useCallback(
+    (destino: string | null | undefined): boolean => {
+      if (modoExibicao === "ambos") return true;
+      const isGuiche = destinoEhGuiche(destino, pontos);
+      return modoExibicao === "guiches" ? isGuiche : !isGuiche;
+    },
+    [modoExibicao, pontos],
+  );
+
+  const chamadaVisivel = useCallback(
+    (chamada: Chamada): boolean => matchDestino(chamada.destino) && matchModoExibicao(chamada.destino),
+    [matchDestino, matchModoExibicao],
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem(`tv-modo-exibicao-${unidade.id}`, modoExibicao);
+    setChamadas((prev) => prev.filter(chamadaVisivel));
+    setShowModoPopup(true);
+    const timer = window.setTimeout(() => setShowModoPopup(false), 7000);
+    return () => window.clearTimeout(timer);
+  }, [modoExibicao, chamadaVisivel, unidade.id]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowModoPopup(false), 10000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   // Aplica filtro inicial às chamadas vindas do loader.
   const [chamadas, setChamadas] = useState<Chamada[]>(() =>
-    destinosAceitos ? initialChamadas.filter((c) => matchDestino(c.destino)) : initialChamadas,
+    initialChamadas.filter((c) => matchDestino(c.destino) && matchModoExibicao(c.destino)),
   );
 
   /**
