@@ -128,23 +128,59 @@ function LoginPage() {
 }
 
 function SignInForm({ onSubmit }: { onSubmit: (email: string, password: string) => Promise<void> }) {
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"signin" | "forgot">("signin");
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit(email, password);
-      toast.success("Bem-vindo de volta!");
+      if (mode === "signin") {
+        await onSubmit(email, password);
+        toast.success("Bem-vindo de volta!");
+      } else {
+        await resetPassword(email);
+        toast.success("Link de redefinição enviado para seu email!");
+        setMode("signin");
+      }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Falha ao entrar";
+      const msg = err instanceof Error ? err.message : "Falha na operação";
       toast.error(msg.includes("Invalid login credentials") ? "Email ou senha incorretos" : msg);
     } finally {
       setLoading(false);
     }
   };
+
+  if (mode === "forgot") {
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="space-y-2">
+          <Label htmlFor="forgot-email">Email da sua conta</Label>
+          <Input
+            id="forgot-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="voce@clinica.com"
+          />
+        </div>
+        <Button type="submit" disabled={loading} className="w-full bg-gradient-primary shadow-soft">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar link de redefinição"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => setMode("signin")}
+          className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          Voltar para o login
+        </button>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -161,7 +197,16 @@ function SignInForm({ onSubmit }: { onSubmit: (email: string, password: string) 
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="signin-password">Senha</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="signin-password">Senha</Label>
+          <button
+            type="button"
+            onClick={() => setMode("forgot")}
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            Esqueceu a senha?
+          </button>
+        </div>
         <Input
           id="signin-password"
           type="password"
