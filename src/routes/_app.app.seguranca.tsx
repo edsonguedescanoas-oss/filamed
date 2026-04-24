@@ -31,7 +31,7 @@ import { RoleGuard } from "@/components/role-guard";
 export const Route = createFileRoute("/_app/app/seguranca")({
   head: () => ({ meta: [{ title: "Segurança e Conformidade — FilaMed" }] }),
   component: () => (
-    <RoleGuard roles={["admin", "gestor"]} path="/app/seguranca">
+    <RoleGuard allow={["admin", "gestor"]} path="/app/seguranca">
       <SecurityPage />
     </RoleGuard>
   ),
