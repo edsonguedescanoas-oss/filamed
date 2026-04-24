@@ -25,6 +25,7 @@ import { Route as TestHorizontalRouteImport } from './routes/test.horizontal'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
+import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
@@ -128,6 +129,11 @@ const HooksHealthcheckRoute = HooksHealthcheckRouteImport.update({
 const HooksCleanupTtsCacheRoute = HooksCleanupTtsCacheRouteImport.update({
   id: '/hooks/cleanup-tts-cache',
   path: '/hooks/cleanup-tts-cache',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConviteTokenRoute = ConviteTokenRouteImport.update({
+  id: '/convite/$token',
+  path: '/convite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
@@ -274,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminAdminRouteWithChildren
   '/app': typeof AppAppRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -360,6 +368,7 @@ export interface FileRoutesById {
   '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_app/app': typeof AppAppRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -404,6 +413,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/checkout/return'
+    | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -445,6 +455,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/admin'
     | '/checkout/return'
+    | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/_admin/admin'
     | '/_app/app'
     | '/checkout/return'
+    | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -532,6 +544,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ConviteTokenRoute: typeof ConviteTokenRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
   STokenRoute: typeof STokenRoute
@@ -653,6 +666,13 @@ declare module '@tanstack/react-router' {
       path: '/hooks/cleanup-tts-cache'
       fullPath: '/hooks/cleanup-tts-cache'
       preLoaderRoute: typeof HooksCleanupTtsCacheRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/convite/$token': {
+      id: '/convite/$token'
+      path: '/convite/$token'
+      fullPath: '/convite/$token'
+      preLoaderRoute: typeof ConviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout/return': {
@@ -950,6 +970,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  ConviteTokenRoute: ConviteTokenRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
   STokenRoute: STokenRoute,
