@@ -1,5 +1,6 @@
 import { ArrowRight, PlayCircle, Sparkles, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WhatsAppFlow } from "@/components/whatsapp-flow";
 import heroMockup from "@/assets/hero-mockup.jpg";
 import heroMockupWebp from "@/assets/hero-mockup.webp";
 import heroMockupAvif from "@/assets/hero-mockup.avif";
@@ -27,12 +28,14 @@ export function Hero() {
             Tenha o controle total da produtividade da sua equipe e da satisfação dos clientes com relatórios estratégicos que mostram onde seu negócio está perdendo eficiência.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button asChild size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl">
-              <a href="#cta">
-                Começar agora
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+            <WhatsAppFlow />
+            <Button asChild size="lg" variant="outline" className="h-14 px-10 backdrop-blur text-lg hover:bg-primary/5 transition-colors rounded-xl">
+              <a href="#analytics">
+                <BarChart3 className="mr-2 h-5 w-5 text-primary" />
+                Ver Relatórios
               </a>
             </Button>
+          </div>
             <Button asChild size="lg" variant="outline" className="h-14 px-10 backdrop-blur text-lg hover:bg-primary/5 transition-colors rounded-xl">
               <a href="#analytics">
                 <BarChart3 className="mr-2 h-5 w-5 text-primary" />
