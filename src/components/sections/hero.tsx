@@ -36,13 +36,6 @@ export function Hero() {
               </a>
             </Button>
           </div>
-            <Button asChild size="lg" variant="outline" className="h-14 px-10 backdrop-blur text-lg hover:bg-primary/5 transition-colors rounded-xl">
-              <a href="#analytics">
-                <BarChart3 className="mr-2 h-5 w-5 text-primary" />
-                Ver Relatórios
-              </a>
-            </Button>
-          </div>
           <div className="mt-10 flex items-center justify-center gap-6 text-xs text-muted-foreground font-medium">
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-glow" />
