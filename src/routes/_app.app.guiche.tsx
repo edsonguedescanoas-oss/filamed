@@ -70,6 +70,7 @@ function GuichePage() {
   const [ponto, setPonto] = useState<Ponto | null>(null);
   const [filaGuiche, setFilaGuiche] = useState<Fila | null>(null);
   const [filasDestino, setFilasDestino] = useState<Fila[]>([]);
+  const [todasFilas, setTodasFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
   const [pacientes, setPacientes] = useState<Map<string, Paciente>>(new Map());
   const [buscaAgendamento, setBuscaAgendamento] = useState("");
@@ -120,10 +121,11 @@ function GuichePage() {
     if (filasRes.error) toast.error("Erro ao carregar filas: " + filasRes.error.message);
     if (senhasRes.error) toast.error("Erro ao carregar senhas: " + senhasRes.error.message);
 
-    const todasFilas = (filasRes.data ?? []) as Fila[];
-    const guiche = todasFilas.find((f) => f.tipo === ("guiche" as FilaTipo)) ?? null;
+    const todasFilasData = (filasRes.data ?? []) as Fila[];
+    const guiche = todasFilasData.find((f) => f.tipo === ("guiche" as FilaTipo)) ?? null;
     setFilaGuiche(guiche);
-    setFilasDestino(todasFilas.filter((f) => f.tipo !== ("guiche" as FilaTipo)));
+    setFilasDestino(todasFilasData.filter((f) => f.tipo !== ("guiche" as FilaTipo)));
+    setTodasFilas(todasFilasData);
     setSenhas((senhasRes.data ?? []) as Senha[]);
 
     const map = new Map<string, Paciente>();
