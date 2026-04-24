@@ -45,6 +45,7 @@ function AcceptancePage() {
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [accepting, setAccepting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const fetchInvitation = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
