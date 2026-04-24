@@ -1697,6 +1697,7 @@ export type Database = {
           paciente_nome: string
           senha_codigo: string
           senha_id: string
+          triagem_dados: Json
           unidade_id: string
         }[]
       }

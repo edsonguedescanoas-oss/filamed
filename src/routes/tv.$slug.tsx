@@ -27,6 +27,7 @@ type Chamada = {
   senha_codigo?: string;
   fila_nome?: string;
   paciente_nome?: string;
+  triagem_dados?: any;
 };
 
 /** Detecta se uma chamada é uma rechamada (manual ou automática). */
@@ -140,6 +141,7 @@ export const Route = createFileRoute("/tv/$slug")({
         codigo: c.senha_codigo,
         fila_nome: c.fila_nome,
         paciente_nome: (c as any).paciente_nome,
+        triagem_dados: (c as any).triagem_dados,
       }
     }));
 
@@ -303,6 +305,7 @@ function TvPage() {
     return set;
   }, [statusSenhas]);
   const [now, setNow] = useState(new Date());
+  const [criterios, setCriterios] = useState<Record<string, string>>({});
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
     provider: "browser",
     voice_id: null,
@@ -381,6 +384,23 @@ function TvPage() {
         });
       } else {
         console.log("[TV] Usando configuração de voz padrão (navegador)");
+      }
+    })();
+  }, [unidade?.id]);
+
+  // Carrega critérios de triagem para exibir os nomes
+  useEffect(() => {
+    if (!unidade?.id) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("triagem_criterios")
+        .select("id, nome")
+        .eq("unidade_id", unidade.id);
+      
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach(c => map[c.id] = c.nome);
+        setCriterios(map);
       }
     })();
   }, [unidade?.id]);
@@ -1145,6 +1165,20 @@ function TvPage() {
                           {ultimaChamada.senha.paciente_nome}
                         </p>
                       )}
+                      {ultimaChamada.triagem_dados?.criterios?.length > 0 && (
+                        <div
+                          className="mt-2 inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1 text-white/80 border border-white/5 mx-auto"
+                          style={{ fontSize: `clamp(0.6rem, 2.5cqmin, 1.25rem)` }}
+                        >
+                          <Activity className="h-[1em] w-[1em] opacity-60" />
+                          <span className="font-semibold italic">
+                            {ultimaChamada.triagem_dados.criterios
+                              .map((id: string) => criterios[id])
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        </div>
+                      )}
                       <p
                         className="font-medium opacity-50 uppercase tracking-widest"
                         style={{
@@ -1255,6 +1289,20 @@ function TvPage() {
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                             {chamada.senha?.fila_nome || "Geral"}
                           </p>
+                          {(chamada as any).triagem_dados?.criterios?.length > 0 && (
+                            <div 
+                              className="mt-1 flex items-center gap-1.5 opacity-60 italic"
+                              style={{ fontSize: "clamp(0.4375rem, 2.2cqi, 0.6875rem)" }}
+                            >
+                              <Activity className="h-[1em] w-[1em] opacity-60" />
+                              <span className="truncate">
+                                {(chamada as any).triagem_dados.criterios
+                                  .map((id: string) => criterios[id])
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </span>
+                            </div>
+                          )}
                           {(() => {
                             const sid = chamada.senha?.id;
                             const st = sid ? statusSenhas[sid] : undefined;
