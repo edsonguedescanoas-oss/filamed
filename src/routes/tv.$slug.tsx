@@ -1165,6 +1165,20 @@ function TvPage() {
                           {ultimaChamada.senha.paciente_nome}
                         </p>
                       )}
+                      {ultimaChamada.triagem_dados?.criterios?.length > 0 && (
+                        <div
+                          className="mt-2 inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1 text-white/80 border border-white/5 mx-auto"
+                          style={{ fontSize: `clamp(0.6rem, 2.5cqmin, 1.25rem)` }}
+                        >
+                          <Activity className="h-[1em] w-[1em] opacity-60" />
+                          <span className="font-semibold italic">
+                            {ultimaChamada.triagem_dados.criterios
+                              .map((id: string) => criterios[id])
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        </div>
+                      )}
                       <p
                         className="font-medium opacity-50 uppercase tracking-widest"
                         style={{
