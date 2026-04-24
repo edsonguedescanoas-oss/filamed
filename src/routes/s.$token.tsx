@@ -401,7 +401,7 @@ function PublicSenhaPage() {
   const ativarNotificacoes = useCallback(async () => {
     setAtivando(true);
     try {
-      // 1) Cria/retoma AudioContext dentro do gesto do usuário (iOS/Safari)
+      // 1) Cria/retoma AudioContext dentro do gesto do usuário (iOS/Safari).
       try {
         const ctx =
           audioCtxRef.current ||
@@ -419,6 +419,30 @@ function PublicSenhaPage() {
       } catch {
         /* ignore */
       }
+
+      // 1b) iOS/iPadOS: dentro do gesto, dar play() no <audio> mudo é a forma
+      // mais confiável de destravar a sessão de áudio (mesmo com botão de
+      // silenciar físico ativo, o WebAudio passa a funcionar).
+      if (isIOS()) {
+        const el = silentAudioRef.current;
+        if (el) {
+          try {
+            el.muted = true;
+            el.volume = 0;
+            // setSinkId não é necessário; basta tocar dentro do gesto
+            await el.play().catch(() => undefined);
+            try {
+              el.pause();
+              el.currentTime = 0;
+            } catch {
+              /* ignore */
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
       // 2) Vibração curta para "destravar" e confirmar suporte
       vibrate(40);
       // 3) Permissão de notificação — só pede uma vez
@@ -436,7 +460,7 @@ function PublicSenhaPage() {
     } finally {
       setAtivando(false);
     }
-  }, [vibrate]);
+  }, [vibrate, isIOS]);
 
   useEffect(() => {
     void fetchInitialData();
