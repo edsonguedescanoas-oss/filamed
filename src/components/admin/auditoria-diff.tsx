@@ -413,6 +413,7 @@ export function AuditoriaDiff({
           Nenhuma diferença entre os snapshots.
         </div>
       )}
+      </div>
     </div>
   );
 }
