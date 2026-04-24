@@ -515,6 +515,11 @@ function PublicSenhaPage() {
   // porque navegadores móveis exigem um gesto do usuário para liberar áudio,
   // vibração e Notification API.
   if (!notificacoesAtivas) {
+    const isDenied =
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "denied";
+
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8 flex items-center justify-center">
         <div className="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/80 backdrop-blur p-7 text-center shadow-2xl">
@@ -537,11 +542,26 @@ function PublicSenhaPage() {
           <h1 className="font-display text-2xl font-bold tracking-tight mb-2">
             Sua senha {senha.codigo}
           </h1>
-          <p className="text-sm text-slate-300 leading-relaxed mb-6">
-            Toque no botão abaixo para ativar <strong>som</strong>,{" "}
-            <strong>vibração</strong> e <strong>notificações</strong> e ser
-            avisado em tempo real quando for chamado.
-          </p>
+          {isDenied ? (
+            <>
+              <p className="text-sm text-amber-200/90 leading-relaxed mb-4">
+                As notificações estão <strong>bloqueadas</strong> nas
+                configurações do navegador. Som e vibração ainda funcionam — você
+                pode ativá-los abaixo.
+              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed mb-6">
+                Para receber alertas mesmo com a tela bloqueada, libere as
+                notificações em <em>Configurações &gt; Site/Notificações</em> e
+                volte a esta página.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-slate-300 leading-relaxed mb-6">
+              Toque no botão abaixo para ativar <strong>som</strong>,{" "}
+              <strong>vibração</strong> e <strong>notificações</strong> e ser
+              avisado em tempo real quando for chamado.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => void ativarNotificacoes()}
@@ -553,7 +573,7 @@ function PublicSenhaPage() {
             ) : (
               <BellRing className="h-5 w-5" />
             )}
-            Ativar notificações
+            {isDenied ? "Ativar som e vibração" : "Ativar notificações"}
           </button>
           <p className="mt-4 text-[11px] text-slate-500">
             Mantenha esta página aberta no celular para receber os avisos.
