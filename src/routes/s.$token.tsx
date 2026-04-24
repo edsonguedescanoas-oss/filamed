@@ -61,7 +61,12 @@ function PublicSenhaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("ticket-notif-ativo") === "1";
+  });
+  const [ativando, setAtivando] = useState(false);
 
   const fetchInitialData = useCallback(async (isRetry = false) => {
     // RPC pública: busca a própria senha por token, sem expor a tabela inteira ao anon
