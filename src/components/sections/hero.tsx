@@ -1,4 +1,4 @@
-import { ArrowRight, PlayCircle, Sparkles } from "lucide-react";
+import { ArrowRight, PlayCircle, Sparkles, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroMockup from "@/assets/hero-mockup.jpg";
 import heroMockupWebp from "@/assets/hero-mockup.webp";
@@ -19,7 +19,7 @@ export function Hero() {
             <Sparkles className="h-3.5 w-3.5" />
             A solução definitiva para donos e gestores de clínicas
           </span>
-          <h1 className="mt-8 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+          <h1 className="mt-8 font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-6xl lg:text-7xl">
             Pare de perder dinheiro com <br className="hidden sm:block" />
             <span className="text-gradient">filas invisíveis</span> e falta de dados
           </h1>
@@ -27,21 +27,20 @@ export function Hero() {
             Tenha o controle total da produtividade da sua equipe e da satisfação dos pacientes com relatórios estratégicos que mostram onde sua clínica está perdendo eficiência.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button asChild size="xl" className="h-14 px-8 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold">
+            <Button asChild size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl">
               <a href="#cta">
                 Começar agora
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </a>
             </Button>
-            <Button asChild size="xl" variant="outline" className="h-14 px-8 backdrop-blur text-lg hover:bg-primary/5 transition-colors">
+            <Button asChild size="lg" variant="outline" className="h-14 px-10 backdrop-blur text-lg hover:bg-primary/5 transition-colors rounded-xl">
               <a href="#analytics">
                 <BarChart3 className="mr-2 h-5 w-5 text-primary" />
                 Ver Relatórios
               </a>
             </Button>
           </div>
-        </div>
-          <div className="mt-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
+          <div className="mt-10 flex items-center justify-center gap-6 text-xs text-muted-foreground font-medium">
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-glow" />
               Tempo real via WebSocket
@@ -52,14 +51,14 @@ export function Hero() {
             </div>
             <div className="hidden sm:flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />
-              99.9% uptime
+              ROI Comprovado
             </div>
           </div>
         </div>
 
-        <div className="relative mt-16 sm:mt-20 mx-auto max-w-6xl animate-scale-in">
+        <div className="relative mt-16 sm:mt-24 mx-auto max-w-6xl animate-scale-in">
           <div className="absolute -inset-6 bg-gradient-primary opacity-20 blur-3xl rounded-[2rem]" />
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-elegant">
+          <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-elegant">
             <picture>
               <source type="image/avif" srcSet={heroMockupAvif} />
               <source type="image/webp" srcSet={heroMockupWebp} />
