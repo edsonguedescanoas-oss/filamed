@@ -945,14 +945,31 @@ function PublicSenhaPage() {
                         : `${aguardandoNaFrente} ${aguardandoNaFrente === 1 ? "pessoa" : "pessoas"} na sua frente`}
                     </p>
                     
-                    {fila?.tempo_espera_estimado && aguardandoNaFrente > 0 && (
-                      <div className="rounded-2xl bg-white/5 border border-white/10 p-4 mt-4">
-                        <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Expectativa de espera</div>
-                        <div className="text-2xl font-display font-bold text-primary">
-                          ~{aguardandoNaFrente * fila.tempo_espera_estimado} min
+                    {(() => {
+                      // Tempo vem da senha (calculado pelo trigger no servidor),
+                      // com fallback para o cálculo via fila quando ainda não
+                      // foi populado. Mantém TV/guichê/paciente sempre alinhados.
+                      const tempoServidor =
+                        typeof senha.tempo_espera_estimado === "number"
+                          ? senha.tempo_espera_estimado
+                          : null;
+                      const tempoFallback =
+                        fila?.tempo_espera_estimado && aguardandoNaFrente > 0
+                          ? aguardandoNaFrente * fila.tempo_espera_estimado
+                          : null;
+                      const tempo = tempoServidor ?? tempoFallback;
+                      if (!tempo || tempo <= 0) return null;
+                      return (
+                        <div className="rounded-2xl bg-white/5 border border-white/10 p-4 mt-4">
+                          <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">
+                            Expectativa de espera
+                          </div>
+                          <div className="text-2xl font-display font-bold text-primary">
+                            ~{tempo} min
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
               </div>
