@@ -1,7 +1,23 @@
 import { useEffect, useState } from "react";
 import { Smartphone, ChevronRight } from "lucide-react";
+import { useLocation } from "@tanstack/react-router";
 
 export function OrientationGuard() {
+  const location = useLocation();
+  // Rotas onde NUNCA exibimos sugestão de modo paisagem
+  // (ticket público do paciente sempre em retrato).
+  const isExcludedRoute =
+    location.pathname.startsWith("/s/") ||
+    location.pathname === "/" ||
+    location.pathname.startsWith("/precos") ||
+    location.pathname.startsWith("/casos") ||
+    location.pathname.startsWith("/demo") ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/manual") ||
+    location.pathname.startsWith("/setup") ||
+    location.pathname.startsWith("/convite") ||
+    location.pathname.startsWith("/reset-password");
+
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const [hasSkipped, setHasSkipped] = useState(() => {
@@ -12,6 +28,7 @@ export function OrientationGuard() {
   });
 
   useEffect(() => {
+    if (isExcludedRoute) return;
     const checkOrientation = () => {
       // Detecta se é retrato
       const portrait = window.innerHeight > window.innerWidth;
@@ -53,7 +70,7 @@ export function OrientationGuard() {
       window.removeEventListener("resize", checkOrientation);
       window.removeEventListener("orientationchange", checkOrientation);
     };
-  }, []);
+  }, [isExcludedRoute]);
 
   const handleManualOrientation = async () => {
     try {
@@ -77,6 +94,8 @@ export function OrientationGuard() {
     localStorage.setItem("orientation-guard-skipped", "true");
   };
 
+  // Em rotas excluídas (ex: ticket público do paciente), nunca mostra o aviso.
+  if (isExcludedRoute) return null;
   // Se não for mobile/tablet ou já estiver na horizontal ou tiver ignorado, não faz nada
   if (!isMobileOrTablet || !isPortrait || hasSkipped) return null;
 

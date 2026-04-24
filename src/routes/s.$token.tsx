@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
-import { useEffect, useState, useCallback } from "react";
-import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, Star } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, Star, BellRing } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
@@ -61,7 +61,12 @@ function PublicSenhaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("ticket-notif-ativo") === "1";
+  });
+  const [ativando, setAtivando] = useState(false);
 
   const fetchInitialData = useCallback(async (isRetry = false) => {
     // RPC pública: busca a própria senha por token, sem expor a tabela inteira ao anon
@@ -104,40 +109,153 @@ function PublicSenhaPage() {
     setLoading(false);
   }, [token]);
 
-  const playNotificationSound = useCallback((type: 'next' | 'called') => {
-    try {
-      const context = audioContext || new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (!audioContext) setAudioContext(context);
-      
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
+  // ---- helpers de notificação (som + vibração + Notification API) ----
+  type AlertType = "next" | "called" | "finalized" | "warning";
 
-      oscillator.connect(gainNode);
-      gainNode.connect(context.destination);
-
-      if (type === 'next') {
-        // Som suave para "você é o próximo"
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(440, context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.1);
-        gainNode.gain.setValueAtTime(0.1, context.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.3);
-      } else {
-        // Som mais forte para quando for chamado
-        oscillator.type = 'square';
-        oscillator.frequency.setValueAtTime(880, context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(440, context.currentTime + 0.2);
-        gainNode.gain.setValueAtTime(0.1, context.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.5);
+  const vibrate = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate?.(pattern);
+      } catch {
+        /* ignore */
       }
-    } catch (err) {
-      console.error('Erro ao tocar som:', err);
     }
-  }, [audioContext]);
+  }, []);
+
+  const playTone = useCallback(
+    (freqs: Array<{ f: number; t: number; type?: OscillatorType }>) => {
+      try {
+        const ctx =
+          audioCtxRef.current ||
+          new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioCtxRef.current = ctx;
+        // Em alguns browsers o contexto fica "suspended" — retoma se possível
+        if (ctx.state === "suspended") void ctx.resume();
+        let cursor = ctx.currentTime;
+        for (const { f, t, type } of freqs) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = type ?? "sine";
+          osc.frequency.setValueAtTime(f, cursor);
+          gain.gain.setValueAtTime(0.0001, cursor);
+          gain.gain.exponentialRampToValueAtTime(0.18, cursor + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, cursor + t);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(cursor);
+          osc.stop(cursor + t + 0.02);
+          cursor += t + 0.04;
+        }
+      } catch (err) {
+        console.warn("Erro ao tocar som:", err);
+      }
+    },
+    [],
+  );
+
+  const showNativeNotification = useCallback((title: string, body: string) => {
+    try {
+      if (typeof window === "undefined" || !("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      // Só dispara notificação nativa se a aba estiver oculta — caso contrário
+      // o som + vibração + UI já alertam.
+      if (document.visibilityState === "visible") return;
+      new Notification(title, {
+        body,
+        tag: "filamed-ticket",
+        renotify: true,
+        icon: "/favicon.ico",
+      } as NotificationOptions);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const alertPaciente = useCallback(
+    (type: AlertType, opts?: { title?: string; body?: string }) => {
+      switch (type) {
+        case "called":
+          playTone([
+            { f: 880, t: 0.18, type: "square" },
+            { f: 660, t: 0.18, type: "square" },
+            { f: 880, t: 0.22, type: "square" },
+          ]);
+          vibrate([250, 100, 250, 100, 400]);
+          break;
+        case "next":
+          playTone([
+            { f: 523, t: 0.14 },
+            { f: 784, t: 0.18 },
+          ]);
+          vibrate([180, 80, 180]);
+          break;
+        case "finalized":
+          playTone([
+            { f: 660, t: 0.16 },
+            { f: 880, t: 0.18 },
+            { f: 1175, t: 0.28 },
+          ]);
+          vibrate([120, 60, 120, 60, 300]);
+          break;
+        case "warning":
+          playTone([
+            { f: 440, t: 0.2, type: "triangle" },
+            { f: 330, t: 0.3, type: "triangle" },
+          ]);
+          vibrate([400, 120, 400]);
+          break;
+      }
+      if (opts?.title) showNativeNotification(opts.title, opts.body ?? "");
+    },
+    [playTone, vibrate, showNativeNotification],
+  );
+
+  // Mantido por compatibilidade com os pontos que já chamam playNotificationSound
+  const playNotificationSound = useCallback(
+    (type: "next" | "called") => alertPaciente(type),
+    [alertPaciente],
+  );
+
+  // Ativação inicial: desbloqueia áudio (gesture) + pede permissão de notificação
+  const ativarNotificacoes = useCallback(async () => {
+    setAtivando(true);
+    try {
+      // 1) Cria/retoma AudioContext dentro do gesto do usuário (iOS/Safari)
+      try {
+        const ctx =
+          audioCtxRef.current ||
+          new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioCtxRef.current = ctx;
+        if (ctx.state === "suspended") await ctx.resume();
+        // beep silencioso só para "destravar" o output de áudio
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.02);
+      } catch {
+        /* ignore */
+      }
+      // 2) Vibração curta para "destravar" e confirmar suporte
+      vibrate(40);
+      // 3) Permissão de notificação — só pede uma vez
+      if (typeof window !== "undefined" && "Notification" in window) {
+        if (Notification.permission === "default") {
+          try {
+            await Notification.requestPermission();
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      sessionStorage.setItem("ticket-notif-ativo", "1");
+      setNotificacoesAtivas(true);
+    } finally {
+      setAtivando(false);
+    }
+  }, [vibrate]);
 
   useEffect(() => {
     void fetchInitialData();
@@ -154,7 +272,7 @@ function PublicSenhaPage() {
         (payload) => {
           const oldStatus = senha.status;
           const newStatus = payload.new.status as SenhaStatus;
-          
+
           const nextSenha = payload.new as SenhaPub;
           setSenha((prev) => ({ ...(prev as SenhaPub), ...nextSenha }));
           if (nextSenha.fila_id !== senha.fila_id) {
@@ -168,10 +286,40 @@ function PublicSenhaPage() {
           } else if (oldStatus !== newStatus) {
             toast.info(statusMessage(newStatus));
           }
-          
-          // Som se o status mudar para "chamada"
-          if (oldStatus !== 'chamada' && newStatus === 'chamada') {
-            playNotificationSound('called');
+
+          // Alerta sonoro + vibração + notificação para CADA mudança de status
+          if (oldStatus !== newStatus) {
+            const codigo = nextSenha.codigo;
+            switch (newStatus) {
+              case "chamada":
+                alertPaciente("called", {
+                  title: "Você foi chamado!",
+                  body: `Sua senha ${codigo} foi chamada. Dirija-se ao local indicado.`,
+                });
+                break;
+              case "em_atendimento":
+                alertPaciente("called", {
+                  title: "Atendimento iniciado",
+                  body: `Sua senha ${codigo} está em atendimento.`,
+                });
+                break;
+              case "finalizada":
+                alertPaciente("finalized", {
+                  title: "Atendimento finalizado",
+                  body: "Toque para avaliar a clínica.",
+                });
+                break;
+              case "ausente":
+              case "cancelada":
+                alertPaciente("warning", {
+                  title:
+                    newStatus === "ausente"
+                      ? "Marcado como ausente"
+                      : "Senha cancelada",
+                  body: `Sua senha ${codigo} foi ${newStatus === "ausente" ? "marcada como ausente" : "cancelada"}.`,
+                });
+                break;
+            }
           }
         },
       )
@@ -180,22 +328,38 @@ function PublicSenhaPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `senha_id=eq.${senha.id}` },
         (payload) => {
           setChamada(payload.new as ChamadaPub);
-          playNotificationSound('called');
-          // vibração leve quando for chamado
-          if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            try {
-              navigator.vibrate?.([200, 80, 200]);
-            } catch {
-              /* ignore */
-            }
-          }
+          // Sempre alerta em rechamadas (mesmo se status já era "chamada")
+          alertPaciente("called", {
+            title: "Você foi chamado!",
+            body: `Dirija-se a ${(payload.new as ChamadaPub).destino}.`,
+          });
         },
       )
       .subscribe();
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [senha?.id, playNotificationSound]);
+  }, [senha?.id, alertPaciente]);
+
+  // Na carga inicial, se já estiver chamado/em atendimento, dispara um alerta
+  // (caso o paciente abra o link justamente nesse instante).
+  const initialAlertSent = useRef(false);
+  useEffect(() => {
+    if (!notificacoesAtivas || !senha || initialAlertSent.current) return;
+    if (senha.status === "chamada" || senha.status === "em_atendimento") {
+      alertPaciente("called", {
+        title: "Você foi chamado!",
+        body: `Sua senha ${senha.codigo} já foi chamada.`,
+      });
+      initialAlertSent.current = true;
+    } else if (senha.status === "finalizada") {
+      alertPaciente("finalized", {
+        title: "Atendimento finalizado",
+        body: "Toque para avaliar a clínica.",
+      });
+      initialAlertSent.current = true;
+    }
+  }, [notificacoesAtivas, senha?.id, senha?.status, senha?.codigo, alertPaciente]);
 
   // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
   const refreshPosition = useCallback(async () => {
@@ -275,6 +439,58 @@ function PublicSenhaPage() {
   const isCalled = senha.status === "chamada" || senha.status === "em_atendimento";
   const isFinalized = senha.status === "finalizada";
   const isCancelled = senha.status === "cancelada" || senha.status === "ausente";
+
+  // Gate inicial: pede ao paciente para "ativar notificações" — necessário
+  // porque navegadores móveis exigem um gesto do usuário para liberar áudio,
+  // vibração e Notification API.
+  if (!notificacoesAtivas) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8 flex items-center justify-center">
+        <div className="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/80 backdrop-blur p-7 text-center shadow-2xl">
+          {visual?.logo_url ? (
+            <img
+              src={visual.logo_url}
+              alt="Logo"
+              className="mx-auto mb-5 max-h-14 w-auto object-contain"
+            />
+          ) : (
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <BellRing className="h-7 w-7" />
+            </div>
+          )}
+          {unidade && (
+            <div className="text-[10px] uppercase tracking-[0.3em] text-slate-400 mb-1">
+              {unidade.nome}
+            </div>
+          )}
+          <h1 className="font-display text-2xl font-bold tracking-tight mb-2">
+            Sua senha {senha.codigo}
+          </h1>
+          <p className="text-sm text-slate-300 leading-relaxed mb-6">
+            Toque no botão abaixo para ativar <strong>som</strong>,{" "}
+            <strong>vibração</strong> e <strong>notificações</strong> e ser
+            avisado em tempo real quando for chamado.
+          </p>
+          <button
+            type="button"
+            onClick={() => void ativarNotificacoes()}
+            disabled={ativando}
+            className="w-full rounded-2xl bg-primary px-5 py-4 text-base font-bold text-primary-foreground shadow-xl shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-60 inline-flex items-center justify-center gap-2"
+          >
+            {ativando ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <BellRing className="h-5 w-5" />
+            )}
+            Ativar notificações
+          </button>
+          <p className="mt-4 text-[11px] text-slate-500">
+            Mantenha esta página aberta no celular para receber os avisos.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8">
