@@ -1896,6 +1896,29 @@ export type Database = {
         Returns: boolean
       }
       unaccent_simple: { Args: { _text: string }; Returns: string }
+      unidade_listar_auditoria: {
+        Args: {
+          _ate?: string
+          _busca?: string
+          _desde?: string
+          _entidade?: string
+          _limite?: number
+          _unidade_id: string
+        }
+        Returns: {
+          acao: string
+          ator_id: string
+          ator_nome: string
+          created_at: string
+          dados_antes: Json
+          dados_depois: Json
+          entidade: string
+          entidade_id: string
+          id: string
+          resumo: string
+          unidade_id: string
+        }[]
+      }
       user_unidade_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
