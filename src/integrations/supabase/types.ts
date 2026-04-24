@@ -1884,6 +1884,10 @@ export type Database = {
         Returns: boolean
       }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
+      recalcular_posicoes_fila: {
+        Args: { p_fila_id: string }
+        Returns: undefined
+      }
       retry_failed_notifications: { Args: never; Returns: undefined }
       setup_initial_unidade: {
         Args: {
