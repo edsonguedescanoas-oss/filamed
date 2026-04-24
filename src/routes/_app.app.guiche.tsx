@@ -38,6 +38,7 @@ import {
 import { RoleGuard } from "@/components/role-guard";
 import { PontoAtendimentoSelector } from "@/components/ponto-atendimento-selector";
 import { HistoricoPonto } from "@/components/historico-ponto";
+import { EditarSenhaDialog } from "@/components/editar-senha-dialog";
 import type { Database } from "@/integrations/supabase/types";
 
 type Senha = Database["public"]["Tables"]["senhas"]["Row"];
