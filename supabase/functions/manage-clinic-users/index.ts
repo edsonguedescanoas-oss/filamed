@@ -17,110 +17,42 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the requester's identity
-    const authHeader = req.headers.get("Authorization");
-    let requester = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabaseClient.auth.getUser(token);
-      requester = user;
+    const authHeader = req.headers.get("Authorization")!;
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user: requester }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !requester) {
+      throw new Error("Unauthorized");
     }
 
     const body = await req.json();
     const { action, userData, unidadeId: targetUnidadeId } = body;
 
-    if (!requester && action !== "accept-invitation") {
-      throw new Error("Unauthorized");
-    }
-
-    if (!targetUnidadeId && action !== "accept-invitation") {
+    if (!targetUnidadeId) {
       throw new Error("unidadeId is required");
     }
 
     // Security Check: Is the requester an admin of this unit or a super_admin?
-    let requesterRoles: any[] = [];
-    if (requester && action !== "accept-invitation") {
-      const { data } = await supabaseClient
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", requester.id)
-        .or(`and(unidade_id.eq.${targetUnidadeId},role.eq.admin),role.eq.super_admin`);
-      requesterRoles = data ?? [];
+    const { data: requesterRoles } = await supabaseClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", requester.id)
+      .or(`and(unidade_id.eq.${targetUnidadeId},role.eq.admin),role.eq.super_admin`);
 
-      if (requesterRoles.length === 0) {
-        throw new Error("Forbidden: Only unit admins can manage users.");
-      }
+    if (!requesterRoles || requesterRoles.length === 0) {
+      throw new Error("Forbidden: Only unit admins can manage users.");
     }
 
-    if (action === "invite") {
-      const { email, role, nome_completo } = userData;
+    if (action === "create") {
+      const { email, password, nome_completo, telefone, role } = userData;
 
-      if (!email || !role || !nome_completo) {
-        throw new Error("Missing required fields for invitation");
+      if (!email || !password || !nome_completo || !role) {
+        throw new Error("Missing required fields for creation");
       }
 
-      // 1. Check if user already exists in profiles
-      const { data: existingUser } = await supabaseClient
-        .from("profiles")
-        .select("id")
-        .eq("email", email) // Note: profiles might not have email, check auth
-        .maybeSingle();
-
-      // Check auth directly
-      const { data: { users: authUsers } } = await supabaseClient.auth.admin.listUsers();
-      const userExists = authUsers.find(u => u.email === email);
-
-      if (userExists) {
-        throw new Error("User with this email already exists");
-      }
-
-      // 2. Create invitation record
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const { data: invitation, error: inviteError } = await supabaseClient
-        .from("invitations")
-        .insert({
-          unidade_id: targetUnidadeId,
-          email,
-          role,
-          token,
-          invited_by: requester.id,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-        })
-        .select()
-        .single();
-
-      if (inviteError) throw inviteError;
-
-      const origin = req.headers.get("origin") || "";
-      const invitationUrl = `${origin}/aceitar-convite/${token}`;
-
-      return new Response(JSON.stringify({ invitation, invitationUrl }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-
-    } else if (action === "accept-invitation") {
-      const { token, password, nome_completo, telefone } = body;
-
-      if (!token || !password || !nome_completo) {
-        throw new Error("Missing required fields to accept invitation");
-      }
-
-      // 1. Validate invitation
-      const { data: invitation, error: tokenError } = await supabaseClient
-        .from("invitations")
-        .select("*")
-        .eq("token", token)
-        .is("accepted_at", null)
-        .gt("expires_at", new Date().toISOString())
-        .single();
-
-      if (tokenError || !invitation) {
-        throw new Error("Invitation invalid or expired");
-      }
-
-      // 2. Create user in auth
+      // 1. Create user in auth
       const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
-        email: invitation.email,
+        email,
         password,
         email_confirm: true,
         user_metadata: { nome_completo }
@@ -128,52 +60,45 @@ serve(async (req) => {
 
       if (createError) throw createError;
 
-      // 3. Create profile
+      // 2. Create profile
       const { error: profileError } = await supabaseClient
         .from("profiles")
         .insert({
           id: newUser.user.id,
-          unidade_id: invitation.unidade_id,
+          unidade_id: targetUnidadeId,
           nome_completo,
           telefone,
           ativo: true
         });
 
       if (profileError) {
+        // Cleanup auth user if profile creation fails
         await supabaseClient.auth.admin.deleteUser(newUser.user.id);
         throw profileError;
       }
 
-      // 4. Assign role
+      // 3. Assign role
       const { error: roleError } = await supabaseClient
         .from("user_roles")
         .insert({
           user_id: newUser.user.id,
-          unidade_id: invitation.unidade_id,
-          role: invitation.role
+          unidade_id: targetUnidadeId,
+          role
         });
 
       if (roleError) {
+        // Cleanup if role assignment fails
         await supabaseClient.from("profiles").delete().eq("id", newUser.user.id);
         await supabaseClient.auth.admin.deleteUser(newUser.user.id);
         throw roleError;
       }
-
-      // 5. Mark invitation as accepted
-      await supabaseClient
-        .from("invitations")
-        .update({ accepted_at: new Date().toISOString() })
-        .eq("id", invitation.id);
 
       return new Response(JSON.stringify({ user: newUser.user }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
 
-    } else if (action === "create") {
-      // Keep existing create logic but maybe we should disable it later
-      // ... same as before
-
+    } else if (action === "delete") {
       const { userId } = body;
 
       if (!userId) throw new Error("userId is required for deletion");
@@ -273,40 +198,6 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    } else if (action === "resend-invitation") {
-      const { invitationId } = body;
-      if (!invitationId) throw new Error("invitationId is required");
-
-      const { data: invitation, error: getError } = await supabaseClient
-        .from("invitations")
-        .select("*")
-        .eq("id", invitationId)
-        .single();
-
-      if (getError || !invitation) throw new Error("Invitation not found");
-
-      // Generate new token and update expiration
-      const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const { data: updated, error: updateError } = await supabaseClient
-        .from("invitations")
-        .update({
-          token: newToken,
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          accepted_at: null // In case it was somehow marked but we want to reset
-        })
-        .eq("id", invitationId)
-        .select()
-        .single();
-
-      if (updateError) throw updateError;
-
-      const origin = req.headers.get("origin") || "";
-      const invitationUrl = `${origin}/aceitar-convite/${newToken}`;
-
-      return new Response(JSON.stringify({ invitation: updated, invitationUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });

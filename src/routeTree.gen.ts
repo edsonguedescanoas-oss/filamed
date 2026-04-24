@@ -25,8 +25,8 @@ import { Route as TestHorizontalRouteImport } from './routes/test.horizontal'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
+import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
-import { Route as AceitarConviteTokenRouteImport } from './routes/aceitar-convite.$token'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
@@ -47,7 +47,6 @@ import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendim
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 import { Route as AdminAdminMetricasRouteImport } from './routes/_admin.admin.metricas'
 import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
-import { Route as AdminAdminConvitesRouteImport } from './routes/_admin.admin.convites'
 import { Route as AdminAdminClassificacaoRouteImport } from './routes/_admin.admin.classificacao'
 import { Route as AdminAdminAuditoriaRouteImport } from './routes/_admin.admin.auditoria'
 import { Route as AdminAdminAlertasRouteImport } from './routes/_admin.admin.alertas'
@@ -132,14 +131,14 @@ const HooksCleanupTtsCacheRoute = HooksCleanupTtsCacheRouteImport.update({
   path: '/hooks/cleanup-tts-cache',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConviteTokenRoute = ConviteTokenRouteImport.update({
+  id: '/convite/$token',
+  path: '/convite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   id: '/checkout/return',
   path: '/checkout/return',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AceitarConviteTokenRoute = AceitarConviteTokenRouteImport.update({
-  id: '/aceitar-convite/$token',
-  path: '/aceitar-convite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAppRoute = AppAppRouteImport.update({
@@ -242,11 +241,6 @@ const AdminAdminLogsRoute = AdminAdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminAdminRoute,
 } as any)
-const AdminAdminConvitesRoute = AdminAdminConvitesRouteImport.update({
-  id: '/convites',
-  path: '/convites',
-  getParentRoute: () => AdminAdminRoute,
-} as any)
 const AdminAdminClassificacaoRoute = AdminAdminClassificacaoRouteImport.update({
   id: '/classificacao',
   path: '/classificacao',
@@ -285,8 +279,8 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
   '/app': typeof AppAppRouteWithChildren
-  '/aceitar-convite/$token': typeof AceitarConviteTokenRoute
   '/checkout/return': typeof CheckoutReturnRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -297,7 +291,6 @@ export interface FileRoutesByFullPath {
   '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/classificacao': typeof AdminAdminClassificacaoRoute
-  '/admin/convites': typeof AdminAdminConvitesRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
@@ -328,8 +321,8 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
-  '/aceitar-convite/$token': typeof AceitarConviteTokenRoute
   '/checkout/return': typeof CheckoutReturnRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -340,7 +333,6 @@ export interface FileRoutesByTo {
   '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/classificacao': typeof AdminAdminClassificacaoRoute
-  '/admin/convites': typeof AdminAdminConvitesRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
@@ -375,8 +367,8 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_app/app': typeof AppAppRouteWithChildren
-  '/aceitar-convite/$token': typeof AceitarConviteTokenRoute
   '/checkout/return': typeof CheckoutReturnRoute
+  '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/s/$token': typeof STokenRoute
@@ -387,7 +379,6 @@ export interface FileRoutesById {
   '/_admin/admin/alertas': typeof AdminAdminAlertasRoute
   '/_admin/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/_admin/admin/classificacao': typeof AdminAdminClassificacaoRoute
-  '/_admin/admin/convites': typeof AdminAdminConvitesRoute
   '/_admin/admin/logs': typeof AdminAdminLogsRoute
   '/_admin/admin/metricas': typeof AdminAdminMetricasRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
@@ -421,8 +412,8 @@ export interface FileRouteTypes {
     | '/setup'
     | '/admin'
     | '/app'
-    | '/aceitar-convite/$token'
     | '/checkout/return'
+    | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -433,7 +424,6 @@ export interface FileRouteTypes {
     | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/classificacao'
-    | '/admin/convites'
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
@@ -464,8 +454,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/setup'
     | '/admin'
-    | '/aceitar-convite/$token'
     | '/checkout/return'
+    | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -476,7 +466,6 @@ export interface FileRouteTypes {
     | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/classificacao'
-    | '/admin/convites'
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
@@ -510,8 +499,8 @@ export interface FileRouteTypes {
     | '/setup'
     | '/_admin/admin'
     | '/_app/app'
-    | '/aceitar-convite/$token'
     | '/checkout/return'
+    | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/s/$token'
@@ -522,7 +511,6 @@ export interface FileRouteTypes {
     | '/_admin/admin/alertas'
     | '/_admin/admin/auditoria'
     | '/_admin/admin/classificacao'
-    | '/_admin/admin/convites'
     | '/_admin/admin/logs'
     | '/_admin/admin/metricas'
     | '/_admin/admin/planos'
@@ -555,8 +543,8 @@ export interface RootRouteChildren {
   PrecosRoute: typeof PrecosRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
-  AceitarConviteTokenRoute: typeof AceitarConviteTokenRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ConviteTokenRoute: typeof ConviteTokenRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
   STokenRoute: typeof STokenRoute
@@ -680,18 +668,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HooksCleanupTtsCacheRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/convite/$token': {
+      id: '/convite/$token'
+      path: '/convite/$token'
+      fullPath: '/convite/$token'
+      preLoaderRoute: typeof ConviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkout/return': {
       id: '/checkout/return'
       path: '/checkout/return'
       fullPath: '/checkout/return'
       preLoaderRoute: typeof CheckoutReturnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/aceitar-convite/$token': {
-      id: '/aceitar-convite/$token'
-      path: '/aceitar-convite/$token'
-      fullPath: '/aceitar-convite/$token'
-      preLoaderRoute: typeof AceitarConviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/app': {
@@ -834,13 +822,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminLogsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
-    '/_admin/admin/convites': {
-      id: '/_admin/admin/convites'
-      path: '/convites'
-      fullPath: '/admin/convites'
-      preLoaderRoute: typeof AdminAdminConvitesRouteImport
-      parentRoute: typeof AdminAdminRoute
-    }
     '/_admin/admin/classificacao': {
       id: '/_admin/admin/classificacao'
       path: '/classificacao'
@@ -898,7 +879,6 @@ interface AdminAdminRouteChildren {
   AdminAdminAlertasRoute: typeof AdminAdminAlertasRoute
   AdminAdminAuditoriaRoute: typeof AdminAdminAuditoriaRoute
   AdminAdminClassificacaoRoute: typeof AdminAdminClassificacaoRoute
-  AdminAdminConvitesRoute: typeof AdminAdminConvitesRoute
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminMetricasRoute: typeof AdminAdminMetricasRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
@@ -909,7 +889,6 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminAlertasRoute: AdminAdminAlertasRoute,
   AdminAdminAuditoriaRoute: AdminAdminAuditoriaRoute,
   AdminAdminClassificacaoRoute: AdminAdminClassificacaoRoute,
-  AdminAdminConvitesRoute: AdminAdminConvitesRoute,
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminMetricasRoute: AdminAdminMetricasRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
@@ -990,8 +969,8 @@ const rootRouteChildren: RootRouteChildren = {
   PrecosRoute: PrecosRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
-  AceitarConviteTokenRoute: AceitarConviteTokenRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  ConviteTokenRoute: ConviteTokenRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
   STokenRoute: STokenRoute,
