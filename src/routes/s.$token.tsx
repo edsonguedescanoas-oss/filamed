@@ -62,10 +62,20 @@ function PublicSenhaPage() {
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(() => {
+  // Persistência da ativação: usamos localStorage para não pedir de novo a
+  // cada aba/refresh. A revalidação (abaixo) cuida de revogações no SO.
+  const NOTIF_KEY = "ticket-notif-ativo";
+  const computeAtivo = () => {
     if (typeof window === "undefined") return false;
-    return sessionStorage.getItem("ticket-notif-ativo") === "1";
-  });
+    const flag = localStorage.getItem(NOTIF_KEY) === "1";
+    if (!flag) return false;
+    // Se o navegador suporta Notification e o usuário REVOGOU, não considere ativo.
+    if ("Notification" in window && Notification.permission === "denied") {
+      return false;
+    }
+    return true;
+  };
+  const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(computeAtivo);
   const [ativando, setAtivando] = useState(false);
 
   const fetchInitialData = useCallback(async (isRetry = false) => {
