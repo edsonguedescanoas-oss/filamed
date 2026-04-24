@@ -28,6 +28,7 @@ export function OrientationGuard() {
   });
 
   useEffect(() => {
+    if (isExcludedRoute) return;
     const checkOrientation = () => {
       // Detecta se é retrato
       const portrait = window.innerHeight > window.innerWidth;
@@ -69,7 +70,7 @@ export function OrientationGuard() {
       window.removeEventListener("resize", checkOrientation);
       window.removeEventListener("orientationchange", checkOrientation);
     };
-  }, []);
+  }, [isExcludedRoute]);
 
   const handleManualOrientation = async () => {
     try {
