@@ -3,6 +3,21 @@ import { Smartphone, ChevronRight } from "lucide-react";
 import { useLocation } from "@tanstack/react-router";
 
 export function OrientationGuard() {
+  const location = useLocation();
+  // Rotas onde NUNCA exibimos sugestão de modo paisagem
+  // (ticket público do paciente sempre em retrato).
+  const isExcludedRoute =
+    location.pathname.startsWith("/s/") ||
+    location.pathname === "/" ||
+    location.pathname.startsWith("/precos") ||
+    location.pathname.startsWith("/casos") ||
+    location.pathname.startsWith("/demo") ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/manual") ||
+    location.pathname.startsWith("/setup") ||
+    location.pathname.startsWith("/convite") ||
+    location.pathname.startsWith("/reset-password");
+
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   const [hasSkipped, setHasSkipped] = useState(() => {
