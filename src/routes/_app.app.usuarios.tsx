@@ -489,15 +489,16 @@ function UsuariosPage() {
                 <Label htmlFor="edit_telefone">Telefone</Label>
                 <Input id="edit_telefone" name="telefone" defaultValue={isEditingUser?.telefone || ""} />
               </div>
-              <div className="flex items-center gap-2">
-                <input 
-                  type="checkbox" 
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="edit_ativo">Usuário ativo</Label>
+                  <p className="text-xs text-muted-foreground">Define se o usuário pode acessar o sistema.</p>
+                </div>
+                <Switch 
                   id="edit_ativo" 
                   name="ativo" 
                   defaultChecked={isEditingUser?.ativo}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                 />
-                <Label htmlFor="edit_ativo">Usuário ativo</Label>
               </div>
             </div>
             <DialogFooter>
