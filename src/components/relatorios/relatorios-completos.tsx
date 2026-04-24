@@ -436,6 +436,7 @@ export function RelatoriosCompletos({ unidadeId }: { unidadeId: string }) {
   /* ───────── Export CSV ───────── */
 
   const exportarCSV = () => {
+    trackEvent("download_report", { format: "CSV", type: "operational_report", unit_id: unidadeId });
     const rows: (string | number)[][] = [
       ["Relatório operacional — Período de", `${periodo} dias`],
       [],
