@@ -26,6 +26,7 @@ import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as AceitarConviteTokenRouteImport } from './routes/aceitar-convite.$token'
 import { Route as AppAppRouteImport } from './routes/_app.app'
 import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
 import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
@@ -133,6 +134,11 @@ const HooksCleanupTtsCacheRoute = HooksCleanupTtsCacheRouteImport.update({
 const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   id: '/checkout/return',
   path: '/checkout/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AceitarConviteTokenRoute = AceitarConviteTokenRouteImport.update({
+  id: '/aceitar-convite/$token',
+  path: '/aceitar-convite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAppRoute = AppAppRouteImport.update({
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
   '/app': typeof AppAppRouteWithChildren
+  '/aceitar-convite/$token': typeof AceitarConviteTokenRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
@@ -314,6 +321,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
+  '/aceitar-convite/$token': typeof AceitarConviteTokenRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
@@ -359,6 +367,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRoute
   '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_app/app': typeof AppAppRouteWithChildren
+  '/aceitar-convite/$token': typeof AceitarConviteTokenRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
@@ -403,6 +412,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/admin'
     | '/app'
+    | '/aceitar-convite/$token'
     | '/checkout/return'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
@@ -444,6 +454,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/setup'
     | '/admin'
+    | '/aceitar-convite/$token'
     | '/checkout/return'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
@@ -488,6 +499,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/_admin/admin'
     | '/_app/app'
+    | '/aceitar-convite/$token'
     | '/checkout/return'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
@@ -531,6 +543,7 @@ export interface RootRouteChildren {
   PrecosRoute: typeof PrecosRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
+  AceitarConviteTokenRoute: typeof AceitarConviteTokenRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
@@ -660,6 +673,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout/return'
       fullPath: '/checkout/return'
       preLoaderRoute: typeof CheckoutReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aceitar-convite/$token': {
+      id: '/aceitar-convite/$token'
+      path: '/aceitar-convite/$token'
+      fullPath: '/aceitar-convite/$token'
+      preLoaderRoute: typeof AceitarConviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/app': {
@@ -949,6 +969,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrecosRoute: PrecosRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
+  AceitarConviteTokenRoute: AceitarConviteTokenRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
