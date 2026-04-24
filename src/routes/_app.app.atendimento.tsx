@@ -73,8 +73,8 @@ type Atendimento = {
 const PRIO_RANK: Record<Prioridade, number> = { urgente: 0, preferencial: 1, normal: 2 };
 
 function AtendimentoPage() {
-  const { profile, hasAnyRole, user } = useAuth();
-  const podeAtender = hasAnyRole(["admin", "medico", "enfermeiro", "recepcao"]);
+  const { profile, hasPermission, user } = useAuth();
+  const podeAtender = hasPermission("provide_care");
 
   const [filas, setFilas] = useState<Fila[]>([]);
   const [pacientes, setPacientes] = useState<Map<string, Paciente>>(new Map());
