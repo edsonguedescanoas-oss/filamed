@@ -29,20 +29,22 @@ export function WhatsAppFlow() {
 
   const handleWhatsAppRedirect = () => {
     const { nome, unidade, tipo } = formData;
+    
+    // Track Form Submission and WhatsApp Click
+    trackEvent("form_submission", {
+      form_name: "whatsapp_flow",
+      user_name: nome,
+      unit_name: unidade,
+      unit_type: tipo
+    });
+    
+    trackEvent("whatsapp_click", {
+      location: "flow_dialog",
+      unit_type: tipo
+    });
+
     let customMessage = "";
-
-    const tipoLower = tipo.toLowerCase();
-
-    if (tipoLower.includes("odont") || tipoLower.includes("dent")) {
-      customMessage = `Olá! Meu nome é ${nome} e sou da clínica ${unidade}. Gostaria de entender como o FilaMed pode me ajudar a organizar melhor as consultas odontológicas e reduzir as faltas dos pacientes.`;
-    } else if (tipoLower.includes("estét") || tipoLower.includes("estet") || tipoLower.includes("dermato")) {
-      customMessage = `Olá! Meu nome é ${nome} e sou da ${unidade}. Atuamos na área de estética e gostaria de saber como o FilaMed pode elevar a experiência dos nossos clientes e otimizar nossa agenda de procedimentos.`;
-    } else if (tipoLower.includes("pronto") || tipoLower.includes("atendimento") || tipoLower.includes("emergência") || tipoLower.includes("urgência")) {
-      customMessage = `Olá! Meu nome é ${nome} e falo do ${unidade}. Temos um fluxo intenso de pronto atendimento e gostaria de saber como o FilaMed pode nos ajudar a gerenciar as filas de espera e o tempo de atendimento em tempo real.`;
-    } else {
-      customMessage = `Olá! Meu nome é ${nome}. Gostaria de saber mais sobre como o FilaMed pode modernizar o atendimento da minha clínica (${unidade}), que atua na área de ${tipo}.`;
-    }
-
+...
     const encodedText = encodeURIComponent(customMessage);
     window.open(`https://wa.me/5511999999999?text=${encodedText}`, "_blank");
   };
