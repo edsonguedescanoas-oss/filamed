@@ -131,7 +131,11 @@ ${publicUrl}`;
         mensagem = template
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{unidade}}", unidade.nome);
-        if (reviewUrl) mensagem += `\n\nAvalie nossa clínica no Google:\n${reviewUrl}`;
+        if (reviewUrl) {
+          // Formato compacto na mesma linha + linkPreview desabilitado no envio,
+          // para evitar a pré-visualização (imagem) gerada pelo WhatsApp.
+          mensagem += `\n\n⭐ *Avalie aqui:* ${reviewUrl}`;
+        }
       } else {
         // 2. Calcula tempo estimado
         const { count } = await supabaseClient
