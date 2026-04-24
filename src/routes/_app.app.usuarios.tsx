@@ -64,7 +64,7 @@ const MODULES = [
 export const Route = createFileRoute("/_app/app/usuarios")({
   head: () => ({ meta: [{ title: "Usuários e permissões — FilaMed" }] }),
   component: () => (
-    <RoleGuard allow={["admin", "gestor"]} path="/app/usuarios">
+    <RoleGuard permission="manage_unit_settings" path="/app/usuarios">
       <UsuariosPage />
     </RoleGuard>
   ),
