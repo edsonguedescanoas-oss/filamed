@@ -1289,6 +1289,20 @@ function TvPage() {
                             {chamada.senha?.paciente_nome ? `${chamada.senha.paciente_nome} • ` : ""}
                             {chamada.senha?.fila_nome || "Geral"}
                           </p>
+                          {(chamada as any).triagem_dados?.criterios?.length > 0 && (
+                            <div 
+                              className="mt-1 flex items-center gap-1.5 opacity-60 italic"
+                              style={{ fontSize: "clamp(0.4375rem, 2.2cqi, 0.6875rem)" }}
+                            >
+                              <Activity className="h-[1em] w-[1em] opacity-60" />
+                              <span className="truncate">
+                                {(chamada as any).triagem_dados.criterios
+                                  .map((id: string) => criterios[id])
+                                  .filter(Boolean)
+                                  .join(", ")}
+                              </span>
+                            </div>
+                          )}
                           {(() => {
                             const sid = chamada.senha?.id;
                             const st = sid ? statusSenhas[sid] : undefined;
