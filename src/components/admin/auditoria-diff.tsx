@@ -1,4 +1,4 @@
-import { ArrowRight, Minus, Plus, Equal } from "lucide-react";
+import { ArrowRight, Minus, Plus, Equal, Clock, Users, MoveRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type JsonRecord = Record<string, unknown>;
@@ -129,6 +129,164 @@ function ValueCell({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Card visual "Antes vs Depois" especifico para mudancas de fila.
+// Renderizado quando ambos os payloads carregam tipo === "movimentacao_fila".
+// Mostra fila/posicao/tempo em formato grande e legivel, sobre o diff bruto.
+// ---------------------------------------------------------------------------
+
+type MovimentacaoFila = {
+  fila_nome?: string | null;
+  posicao?: number | null;
+  tempo_espera_estimado?: number | null;
+  codigo?: string | null;
+};
+
+function isMovimentacaoFila(o: JsonRecord | null): o is JsonRecord {
+  return !!o && o["tipo"] === "movimentacao_fila";
+}
+
+function fmtPosicao(p: unknown): string {
+  if (typeof p !== "number" || !Number.isFinite(p)) return "—";
+  return `${p}º`;
+}
+
+function fmtMin(t: unknown): string {
+  if (typeof t !== "number" || !Number.isFinite(t)) return "—";
+  if (t <= 0) return "agora";
+  if (t < 60) return `~${t} min`;
+  const h = Math.floor(t / 60);
+  const m = t % 60;
+  return m === 0 ? `~${h}h` : `~${h}h${m}min`;
+}
+
+function deltaTempo(antes: unknown, depois: unknown): { texto: string; tone: string } | null {
+  if (typeof antes !== "number" || typeof depois !== "number") return null;
+  const diff = depois - antes;
+  if (diff === 0) return { texto: "sem mudanca de tempo", tone: "text-muted-foreground" };
+  if (diff > 0)
+    return {
+      texto: `+${diff} min de espera`,
+      tone: "text-amber-600 dark:text-amber-400",
+    };
+  return {
+    texto: `${diff} min de espera`,
+    tone: "text-emerald-600 dark:text-emerald-400",
+  };
+}
+
+function MovimentacaoFilaCard({
+  before,
+  after,
+}: {
+  before: MovimentacaoFila;
+  after: MovimentacaoFila;
+}) {
+  const delta = deltaTempo(before.tempo_espera_estimado, after.tempo_espera_estimado);
+  const codigo = before.codigo ?? after.codigo ?? null;
+  return (
+    <div className="rounded-lg border border-amber-300/60 bg-gradient-to-br from-amber-50 to-orange-50/60 p-4 dark:border-amber-500/30 dark:from-amber-500/10 dark:to-orange-500/5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300">
+            <MoveRight className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+              Mudanca de fila {codigo ? `· ${codigo}` : ""}
+            </p>
+            <p className="text-[10px] text-amber-700/70 dark:text-amber-300/70">
+              Comparativo de posicao e tempo estimado
+            </p>
+          </div>
+        </div>
+        {delta && (
+          <span
+            className={cn(
+              "rounded-full bg-white/60 px-2 py-0.5 text-[11px] font-semibold tabular-nums dark:bg-black/30",
+              delta.tone,
+            )}
+          >
+            {delta.texto}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-[1fr_auto_1fr]">
+        {/* ANTES */}
+        <div className="rounded-md border border-border/60 bg-card/80 p-3">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Antes
+          </p>
+          <p className="mb-2 truncate text-sm font-semibold text-foreground" title={before.fila_nome ?? undefined}>
+            {before.fila_nome ?? "Fila desconhecida"}
+          </p>
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Posicao:</span>
+              <span className="font-mono font-semibold tabular-nums text-foreground">
+                {fmtPosicao(before.posicao)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Espera:</span>
+              <span className="font-mono font-semibold tabular-nums text-foreground">
+                {fmtMin(before.tempo_espera_estimado)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* SETA */}
+        <div className="hidden items-center justify-center sm:flex">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+            <ArrowRight className="h-4 w-4" />
+          </div>
+        </div>
+        <div className="flex items-center justify-center sm:hidden">
+          <ArrowRight className="h-4 w-4 rotate-90 text-amber-600 dark:text-amber-400" />
+        </div>
+
+        {/* DEPOIS */}
+        <div className="rounded-md border border-amber-400/50 bg-amber-100/50 p-3 dark:border-amber-500/40 dark:bg-amber-500/15">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+            Depois
+          </p>
+          <p
+            className="mb-2 truncate text-sm font-semibold text-foreground"
+            title={after.fila_nome ?? undefined}
+          >
+            {after.fila_nome ?? "Fila desconhecida"}
+          </p>
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+              <span className="text-muted-foreground">Posicao:</span>
+              <span className="font-mono font-semibold tabular-nums text-foreground">
+                {fmtPosicao(after.posicao)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+              <span className="text-muted-foreground">Espera:</span>
+              <span className="font-mono font-semibold tabular-nums text-foreground">
+                {fmtMin(after.tempo_espera_estimado)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-2 text-[10px] leading-relaxed text-amber-800/80 dark:text-amber-200/70">
+        A senha foi recolocada no FINAL da nova fila e o tempo de espera passou
+        a ser contado a partir da movimentacao.
+      </p>
+    </div>
+  );
+}
+
 export function AuditoriaDiff({
   before,
   after,
@@ -163,8 +321,19 @@ export function AuditoriaDiff({
   const fields = buildDiff(before, after);
   const changedCount = fields.filter((f) => f.status !== "unchanged").length;
 
+  // Detecta movimentacao de fila (marcador emitido pelo dialog de edicao).
+  // Quando presente, mostra um card "Antes vs Depois" amigavel acima do diff.
+  const showMovimentacaoFila = isMovimentacaoFila(before) && isMovimentacaoFila(after);
+
   return (
-    <div className="rounded-md border border-border bg-card overflow-hidden">
+    <div className="space-y-3">
+      {showMovimentacaoFila && (
+        <MovimentacaoFilaCard
+          before={before as MovimentacaoFila}
+          after={after as MovimentacaoFila}
+        />
+      )}
+      <div className="rounded-md border border-border bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -244,6 +413,7 @@ export function AuditoriaDiff({
           Nenhuma diferença entre os snapshots.
         </div>
       )}
+      </div>
     </div>
   );
 }
