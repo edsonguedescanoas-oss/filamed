@@ -1610,76 +1610,41 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      gerar_senha_guiche:
-        | {
-            Args: {
-              _data_nascimento?: string
-              _nome: string
-              _prioridade?: Database["public"]["Enums"]["senha_prioridade"]
-              _telefone?: string
-              _unidade_id: string
-            }
-            Returns: {
-              codigo: string
-              created_at: string
-              criado_por: string | null
-              fila_id: string
-              finalizada_em: string | null
-              id: string
-              origem: string | null
-              paciente_id: string | null
-              posicao: number | null
-              prioridade: Database["public"]["Enums"]["senha_prioridade"]
-              senha_origem_id: string | null
-              status: Database["public"]["Enums"]["senha_status"]
-              tempo_espera_estimado: number | null
-              token_publico: string
-              triagem_dados: Json | null
-              unidade_id: string
-              updated_at: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "senhas"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              _data_nascimento?: string
-              _nome: string
-              _prioridade?: Database["public"]["Enums"]["senha_prioridade"]
-              _telefone?: string
-              _triagem_dados?: Json
-              _unidade_id: string
-            }
-            Returns: {
-              codigo: string
-              created_at: string
-              criado_por: string | null
-              fila_id: string
-              finalizada_em: string | null
-              id: string
-              origem: string | null
-              paciente_id: string | null
-              posicao: number | null
-              prioridade: Database["public"]["Enums"]["senha_prioridade"]
-              senha_origem_id: string | null
-              status: Database["public"]["Enums"]["senha_status"]
-              tempo_espera_estimado: number | null
-              token_publico: string
-              triagem_dados: Json | null
-              unidade_id: string
-              updated_at: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "senhas"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      gerar_senha_guiche: {
+        Args: {
+          _data_nascimento?: string
+          _nome: string
+          _prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          _telefone?: string
+          _triagem_dados?: Json
+          _unidade_id: string
+        }
+        Returns: {
+          codigo: string
+          created_at: string
+          criado_por: string | null
+          fila_id: string
+          finalizada_em: string | null
+          id: string
+          origem: string | null
+          paciente_id: string | null
+          posicao: number | null
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          senha_origem_id: string | null
+          status: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado: number | null
+          token_publico: string
+          triagem_dados: Json | null
+          unidade_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "senhas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_chamadas_recentes: {
         Args: { _unidade_id: string }
         Returns: {
