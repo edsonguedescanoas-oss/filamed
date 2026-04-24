@@ -116,7 +116,7 @@ function AcceptancePage() {
     if (!invitation?.is_valid || accepting) return;
 
     const interval = setInterval(() => {
-      void fetchInvitation();
+      void fetchInvitation(true);
     }, 10000);
 
     return () => clearInterval(interval);
