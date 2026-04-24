@@ -11,6 +11,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { ArrowRight, MessageCircle, Building2, Stethoscope, User } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 export function WhatsAppFlow() {
   const [formData, setFormData] = useState({
