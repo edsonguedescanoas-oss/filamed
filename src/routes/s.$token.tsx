@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, Star, BellRing } from "lucide-react";
+import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, Star, BellRing, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
@@ -432,6 +432,21 @@ function PublicSenhaPage() {
     }
   }, [notificacoesAtivas, senha?.id, senha?.status, senha?.codigo, alertPaciente]);
 
+  // CTA de avaliação só aparece DEPOIS do alerta sonoro/vibração para que o
+  // paciente perceba a notificação primeiro e não seja levado direto a uma
+  // ação visual antes de ouvir/sentir o aviso.
+  const [showReviewCta, setShowReviewCta] = useState(false);
+  useEffect(() => {
+    if (senha?.status !== "finalizada") {
+      setShowReviewCta(false);
+      return;
+    }
+    // Atraso curto: tempo suficiente para o tom de finalização (~0.6s) e o
+    // primeiro pulso de vibração serem percebidos antes do CTA aparecer.
+    const t = setTimeout(() => setShowReviewCta(true), 900);
+    return () => clearTimeout(t);
+  }, [senha?.status]);
+
   // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
   const refreshPosition = useCallback(async () => {
     if (!senha || senha.status !== "aguardando") {
@@ -685,15 +700,34 @@ function PublicSenhaPage() {
                   <span className="font-medium">Atendimento finalizado</span>
                 </div>
                 {unidade?.google_review_url && (
-                  <a
-                    href={unidade.google_review_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mx-auto flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-xl"
+                  <div
+                    className={`flex flex-col items-center gap-2 transition-all duration-500 ${
+                      showReviewCta
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-2 pointer-events-none"
+                    }`}
+                    aria-hidden={!showReviewCta}
                   >
-                    <Star className="h-4 w-4" />
-                    Avaliar atendimento
-                  </a>
+                    <p className="text-xs text-slate-400">
+                      Sua opinião ajuda muito 💛
+                    </p>
+                    <a
+                      href={unidade.google_review_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group mx-auto flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-bold text-primary-foreground shadow-xl shadow-primary/30 ring-2 ring-primary/40 ring-offset-2 ring-offset-slate-900 transition-all hover:scale-[1.02] active:scale-[0.98] animate-pulse-soft"
+                    >
+                      <Star className="h-5 w-5 fill-current" />
+                      <span className="underline underline-offset-4 decoration-2 decoration-primary-foreground/70">
+                        Avalie aqui
+                      </span>
+                      <ExternalLink className="h-4 w-4 opacity-80 group-hover:translate-x-0.5 transition-transform" />
+                    </a>
+                    <p className="text-[10px] text-slate-500 inline-flex items-center gap-1">
+                      <ExternalLink className="h-3 w-3" />
+                      Abre o Google Avaliações em nova aba
+                    </p>
+                  </div>
                 )}
               </div>
             )}
