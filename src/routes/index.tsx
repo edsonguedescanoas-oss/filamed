@@ -13,6 +13,9 @@ import { Segments } from "@/components/sections/segments";
 import { ComoComecar } from "@/components/sections/como-comecar";
 import { CTA } from "@/components/sections/cta";
 import { AnalyticsShowcase } from "@/components/sections/analytics-showcase";
+import { ReportsShowcase } from "@/components/sections/reports-showcase";
+import { SocialProof } from "@/components/sections/social-proof";
+import { CaseStudy } from "@/components/sections/case-study";
 import { useReveal } from "@/hooks/use-reveal";
 
 export const Route = createFileRoute("/")({
@@ -46,9 +49,11 @@ function LandingPage() {
         <Problem />
         <Segments />
         <AnalyticsShowcase />
+        <ReportsShowcase />
+        <SocialProof />
+        <CaseStudy />
         <Solution />
         <Features />
-        {/* Architecture e Flow podem ser menos priorizados para gestores, mas mantidos */}
         <Architecture />
         <Flow />
         <Benefits />
