@@ -65,6 +65,10 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       toast.error("Selecione a fila");
       return;
     }
+    if (mudouFila && !confirmouMudancaFila) {
+      toast.warning("Confirme a regra de mudança de fila antes de salvar");
+      return;
+    }
     setSaving(true);
     try {
       // Mescla observações no triagem_dados sem perder demais campos
