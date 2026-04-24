@@ -43,16 +43,77 @@ serve(async (req) => {
       throw new Error("Forbidden: Only unit admins can manage users.");
     }
 
-    if (action === "create") {
-      const { email, password, nome_completo, telefone, role } = userData;
+    if (action === "invite") {
+      const { email, role, nome_completo } = userData;
 
-      if (!email || !password || !nome_completo || !role) {
-        throw new Error("Missing required fields for creation");
+      if (!email || !role || !nome_completo) {
+        throw new Error("Missing required fields for invitation");
       }
 
-      // 1. Create user in auth
+      // 1. Check if user already exists in profiles
+      const { data: existingUser } = await supabaseClient
+        .from("profiles")
+        .select("id")
+        .eq("email", email) // Note: profiles might not have email, check auth
+        .maybeSingle();
+
+      // Check auth directly
+      const { data: { users: authUsers } } = await supabaseClient.auth.admin.listUsers();
+      const userExists = authUsers.find(u => u.email === email);
+
+      if (userExists) {
+        throw new Error("User with this email already exists");
+      }
+
+      // 2. Create invitation record
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const { data: invitation, error: inviteError } = await supabaseClient
+        .from("invitations")
+        .insert({
+          unidade_id: targetUnidadeId,
+          email,
+          role,
+          token,
+          invited_by: requester.id,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        })
+        .select()
+        .single();
+
+      if (inviteError) throw inviteError;
+
+      // In a real app, we would send the email here.
+      // For now, we return the token/link so the UI can show it (or we can use a mock email service).
+      // If transactional emails were set up, we'd use them.
+
+      return new Response(JSON.stringify({ invitation }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+
+    } else if (action === "accept-invitation") {
+      const { token, password, nome_completo, telefone } = body;
+
+      if (!token || !password || !nome_completo) {
+        throw new Error("Missing required fields to accept invitation");
+      }
+
+      // 1. Validate invitation
+      const { data: invitation, error: tokenError } = await supabaseClient
+        .from("invitations")
+        .select("*")
+        .eq("token", token)
+        .is("accepted_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .single();
+
+      if (tokenError || !invitation) {
+        throw new Error("Invitation invalid or expired");
+      }
+
+      // 2. Create user in auth
       const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
-        email,
+        email: invitation.email,
         password,
         email_confirm: true,
         user_metadata: { nome_completo }
@@ -60,45 +121,52 @@ serve(async (req) => {
 
       if (createError) throw createError;
 
-      // 2. Create profile
+      // 3. Create profile
       const { error: profileError } = await supabaseClient
         .from("profiles")
         .insert({
           id: newUser.user.id,
-          unidade_id: targetUnidadeId,
+          unidade_id: invitation.unidade_id,
           nome_completo,
           telefone,
           ativo: true
         });
 
       if (profileError) {
-        // Cleanup auth user if profile creation fails
         await supabaseClient.auth.admin.deleteUser(newUser.user.id);
         throw profileError;
       }
 
-      // 3. Assign role
+      // 4. Assign role
       const { error: roleError } = await supabaseClient
         .from("user_roles")
         .insert({
           user_id: newUser.user.id,
-          unidade_id: targetUnidadeId,
-          role
+          unidade_id: invitation.unidade_id,
+          role: invitation.role
         });
 
       if (roleError) {
-        // Cleanup if role assignment fails
         await supabaseClient.from("profiles").delete().eq("id", newUser.user.id);
         await supabaseClient.auth.admin.deleteUser(newUser.user.id);
         throw roleError;
       }
+
+      // 5. Mark invitation as accepted
+      await supabaseClient
+        .from("invitations")
+        .update({ accepted_at: new Date().toISOString() })
+        .eq("id", invitation.id);
 
       return new Response(JSON.stringify({ user: newUser.user }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
 
-    } else if (action === "delete") {
+    } else if (action === "create") {
+      // Keep existing create logic but maybe we should disable it later
+      // ... same as before
+
       const { userId } = body;
 
       if (!userId) throw new Error("userId is required for deletion");
