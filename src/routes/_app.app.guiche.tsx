@@ -100,53 +100,76 @@ function GuichePage() {
     [],
   );
 
-  const fetchData = useCallback(async () => {
-    if (!unidadeId) return;
-    setLoading(true);
-    const [filasRes, senhasRes, pacRes] = await Promise.all([
-      supabase
-        .from("filas")
-        .select("*")
-        .eq("unidade_id", unidadeId)
-        .eq("ativa", true)
-        .order("ordem"),
-      supabase
-        .from("senhas")
-        .select("*")
-        .eq("unidade_id", unidadeId)
-        .in("status", ["aguardando", "chamada"])
-        .order("created_at"),
-      supabase.from("pacientes").select("*").eq("unidade_id", unidadeId),
-    ]);
-    if (filasRes.error) toast.error("Erro ao carregar filas: " + filasRes.error.message);
-    if (senhasRes.error) toast.error("Erro ao carregar senhas: " + senhasRes.error.message);
+  const fetchData = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!unidadeId) return;
+      if (!opts?.silent) setLoading(true);
+      const [filasRes, senhasRes, pacRes] = await Promise.all([
+        supabase
+          .from("filas")
+          .select("*")
+          .eq("unidade_id", unidadeId)
+          .eq("ativa", true)
+          .order("ordem"),
+        supabase
+          .from("senhas")
+          .select("*")
+          .eq("unidade_id", unidadeId)
+          .in("status", ["aguardando", "chamada"])
+          .order("created_at"),
+        supabase.from("pacientes").select("*").eq("unidade_id", unidadeId),
+      ]);
+      if (filasRes.error) toast.error("Erro ao carregar filas: " + filasRes.error.message);
+      if (senhasRes.error) toast.error("Erro ao carregar senhas: " + senhasRes.error.message);
 
-    const todasFilasData = (filasRes.data ?? []) as Fila[];
-    const guiche = todasFilasData.find((f) => f.tipo === ("guiche" as FilaTipo)) ?? null;
-    setFilaGuiche(guiche);
-    setFilasDestino(todasFilasData.filter((f) => f.tipo !== ("guiche" as FilaTipo)));
-    setTodasFilas(todasFilasData);
-    setSenhas((senhasRes.data ?? []) as Senha[]);
+      const todasFilasData = (filasRes.data ?? []) as Fila[];
+      const guiche = todasFilasData.find((f) => f.tipo === ("guiche" as FilaTipo)) ?? null;
+      setFilaGuiche(guiche);
+      setFilasDestino(todasFilasData.filter((f) => f.tipo !== ("guiche" as FilaTipo)));
+      setTodasFilas(todasFilasData);
+      setSenhas((senhasRes.data ?? []) as Senha[]);
 
-    const map = new Map<string, Paciente>();
-    ((pacRes.data ?? []) as Paciente[]).forEach((p) => map.set(p.id, p));
-    setPacientes(map);
+      const map = new Map<string, Paciente>();
+      ((pacRes.data ?? []) as Paciente[]).forEach((p) => map.set(p.id, p));
+      setPacientes(map);
 
-    setLoading(false);
-  }, [unidadeId]);
+      if (!opts?.silent) setLoading(false);
+    },
+    [unidadeId],
+  );
 
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
 
-  // Realtime nas senhas da fila Guichê
+  // Realtime nas senhas da fila Guichê — atualiza em background sem flash
   useRealtimeTable({
     table: "senhas",
     filter: unidadeId ? `unidade_id=eq.${unidadeId}` : undefined,
     channelKey: `unidade:${unidadeId}:guiche`,
     enabled: !!unidadeId,
-    onChange: () => void fetchData(),
+    onChange: () => void fetchData({ silent: true }),
   });
+
+  // Polling de segurança a cada 15s caso o realtime caia (mantém contadores corretos)
+  useEffect(() => {
+    if (!unidadeId) return;
+    const interval = setInterval(() => {
+      void fetchData({ silent: true });
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [unidadeId, fetchData]);
+
+  // Refetch quando a aba volta a ficar visível (cobre suspensão de realtime)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void fetchData({ silent: true });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [fetchData]);
 
   const senhasGuiche = useMemo(() => {
     if (!filaGuiche) return [];
@@ -415,7 +438,7 @@ function GuichePage() {
                         <EditarSenhaDialog
                           senha={s}
                           filas={todasFilas}
-                          onUpdated={() => void fetchData()}
+                          onUpdated={() => void fetchData({ silent: true })}
                           trigger={
                             <Button size="sm" variant="ghost" className="h-7 px-2" title="Editar ticket">
                               <Pencil className="h-3.5 w-3.5" />
