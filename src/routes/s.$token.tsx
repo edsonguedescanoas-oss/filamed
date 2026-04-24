@@ -440,6 +440,58 @@ function PublicSenhaPage() {
   const isFinalized = senha.status === "finalizada";
   const isCancelled = senha.status === "cancelada" || senha.status === "ausente";
 
+  // Gate inicial: pede ao paciente para "ativar notificações" — necessário
+  // porque navegadores móveis exigem um gesto do usuário para liberar áudio,
+  // vibração e Notification API.
+  if (!notificacoesAtivas) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8 flex items-center justify-center">
+        <div className="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/80 backdrop-blur p-7 text-center shadow-2xl">
+          {visual?.logo_url ? (
+            <img
+              src={visual.logo_url}
+              alt="Logo"
+              className="mx-auto mb-5 max-h-14 w-auto object-contain"
+            />
+          ) : (
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+              <BellRing className="h-7 w-7" />
+            </div>
+          )}
+          {unidade && (
+            <div className="text-[10px] uppercase tracking-[0.3em] text-slate-400 mb-1">
+              {unidade.nome}
+            </div>
+          )}
+          <h1 className="font-display text-2xl font-bold tracking-tight mb-2">
+            Sua senha {senha.codigo}
+          </h1>
+          <p className="text-sm text-slate-300 leading-relaxed mb-6">
+            Toque no botão abaixo para ativar <strong>som</strong>,{" "}
+            <strong>vibração</strong> e <strong>notificações</strong> e ser
+            avisado em tempo real quando for chamado.
+          </p>
+          <button
+            type="button"
+            onClick={() => void ativarNotificacoes()}
+            disabled={ativando}
+            className="w-full rounded-2xl bg-primary px-5 py-4 text-base font-bold text-primary-foreground shadow-xl shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-60 inline-flex items-center justify-center gap-2"
+          >
+            {ativando ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <BellRing className="h-5 w-5" />
+            )}
+            Ativar notificações
+          </button>
+          <p className="mt-4 text-[11px] text-slate-500">
+            Mantenha esta página aberta no celular para receber os avisos.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8">
       <div className="mx-auto max-w-md flex flex-col min-h-full">
