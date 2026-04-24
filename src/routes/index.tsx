@@ -54,6 +54,7 @@ function LandingPage() {
         <ReportsShowcase />
         <SocialProof />
         <CaseStudy />
+        <ROICalculator />
         <Solution />
         <Features />
         <Architecture />
