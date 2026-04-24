@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Save, AlertCircle, ChevronDown, ChevronRight, LayoutPanelLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Save, AlertCircle, ChevronDown, ChevronRight, LayoutPanelLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/use-auth';
 
 export type Operator = '>=' | '<=' | '==' | '!=' | '>' | '<';
 export type LogicOperator = 'AND' | 'OR';
@@ -227,39 +229,70 @@ const RuleGroupEditor = ({
 };
 
 export const CriteriaEditor = () => {
-  const [criterias, setCriterias] = useState<Criteria[]>([
-    {
-      id: '1',
-      name: 'Febre Alta ou Saturação Baixa',
-      classification: 'Urgente',
-      rootGroup: {
-        id: 'g1',
-        logic: 'OR',
-        rules: [
-          { id: 'r1', field: 'temperatura', operator: '>=', value: '39' },
-          { id: 'r2', field: 'saturacao', operator: '<=', value: '92' }
-        ]
-      }
-    },
-    {
-      id: '2',
-      name: 'Idoso com Hipertensão',
-      classification: 'Prioritário',
-      rootGroup: {
-        id: 'g2',
-        logic: 'AND',
-        rules: [
-          { id: 'r3', field: 'idade', operator: '>=', value: '60' },
-          { id: 'r4', field: 'hipertenso', operator: '==', value: 'true' }
-        ]
-      }
-    }
-  ]);
-  const [editingId, setEditingId] = useState<string | null>('1');
+  const { profile } = useAuth();
+  const [criterias, setCriterias] = useState<Criteria[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const addNewCriteria = () => {
+  useEffect(() => {
+    if (profile?.unidade_id) {
+      fetchCriteria();
+    }
+  }, [profile?.unidade_id]);
+
+  const fetchCriteria = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('triagem_criterios')
+        .select('*')
+        .eq('unidade_id', profile?.unidade_id as string)
+        .order('ordem', { ascending: true });
+
+      if (error) throw error;
+
+      const mappedCriteria: Criteria[] = (data || []).map((item: any) => ({
+        id: item.id,
+        name: item.nome,
+        classification: mapDbToUiClassification(item.prioridade),
+        rootGroup: item.regras as unknown as RuleGroup,
+      }));
+
+      setCriterias(mappedCriteria);
+      if (mappedCriteria.length > 0 && !editingId) {
+        setEditingId(mappedCriteria[0].id);
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar critérios:', error);
+      toast.error('Não foi possível carregar os critérios');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapUiToDbClassification = (ui: ClassificationType): 'normal' | 'preferencial' | 'urgente' => {
+    switch (ui) {
+      case 'Prioritário': return 'preferencial';
+      case 'Urgente': return 'urgente';
+      default: return 'normal';
+    }
+  };
+
+  const mapDbToUiClassification = (db: string): ClassificationType => {
+    switch (db) {
+      case 'preferencial': return 'Prioritário';
+      case 'urgente': return 'Urgente';
+      default: return 'Normal';
+    }
+  };
+
+  const addNewCriteria = async () => {
+    if (!profile?.unidade_id) return;
+
+    const newId = crypto.randomUUID();
     const newCriteria: Criteria = {
-      id: crypto.randomUUID(),
+      id: newId,
       name: 'Novo Critério',
       classification: 'Normal',
       rootGroup: {
@@ -268,26 +301,91 @@ export const CriteriaEditor = () => {
         rules: [],
       },
     };
-    setCriterias([...criterias, newCriteria]);
-    setEditingId(newCriteria.id);
+
+    try {
+      const { error } = await supabase
+        .from('triagem_criterios')
+        .insert([{
+          id: newId,
+          unidade_id: profile.unidade_id,
+          nome: newCriteria.name,
+          prioridade: mapUiToDbClassification(newCriteria.classification),
+          regras: newCriteria.rootGroup as any,
+          ordem: criterias.length,
+        }]);
+
+      if (error) throw error;
+
+      setCriterias([...criterias, newCriteria]);
+      setEditingId(newId);
+      toast.success('Novo critério criado');
+    } catch (error: any) {
+      console.error('Erro ao criar critério:', error);
+      toast.error('Erro ao criar novo critério');
+    }
   };
 
-  const updateCriteria = (id: string, updates: Partial<Criteria>) => {
+  const updateCriteriaState = (id: string, updates: Partial<Criteria>) => {
     setCriterias(criterias.map((c) => (c.id === id ? { ...c, ...updates } : c)));
   };
 
-  const deleteCriteria = (id: string) => {
-    setCriterias(criterias.filter((c) => c.id !== id));
-    if (editingId === id) setEditingId(null);
-    toast.success('Critério removido');
+  const deleteCriteria = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('triagem_criterios')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setCriterias(criterias.filter((c) => c.id !== id));
+      if (editingId === id) setEditingId(null);
+      toast.success('Critério removido');
+    } catch (error: any) {
+      console.error('Erro ao remover critério:', error);
+      toast.error('Erro ao remover critério');
+    }
   };
 
-  const handleSave = () => {
-    console.log('Salvando critérios:', criterias);
-    toast.success('Configurações de classificação salvas com sucesso!');
+  const handleSave = async () => {
+    if (!editingId || !profile?.unidade_id) return;
+    
+    const criteriaToSave = criterias.find(c => c.id === editingId);
+    if (!criteriaToSave) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('triagem_criterios')
+        .update({
+          nome: criteriaToSave.name,
+          prioridade: mapUiToDbClassification(criteriaToSave.classification),
+          regras: criteriaToSave.rootGroup as any,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingId);
+
+      if (error) throw error;
+
+      toast.success('Critério salvo com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao salvar critério:', error);
+      toast.error('Erro ao salvar critério');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const editingCriteria = criterias.find((c) => c.id === editingId);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+        <p className="text-sm">Carregando critérios...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-1">
@@ -360,13 +458,14 @@ export const CriteriaEditor = () => {
                     <Input 
                       id="criteria-name"
                       value={editingCriteria.name}
-                      onChange={(e) => updateCriteria(editingCriteria.id, { name: e.target.value })}
+                      onChange={(e) => updateCriteriaState(editingCriteria.id, { name: e.target.value })}
                       className="h-9 font-medium"
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button onClick={handleSave} className="bg-gradient-primary h-9 gap-2 shadow-glow">
-                      <Save className="h-4 w-4" /> Salvar
+                    <Button onClick={handleSave} disabled={saving} className="bg-gradient-primary h-9 gap-2 shadow-glow">
+                      {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} 
+                      {saving ? 'Salvando...' : 'Salvar'}
                     </Button>
                   </div>
                 </div>
@@ -375,7 +474,7 @@ export const CriteriaEditor = () => {
                   <Label className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Classificar como</Label>
                   <Select 
                     value={editingCriteria.classification}
-                    onValueChange={(v) => updateCriteria(editingCriteria.id, { classification: v as ClassificationType })}
+                    onValueChange={(v) => updateCriteriaState(editingCriteria.id, { classification: v as ClassificationType })}
                   >
                     <SelectTrigger className={`h-9 font-semibold ${
                       editingCriteria.classification === 'Urgente' ? 'text-destructive' :
@@ -401,7 +500,7 @@ export const CriteriaEditor = () => {
                 </div>
                 <RuleGroupEditor 
                   group={editingCriteria.rootGroup} 
-                  onChange={(updates) => updateCriteria(editingCriteria.id, { rootGroup: { ...editingCriteria.rootGroup, ...updates } })}
+                  onChange={(updates) => updateCriteriaState(editingCriteria.id, { rootGroup: { ...editingCriteria.rootGroup, ...updates } })}
                 />
               </div>
             </CardContent>

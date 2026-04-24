@@ -976,6 +976,7 @@ export type Database = {
           nome: string
           ordem: number
           prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          regras: Json | null
           unidade_id: string
           updated_at: string
         }
@@ -986,6 +987,7 @@ export type Database = {
           nome: string
           ordem?: number
           prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          regras?: Json | null
           unidade_id: string
           updated_at?: string
         }
@@ -996,6 +998,7 @@ export type Database = {
           nome?: string
           ordem?: number
           prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          regras?: Json | null
           unidade_id?: string
           updated_at?: string
         }
