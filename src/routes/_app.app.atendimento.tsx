@@ -669,6 +669,15 @@ function AtendimentoPage() {
                     {filaById.get(s.fila_id)?.nome ?? "—"}
                     {s.paciente_id && ` · ${pacientes.get(s.paciente_id)?.nome_completo ?? ""}`}
                   </div>
+                  {s.triagem_dados?.criterios && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {s.triagem_dados.criterios.map((cid: string) => (
+                        <Badge key={cid} variant="outline" className="text-[9px] py-0 h-4 bg-background/50 border-amber-500/20 text-amber-700 dark:text-amber-300">
+                          {criterios.get(cid) || "Critério"}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Button
