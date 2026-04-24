@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrecosRouteImport } from './routes/precos'
 import { Route as ManualRouteImport } from './routes/manual'
 import { Route as LoginRouteImport } from './routes/login'
@@ -54,6 +55,11 @@ import { Route as AdminAdminUnidadesUnidadeIdMetricasRouteImport } from './route
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrecosRoute = PrecosRouteImport.update({
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/manual': typeof ManualRoute
   '/precos': typeof PrecosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
   '/app': typeof AppAppRouteWithChildren
@@ -304,6 +311,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/manual': typeof ManualRoute
   '/precos': typeof PrecosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
@@ -347,6 +355,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/manual': typeof ManualRoute
   '/precos': typeof PrecosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/_admin/admin': typeof AdminAdminRouteWithChildren
   '/_app/app': typeof AppAppRouteWithChildren
@@ -390,6 +399,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/manual'
     | '/precos'
+    | '/reset-password'
     | '/setup'
     | '/admin'
     | '/app'
@@ -431,6 +441,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/manual'
     | '/precos'
+    | '/reset-password'
     | '/setup'
     | '/admin'
     | '/checkout/return'
@@ -473,6 +484,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/manual'
     | '/precos'
+    | '/reset-password'
     | '/setup'
     | '/_admin/admin'
     | '/_app/app'
@@ -517,6 +529,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ManualRoute: typeof ManualRoute
   PrecosRoute: typeof PrecosRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
@@ -535,6 +548,13 @@ declare module '@tanstack/react-router' {
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/precos': {
@@ -927,6 +947,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ManualRoute: ManualRoute,
   PrecosRoute: PrecosRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
