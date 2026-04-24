@@ -1,6 +1,6 @@
 import {
   ListOrdered, QrCode, Tv, Megaphone, Volume2, Smartphone,
-  ShieldCheck, BarChart3, Building2, Code2, LineChart, LayoutDashboard
+  ShieldCheck, BarChart3, Building2, Code2, LineChart, LayoutDashboard, CheckCircle2
 } from "lucide-react";
 
 type Feature = {
