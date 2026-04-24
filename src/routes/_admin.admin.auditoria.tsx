@@ -62,6 +62,7 @@ interface UnidadeOpt {
 
 const ENTIDADES = [
   { value: "todas", label: "Todas as entidades" },
+  { value: "usuario", label: "Usuários" },
   { value: "assinatura", label: "Assinaturas / Planos" },
   { value: "unidade", label: "Unidades (suspensão/reativação)" },
   { value: "fila", label: "Filas" },
