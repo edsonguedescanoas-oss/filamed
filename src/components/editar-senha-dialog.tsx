@@ -289,38 +289,76 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
         .eq("id", senha.id);
       if (error) throw error;
 
-      // Auditoria via insert direto (RLS permite leitura por super admin; insert não tem policy bloqueante)
-      // Usa ação informativa para o registro não ser perdido
+      // Auditoria via insert direto (RLS permite leitura por super admin;
+      // insert nao tem policy bloqueante).
+      // Para mudancas de fila, emitimos um payload extra com:
+      //   - tipo: "movimentacao_fila" (marcador p/ a UI de auditoria
+      //     reconhecer e renderizar o card "Antes vs Depois")
+      //   - fila_nome (legivel p/ humanos, sem precisar joinar)
+      //   - posicao   (1-based: posicao na espera)
+      //   - tempo_espera_estimado (minutos)
       try {
+        // Posicao ANTES da mudanca = senhas aguardando na fila atual com
+        // created_at <= a senha (mesma ordenacao temporal usada no app).
+        let posicaoAntes: number | null = null;
+        let tempoAntesMin: number | null = null;
+        try {
+          const tempoPorPessoaAntes = filaAtual?.tempo_espera_estimado ?? 10;
+          const { count } = await supabase
+            .from("senhas")
+            .select("id", { count: "exact", head: true })
+            .eq("fila_id", senha.fila_id)
+            .eq("status", "aguardando")
+            .lte("created_at", senha.created_at);
+          posicaoAntes = count ?? null;
+          tempoAntesMin =
+            posicaoAntes !== null
+              ? Math.max(0, (posicaoAntes - 1) * tempoPorPessoaAntes)
+              : null;
+        } catch {
+          // segue sem posicao_antes
+        }
+
+        const tempoPorPessoaDepois = filaNova?.tempo_espera_estimado ?? 10;
+        const previewPosNum = previewPos ?? 0;
+
         await supabase.from("audit_log").insert({
           unidade_id: senha.unidade_id,
           entidade: "senhas",
           entidade_id: senha.id,
-          acao: "editar_ticket_guiche",
+          acao: mudouFila ? "mover_senha_de_fila" : "editar_ticket_guiche",
           resumo: mudouFila
             ? `Senha ${senha.codigo} movida de "${filaAtual?.nome ?? "?"}" para "${filaNova?.nome ?? "?"}" (recolocada no final, tempo recontado)`
-            : `Senha ${senha.codigo} editada (prioridade/observações)`,
+            : `Senha ${senha.codigo} editada (prioridade/observacoes)`,
           dados_antes: {
+            ...(mudouFila ? { tipo: "movimentacao_fila" } : {}),
+            codigo: senha.codigo,
             fila_id: senha.fila_id,
+            fila_nome: filaAtual?.nome ?? null,
             prioridade: senha.prioridade,
             observacoes: (senha.triagem_dados as { observacoes?: string } | null)?.observacoes,
             created_at: senha.created_at,
-            tempo_espera_estimado: (senha as { tempo_espera_estimado?: number | null })
-              .tempo_espera_estimado,
+            posicao: posicaoAntes,
+            tempo_espera_estimado:
+              (senha as { tempo_espera_estimado?: number | null }).tempo_espera_estimado ??
+              tempoAntesMin,
           },
           dados_depois: {
+            ...(mudouFila ? { tipo: "movimentacao_fila" } : {}),
+            codigo: senha.codigo,
             fila_id: filaId,
+            fila_nome: filaNova?.nome ?? null,
             prioridade,
             observacoes: observacoes.trim() || undefined,
             created_at: mudouFila ? agora : senha.created_at,
+            posicao: mudouFila ? previewPosNum + 1 : posicaoAntes,
             tempo_espera_estimado: mudouFila
-              ? filaNova?.tempo_espera_estimado ?? null
+              ? previewPosNum * tempoPorPessoaDepois
               : (senha as { tempo_espera_estimado?: number | null }).tempo_espera_estimado,
-            posicao_estimada: mudouFila ? previewPos : undefined,
           },
         });
       } catch {
-        // auditoria é best-effort — não bloqueia
+        // auditoria e best-effort — nao bloqueia
       }
 
       toast.success(
