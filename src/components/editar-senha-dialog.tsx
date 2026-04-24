@@ -139,6 +139,33 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       return;
     }
     setSaving(true);
+
+    // Trava anti-corrida: re-checa a contagem de aguardando na fila de
+    // destino IMEDIATAMENTE antes do update. Se chegaram novas senhas
+    // entre o preview/confirmação e o clique em salvar, abortamos, atualiza
+    // o preview na tela e exigimos nova confirmação.
+    if (mudouFila) {
+      const atual = await fetchPreview(filaId);
+      if (atual === null) {
+        toast.error("Não foi possível confirmar a fila de destino. Tente novamente.");
+        setSaving(false);
+        return;
+      }
+      const esperado = snapshotConfirmado;
+      if (esperado === null || atual !== esperado) {
+        setConfirmouMudancaFila(false);
+        setSnapshotConfirmado(null);
+        const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
+        toast.warning(
+          esperado === null
+            ? "A estimativa foi atualizada. Confirme novamente antes de salvar."
+            : `A fila mudou: agora há ${atual} aguardando (~${atual * tempoPorPessoa} min). Confirme novamente.`,
+        );
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       // Mescla observações no triagem_dados sem perder demais campos.
       // Quando a fila muda, registra um marcador de "movido em" para auditoria
