@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Smartphone, ChevronRight } from "lucide-react";
+import { useLocation } from "@tanstack/react-router";
 
 export function OrientationGuard() {
   const [isPortrait, setIsPortrait] = useState(false);
