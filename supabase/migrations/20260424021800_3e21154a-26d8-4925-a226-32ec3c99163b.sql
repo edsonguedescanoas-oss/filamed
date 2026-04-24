@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.gerar_senha_guiche(uuid, text, text, date, public.senha_prioridade);
