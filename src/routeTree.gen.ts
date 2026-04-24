@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as PrecosRouteImport } from './routes/precos'
+import { Route as ManualRouteImport } from './routes/manual'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CasosRouteImport } from './routes/casos'
 import { Route as AppRouteImport } from './routes/_app'
@@ -56,6 +57,11 @@ const SetupRoute = SetupRouteImport.update({
 const PrecosRoute = PrecosRouteImport.update({
   id: '/precos',
   path: '/precos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManualRoute = ManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -243,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/casos': typeof CasosRoute
   '/login': typeof LoginRoute
+  '/manual': typeof ManualRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/casos': typeof CasosRoute
   '/login': typeof LoginRoute
+  '/manual': typeof ManualRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
   '/admin': typeof AdminAdminRouteWithChildren
@@ -321,6 +329,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/casos': typeof CasosRoute
   '/login': typeof LoginRoute
+  '/manual': typeof ManualRoute
   '/precos': typeof PrecosRoute
   '/setup': typeof SetupRoute
   '/_admin/admin': typeof AdminAdminRouteWithChildren
@@ -361,6 +370,7 @@ export interface FileRouteTypes {
     | '/'
     | '/casos'
     | '/login'
+    | '/manual'
     | '/precos'
     | '/setup'
     | '/admin'
@@ -399,6 +409,7 @@ export interface FileRouteTypes {
     | '/'
     | '/casos'
     | '/login'
+    | '/manual'
     | '/precos'
     | '/setup'
     | '/admin'
@@ -438,6 +449,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/casos'
     | '/login'
+    | '/manual'
     | '/precos'
     | '/setup'
     | '/_admin/admin'
@@ -479,6 +491,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   CasosRoute: typeof CasosRoute
   LoginRoute: typeof LoginRoute
+  ManualRoute: typeof ManualRoute
   PrecosRoute: typeof PrecosRoute
   SetupRoute: typeof SetupRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
@@ -505,6 +518,13 @@ declare module '@tanstack/react-router' {
       path: '/precos'
       fullPath: '/precos'
       preLoaderRoute: typeof PrecosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manual': {
+      id: '/manual'
+      path: '/manual'
+      fullPath: '/manual'
+      preLoaderRoute: typeof ManualRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -863,6 +883,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   CasosRoute: CasosRoute,
   LoginRoute: LoginRoute,
+  ManualRoute: ManualRoute,
   PrecosRoute: PrecosRoute,
   SetupRoute: SetupRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
