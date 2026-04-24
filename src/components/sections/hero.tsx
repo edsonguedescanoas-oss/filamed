@@ -17,7 +17,7 @@ export function Hero() {
         <div className="mx-auto max-w-4xl text-center animate-fade-up">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
-            A solução definitiva para donos e gestores de clínicas
+            A solução definitiva para clínicas e negócios com fluxo de atendimento
           </span>
           <h1 className="mt-8 font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-6xl lg:text-7xl">
             Pare de perder dinheiro com <br className="hidden sm:block" />
