@@ -37,6 +37,11 @@ export function SiteHeader() {
               hash={link.hash}
               className="hover:text-foreground transition-colors"
               activeProps={{ className: "text-foreground font-medium" }}
+              onClick={() => {
+                if (link.to === "/demo") {
+                  trackEvent("navigation_demo", { source: "header_nav" });
+                }
+              }}
             >
               {link.label}
             </Link>
