@@ -432,6 +432,21 @@ function PublicSenhaPage() {
     }
   }, [notificacoesAtivas, senha?.id, senha?.status, senha?.codigo, alertPaciente]);
 
+  // CTA de avaliação só aparece DEPOIS do alerta sonoro/vibração para que o
+  // paciente perceba a notificação primeiro e não seja levado direto a uma
+  // ação visual antes de ouvir/sentir o aviso.
+  const [showReviewCta, setShowReviewCta] = useState(false);
+  useEffect(() => {
+    if (senha?.status !== "finalizada") {
+      setShowReviewCta(false);
+      return;
+    }
+    // Atraso curto: tempo suficiente para o tom de finalização (~0.6s) e o
+    // primeiro pulso de vibração serem percebidos antes do CTA aparecer.
+    const t = setTimeout(() => setShowReviewCta(true), 900);
+    return () => clearTimeout(t);
+  }, [senha?.status]);
+
   // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
   const refreshPosition = useCallback(async () => {
     if (!senha || senha.status !== "aguardando") {
