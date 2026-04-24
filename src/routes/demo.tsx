@@ -76,7 +76,10 @@ function DemoPage() {
                     <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Unidade São Paulo · Março 2024</p>
                   </div>
                   <div className="flex gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border text-xs font-bold hover:bg-muted transition-colors">
+                    <button 
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border text-xs font-bold hover:bg-muted transition-colors"
+                      onClick={() => trackEvent("download_report", { format: "PDF", type: "main_panel" })}
+                    >
                       <Download className="h-3 w-3" />
                       Exportar PDF
                     </button>
