@@ -206,61 +206,105 @@ function PublicSenhaPage() {
     [],
   );
 
-  const showNativeNotification = useCallback((title: string, body: string) => {
-    try {
-      if (typeof window === "undefined" || !("Notification" in window)) return;
-      if (Notification.permission !== "granted") return;
-      // Só dispara notificação nativa se a aba estiver oculta — caso contrário
-      // o som + vibração + UI já alertam.
-      if (document.visibilityState === "visible") return;
-      new Notification(title, {
-        body,
-        tag: "filamed-ticket",
-        renotify: true,
-        icon: "/favicon.ico",
-      } as NotificationOptions);
-    } catch {
-      /* ignore */
-    }
-  }, []);
+  const showNativeNotification = useCallback(
+    (title: string, body: string): boolean => {
+      try {
+        if (typeof window === "undefined" || !("Notification" in window)) return false;
+        if (Notification.permission !== "granted") return false;
+        // Só dispara notificação nativa se a aba estiver oculta — caso contrário
+        // o som + vibração + UI já alertam.
+        if (document.visibilityState === "visible") return false;
+        new Notification(title, {
+          body,
+          tag: "filamed-ticket",
+          renotify: true,
+          icon: "/favicon.ico",
+        } as NotificationOptions);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
 
   const alertPaciente = useCallback(
     (type: AlertType, opts?: { title?: string; body?: string }) => {
+      const channels: AlertChannel[] = [];
+      let pattern: number | number[] = 200;
+      let tones: Array<{ f: number; t: number; type?: OscillatorType }> = [];
+
       switch (type) {
         case "called":
-          playTone([
+          tones = [
             { f: 880, t: 0.18, type: "square" },
             { f: 660, t: 0.18, type: "square" },
             { f: 880, t: 0.22, type: "square" },
-          ]);
-          vibrate([250, 100, 250, 100, 400]);
+          ];
+          pattern = [250, 100, 250, 100, 400];
           break;
         case "next":
-          playTone([
+          tones = [
             { f: 523, t: 0.14 },
             { f: 784, t: 0.18 },
-          ]);
-          vibrate([180, 80, 180]);
+          ];
+          pattern = [180, 80, 180];
           break;
         case "finalized":
-          playTone([
+          tones = [
             { f: 660, t: 0.16 },
             { f: 880, t: 0.18 },
             { f: 1175, t: 0.28 },
-          ]);
-          vibrate([120, 60, 120, 60, 300]);
+          ];
+          pattern = [120, 60, 120, 60, 300];
           break;
         case "warning":
-          playTone([
+          tones = [
             { f: 440, t: 0.2, type: "triangle" },
             { f: 330, t: 0.3, type: "triangle" },
-          ]);
-          vibrate([400, 120, 400]);
+          ];
+          pattern = [400, 120, 400];
           break;
       }
-      if (opts?.title) showNativeNotification(opts.title, opts.body ?? "");
+
+      const soundOk = playTone(tones);
+      if (soundOk) channels.push("sound");
+
+      const vibrationOk = vibrate(pattern);
+      if (vibrationOk) channels.push("vibration");
+
+      let notifOk = false;
+      if (opts?.title) notifOk = showNativeNotification(opts.title, opts.body ?? "");
+      if (notifOk) channels.push("notification");
+
+      // Aviso visual sempre ocorre — atua como fallback quando som/vibração falham.
+      // Quando a vibração não está disponível, reforçamos o aviso visual com duração
+      // maior para garantir que o paciente perceba a mudança.
+      const visualTitle = opts?.title ?? "Atualização da sua senha";
+      const visualBody = opts?.body;
+      const noHaptics = !vibrationOk;
+      const noSound = !soundOk;
+      const reinforce = noHaptics || noSound;
+
+      try {
+        const fn =
+          type === "warning" ? toast.warning : type === "finalized" ? toast.success : toast.info;
+        fn(visualTitle, {
+          description:
+            visualBody ??
+            (reinforce
+              ? "Som/vibração indisponíveis neste dispositivo — fique atento à tela."
+              : undefined),
+          duration: reinforce ? 8000 : 4500,
+        });
+        channels.push("visual");
+      } catch {
+        /* ignore */
+      }
+
+      logAlertChannels(type, channels);
     },
-    [playTone, vibrate, showNativeNotification],
+    [playTone, vibrate, showNativeNotification, logAlertChannels],
   );
 
   // Mantido por compatibilidade com os pontos que já chamam playNotificationSound
