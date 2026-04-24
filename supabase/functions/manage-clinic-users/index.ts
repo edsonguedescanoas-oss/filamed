@@ -28,19 +28,23 @@ serve(async (req) => {
     const body = await req.json();
     const { action, userData, unidadeId: targetUnidadeId } = body;
 
-    if (!targetUnidadeId) {
+    if (!targetUnidadeId && action !== "accept-invitation") {
       throw new Error("unidadeId is required");
     }
 
     // Security Check: Is the requester an admin of this unit or a super_admin?
-    const { data: requesterRoles } = await supabaseClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", requester.id)
-      .or(`and(unidade_id.eq.${targetUnidadeId},role.eq.admin),role.eq.super_admin`);
+    let requesterRoles: any[] = [];
+    if (requester && action !== "accept-invitation") {
+      const { data } = await supabaseClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", requester.id)
+        .or(`and(unidade_id.eq.${targetUnidadeId},role.eq.admin),role.eq.super_admin`);
+      requesterRoles = data ?? [];
 
-    if (!requesterRoles || requesterRoles.length === 0) {
-      throw new Error("Forbidden: Only unit admins can manage users.");
+      if (requesterRoles.length === 0) {
+        throw new Error("Forbidden: Only unit admins can manage users.");
+      }
     }
 
     if (action === "invite") {
