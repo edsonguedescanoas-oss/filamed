@@ -254,6 +254,36 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                         A operação fica registrada na auditoria com seu usuário.
                       </li>
                     </ul>
+                    <div className="mt-2 rounded border border-amber-400/50 bg-amber-100/60 p-2 text-[11px] dark:bg-amber-400/10">
+                      <p className="font-semibold uppercase tracking-wide">
+                        Estimativa após a mudança
+                      </p>
+                      {previewLoading ? (
+                        <p className="text-amber-800/80 dark:text-amber-200/80">
+                          calculando…
+                        </p>
+                      ) : (
+                        <p>
+                          {previewPos === 0 ? (
+                            <>
+                              Será a <strong>próxima</strong> a ser chamada em{" "}
+                              <strong>{filaNova?.nome ?? "—"}</strong>.
+                            </>
+                          ) : (
+                            <>
+                              Posição: <strong>{(previewPos ?? 0) + 1}º</strong> ·{" "}
+                              {previewPos ?? 0}{" "}
+                              {previewPos === 1 ? "pessoa" : "pessoas"} na frente ·
+                              espera estimada{" "}
+                              <strong>~{previewTempo ?? 0} min</strong>{" "}
+                              <span className="text-amber-700/80 dark:text-amber-200/70">
+                                ({filaNova?.tempo_espera_estimado ?? 10} min/pessoa)
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      )}
+                    </div>
                     <label className="mt-2 flex items-start gap-2 pt-1">
                       <Checkbox
                         checked={confirmouMudancaFila}
