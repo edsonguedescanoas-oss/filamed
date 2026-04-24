@@ -62,6 +62,7 @@ function LandingPage() {
         <Flow />
         <Benefits />
         <Differentials />
+        <Security />
         <ComoComecar />
         <FAQ />
         <CTA />
