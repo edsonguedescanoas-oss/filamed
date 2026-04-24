@@ -388,7 +388,7 @@ function UsuariosPage() {
                 const locked = !canManage || usuario.id === profile?.id;
                 return (
                   <div key={usuario.id} className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium">{usuario.nome_completo}</p>
                         <Badge variant="outline" className={cn("text-[10px]", usuario.ativo ? "" : "text-destructive")}>
@@ -399,21 +399,67 @@ function UsuariosPage() {
                       <p className="mt-1 text-xs text-muted-foreground">{ROLE_HELP[currentRole]}</p>
                       {usuario.telefone && <p className="mt-0.5 text-xs text-muted-foreground">{usuario.telefone}</p>}
                     </div>
-                    <div className="flex items-center gap-2 sm:w-[250px]">
-                      <Select
-                        value={currentRole}
-                        disabled={locked || saving}
-                        onValueChange={(value) => void alterarRole(usuario, value as UnidadeRole)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ASSIGNABLE_ROLES.map((role) => (
-                            <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="flex flex-wrap items-center gap-2 sm:w-auto">
+                      <div className="w-[180px]">
+                        <Select
+                          value={currentRole}
+                          disabled={locked || saving}
+                          onValueChange={(value) => void alterarRole(usuario, value as UnidadeRole)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ASSIGNABLE_ROLES.map((role) => (
+                              <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {canManage && usuario.id !== profile?.id && (
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground"
+                            onClick={() => setIsEditingUser(usuario)}
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive opacity-70 hover:opacity-100"
+                                disabled={saving}
+                              >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação excluirá permanentemente a conta de <strong>{usuario.nome_completo}</strong> e removerá seu acesso à unidade.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => void handleDeleteUser(usuario.id)}
+                                >
+                                  Excluir usuário
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
+                      
                       {saving && <Save className="h-4 w-4 animate-pulse text-primary" />}
                     </div>
                   </div>
@@ -423,6 +469,44 @@ function UsuariosPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!isEditingUser} onOpenChange={(open) => !open && setIsEditingUser(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleEditUser}>
+            <DialogHeader>
+              <DialogTitle>Editar usuário</DialogTitle>
+              <DialogDescription>
+                Atualize as informações de {isEditingUser?.nome_completo}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit_nome">Nome completo</Label>
+                <Input id="edit_nome" name="nome_completo" defaultValue={isEditingUser?.nome_completo} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit_telefone">Telefone</Label>
+                <Input id="edit_telefone" name="telefone" defaultValue={isEditingUser?.telefone || ""} />
+              </div>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="edit_ativo" 
+                  name="ativo" 
+                  defaultChecked={isEditingUser?.ativo}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="edit_ativo">Usuário ativo</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={formLoading}>
+                {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar alterações"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
