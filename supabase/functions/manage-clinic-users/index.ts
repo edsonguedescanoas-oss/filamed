@@ -86,11 +86,10 @@ serve(async (req) => {
 
       if (inviteError) throw inviteError;
 
-      // In a real app, we would send the email here.
-      // For now, we return the token/link so the UI can show it (or we can use a mock email service).
-      // If transactional emails were set up, we'd use them.
+      const origin = req.headers.get("origin") || "";
+      const invitationUrl = `${origin}/aceitar-convite/${token}`;
 
-      return new Response(JSON.stringify({ invitation }), {
+      return new Response(JSON.stringify({ invitation, invitationUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
