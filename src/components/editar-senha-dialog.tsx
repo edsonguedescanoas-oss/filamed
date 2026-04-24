@@ -43,6 +43,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
     (senha.triagem_dados as { observacoes?: string } | null)?.observacoes ?? "",
   );
   const [saving, setSaving] = useState(false);
+  const [confirmouMudancaFila, setConfirmouMudancaFila] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -51,6 +52,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       setObservacoes(
         (senha.triagem_dados as { observacoes?: string } | null)?.observacoes ?? "",
       );
+      setConfirmouMudancaFila(false);
     }
   }, [open, senha]);
 
