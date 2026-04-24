@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Eye, Loader2, Save, ShieldCheck, Users, X } from "lucide-react";
+import { Check, Eye, Loader2, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,11 @@ import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { ROLE_ROUTES } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 
 type UnidadeRole = Exclude<AppRole, "super_admin">;
 
@@ -72,6 +77,9 @@ function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [isEditingUser, setIsEditingUser] = useState<UsuarioRow | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
 
   const carregarUsuarios = async () => {
     if (!unidadeId) return;
@@ -120,20 +128,16 @@ function UsuariosPage() {
     if (!unidadeId || !canManage || usuario.id === profile?.id) return;
     setSavingUserId(usuario.id);
     try {
-      const { error: deleteError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("unidade_id", unidadeId)
-        .eq("user_id", usuario.id)
-        .neq("role", "super_admin");
-      if (deleteError) throw deleteError;
-
-      const { error: insertError } = await supabase.from("user_roles").insert({
-        unidade_id: unidadeId,
-        user_id: usuario.id,
-        role,
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "update",
+          unidadeId,
+          userId: usuario.id,
+          updates: { role }
+        }
       });
-      if (insertError) throw insertError;
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao atualizar permissão");
 
       setUsuarios((prev) => prev.map((u) => (u.id === usuario.id ? { ...u, role } : u)));
       toast.success("Permissão atualizada");
@@ -142,6 +146,96 @@ function UsuariosPage() {
       toast.error(msg);
     } finally {
       setSavingUserId(null);
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!unidadeId) return;
+    setFormLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const userData = {
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
+      nome_completo: formData.get("nome_completo") as string,
+      telefone: formData.get("telefone") as string,
+      role: formData.get("role") as UnidadeRole,
+    };
+
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "create",
+          unidadeId,
+          userData
+        }
+      });
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao criar usuário");
+
+      toast.success("Usuário criado com sucesso!");
+      setIsAddingUser(false);
+      void carregarUsuarios();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao criar usuário");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!unidadeId) return;
+    setSavingUserId(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "delete",
+          unidadeId,
+          userId
+        }
+      });
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao excluir usuário");
+
+      toast.success("Usuário excluído com sucesso");
+      setUsuarios(prev => prev.filter(u => u.id !== userId));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir usuário");
+    } finally {
+      setSavingUserId(null);
+    }
+  };
+
+  const handleEditUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!unidadeId || !isEditingUser) return;
+    setFormLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const updates = {
+      nome_completo: formData.get("nome_completo") as string,
+      telefone: formData.get("telefone") as string,
+      ativo: formData.get("ativo") === "on",
+    };
+
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "update",
+          unidadeId,
+          userId: isEditingUser.id,
+          updates
+        }
+      });
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao atualizar usuário");
+
+      toast.success("Usuário atualizado com sucesso!");
+      setIsEditingUser(null);
+      void carregarUsuarios();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar usuário");
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -155,10 +249,68 @@ function UsuariosPage() {
             Defina o perfil de cada pessoa e acompanhe quais módulos ficam liberados para admin, gestor e operadores.
           </p>
         </div>
-        <Badge variant={canManage ? "default" : "outline"} className="w-fit gap-1.5">
-          {canManage ? <ShieldCheck className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          {canManage ? "Edição liberada" : "Somente leitura"}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          {canManage && (
+            <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar usuário
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <form onSubmit={handleAddUser}>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar novo usuário</DialogTitle>
+                    <DialogDescription>
+                      O usuário será criado no sistema com acesso à sua unidade.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="nome_completo">Nome completo</Label>
+                      <Input id="nome_completo" name="nome_completo" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" name="email" type="email" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="password">Senha inicial</Label>
+                      <Input id="password" name="password" type="password" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="telefone">Telefone (opcional)</Label>
+                      <Input id="telefone" name="telefone" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="role">Perfil de acesso</Label>
+                      <Select name="role" defaultValue="recepcao" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um perfil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASSIGNABLE_ROLES.map((role) => (
+                            <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={formLoading}>
+                      {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar usuário"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+          <Badge variant={canManage ? "default" : "outline"} className="gap-1.5 py-1.5">
+            {canManage ? <ShieldCheck className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {canManage ? "Edição liberada" : "Somente leitura"}
+          </Badge>
+        </div>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -237,7 +389,7 @@ function UsuariosPage() {
                 const locked = !canManage || usuario.id === profile?.id;
                 return (
                   <div key={usuario.id} className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium">{usuario.nome_completo}</p>
                         <Badge variant="outline" className={cn("text-[10px]", usuario.ativo ? "" : "text-destructive")}>
@@ -248,21 +400,67 @@ function UsuariosPage() {
                       <p className="mt-1 text-xs text-muted-foreground">{ROLE_HELP[currentRole]}</p>
                       {usuario.telefone && <p className="mt-0.5 text-xs text-muted-foreground">{usuario.telefone}</p>}
                     </div>
-                    <div className="flex items-center gap-2 sm:w-[250px]">
-                      <Select
-                        value={currentRole}
-                        disabled={locked || saving}
-                        onValueChange={(value) => void alterarRole(usuario, value as UnidadeRole)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ASSIGNABLE_ROLES.map((role) => (
-                            <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className="flex flex-wrap items-center gap-2 sm:w-auto">
+                      <div className="w-[180px]">
+                        <Select
+                          value={currentRole}
+                          disabled={locked || saving}
+                          onValueChange={(value) => void alterarRole(usuario, value as UnidadeRole)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ASSIGNABLE_ROLES.map((role) => (
+                              <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {canManage && usuario.id !== profile?.id && (
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground"
+                            onClick={() => setIsEditingUser(usuario)}
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive opacity-70 hover:opacity-100"
+                                disabled={saving}
+                              >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta ação excluirá permanentemente a conta de <strong>{usuario.nome_completo}</strong> e removerá seu acesso à unidade.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => void handleDeleteUser(usuario.id)}
+                                >
+                                  Excluir usuário
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
+                      
                       {saving && <Save className="h-4 w-4 animate-pulse text-primary" />}
                     </div>
                   </div>
@@ -272,6 +470,45 @@ function UsuariosPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!isEditingUser} onOpenChange={(open) => !open && setIsEditingUser(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleEditUser}>
+            <DialogHeader>
+              <DialogTitle>Editar usuário</DialogTitle>
+              <DialogDescription>
+                Atualize as informações de {isEditingUser?.nome_completo}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit_nome">Nome completo</Label>
+                <Input id="edit_nome" name="nome_completo" defaultValue={isEditingUser?.nome_completo} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit_telefone">Telefone</Label>
+                <Input id="edit_telefone" name="telefone" defaultValue={isEditingUser?.telefone || ""} />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="edit_ativo">Usuário ativo</Label>
+                  <p className="text-xs text-muted-foreground">Define se o usuário pode acessar o sistema.</p>
+                </div>
+                <Switch 
+                  id="edit_ativo" 
+                  name="ativo" 
+                  defaultChecked={isEditingUser?.ativo}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={formLoading}>
+                {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar alterações"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
