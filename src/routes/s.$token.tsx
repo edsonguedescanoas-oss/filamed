@@ -260,7 +260,7 @@ function PublicSenhaPage() {
           }
         }
       }
-      sessionStorage.setItem("ticket-notif-ativo", "1");
+      localStorage.setItem(NOTIF_KEY, "1");
       setNotificacoesAtivas(true);
     } finally {
       setAtivando(false);
