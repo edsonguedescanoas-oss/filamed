@@ -100,7 +100,7 @@ function RecepcaoPage() {
       .from("senhas")
       .select("*, paciente:pacientes(nome_completo, telefone), fila:filas(tipo)")
       .eq("unidade_id", unidadeId)
-      .eq("origem", "recepcao_guiche")
+      .in("origem", ["pre_atendimento", "recepcao_guiche"])
       .order("created_at", { ascending: false })
       .limit(15);
     if (error) {
@@ -175,12 +175,15 @@ function RecepcaoPage() {
       const { data, error } = await supabase.rpc("gerar_senha_guiche", {
         _unidade_id: unidadeId,
         _nome: nome.trim(),
-        _telefone: onlyDigits(telefone) || undefined,
-        _data_nascimento: dataNascimento || undefined,
+        _telefone: onlyDigits(telefone) || null,
+        _data_nascimento: dataNascimento || null,
         _prioridade: prioridade,
       });
       if (error) throw error;
-      const senha = data as unknown as Senha;
+      const senha = (Array.isArray(data) ? data[0] : data) as unknown as Senha | null;
+      if (!senha?.id || !senha.codigo || !senha.token_publico) {
+        throw new Error("A senha foi gerada, mas o retorno veio incompleto. Atualize a tela e confira os recentes.");
+      }
       toast.success(`Senha ${senha.codigo} gerada`, {
         description: `${nome.trim()} encaminhado(a) para o guichê`,
       });
