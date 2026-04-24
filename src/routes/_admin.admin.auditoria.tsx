@@ -164,6 +164,7 @@ function escapeCsv(value: unknown): string {
 }
 
 function exportarCsv(rows: AuditoriaRow[]) {
+  trackEvent("download_report", { format: "CSV", type: "admin_audit_log" });
   const headers = [
     "data",
     "entidade",
