@@ -13,6 +13,7 @@ import { Segments } from "@/components/sections/segments";
 import { ComoComecar } from "@/components/sections/como-comecar";
 import { CTA } from "@/components/sections/cta";
 import { FAQ } from "@/components/sections/faq";
+import { Security } from "@/components/sections/security";
 import { AnalyticsShowcase } from "@/components/sections/analytics-showcase";
 import { ReportsShowcase } from "@/components/sections/reports-showcase";
 import { SocialProof } from "@/components/sections/social-proof";
