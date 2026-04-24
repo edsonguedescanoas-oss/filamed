@@ -94,6 +94,8 @@ export function OrientationGuard() {
     localStorage.setItem("orientation-guard-skipped", "true");
   };
 
+  // Em rotas excluídas (ex: ticket público do paciente), nunca mostra o aviso.
+  if (isExcludedRoute) return null;
   // Se não for mobile/tablet ou já estiver na horizontal ou tiver ignorado, não faz nada
   if (!isMobileOrTablet || !isPortrait || hasSkipped) return null;
 
