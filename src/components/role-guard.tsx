@@ -19,7 +19,7 @@ interface RoleGuardProps {
  * Bloqueia o conteúdo se o usuário não tiver nenhuma das roles permitidas.
  * Admin tem acesso irrestrito.
  */
-export function RoleGuard({ allow, path, children }: RoleGuardProps) {
+export function RoleGuard({ allow, permission, path, children }: RoleGuardProps) {
   const { roles, hasPermission, isLoading } = useAuth();
   const navigate = useNavigate();
 
