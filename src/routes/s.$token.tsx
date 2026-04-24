@@ -109,40 +109,153 @@ function PublicSenhaPage() {
     setLoading(false);
   }, [token]);
 
-  const playNotificationSound = useCallback((type: 'next' | 'called') => {
-    try {
-      const context = audioContext || new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (!audioContext) setAudioContext(context);
-      
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
+  // ---- helpers de notificação (som + vibração + Notification API) ----
+  type AlertType = "next" | "called" | "finalized" | "warning";
 
-      oscillator.connect(gainNode);
-      gainNode.connect(context.destination);
-
-      if (type === 'next') {
-        // Som suave para "você é o próximo"
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(440, context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.1);
-        gainNode.gain.setValueAtTime(0.1, context.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.3);
-      } else {
-        // Som mais forte para quando for chamado
-        oscillator.type = 'square';
-        oscillator.frequency.setValueAtTime(880, context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(440, context.currentTime + 0.2);
-        gainNode.gain.setValueAtTime(0.1, context.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
-        oscillator.start();
-        oscillator.stop(context.currentTime + 0.5);
+  const vibrate = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate?.(pattern);
+      } catch {
+        /* ignore */
       }
-    } catch (err) {
-      console.error('Erro ao tocar som:', err);
     }
-  }, [audioContext]);
+  }, []);
+
+  const playTone = useCallback(
+    (freqs: Array<{ f: number; t: number; type?: OscillatorType }>) => {
+      try {
+        const ctx =
+          audioCtxRef.current ||
+          new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioCtxRef.current = ctx;
+        // Em alguns browsers o contexto fica "suspended" — retoma se possível
+        if (ctx.state === "suspended") void ctx.resume();
+        let cursor = ctx.currentTime;
+        for (const { f, t, type } of freqs) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = type ?? "sine";
+          osc.frequency.setValueAtTime(f, cursor);
+          gain.gain.setValueAtTime(0.0001, cursor);
+          gain.gain.exponentialRampToValueAtTime(0.18, cursor + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, cursor + t);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(cursor);
+          osc.stop(cursor + t + 0.02);
+          cursor += t + 0.04;
+        }
+      } catch (err) {
+        console.warn("Erro ao tocar som:", err);
+      }
+    },
+    [],
+  );
+
+  const showNativeNotification = useCallback((title: string, body: string) => {
+    try {
+      if (typeof window === "undefined" || !("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      // Só dispara notificação nativa se a aba estiver oculta — caso contrário
+      // o som + vibração + UI já alertam.
+      if (document.visibilityState === "visible") return;
+      new Notification(title, {
+        body,
+        tag: "filamed-ticket",
+        renotify: true,
+        icon: "/favicon.ico",
+      } as NotificationOptions);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const alertPaciente = useCallback(
+    (type: AlertType, opts?: { title?: string; body?: string }) => {
+      switch (type) {
+        case "called":
+          playTone([
+            { f: 880, t: 0.18, type: "square" },
+            { f: 660, t: 0.18, type: "square" },
+            { f: 880, t: 0.22, type: "square" },
+          ]);
+          vibrate([250, 100, 250, 100, 400]);
+          break;
+        case "next":
+          playTone([
+            { f: 523, t: 0.14 },
+            { f: 784, t: 0.18 },
+          ]);
+          vibrate([180, 80, 180]);
+          break;
+        case "finalized":
+          playTone([
+            { f: 660, t: 0.16 },
+            { f: 880, t: 0.18 },
+            { f: 1175, t: 0.28 },
+          ]);
+          vibrate([120, 60, 120, 60, 300]);
+          break;
+        case "warning":
+          playTone([
+            { f: 440, t: 0.2, type: "triangle" },
+            { f: 330, t: 0.3, type: "triangle" },
+          ]);
+          vibrate([400, 120, 400]);
+          break;
+      }
+      if (opts?.title) showNativeNotification(opts.title, opts.body ?? "");
+    },
+    [playTone, vibrate, showNativeNotification],
+  );
+
+  // Mantido por compatibilidade com os pontos que já chamam playNotificationSound
+  const playNotificationSound = useCallback(
+    (type: "next" | "called") => alertPaciente(type),
+    [alertPaciente],
+  );
+
+  // Ativação inicial: desbloqueia áudio (gesture) + pede permissão de notificação
+  const ativarNotificacoes = useCallback(async () => {
+    setAtivando(true);
+    try {
+      // 1) Cria/retoma AudioContext dentro do gesto do usuário (iOS/Safari)
+      try {
+        const ctx =
+          audioCtxRef.current ||
+          new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioCtxRef.current = ctx;
+        if (ctx.state === "suspended") await ctx.resume();
+        // beep silencioso só para "destravar" o output de áudio
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.02);
+      } catch {
+        /* ignore */
+      }
+      // 2) Vibração curta para "destravar" e confirmar suporte
+      vibrate(40);
+      // 3) Permissão de notificação — só pede uma vez
+      if (typeof window !== "undefined" && "Notification" in window) {
+        if (Notification.permission === "default") {
+          try {
+            await Notification.requestPermission();
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      sessionStorage.setItem("ticket-notif-ativo", "1");
+      setNotificacoesAtivas(true);
+    } finally {
+      setAtivando(false);
+    }
+  }, [vibrate]);
 
   useEffect(() => {
     void fetchInitialData();
