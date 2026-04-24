@@ -272,7 +272,7 @@ function PublicSenhaPage() {
         (payload) => {
           const oldStatus = senha.status;
           const newStatus = payload.new.status as SenhaStatus;
-          
+
           const nextSenha = payload.new as SenhaPub;
           setSenha((prev) => ({ ...(prev as SenhaPub), ...nextSenha }));
           if (nextSenha.fila_id !== senha.fila_id) {
@@ -286,10 +286,40 @@ function PublicSenhaPage() {
           } else if (oldStatus !== newStatus) {
             toast.info(statusMessage(newStatus));
           }
-          
-          // Som se o status mudar para "chamada"
-          if (oldStatus !== 'chamada' && newStatus === 'chamada') {
-            playNotificationSound('called');
+
+          // Alerta sonoro + vibração + notificação para CADA mudança de status
+          if (oldStatus !== newStatus) {
+            const codigo = nextSenha.codigo;
+            switch (newStatus) {
+              case "chamada":
+                alertPaciente("called", {
+                  title: "Você foi chamado!",
+                  body: `Sua senha ${codigo} foi chamada. Dirija-se ao local indicado.`,
+                });
+                break;
+              case "em_atendimento":
+                alertPaciente("called", {
+                  title: "Atendimento iniciado",
+                  body: `Sua senha ${codigo} está em atendimento.`,
+                });
+                break;
+              case "finalizada":
+                alertPaciente("finalized", {
+                  title: "Atendimento finalizado",
+                  body: "Toque para avaliar a clínica.",
+                });
+                break;
+              case "ausente":
+              case "cancelada":
+                alertPaciente("warning", {
+                  title:
+                    newStatus === "ausente"
+                      ? "Marcado como ausente"
+                      : "Senha cancelada",
+                  body: `Sua senha ${codigo} foi ${newStatus === "ausente" ? "marcada como ausente" : "cancelada"}.`,
+                });
+                break;
+            }
           }
         },
       )
@@ -298,22 +328,38 @@ function PublicSenhaPage() {
         { event: "INSERT", schema: "public", table: "chamadas", filter: `senha_id=eq.${senha.id}` },
         (payload) => {
           setChamada(payload.new as ChamadaPub);
-          playNotificationSound('called');
-          // vibração leve quando for chamado
-          if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-            try {
-              navigator.vibrate?.([200, 80, 200]);
-            } catch {
-              /* ignore */
-            }
-          }
+          // Sempre alerta em rechamadas (mesmo se status já era "chamada")
+          alertPaciente("called", {
+            title: "Você foi chamado!",
+            body: `Dirija-se a ${(payload.new as ChamadaPub).destino}.`,
+          });
         },
       )
       .subscribe();
     return () => {
       void supabase.removeChannel(ch);
     };
-  }, [senha?.id, playNotificationSound]);
+  }, [senha?.id, alertPaciente]);
+
+  // Na carga inicial, se já estiver chamado/em atendimento, dispara um alerta
+  // (caso o paciente abra o link justamente nesse instante).
+  const initialAlertSent = useRef(false);
+  useEffect(() => {
+    if (!notificacoesAtivas || !senha || initialAlertSent.current) return;
+    if (senha.status === "chamada" || senha.status === "em_atendimento") {
+      alertPaciente("called", {
+        title: "Você foi chamado!",
+        body: `Sua senha ${senha.codigo} já foi chamada.`,
+      });
+      initialAlertSent.current = true;
+    } else if (senha.status === "finalizada") {
+      alertPaciente("finalized", {
+        title: "Atendimento finalizado",
+        body: "Toque para avaliar a clínica.",
+      });
+      initialAlertSent.current = true;
+    }
+  }, [notificacoesAtivas, senha?.id, senha?.status, senha?.codigo, alertPaciente]);
 
   // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
   const refreshPosition = useCallback(async () => {
