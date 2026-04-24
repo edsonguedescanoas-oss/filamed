@@ -14,33 +14,33 @@ export function Hero() {
         style={{ background: "var(--gradient-primary)" }}
       />
       <div className="relative mx-auto max-w-7xl px-6">
-        <div className="mx-auto max-w-3xl text-center animate-fade-up">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Plataforma SaaS para unidades de saúde
+        <div className="mx-auto max-w-4xl text-center animate-fade-up">
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-semibold text-primary backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5" />
+            A solução definitiva para donos e gestores de clínicas
           </span>
-          <h1 className="mt-6 font-display text-3xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-            Transforme o atendimento da sua unidade com{" "}
-            <span className="text-gradient">gestão inteligente de filas</span>
+          <h1 className="mt-8 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+            Pare de perder dinheiro com <br className="hidden sm:block" />
+            <span className="text-gradient">filas invisíveis</span> e falta de dados
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Filas inteligentes, notificações em tempo real, integração total e redução drástica
-            de espera e caos operacional — em uma única plataforma.
+          <p className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground sm:text-2xl leading-relaxed">
+            Tenha o controle total da produtividade da sua equipe e da satisfação dos pacientes com relatórios estratégicos que mostram onde sua clínica está perdendo eficiência.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button asChild size="lg" className="bg-gradient-primary shadow-elegant hover:opacity-95 group">
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button asChild size="xl" className="h-14 px-8 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold">
               <a href="#cta">
-                Solicitar demonstração
-                <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                Começar agora
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </a>
             </Button>
-            <Button asChild size="lg" variant="outline" className="backdrop-blur">
-              <a href="#fluxo">
-                <PlayCircle className="mr-1 h-4 w-4" />
-                Ver como funciona
+            <Button asChild size="xl" variant="outline" className="h-14 px-8 backdrop-blur text-lg hover:bg-primary/5 transition-colors">
+              <a href="#analytics">
+                <BarChart3 className="mr-2 h-5 w-5 text-primary" />
+                Ver Relatórios
               </a>
             </Button>
           </div>
+        </div>
           <div className="mt-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-glow" />
