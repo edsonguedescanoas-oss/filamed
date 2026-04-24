@@ -78,7 +78,12 @@ export function SiteHeader() {
                     key={link.label}
                     to={link.to}
                     hash={link.hash}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (link.to === "/demo") {
+                        trackEvent("navigation_demo", { source: "mobile_nav" });
+                      }
+                    }}
                     className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {link.label}
