@@ -349,7 +349,14 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                     <label className="mt-2 flex items-start gap-2 pt-1">
                       <Checkbox
                         checked={confirmouMudancaFila}
-                        onCheckedChange={(v) => setConfirmouMudancaFila(v === true)}
+                        onCheckedChange={(v) => {
+                          const marcou = v === true;
+                          setConfirmouMudancaFila(marcou);
+                          // Captura o snapshot da contagem que o usuário
+                          // está vendo neste exato momento. Será comparado
+                          // contra a contagem real no save.
+                          setSnapshotConfirmado(marcou ? previewPos : null);
+                        }}
                         aria-label="Ok, entendi a regra de mudança de fila"
                       />
                       <span className="text-xs font-medium">
