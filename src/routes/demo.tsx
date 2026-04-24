@@ -29,12 +29,16 @@ function DemoPage() {
                 <h3 className="text-xl font-bold mb-6">Opções de Exportação</h3>
                 <div className="space-y-4">
                   {[
-                    { icon: FileText, label: "PDF Executivo", desc: "Pronto para impressão e reuniões." },
-                    { icon: FileSpreadsheet, label: "CSV Detalhado", desc: "Para análise em Excel ou BI." },
-                    { icon: Presentation, label: "PowerPoint (Beta)", desc: "Gráficos prontos para slides." },
-                    { icon: Share2, label: "Link de Compartilhamento", desc: "Acesso seguro e temporário." }
+                    { icon: FileText, label: "PDF Executivo", desc: "Pronto para impressão e reuniões.", format: "PDF" },
+                    { icon: FileSpreadsheet, label: "CSV Detalhado", desc: "Para análise em Excel ou BI.", format: "CSV" },
+                    { icon: Presentation, label: "PowerPoint (Beta)", desc: "Gráficos prontos para slides.", format: "PPT" },
+                    { icon: Share2, label: "Link de Compartilhamento", desc: "Acesso seguro e temporário.", format: "Link" }
                   ].map((opt, i) => (
-                    <div key={i} className="flex gap-4 group cursor-pointer hover:bg-background/50 p-2 rounded-xl transition-all">
+                    <div 
+                      key={i} 
+                      className="flex gap-4 group cursor-pointer hover:bg-background/50 p-2 rounded-xl transition-all"
+                      onClick={() => trackEvent("download_report", { format: opt.format, type: "sidebar_option" })}
+                    >
                       <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center text-primary shadow-sm group-hover:border-primary/50">
                         <opt.icon className="h-5 w-5" />
                       </div>
