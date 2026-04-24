@@ -143,13 +143,13 @@ function AuditoriaPage() {
         ? new Date(new Date().setDate(new Date().getDate() - 1)).toISOString()
         : dateFilter === "week"
         ? new Date(new Date().setDate(new Date().getDate() - 7)).toISOString()
-        : null;
+        : undefined;
 
       const { data, error } = await supabase.rpc("unidade_listar_auditoria", {
         _unidade_id: unidadeId,
         _desde: desde,
         _limite: 100,
-        _busca: search.trim() || null
+        _busca: search.trim() || undefined
       });
 
       if (error) throw error;
