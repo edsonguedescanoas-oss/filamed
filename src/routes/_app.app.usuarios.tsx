@@ -248,10 +248,68 @@ function UsuariosPage() {
             Defina o perfil de cada pessoa e acompanhe quais módulos ficam liberados para admin, gestor e operadores.
           </p>
         </div>
-        <Badge variant={canManage ? "default" : "outline"} className="w-fit gap-1.5">
-          {canManage ? <ShieldCheck className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          {canManage ? "Edição liberada" : "Somente leitura"}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          {canManage && (
+            <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar usuário
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <form onSubmit={handleAddUser}>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar novo usuário</DialogTitle>
+                    <DialogDescription>
+                      O usuário será criado no sistema com acesso à sua unidade.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="nome_completo">Nome completo</Label>
+                      <Input id="nome_completo" name="nome_completo" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" name="email" type="email" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="password">Senha inicial</Label>
+                      <Input id="password" name="password" type="password" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="telefone">Telefone (opcional)</Label>
+                      <Input id="telefone" name="telefone" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="role">Perfil de acesso</Label>
+                      <Select name="role" defaultValue="recepcao" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um perfil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ASSIGNABLE_ROLES.map((role) => (
+                            <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit" disabled={formLoading}>
+                      {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar usuário"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+          <Badge variant={canManage ? "default" : "outline"} className="gap-1.5 py-1.5">
+            {canManage ? <ShieldCheck className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {canManage ? "Edição liberada" : "Somente leitura"}
+          </Badge>
+        </div>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
