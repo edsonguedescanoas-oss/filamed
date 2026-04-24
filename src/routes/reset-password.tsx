@@ -12,11 +12,38 @@ export const Route = createFileRoute("/reset-password")({
 });
 
 function ResetPasswordPage() {
-  const { updatePassword } = useAuth();
+  const { updatePassword, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+        <div className="w-full max-w-md text-center space-y-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 mx-auto">
+            <Lock className="h-6 w-6 text-destructive" />
+          </div>
+          <h1 className="font-display text-2xl font-bold">Link Inválido</h1>
+          <p className="text-muted-foreground">
+            O link de redefinição de senha é inválido ou já expirou. Por favor, solicite um novo link.
+          </p>
+          <Button onClick={() => void navigate({ to: "/login" })} className="w-full">
+            Ir para o Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
