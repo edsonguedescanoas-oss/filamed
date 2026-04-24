@@ -76,6 +76,9 @@ function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<UsuarioRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [isEditingUser, setIsEditingUser] = useState<UsuarioRow | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
 
   const carregarUsuarios = async () => {
     if (!unidadeId) return;
@@ -124,20 +127,16 @@ function UsuariosPage() {
     if (!unidadeId || !canManage || usuario.id === profile?.id) return;
     setSavingUserId(usuario.id);
     try {
-      const { error: deleteError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("unidade_id", unidadeId)
-        .eq("user_id", usuario.id)
-        .neq("role", "super_admin");
-      if (deleteError) throw deleteError;
-
-      const { error: insertError } = await supabase.from("user_roles").insert({
-        unidade_id: unidadeId,
-        user_id: usuario.id,
-        role,
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "update",
+          unidadeId,
+          userId: usuario.id,
+          updates: { role }
+        }
       });
-      if (insertError) throw insertError;
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao atualizar permissão");
 
       setUsuarios((prev) => prev.map((u) => (u.id === usuario.id ? { ...u, role } : u)));
       toast.success("Permissão atualizada");
@@ -146,6 +145,96 @@ function UsuariosPage() {
       toast.error(msg);
     } finally {
       setSavingUserId(null);
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!unidadeId) return;
+    setFormLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const userData = {
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
+      nome_completo: formData.get("nome_completo") as string,
+      telefone: formData.get("telefone") as string,
+      role: formData.get("role") as UnidadeRole,
+    };
+
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "create",
+          unidadeId,
+          userData
+        }
+      });
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao criar usuário");
+
+      toast.success("Usuário criado com sucesso!");
+      setIsAddingUser(false);
+      void carregarUsuarios();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao criar usuário");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!unidadeId) return;
+    setSavingUserId(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "delete",
+          unidadeId,
+          userId
+        }
+      });
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao excluir usuário");
+
+      toast.success("Usuário excluído com sucesso");
+      setUsuarios(prev => prev.filter(u => u.id !== userId));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir usuário");
+    } finally {
+      setSavingUserId(null);
+    }
+  };
+
+  const handleEditUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!unidadeId || !isEditingUser) return;
+    setFormLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const updates = {
+      nome_completo: formData.get("nome_completo") as string,
+      telefone: formData.get("telefone") as string,
+      ativo: formData.get("ativo") === "on",
+    };
+
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
+        body: {
+          action: "update",
+          unidadeId,
+          userId: isEditingUser.id,
+          updates
+        }
+      });
+
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao atualizar usuário");
+
+      toast.success("Usuário atualizado com sucesso!");
+      setIsEditingUser(null);
+      void carregarUsuarios();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar usuário");
+    } finally {
+      setFormLoading(false);
     }
   };
 
