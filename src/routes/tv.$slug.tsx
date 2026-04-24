@@ -305,6 +305,7 @@ function TvPage() {
     return set;
   }, [statusSenhas]);
   const [now, setNow] = useState(new Date());
+  const [criterios, setCriterios] = useState<Record<string, string>>({});
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
     provider: "browser",
     voice_id: null,
