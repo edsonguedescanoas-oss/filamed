@@ -34,7 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+import { trackEvent } from "@/lib/analytics";
 
 /* ──────────────────────────────────────────────────────────
  * Tipos auxiliares
