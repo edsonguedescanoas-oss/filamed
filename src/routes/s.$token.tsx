@@ -62,9 +62,29 @@ function PublicSenhaPage() {
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // <audio> HTML5 silencioso usado como "keep-alive" da sessão de áudio do iOS:
+  // o iOS Safari só mantém um AudioContext destravado se houver mídia tocando ou
+  // foi ativada dentro de um gesto recente. Damos play/pause num WAV mudo aqui.
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
   // Trava anti-duplicidade: guarda assinatura do último alerta + timestamp
   // para descartar reenvios do Realtime ou disparos por visibilitychange rápidos.
   const lastAlertRef = useRef<{ key: string; ts: number } | null>(null);
+
+  // Detecção de iOS / iPadOS (inclui iPad em modo desktop, que se identifica como Mac com touch).
+  const isIOS = useCallback((): boolean => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    if (/iPad|iPhone|iPod/.test(ua)) return true;
+    // iPadOS 13+ no modo desktop: Mac + suporte a toque
+    if (/Macintosh/.test(ua) && typeof document !== "undefined") {
+      return (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints! > 1;
+    }
+    return false;
+  }, []);
+
+  // WAV mudo de ~50ms — usado para o elemento <audio> de keep-alive no iOS.
+  const SILENT_WAV =
+    "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
   // Persistência da ativação: usamos localStorage para não pedir de novo a
   // cada aba/refresh. A revalidação (abaixo) cuida de revogações no SO.
   const NOTIF_KEY = "ticket-notif-ativo";
@@ -176,6 +196,35 @@ function PublicSenhaPage() {
     [supportsVibration],
   );
 
+  // Tenta "cutucar" a sessão de áudio do iOS dando play+pause no <audio>
+  // silencioso. Não emite som audível, mas reabre o pipeline de áudio quando
+  // o iOS suspende após backgrounding ou silenciamento físico.
+  const kickIOSAudio = useCallback(() => {
+    if (!isIOS()) return;
+    const el = silentAudioRef.current;
+    if (!el) return;
+    try {
+      el.muted = true;
+      el.volume = 0;
+      const p = el.play();
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          // Pequena pausa para liberar o decoder, mas mantém a sessão "quente"
+          try {
+            el.pause();
+            el.currentTime = 0;
+          } catch {
+            /* ignore */
+          }
+        }).catch(() => {
+          /* sem permissão fora de gesto — ok, fallback visual cobre */
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [isIOS]);
+
   const playTone = useCallback(
     (freqs: Array<{ f: number; t: number; type?: OscillatorType }>): boolean => {
       try {
@@ -183,9 +232,18 @@ function PublicSenhaPage() {
           audioCtxRef.current ||
           new (window.AudioContext || (window as any).webkitAudioContext)();
         audioCtxRef.current = ctx;
-        // Em alguns browsers o contexto fica "suspended" — retoma se possível
+
+        // iOS: força keep-alive do pipeline antes de tentar tocar.
+        if (isIOS()) kickIOSAudio();
+
+        // Em alguns browsers o contexto fica "suspended" — retoma se possível.
+        // No iOS, resume() só é honrado se chamado durante (ou logo após) um gesto.
         if (ctx.state === "suspended") void ctx.resume();
-        let cursor = ctx.currentTime;
+
+        // No iOS, se o ctx ainda não destravou, agendamos os tons num pequeno
+        // offset depois do currentTime para dar tempo ao resume() assíncrono.
+        const startDelay = isIOS() && ctx.state !== "running" ? 0.08 : 0;
+        let cursor = ctx.currentTime + startDelay;
         for (const { f, t, type } of freqs) {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -200,13 +258,15 @@ function PublicSenhaPage() {
           osc.stop(cursor + t + 0.02);
           cursor += t + 0.04;
         }
-        return ctx.state === "running";
+        // No iOS aceitamos "suspended" como sucesso parcial: o resume costuma
+        // promover para running antes do startDelay terminar.
+        return ctx.state === "running" || (isIOS() && ctx.state === "suspended");
       } catch (err) {
         console.warn("Erro ao tocar som:", err);
         return false;
       }
     },
-    [],
+    [isIOS, kickIOSAudio],
   );
 
   const showNativeNotification = useCallback(
@@ -341,7 +401,7 @@ function PublicSenhaPage() {
   const ativarNotificacoes = useCallback(async () => {
     setAtivando(true);
     try {
-      // 1) Cria/retoma AudioContext dentro do gesto do usuário (iOS/Safari)
+      // 1) Cria/retoma AudioContext dentro do gesto do usuário (iOS/Safari).
       try {
         const ctx =
           audioCtxRef.current ||
@@ -359,6 +419,30 @@ function PublicSenhaPage() {
       } catch {
         /* ignore */
       }
+
+      // 1b) iOS/iPadOS: dentro do gesto, dar play() no <audio> mudo é a forma
+      // mais confiável de destravar a sessão de áudio (mesmo com botão de
+      // silenciar físico ativo, o WebAudio passa a funcionar).
+      if (isIOS()) {
+        const el = silentAudioRef.current;
+        if (el) {
+          try {
+            el.muted = true;
+            el.volume = 0;
+            // setSinkId não é necessário; basta tocar dentro do gesto
+            await el.play().catch(() => undefined);
+            try {
+              el.pause();
+              el.currentTime = 0;
+            } catch {
+              /* ignore */
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
       // 2) Vibração curta para "destravar" e confirmar suporte
       vibrate(40);
       // 3) Permissão de notificação — só pede uma vez
@@ -376,11 +460,45 @@ function PublicSenhaPage() {
     } finally {
       setAtivando(false);
     }
-  }, [vibrate]);
+  }, [vibrate, isIOS]);
 
   useEffect(() => {
     void fetchInitialData();
   }, [fetchInitialData]);
+
+  // iOS/iPadOS: rearma a sessão de áudio em QUALQUER interação subsequente
+  // do usuário e quando a aba volta a ficar visível. Garante que mesmo após
+  // o iOS suspender o AudioContext em background, o próximo toque destrava
+  // o pipeline antes do próximo alerta de Realtime chegar.
+  useEffect(() => {
+    if (!isIOS()) return;
+    if (!notificacoesAtivas) return;
+
+    const rearm = () => {
+      const ctx = audioCtxRef.current;
+      if (ctx && ctx.state === "suspended") {
+        void ctx.resume().catch(() => undefined);
+      }
+      kickIOSAudio();
+    };
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") rearm();
+    };
+
+    // {passive,once:false} — queremos rearmar a CADA interação, não apenas uma.
+    window.addEventListener("touchend", rearm, { passive: true });
+    window.addEventListener("click", rearm);
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", rearm);
+
+    return () => {
+      window.removeEventListener("touchend", rearm);
+      window.removeEventListener("click", rearm);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", rearm);
+    };
+  }, [isIOS, notificacoesAtivas, kickIOSAudio]);
 
   // Revalidação da permissão de Notificação (iOS/Android):
   // - quando a aba volta a ficar visível (usuário pode ter mudado em Configurações)
@@ -711,6 +829,18 @@ function PublicSenhaPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8">
+      {/* iOS keep-alive: <audio> mudo, montado uma vez e reutilizado pelo
+          kickIOSAudio() para destravar a sessão de áudio do Safari. */}
+      <audio
+        ref={silentAudioRef}
+        src={SILENT_WAV}
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden
+        tabIndex={-1}
+        className="hidden"
+      />
       <div className="mx-auto max-w-md flex flex-col min-h-full">
         {visual?.logo_url && (
           <div className="mb-6 flex justify-center">
