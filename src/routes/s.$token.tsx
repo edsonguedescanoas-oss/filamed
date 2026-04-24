@@ -700,15 +700,34 @@ function PublicSenhaPage() {
                   <span className="font-medium">Atendimento finalizado</span>
                 </div>
                 {unidade?.google_review_url && (
-                  <a
-                    href={unidade.google_review_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mx-auto flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-xl"
+                  <div
+                    className={`flex flex-col items-center gap-2 transition-all duration-500 ${
+                      showReviewCta
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-2 pointer-events-none"
+                    }`}
+                    aria-hidden={!showReviewCta}
                   >
-                    <Star className="h-4 w-4" />
-                    Avaliar atendimento
-                  </a>
+                    <p className="text-xs text-slate-400">
+                      Sua opinião ajuda muito 💛
+                    </p>
+                    <a
+                      href={unidade.google_review_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group mx-auto flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-4 text-base font-bold text-primary-foreground shadow-xl shadow-primary/30 ring-2 ring-primary/40 ring-offset-2 ring-offset-slate-900 transition-all hover:scale-[1.02] active:scale-[0.98] animate-pulse-soft"
+                    >
+                      <Star className="h-5 w-5 fill-current" />
+                      <span className="underline underline-offset-4 decoration-2 decoration-primary-foreground/70">
+                        Avalie aqui
+                      </span>
+                      <ExternalLink className="h-4 w-4 opacity-80 group-hover:translate-x-0.5 transition-transform" />
+                    </a>
+                    <p className="text-[10px] text-slate-500 inline-flex items-center gap-1">
+                      <ExternalLink className="h-3 w-3" />
+                      Abre o Google Avaliações em nova aba
+                    </p>
+                  </div>
                 )}
               </div>
             )}
