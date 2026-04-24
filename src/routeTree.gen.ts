@@ -31,6 +31,7 @@ import { Route as AppAppIndexRouteImport } from './routes/_app.app.index'
 import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
 import { Route as AppAppUsuariosRouteImport } from './routes/_app.app.usuarios'
 import { Route as AppAppTvRouteImport } from './routes/_app.app.tv'
+import { Route as AppAppTriagemRouteImport } from './routes/_app.app.triagem'
 import { Route as AppAppRelatoriosRouteImport } from './routes/_app.app.relatorios'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPontosRouteImport } from './routes/_app.app.pontos'
@@ -157,6 +158,11 @@ const AppAppTvRoute = AppAppTvRouteImport.update({
   path: '/tv',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppTriagemRoute = AppAppTriagemRouteImport.update({
+  id: '/triagem',
+  path: '/triagem',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppRelatoriosRoute = AppAppRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/app/pontos': typeof AppAppPontosRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
+  '/app/triagem': typeof AppAppTriagemRoute
   '/app/tv': typeof AppAppTvRoute
   '/app/usuarios': typeof AppAppUsuariosRoute
   '/app/voz': typeof AppAppVozRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/app/pontos': typeof AppAppPontosRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
+  '/app/triagem': typeof AppAppTriagemRoute
   '/app/tv': typeof AppAppTvRoute
   '/app/usuarios': typeof AppAppUsuariosRoute
   '/app/voz': typeof AppAppVozRoute
@@ -357,6 +365,7 @@ export interface FileRoutesById {
   '/_app/app/pontos': typeof AppAppPontosRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
   '/_app/app/relatorios': typeof AppAppRelatoriosRoute
+  '/_app/app/triagem': typeof AppAppTriagemRoute
   '/_app/app/tv': typeof AppAppTvRoute
   '/_app/app/usuarios': typeof AppAppUsuariosRoute
   '/_app/app/voz': typeof AppAppVozRoute
@@ -398,6 +407,7 @@ export interface FileRouteTypes {
     | '/app/pontos'
     | '/app/recepcao'
     | '/app/relatorios'
+    | '/app/triagem'
     | '/app/tv'
     | '/app/usuarios'
     | '/app/voz'
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/app/pontos'
     | '/app/recepcao'
     | '/app/relatorios'
+    | '/app/triagem'
     | '/app/tv'
     | '/app/usuarios'
     | '/app/voz'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/_app/app/pontos'
     | '/_app/app/recepcao'
     | '/_app/app/relatorios'
+    | '/_app/app/triagem'
     | '/_app/app/tv'
     | '/_app/app/usuarios'
     | '/_app/app/voz'
@@ -660,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppTvRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/triagem': {
+      id: '/_app/app/triagem'
+      path: '/triagem'
+      fullPath: '/app/triagem'
+      preLoaderRoute: typeof AppAppTriagemRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/relatorios': {
       id: '/_app/app/relatorios'
       path: '/relatorios'
@@ -841,6 +860,7 @@ interface AppAppRouteChildren {
   AppAppPontosRoute: typeof AppAppPontosRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
   AppAppRelatoriosRoute: typeof AppAppRelatoriosRoute
+  AppAppTriagemRoute: typeof AppAppTriagemRoute
   AppAppTvRoute: typeof AppAppTvRoute
   AppAppUsuariosRoute: typeof AppAppUsuariosRoute
   AppAppVozRoute: typeof AppAppVozRoute
@@ -858,6 +878,7 @@ const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppPontosRoute: AppAppPontosRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
   AppAppRelatoriosRoute: AppAppRelatoriosRoute,
+  AppAppTriagemRoute: AppAppTriagemRoute,
   AppAppTvRoute: AppAppTvRoute,
   AppAppUsuariosRoute: AppAppUsuariosRoute,
   AppAppVozRoute: AppAppVozRoute,

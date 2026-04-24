@@ -85,7 +85,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/usuarios", label: "Usuários", icon: UserCog },
   { to: "/app/voz", label: "Voz", icon: Volume2 },
   { to: "/app/tv", label: "TV / Painel", icon: Monitor },
-  { to: "/app/notificacoes", label: "Notificações", icon: MessageCircle },
+   { to: "/app/notificacoes", label: "Notificações", icon: MessageCircle },
+   { to: "/app/triagem", label: "Triagem", icon: Activity },
 ];
 
 const ROLE_LABELS: Record<AppRole, string> = {

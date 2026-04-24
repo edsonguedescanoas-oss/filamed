@@ -55,10 +55,11 @@ type Senha = {
   fila_id: string;
   paciente_id: string | null;
   status: Status;
-  prioridade: Prioridade;
-  created_at: string;
-  updated_at: string;
-};
+   prioridade: Prioridade;
+   triagem_dados: any;
+   created_at: string;
+   updated_at: string;
+ };
 type Atendimento = {
   id: string;
   senha_id: string;
@@ -77,7 +78,8 @@ function AtendimentoPage() {
 
   const [filas, setFilas] = useState<Fila[]>([]);
   const [pacientes, setPacientes] = useState<Map<string, Paciente>>(new Map());
-  const [senhas, setSenhas] = useState<Senha[]>([]);
+   const [senhas, setSenhas] = useState<Senha[]>([]);
+   const [criterios, setCriterios] = useState<Map<string, string>>(new Map());
   const [atendimentoAtivo, setAtendimentoAtivo] = useState<Atendimento | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -116,39 +118,46 @@ function AtendimentoPage() {
     let mounted = true;
     void (async () => {
       setLoading(true);
-      const [filasRes, senhasRes, pacRes, ativoRes] = await Promise.all([
-        supabase
-          .from("filas")
-          .select("id,nome,prefixo_senha,cor,ordem,tipo")
-          .eq("unidade_id", unidadeId)
-          .eq("ativa", true)
-          .order("ordem"),
-        supabase
-          .from("senhas")
-          .select("id,codigo,fila_id,paciente_id,status,prioridade,created_at,updated_at")
-          .eq("unidade_id", unidadeId)
-          .in("status", ["aguardando", "chamada", "em_atendimento"])
-          .order("created_at"),
-        supabase
-          .from("pacientes")
-          .select("id,nome_completo")
-          .eq("unidade_id", unidadeId),
-        supabase
-          .from("atendimentos")
-          .select("id,senha_id,iniciado_em,finalizado_em,duracao_segundos,observacoes,profissional_id")
-          .eq("unidade_id", unidadeId)
-          .eq("profissional_id", user.id)
-          .is("finalizado_em", null)
-          .order("iniciado_em", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
+       const [filasRes, senhasRes, pacRes, ativoRes, critRes] = await Promise.all([
+         supabase
+           .from("filas")
+           .select("id,nome,prefixo_senha,cor,ordem,tipo")
+           .eq("unidade_id", unidadeId)
+           .eq("ativa", true)
+           .order("ordem"),
+         supabase
+           .from("senhas")
+           .select("id,codigo,fila_id,paciente_id,status,prioridade,triagem_dados,created_at,updated_at")
+           .eq("unidade_id", unidadeId)
+           .in("status", ["aguardando", "chamada", "em_atendimento"])
+           .order("created_at"),
+         supabase
+           .from("pacientes")
+           .select("id,nome_completo")
+           .eq("unidade_id", unidadeId),
+         supabase
+           .from("atendimentos")
+           .select("id,senha_id,iniciado_em,finalizado_em,duracao_segundos,observacoes,profissional_id")
+           .eq("unidade_id", unidadeId)
+           .eq("profissional_id", user.id)
+           .is("finalizado_em", null)
+           .order("iniciado_em", { ascending: false })
+           .limit(1)
+           .maybeSingle(),
+         supabase
+           .from("triagem_criterios")
+           .select("id,nome")
+           .eq("unidade_id", unidadeId),
+       ]);
       if (!mounted) return;
       setFilas((filasRes.data ?? []) as Fila[]);
-      setSenhas((senhasRes.data ?? []) as Senha[]);
-      const map = new Map<string, Paciente>();
-      ((pacRes.data ?? []) as Paciente[]).forEach((p) => map.set(p.id, p));
-      setPacientes(map);
+       setSenhas((senhasRes.data ?? []) as Senha[]);
+       const map = new Map<string, Paciente>();
+       ((pacRes.data ?? []) as Paciente[]).forEach((p) => map.set(p.id, p));
+       setPacientes(map);
+       const critMap = new Map<string, string>();
+       ((critRes.data ?? []) as { id: string; nome: string }[]).forEach((c) => critMap.set(c.id, c.nome));
+       setCriterios(critMap);
       setAtendimentoAtivo((ativoRes.data as Atendimento | null) ?? null);
       setLoading(false);
     })();
@@ -726,7 +735,16 @@ function AtendimentoPage() {
                           {idx + 1}
                         </span>
                         <span className="font-display text-xl font-bold tabular-nums">{s.codigo}</span>
-                        <PrioBadge prioridade={s.prioridade} />
+                         <PrioBadge prioridade={s.prioridade} />
+                         {s.triagem_dados?.criterios && (
+                           <div className="flex flex-wrap gap-1">
+                             {s.triagem_dados.criterios.map((cid: string) => (
+                               <Badge key={cid} variant="outline" className="text-[9px] py-0 h-4 bg-muted/50 border-muted-foreground/20">
+                                 {criterios.get(cid) || "Critério"}
+                               </Badge>
+                             ))}
+                           </div>
+                         )}
                         {s.paciente_id && (
                           <span className="text-sm text-muted-foreground truncate max-w-[18rem]">
                             {pacientes.get(s.paciente_id)?.nome_completo ?? "—"}
