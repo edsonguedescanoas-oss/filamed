@@ -27,8 +27,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RoleGuard } from "@/components/role-guard";
-import type { Database } from "@/integrations/supabase/types";
+ import { RoleGuard } from "@/components/role-guard";
+ import { cn } from "@/lib/utils";
+ import type { Database } from "@/integrations/supabase/types";
 
 type Senha = Database["public"]["Tables"]["senhas"]["Row"];
 type Prioridade = Database["public"]["Enums"]["senha_prioridade"];
@@ -194,11 +195,13 @@ function RecepcaoPage() {
        if (next.length === 0) {
          setPrioridade("normal");
        } else {
-         const highestPrio = next.reduce((acc, currId) => {
+         let highestPrio: Prioridade = "normal";
+         next.forEach((currId) => {
            const c = criterios.find((x) => x.id === currId);
-           if (!c) return acc;
-           return PRIO_RANK[c.prioridade] > PRIO_RANK[acc] ? c.prioridade : acc;
-         }, "normal" as Prioridade);
+           if (c && PRIO_RANK[c.prioridade] > PRIO_RANK[highestPrio]) {
+             highestPrio = c.prioridade;
+           }
+         });
          setPrioridade(highestPrio);
        }
        
