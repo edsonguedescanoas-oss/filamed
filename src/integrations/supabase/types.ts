@@ -1411,6 +1411,7 @@ export type Database = {
     }
     Functions: {
       _audit_ator_nome: { Args: { _user_id: string }; Returns: string }
+      accept_invitation: { Args: { _token: string }; Returns: undefined }
       admin_alertas_notificacoes: {
         Args: { _janela_horas?: number; _min_falhas?: number }
         Returns: {
