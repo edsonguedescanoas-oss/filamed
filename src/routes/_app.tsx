@@ -20,6 +20,7 @@ import {
   Monitor,
   MapPin,
   Building2,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,6 +88,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/app/tv", label: "TV / Painel", icon: Monitor },
    { to: "/app/notificacoes", label: "Notificações", icon: MessageCircle },
    { to: "/app/triagem", label: "Triagem", icon: Activity },
+   { to: "/app/seguranca", label: "Segurança", icon: Shield },
 ];
 
 const ROLE_LABELS: Record<AppRole, string> = {
