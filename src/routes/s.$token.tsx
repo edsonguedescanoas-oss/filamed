@@ -196,6 +196,35 @@ function PublicSenhaPage() {
     [supportsVibration],
   );
 
+  // Tenta "cutucar" a sessão de áudio do iOS dando play+pause no <audio>
+  // silencioso. Não emite som audível, mas reabre o pipeline de áudio quando
+  // o iOS suspende após backgrounding ou silenciamento físico.
+  const kickIOSAudio = useCallback(() => {
+    if (!isIOS()) return;
+    const el = silentAudioRef.current;
+    if (!el) return;
+    try {
+      el.muted = true;
+      el.volume = 0;
+      const p = el.play();
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          // Pequena pausa para liberar o decoder, mas mantém a sessão "quente"
+          try {
+            el.pause();
+            el.currentTime = 0;
+          } catch {
+            /* ignore */
+          }
+        }).catch(() => {
+          /* sem permissão fora de gesto — ok, fallback visual cobre */
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [isIOS]);
+
   const playTone = useCallback(
     (freqs: Array<{ f: number; t: number; type?: OscillatorType }>): boolean => {
       try {
@@ -203,9 +232,18 @@ function PublicSenhaPage() {
           audioCtxRef.current ||
           new (window.AudioContext || (window as any).webkitAudioContext)();
         audioCtxRef.current = ctx;
-        // Em alguns browsers o contexto fica "suspended" — retoma se possível
+
+        // iOS: força keep-alive do pipeline antes de tentar tocar.
+        if (isIOS()) kickIOSAudio();
+
+        // Em alguns browsers o contexto fica "suspended" — retoma se possível.
+        // No iOS, resume() só é honrado se chamado durante (ou logo após) um gesto.
         if (ctx.state === "suspended") void ctx.resume();
-        let cursor = ctx.currentTime;
+
+        // No iOS, se o ctx ainda não destravou, agendamos os tons num pequeno
+        // offset depois do currentTime para dar tempo ao resume() assíncrono.
+        const startDelay = isIOS() && ctx.state !== "running" ? 0.08 : 0;
+        let cursor = ctx.currentTime + startDelay;
         for (const { f, t, type } of freqs) {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -220,13 +258,15 @@ function PublicSenhaPage() {
           osc.stop(cursor + t + 0.02);
           cursor += t + 0.04;
         }
-        return ctx.state === "running";
+        // No iOS aceitamos "suspended" como sucesso parcial: o resume costuma
+        // promover para running antes do startDelay terminar.
+        return ctx.state === "running" || (isIOS() && ctx.state === "suspended");
       } catch (err) {
         console.warn("Erro ao tocar som:", err);
         return false;
       }
     },
-    [],
+    [isIOS, kickIOSAudio],
   );
 
   const showNativeNotification = useCallback(
