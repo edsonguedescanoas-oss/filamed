@@ -33,7 +33,7 @@
  export const Route = createFileRoute("/_app/app/triagem")({
    head: () => ({ meta: [{ title: "Configuração de Triagem — FilaMed" }] }),
    component: () => (
-     <RoleGuard allow={["admin"]} path="/app/triagem">
+     <RoleGuard permission="manage_unit_settings" path="/app/triagem">
        <TriagemConfigPage />
      </RoleGuard>
    ),
