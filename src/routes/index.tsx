@@ -17,6 +17,7 @@ import { AnalyticsShowcase } from "@/components/sections/analytics-showcase";
 import { ReportsShowcase } from "@/components/sections/reports-showcase";
 import { SocialProof } from "@/components/sections/social-proof";
 import { CaseStudy } from "@/components/sections/case-study";
+import { ROICalculator } from "@/components/sections/roi-calculator";
 import { useReveal } from "@/hooks/use-reveal";
 
 export const Route = createFileRoute("/")({
@@ -53,6 +54,7 @@ function LandingPage() {
         <ReportsShowcase />
         <SocialProof />
         <CaseStudy />
+        <ROICalculator />
         <Solution />
         <Features />
         <Architecture />
