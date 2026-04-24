@@ -1599,6 +1599,8 @@ export type Database = {
           id: string
           is_valid: boolean
           role: string
+          role_permissions: string
+          unidade_endereco: string
           unidade_nome: string
         }[]
       }

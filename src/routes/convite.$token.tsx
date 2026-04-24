@@ -11,7 +11,9 @@ type InvitationData = {
   id: string;
   email: string;
   unidade_nome: string;
+  unidade_endereco: string | null;
   role: string;
+  role_permissions: string;
   is_valid: boolean;
   expires_at: string;
 };
@@ -188,7 +190,7 @@ function AcceptancePage() {
             </CardTitle>
             <CardDescription className="text-slate-400">
               {showConfirmation 
-                ? "Confirme se os dados da unidade e perfil estão corretos."
+                ? "Confirme se os dados da unidade e do seu perfil de acesso estão corretos."
                 : "Você foi convidado para fazer parte da equipe."}
             </CardDescription>
           </CardHeader>
@@ -199,9 +201,12 @@ function AcceptancePage() {
                 <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/20 text-primary shrink-0">
                   <Building2 className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Unidade</p>
-                  <p className="text-lg font-bold text-white">{invitation.unidade_nome}</p>
+                  <p className="text-lg font-bold text-white leading-tight">{invitation.unidade_nome}</p>
+                  {invitation.unidade_endereco && (
+                    <p className="text-xs text-slate-400 mt-1 italic">{invitation.unidade_endereco}</p>
+                  )}
                 </div>
               </div>
 
@@ -209,9 +214,12 @@ function AcceptancePage() {
                 <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-500 shrink-0">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Perfil</p>
-                  <p className="text-lg font-bold text-white">{ROLE_LABELS[invitation.role] || invitation.role}</p>
+                <div className="flex-1">
+                  <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Perfil & Permissões</p>
+                  <p className="text-lg font-bold text-white leading-tight">{ROLE_LABELS[invitation.role] || invitation.role}</p>
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-2" title={invitation.role_permissions}>
+                    {invitation.role_permissions}
+                  </p>
                 </div>
               </div>
 
