@@ -62,10 +62,20 @@ function PublicSenhaPage() {
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(() => {
+  // Persistência da ativação: usamos localStorage para não pedir de novo a
+  // cada aba/refresh. A revalidação (abaixo) cuida de revogações no SO.
+  const NOTIF_KEY = "ticket-notif-ativo";
+  const computeAtivo = () => {
     if (typeof window === "undefined") return false;
-    return sessionStorage.getItem("ticket-notif-ativo") === "1";
-  });
+    const flag = localStorage.getItem(NOTIF_KEY) === "1";
+    if (!flag) return false;
+    // Se o navegador suporta Notification e o usuário REVOGOU, não considere ativo.
+    if ("Notification" in window && Notification.permission === "denied") {
+      return false;
+    }
+    return true;
+  };
+  const [notificacoesAtivas, setNotificacoesAtivas] = useState<boolean>(computeAtivo);
   const [ativando, setAtivando] = useState(false);
 
   const fetchInitialData = useCallback(async (isRetry = false) => {
@@ -250,7 +260,7 @@ function PublicSenhaPage() {
           }
         }
       }
-      sessionStorage.setItem("ticket-notif-ativo", "1");
+      localStorage.setItem(NOTIF_KEY, "1");
       setNotificacoesAtivas(true);
     } finally {
       setAtivando(false);
@@ -260,6 +270,67 @@ function PublicSenhaPage() {
   useEffect(() => {
     void fetchInitialData();
   }, [fetchInitialData]);
+
+  // Revalidação da permissão de Notificação (iOS/Android):
+  // - quando a aba volta a ficar visível (usuário pode ter mudado em Configurações)
+  // - via Permissions API (quando suportada) com listener nativo de mudança
+  // Não pede permissão de novo aqui — só sincroniza o estado local com o real.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+
+    const sync = () => {
+      const flag = localStorage.getItem(NOTIF_KEY) === "1";
+      const denied = Notification.permission === "denied";
+      // Se o usuário revogou no SO, força reabrir o gate.
+      if (flag && denied) {
+        localStorage.removeItem(NOTIF_KEY);
+        setNotificacoesAtivas(false);
+        return;
+      }
+      // Se já temos permissão concedida e a flag local existe, mantém ativo.
+      // Se a flag sumiu mas a permissão é "granted" e o usuário já passou pelo
+      // gate antes em outro dispositivo/navegador, NÃO reativamos sozinhos —
+      // o gate exige um gesto para destravar áudio (iOS/Safari).
+      if (flag && !denied && !notificacoesAtivas) {
+        setNotificacoesAtivas(true);
+      }
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") sync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", sync);
+
+    // Permissions API: alguns navegadores (Chrome Android, desktop) emitem
+    // 'change' quando o usuário altera permissão sem recarregar a página.
+    let permStatus: PermissionStatus | null = null;
+    const setupPermObserver = async () => {
+      try {
+        const nav = navigator as Navigator & {
+          permissions?: { query: (d: { name: PermissionName }) => Promise<PermissionStatus> };
+        };
+        if (!nav.permissions?.query) return;
+        permStatus = await nav.permissions.query({ name: "notifications" as PermissionName });
+        permStatus.addEventListener("change", sync);
+      } catch {
+        /* não suportado em alguns Safaris — ok */
+      }
+    };
+    void setupPermObserver();
+
+    // Sincroniza uma vez no mount (cobre Safari iOS sem Permissions API).
+    sync();
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", sync);
+      permStatus?.removeEventListener("change", sync);
+    };
+    // notificacoesAtivas intencionalmente fora das deps para evitar loop;
+    // sync lê o valor atual e compara via setState (idempotente).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Realtime: acompanha mudanças na própria senha e chamadas
   useEffect(() => {
@@ -444,6 +515,11 @@ function PublicSenhaPage() {
   // porque navegadores móveis exigem um gesto do usuário para liberar áudio,
   // vibração e Notification API.
   if (!notificacoesAtivas) {
+    const isDenied =
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "denied";
+
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8 flex items-center justify-center">
         <div className="mx-auto w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/80 backdrop-blur p-7 text-center shadow-2xl">
@@ -466,11 +542,26 @@ function PublicSenhaPage() {
           <h1 className="font-display text-2xl font-bold tracking-tight mb-2">
             Sua senha {senha.codigo}
           </h1>
-          <p className="text-sm text-slate-300 leading-relaxed mb-6">
-            Toque no botão abaixo para ativar <strong>som</strong>,{" "}
-            <strong>vibração</strong> e <strong>notificações</strong> e ser
-            avisado em tempo real quando for chamado.
-          </p>
+          {isDenied ? (
+            <>
+              <p className="text-sm text-amber-200/90 leading-relaxed mb-4">
+                As notificações estão <strong>bloqueadas</strong> nas
+                configurações do navegador. Som e vibração ainda funcionam — você
+                pode ativá-los abaixo.
+              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed mb-6">
+                Para receber alertas mesmo com a tela bloqueada, libere as
+                notificações em <em>Configurações &gt; Site/Notificações</em> e
+                volte a esta página.
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-slate-300 leading-relaxed mb-6">
+              Toque no botão abaixo para ativar <strong>som</strong>,{" "}
+              <strong>vibração</strong> e <strong>notificações</strong> e ser
+              avisado em tempo real quando for chamado.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => void ativarNotificacoes()}
@@ -482,7 +573,7 @@ function PublicSenhaPage() {
             ) : (
               <BellRing className="h-5 w-5" />
             )}
-            Ativar notificações
+            {isDenied ? "Ativar som e vibração" : "Ativar notificações"}
           </button>
           <p className="mt-4 text-[11px] text-slate-500">
             Mantenha esta página aberta no celular para receber os avisos.
