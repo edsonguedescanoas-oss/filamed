@@ -257,7 +257,7 @@ function UsuariosPage() {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
-                <form onSubmit={handleAddUser}>
+                <form onSubmit={handleInviteUser}>
                   <DialogHeader>
                     <DialogTitle>Adicionar novo usuário</DialogTitle>
                     <DialogDescription>
