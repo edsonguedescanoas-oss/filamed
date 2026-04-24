@@ -829,6 +829,18 @@ function PublicSenhaPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white px-5 py-8">
+      {/* iOS keep-alive: <audio> mudo, montado uma vez e reutilizado pelo
+          kickIOSAudio() para destravar a sessão de áudio do Safari. */}
+      <audio
+        ref={silentAudioRef}
+        src={SILENT_WAV}
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden
+        tabIndex={-1}
+        className="hidden"
+      />
       <div className="mx-auto max-w-md flex flex-col min-h-full">
         {visual?.logo_url && (
           <div className="mb-6 flex justify-center">
