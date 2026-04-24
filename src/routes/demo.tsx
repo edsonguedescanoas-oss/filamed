@@ -59,7 +59,10 @@ function DemoPage() {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Nossos relatórios já vêm formatados com os KPIs que os diretores querem ver: Ocupação, Produtividade, ROI e Satisfação do Paciente.
                 </p>
-                <button className="mt-6 w-full py-3 bg-foreground text-background rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
+                <button 
+                  className="mt-6 w-full py-3 bg-foreground text-background rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+                  onClick={() => trackEvent("download_report", { format: "PDF", type: "model_template" })}
+                >
                   Baixar Modelo de Relatório
                 </button>
               </div>
