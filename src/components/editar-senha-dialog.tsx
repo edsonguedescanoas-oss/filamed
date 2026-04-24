@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,8 +79,27 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
   // não bate, abortamos e pedimos nova confirmação.
   const [snapshotConfirmado, setSnapshotConfirmado] = useState<number | null>(null);
 
-  // Função reutilizável para (re)calcular o preview. Retorna a contagem
-  // observada para que o handleSalvar consiga comparar antes/depois.
+  // Mapa local "fila_id → quantas senhas aguardando". Carregado UMA vez ao
+  // abrir o diálogo (uma única query agrupada para a unidade) e mantido
+  // sincronizado por Realtime. Permite que trocar o seletor de fila atualize
+  // a estimativa instantaneamente, sem novo round-trip.
+  const [contagemPorFila, setContagemPorFila] = useState<Record<string, number>>({});
+
+  // Aplica a estimativa derivada do mapa local (instantâneo).
+  const aplicarPreviewLocal = useCallback(
+    (targetFilaId: string, mapa: Record<string, number>) => {
+      const aguardando = mapa[targetFilaId] ?? 0;
+      const tempoPorPessoa =
+        filas.find((f) => f.id === targetFilaId)?.tempo_espera_estimado ?? 10;
+      setPreviewPos(aguardando);
+      setPreviewTempo(aguardando * tempoPorPessoa);
+      return aguardando;
+    },
+    [filas],
+  );
+
+  // Fonte da verdade para o save: re-checa direto no banco. Também atualiza
+  // o mapa local para que a UI reflita o número observado.
   const fetchPreview = async (targetFilaId: string): Promise<number | null> => {
     const { count, error } = await supabase
       .from("senhas")
@@ -89,47 +108,107 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       .eq("status", "aguardando");
     if (error) return null;
     const aguardando = count ?? 0;
+    setContagemPorFila((prev) =>
+      prev[targetFilaId] === aguardando ? prev : { ...prev, [targetFilaId]: aguardando },
+    );
     const tempoPorPessoa = filas.find((f) => f.id === targetFilaId)?.tempo_espera_estimado ?? 10;
     setPreviewPos(aguardando);
     setPreviewTempo(aguardando * tempoPorPessoa);
     return aguardando;
   };
 
+  // Bootstrap: carrega contagens de TODAS as filas da unidade de uma vez
+  // quando o diálogo abre. Mantém vivo via Realtime no nível da unidade,
+  // de forma que trocar o seletor é sempre instantâneo.
   useEffect(() => {
-    if (!open || !mudouFila || !filaId) {
-      setPreviewPos(null);
-      setPreviewTempo(null);
-      return;
-    }
+    if (!open) return;
     let cancelled = false;
     setPreviewLoading(true);
+
     void (async () => {
-      await fetchPreview(filaId);
-      if (!cancelled) setPreviewLoading(false);
+      // Busca os fila_ids das senhas aguardando da unidade. Como Supabase
+      // não expõe GROUP BY direto pelo client, contamos no JS — barato
+      // porque a unidade típica tem dezenas, não milhares, de senhas vivas.
+      const { data, error } = await supabase
+        .from("senhas")
+        .select("fila_id")
+        .eq("unidade_id", senha.unidade_id)
+        .eq("status", "aguardando");
+      if (cancelled) return;
+      if (!error && data) {
+        const mapa: Record<string, number> = {};
+        for (const r of data as Array<{ fila_id: string }>) {
+          mapa[r.fila_id] = (mapa[r.fila_id] ?? 0) + 1;
+        }
+        setContagemPorFila(mapa);
+        // Se já há fila selecionada que difere da atual, mostra o preview já.
+        if (filaId && filaId !== senha.fila_id) {
+          aplicarPreviewLocal(filaId, mapa);
+        }
+      }
+      setPreviewLoading(false);
     })();
 
-    // Mantém o preview "vivo" enquanto o diálogo está aberto: se chegarem
-    // novas senhas na fila de destino, a estimativa atualiza sozinha. Isso
-    // reduz (mas não elimina) a janela de corrida — a checagem definitiva
-    // continua sendo a re-validação no handleSalvar.
+    // Realtime: qualquer mudança em senhas da unidade invalida o mapa.
+    // Usamos refetch agrupado (debounce simples) para evitar múltiplos
+    // hits em rajada (ex: bulk update da recepção).
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const refetchAgregado = async () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        const { data } = await supabase
+          .from("senhas")
+          .select("fila_id")
+          .eq("unidade_id", senha.unidade_id)
+          .eq("status", "aguardando");
+        if (cancelled || !data) return;
+        const mapa: Record<string, number> = {};
+        for (const r of data as Array<{ fila_id: string }>) {
+          mapa[r.fila_id] = (mapa[r.fila_id] ?? 0) + 1;
+        }
+        setContagemPorFila(mapa);
+        if (filaId && filaId !== senha.fila_id) {
+          aplicarPreviewLocal(filaId, mapa);
+        }
+      }, 200);
+    };
+
     const channel = supabase
-      .channel(`edit-senha-preview:${senha.id}:${filaId}`)
+      .channel(`edit-senha-preview:${senha.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "senhas", filter: `fila_id=eq.${filaId}` },
+        {
+          event: "*",
+          schema: "public",
+          table: "senhas",
+          filter: `unidade_id=eq.${senha.unidade_id}`,
+        },
         () => {
-          if (cancelled) return;
-          void fetchPreview(filaId);
+          if (!cancelled) void refetchAgregado();
         },
       )
       .subscribe();
 
     return () => {
       cancelled = true;
+      if (debounceTimer) clearTimeout(debounceTimer);
       void supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mudouFila, filaId, senha.id]);
+  }, [open, senha.id, senha.unidade_id]);
+
+  // Trocar o seletor: atualiza a estimativa INSTANTANEAMENTE a partir do
+  // mapa em memória, sem flicker de loading e sem esperar o servidor.
+  useEffect(() => {
+    if (!open) return;
+    if (!mudouFila || !filaId) {
+      setPreviewPos(null);
+      setPreviewTempo(null);
+      return;
+    }
+    aplicarPreviewLocal(filaId, contagemPorFila);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, filaId, mudouFila, contagemPorFila, aplicarPreviewLocal]);
 
   const handleSalvar = async () => {
     if (!filaId) {
