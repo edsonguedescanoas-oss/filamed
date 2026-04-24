@@ -481,6 +481,14 @@ function RecepcaoPage() {
                         {s.paciente.nome_completo}
                       </div>
                     )}
+                    {s.triagem_dados && (s.triagem_dados as any).criterios?.length > 0 && (
+                      <div className="text-[10px] text-primary/80 font-medium italic truncate mt-0.5">
+                        {(s.triagem_dados as any).criterios
+                          .map((id: string) => criterios.find((c) => c.id === id)?.nome)
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
+                    )}
                   </div>
                   {unidadeSlug && (
                     <Button
