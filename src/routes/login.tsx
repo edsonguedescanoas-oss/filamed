@@ -259,7 +259,6 @@ function SignUpForm({
 
 function QuickLoginPanel() {
   const { signIn } = useAuth();
-  const navigate = useNavigate();
   const [loadingRole, setLoadingRole] = useState<AppRole | null>(null);
 
   const quickLogin = async (account: typeof TEST_ACCOUNTS[number]) => {
@@ -267,7 +266,6 @@ function QuickLoginPanel() {
     try {
       await signIn(account.email, TEST_PASSWORD);
       toast.success(`Entrando como ${account.label}…`);
-      void navigate({ to: "/app" });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Falha ao entrar";
       toast.error(msg);
