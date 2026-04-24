@@ -10,6 +10,7 @@ import {
   Clock4,
   AlertCircle,
   CalendarCheck,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -38,6 +39,7 @@ import {
 import { RoleGuard } from "@/components/role-guard";
 import { PontoAtendimentoSelector } from "@/components/ponto-atendimento-selector";
 import { HistoricoPonto } from "@/components/historico-ponto";
+import { EditarSenhaDialog } from "@/components/editar-senha-dialog";
 import type { Database } from "@/integrations/supabase/types";
 
 type Senha = Database["public"]["Tables"]["senhas"]["Row"];
@@ -68,6 +70,7 @@ function GuichePage() {
   const [ponto, setPonto] = useState<Ponto | null>(null);
   const [filaGuiche, setFilaGuiche] = useState<Fila | null>(null);
   const [filasDestino, setFilasDestino] = useState<Fila[]>([]);
+  const [todasFilas, setTodasFilas] = useState<Fila[]>([]);
   const [senhas, setSenhas] = useState<Senha[]>([]);
   const [pacientes, setPacientes] = useState<Map<string, Paciente>>(new Map());
   const [buscaAgendamento, setBuscaAgendamento] = useState("");
@@ -118,10 +121,11 @@ function GuichePage() {
     if (filasRes.error) toast.error("Erro ao carregar filas: " + filasRes.error.message);
     if (senhasRes.error) toast.error("Erro ao carregar senhas: " + senhasRes.error.message);
 
-    const todasFilas = (filasRes.data ?? []) as Fila[];
-    const guiche = todasFilas.find((f) => f.tipo === ("guiche" as FilaTipo)) ?? null;
+    const todasFilasData = (filasRes.data ?? []) as Fila[];
+    const guiche = todasFilasData.find((f) => f.tipo === ("guiche" as FilaTipo)) ?? null;
     setFilaGuiche(guiche);
-    setFilasDestino(todasFilas.filter((f) => f.tipo !== ("guiche" as FilaTipo)));
+    setFilasDestino(todasFilasData.filter((f) => f.tipo !== ("guiche" as FilaTipo)));
+    setTodasFilas(todasFilasData);
     setSenhas((senhasRes.data ?? []) as Senha[]);
 
     const map = new Map<string, Paciente>();
@@ -404,9 +408,21 @@ function GuichePage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {timeAgo(s.created_at)}
-                      </span>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span className="text-xs text-muted-foreground">
+                          {timeAgo(s.created_at)}
+                        </span>
+                        <EditarSenhaDialog
+                          senha={s}
+                          filas={todasFilas}
+                          onUpdated={() => void fetchData()}
+                          trigger={
+                            <Button size="sm" variant="ghost" className="h-7 px-2" title="Editar ticket">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          }
+                        />
+                      </div>
                     </li>
                   );
                 })}

@@ -11,6 +11,7 @@ import {
    Check,
 } from "lucide-react";
 import { TicketShareDialog } from "@/components/ticket-share-dialog";
+import { ZerarFilasButton } from "@/components/zerar-filas-button";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -280,14 +281,17 @@ function RecepcaoPage() {
             atendente que chamar.
           </p>
         </div>
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2">
-          <Printer className="h-4 w-4 text-primary" />
-          <div>
-            <Label htmlFor="auto-imprimir" className="text-xs cursor-pointer">
-              Imprimir após gerar
-            </Label>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2">
+            <Printer className="h-4 w-4 text-primary" />
+            <div>
+              <Label htmlFor="auto-imprimir" className="text-xs cursor-pointer">
+                Imprimir após gerar
+              </Label>
+            </div>
+            <Switch id="auto-imprimir" checked={autoImprimir} onCheckedChange={setAutoImprimir} />
           </div>
-          <Switch id="auto-imprimir" checked={autoImprimir} onCheckedChange={setAutoImprimir} />
+          <ZerarFilasButton unidadeId={unidadeId} onZerado={() => void fetchRecentes()} />
         </div>
       </div>
 

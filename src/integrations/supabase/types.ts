@@ -1924,6 +1924,7 @@ export type Database = {
         }[]
       }
       user_unidade_id: { Args: { _user_id: string }; Returns: string }
+      zerar_filas_unidade: { Args: { _unidade_id: string }; Returns: Json }
     }
     Enums: {
       app_role:
