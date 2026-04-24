@@ -101,7 +101,18 @@ function AcceptancePage() {
     updateTimer();
 
     return () => clearInterval(timer);
-  }, [invitation?.expires_at, invitation?.is_valid]);
+  }, [invitation?.expires_at, invitation?.is_valid, fetchInvitation]);
+
+  // Revalidação periódica do convite no backend (a cada 10 segundos)
+  useEffect(() => {
+    if (!invitation?.is_valid || accepting) return;
+
+    const interval = setInterval(() => {
+      void fetchInvitation();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [fetchInvitation, invitation?.is_valid, accepting]);
 
   const handleAccept = async () => {
     if (!isAuthenticated) {
