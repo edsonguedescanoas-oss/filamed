@@ -123,10 +123,12 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
 
       // Recalcula tempo_espera_estimado e posição quando muda de fila.
       // - created_at é "rebobinado" para agora: a senha vai para o final da
-      //   nova fila pelo critério de ordenação por created_at usado em todo o
-      //   app (público, guichê, TV).
-      // - tempo_espera_estimado da senha passa a refletir a nova fila.
-      // - posicao é zerada (será recomputada on-demand).
+      //   nova fila pelo critério de ordenação por created_at usado em todo
+      //   o app (público, guichê, TV).
+      // - posicao e tempo_espera_estimado são recalculados automaticamente
+      //   pela trigger `trg_senhas_recalcular_posicoes` no servidor — não
+      //   enviamos esses campos para evitar divergência com a fonte da
+      //   verdade do banco.
       type SenhaUpdate = Database["public"]["Tables"]["senhas"]["Update"];
       const updatePayload: SenhaUpdate = {
         fila_id: filaId,
@@ -136,8 +138,6 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       };
       if (mudouFila) {
         updatePayload.created_at = agora;
-        updatePayload.tempo_espera_estimado = filaNova?.tempo_espera_estimado ?? null;
-        updatePayload.posicao = null;
       }
 
       const { error } = await supabase
