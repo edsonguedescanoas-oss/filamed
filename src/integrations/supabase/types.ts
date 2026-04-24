@@ -1782,8 +1782,10 @@ export type Database = {
           created_at: string
           fila_id: string
           id: string
+          posicao: number
           prioridade: Database["public"]["Enums"]["senha_prioridade"]
           status: Database["public"]["Enums"]["senha_status"]
+          tempo_espera_estimado: number
           unidade_id: string
           updated_at: string
         }[]
