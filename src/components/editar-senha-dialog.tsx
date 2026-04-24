@@ -53,8 +53,15 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
         (senha.triagem_dados as { observacoes?: string } | null)?.observacoes ?? "",
       );
       setConfirmouMudancaFila(false);
+      setSnapshotConfirmado(null);
     }
   }, [open, senha]);
+
+  // Sempre que o usuário desmarcar o checkbox ou trocar a fila de destino,
+  // o snapshot deixa de ser válido e tem de ser recapturado.
+  useEffect(() => {
+    if (!confirmouMudancaFila) setSnapshotConfirmado(null);
+  }, [confirmouMudancaFila, filaId]);
 
   const filaAtual = filas.find((f) => f.id === senha.fila_id);
   const filaNova = filas.find((f) => f.id === filaId);
