@@ -58,9 +58,9 @@ function maskTelefone(v: string): string {
  const PRIO_RANK: Record<Prioridade, number> = { urgente: 3, preferencial: 2, normal: 1 };
  
 function RecepcaoPage() {
-  const { profile, hasAnyRole } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const unidadeId = profile?.unidade_id;
-  const canGerar = hasAnyRole(["admin", "recepcao", "super_admin"]);
+  const canGerar = hasPermission("generate_tickets");
 
   // Form pré-atendimento (3 campos)
   const [nome, setNome] = useState("");
