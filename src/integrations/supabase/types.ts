@@ -486,6 +486,50 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: string
+          token: string
+          unidade_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by?: string | null
+          role: string
+          token: string
+          unidade_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          token?: string
+          unidade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes_log: {
         Row: {
           canal: Database["public"]["Enums"]["canal_notificacao"]
@@ -1546,6 +1590,17 @@ export type Database = {
         Args: { _ponto_atendimento_id: string; _senha_id: string }
         Returns: string
       }
+      check_invitation_token: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          id: string
+          is_valid: boolean
+          role: string
+          unidade_nome: string
+        }[]
+      }
       cleanup_expired_locks: { Args: never; Returns: undefined }
       cleanup_tts_cache: {
         Args: { _retention_days?: number; _service_role_key: string }
@@ -1842,6 +1897,29 @@ export type Database = {
         Returns: boolean
       }
       unaccent_simple: { Args: { _text: string }; Returns: string }
+      unidade_listar_auditoria: {
+        Args: {
+          _ate?: string
+          _busca?: string
+          _desde?: string
+          _entidade?: string
+          _limite?: number
+          _unidade_id: string
+        }
+        Returns: {
+          acao: string
+          ator_id: string
+          ator_nome: string
+          created_at: string
+          dados_antes: Json
+          dados_depois: Json
+          entidade: string
+          entidade_id: string
+          id: string
+          resumo: string
+          unidade_id: string
+        }[]
+      }
       user_unidade_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
