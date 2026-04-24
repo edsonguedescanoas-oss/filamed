@@ -9,6 +9,7 @@ import { Architecture } from "@/components/sections/architecture";
 import { Flow } from "@/components/sections/flow";
 import { Benefits } from "@/components/sections/benefits";
 import { Differentials } from "@/components/sections/differentials";
+import { Segments } from "@/components/sections/segments";
 import { ComoComecar } from "@/components/sections/como-comecar";
 import { CTA } from "@/components/sections/cta";
 import { AnalyticsShowcase } from "@/components/sections/analytics-showcase";
@@ -43,6 +44,7 @@ function LandingPage() {
       <main>
         <Hero />
         <Problem />
+        <Segments />
         <AnalyticsShowcase />
         <Solution />
         <Features />
