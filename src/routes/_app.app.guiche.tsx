@@ -408,9 +408,21 @@ function GuichePage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {timeAgo(s.created_at)}
-                      </span>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span className="text-xs text-muted-foreground">
+                          {timeAgo(s.created_at)}
+                        </span>
+                        <EditarSenhaDialog
+                          senha={s}
+                          filas={todasFilas}
+                          onUpdated={() => void fetchData()}
+                          trigger={
+                            <Button size="sm" variant="ghost" className="h-7 px-2" title="Editar ticket">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          }
+                        />
+                      </div>
                     </li>
                   );
                 })}
