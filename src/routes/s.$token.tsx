@@ -676,28 +676,48 @@ function PublicSenhaPage() {
     return () => clearTimeout(t);
   }, [senha?.status]);
 
-  // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
+  // Posição na fila e tempo estimado vêm do BANCO (calculados pela trigger
+  // `trg_senhas_recalcular_posicoes`), garantindo o mesmo valor exibido no
+  // guichê, na TV e aqui no WebApp do paciente — inclusive logo após uma
+  // mudança de fila feita pela recepção, porque a trigger atualiza todas as
+  // senhas da fila e o canal `pub:senha:${id}` recebe o UPDATE imediatamente.
+  //
+  // `aguardandoNaFrente` = posicao - 1 (a posição é 1-indexada). Se a senha
+  // ainda não tem posicao calculada (caso raro), cai num fallback que conta
+  // por created_at sem considerar prioridade.
   const refreshPosition = useCallback(async () => {
     if (!senha || senha.status !== "aguardando") {
       setAguardandoNaFrente(null);
       return;
     }
-    const { count } = await supabase
-      .from("senhas")
-      .select("id", { count: "exact", head: true })
-      .eq("fila_id", senha.fila_id)
-      .eq("status", "aguardando")
-      .lt("created_at", senha.created_at);
-    
-    const newPos = count ?? 0;
-    
+    let newPos: number;
+    if (typeof senha.posicao === "number" && senha.posicao > 0) {
+      newPos = senha.posicao - 1;
+    } else {
+      const { count } = await supabase
+        .from("senhas")
+        .select("id", { count: "exact", head: true })
+        .eq("fila_id", senha.fila_id)
+        .eq("status", "aguardando")
+        .lt("created_at", senha.created_at);
+      newPos = count ?? 0;
+    }
+
     // Som se mudar para "você é o próximo" (pos 0)
     if (aguardandoNaFrente !== null && aguardandoNaFrente > 0 && newPos === 0) {
-      playNotificationSound('next');
+      playNotificationSound("next");
     }
-    
+
     setAguardandoNaFrente(newPos);
-  }, [senha?.id, senha?.status, senha?.fila_id, senha?.created_at, aguardandoNaFrente, playNotificationSound]);
+  }, [
+    senha?.id,
+    senha?.status,
+    senha?.fila_id,
+    senha?.created_at,
+    senha?.posicao,
+    aguardandoNaFrente,
+    playNotificationSound,
+  ]);
 
   useEffect(() => {
     void refreshPosition();
