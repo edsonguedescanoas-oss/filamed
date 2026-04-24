@@ -135,9 +135,9 @@ const EMPTY_FORM: PacienteForm = {
 };
 
 function PacientesPage() {
-  const { profile, hasAnyRole } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const unidadeId = profile?.unidade_id;
-  const canManage = hasAnyRole(["admin", "recepcao"]);
+  const canManage = hasPermission("manage_patients");
 
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [loading, setLoading] = useState(true);

@@ -3,10 +3,15 @@ import { BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { RecursoGate } from "@/components/recurso-gate";
 import { RelatoriosCompletos } from "@/components/relatorios/relatorios-completos";
+import { RoleGuard } from "@/components/role-guard";
 
 export const Route = createFileRoute("/_app/app/relatorios")({
   head: () => ({ meta: [{ title: "Relatórios — FilaMed" }] }),
-  component: RelatoriosPage,
+  component: () => (
+    <RoleGuard permission="view_reports" path="/app/relatorios">
+      <RelatoriosPage />
+    </RoleGuard>
+  ),
 });
 
 function RelatoriosPage() {

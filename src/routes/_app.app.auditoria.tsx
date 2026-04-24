@@ -43,7 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const Route = createFileRoute("/_app/app/auditoria")({
   head: () => ({ meta: [{ title: "Auditoria — FilaMed" }] }),
   component: () => (
-    <RoleGuard allow={["admin", "gestor"]} path="/app/auditoria">
+    <RoleGuard permission="view_reports" path="/app/auditoria">
       <AuditoriaPage />
     </RoleGuard>
   ),

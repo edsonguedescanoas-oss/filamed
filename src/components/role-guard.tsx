@@ -7,7 +7,9 @@ import { canAccessRoute } from "@/lib/permissions";
 
 interface RoleGuardProps {
   /** Roles que podem acessar. Admin sempre passa. */
-  allow: AppRole[];
+  allow?: AppRole[];
+  /** Permissão específica necessária. */
+  permission?: string;
   /** Path canônico (ex: "/app/atendimento") usado para o redirect contextual. */
   path: string;
   children: ReactNode;
@@ -17,12 +19,16 @@ interface RoleGuardProps {
  * Bloqueia o conteúdo se o usuário não tiver nenhuma das roles permitidas.
  * Admin tem acesso irrestrito.
  */
-export function RoleGuard({ allow, path, children }: RoleGuardProps) {
-  const { roles, isLoading } = useAuth();
+export function RoleGuard({ allow, permission, path, children }: RoleGuardProps) {
+  const { roles, hasPermission, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const isAdmin = roles.includes("admin");
-  const allowed = isAdmin || allow.some((r) => roles.includes(r)) || canAccessRoute(roles, path);
+  const allowed = 
+    isAdmin || 
+    (allow && allow.some((r) => roles.includes(r))) || 
+    (permission && hasPermission(permission)) || 
+    canAccessRoute(roles, path);
 
   useEffect(() => {
     if (isLoading) return;

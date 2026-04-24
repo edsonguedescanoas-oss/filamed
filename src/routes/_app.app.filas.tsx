@@ -97,9 +97,9 @@ const filaSchema = z.object({
 type FilaForm = z.infer<typeof filaSchema>;
 
 function FilasPage() {
-  const { profile, hasAnyRole } = useAuth();
+  const { profile, hasPermission } = useAuth();
   const unidadeId = profile?.unidade_id;
-  const canManage = hasAnyRole(["admin", "recepcao"]);
+  const canManage = hasPermission("manage_queues");
 
   const [filas, setFilas] = useState<Fila[]>([]);
   const [loading, setLoading] = useState(true);

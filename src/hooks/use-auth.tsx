@@ -37,9 +37,11 @@ export interface AuthState {
   user: User | null;
   profile: UserProfile | null;
   roles: AppRole[];
+  permissions: string[];
   trial: TrialStatus | null;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
+  hasPermission: (permission: string) => boolean;
   refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, nomeCompleto: string) => Promise<void>;
@@ -71,9 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: snap.session?.user ?? null,
       profile: snap.profile,
       roles: snap.roles,
+      permissions: snap.permissions || [],
       trial: snap.trial,
       hasRole: (role) => snap.roles.includes(role),
     hasAnyRole: (rs) => rs.some((r) => snap.roles.includes(r)),
+    hasPermission: (p) => (snap.permissions || []).includes(p),
     refreshProfile: refreshAuthSnapshot,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
