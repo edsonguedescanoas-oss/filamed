@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AuditoriaDiff } from "@/components/admin/auditoria-diff";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_admin/admin/auditoria")({
   head: () => ({
@@ -62,6 +63,7 @@ interface UnidadeOpt {
 
 const ENTIDADES = [
   { value: "todas", label: "Todas as entidades" },
+  { value: "usuario", label: "Usuários" },
   { value: "assinatura", label: "Assinaturas / Planos" },
   { value: "unidade", label: "Unidades (suspensão/reativação)" },
   { value: "fila", label: "Filas" },
@@ -101,6 +103,13 @@ function fmtDateTime(iso: string) {
 }
 
 function entidadeMeta(entidade: string, acao: string) {
+  if (entidade === "usuario") {
+    return {
+      icon: UserIcon,
+      label: "Usuário",
+      tone: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+    };
+  }
   if (entidade === "fila") {
     return {
       icon: ListTree,
@@ -215,16 +224,13 @@ function AdminAuditoriaPage() {
   const [hasMore, setHasMore] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  // Token para invalidar requests obsoletas (filtros mudaram durante fetch).
   const reqIdRef = useRef(0);
 
-  // Debounce da busca textual
   useEffect(() => {
     const t = setTimeout(() => setBuscaDebounced(busca.trim()), 300);
     return () => clearTimeout(t);
   }, [busca]);
 
-  // Carrega unidades para o filtro
   useEffect(() => {
     void (async () => {
       const { data } = await supabase
@@ -235,7 +241,6 @@ function AdminAuditoriaPage() {
     })();
   }, []);
 
-  // Função de fetch paginada — usa created_at do último item como cursor (_ate).
   const fetchPage = useCallback(
     async (cursorAte: string | null, reqId: number) => {
       const desde = periodoDesde(periodo);
@@ -253,7 +258,7 @@ function AdminAuditoriaPage() {
         _busca: buscaDebounced || null,
         _ator_id: null,
       });
-      if (reqId !== reqIdRef.current) return null; // request obsoleta
+      if (reqId !== reqIdRef.current) return null;
       if (error) {
         console.error(error);
         return [];
@@ -263,7 +268,6 @@ function AdminAuditoriaPage() {
     [unidadeId, entidade, periodo, buscaDebounced],
   );
 
-  // Reload inicial sempre que filtros mudam
   useEffect(() => {
     const reqId = ++reqIdRef.current;
     setLoading(true);
@@ -281,7 +285,6 @@ function AdminAuditoriaPage() {
   const loadMore = useCallback(async () => {
     if (loadingMore || loading || !hasMore || eventos.length === 0) return;
     const last = eventos[eventos.length - 1];
-    // Cursor: created_at do último item; subtrai 1ms para evitar duplicar borda.
     const cursorMs = new Date(last.created_at).getTime() - 1;
     const cursor = new Date(cursorMs).toISOString();
     setLoadingMore(true);
@@ -301,13 +304,15 @@ function AdminAuditoriaPage() {
   }, [eventos, fetchPage, hasMore, loading, loadingMore]);
 
   const stats = useMemo(() => {
+    let usuario = 0;
     let assinatura = 0;
     let unidade = 0;
     let chamadas = 0;
     let notif_ok = 0;
     let notif_falha = 0;
     for (const e of eventos) {
-      if (e.entidade === "assinatura") assinatura++;
+      if (e.entidade === "usuario") usuario++;
+      else if (e.entidade === "assinatura") assinatura++;
       else if (e.entidade === "unidade") unidade++;
       else if (e.entidade === "chamada") chamadas++;
       else if (e.entidade === "notificacao") {
@@ -315,7 +320,7 @@ function AdminAuditoriaPage() {
         else notif_ok++;
       }
     }
-    return { assinatura, unidade, chamadas, notif_ok, notif_falha };
+    return { usuario, assinatura, unidade, chamadas, notif_ok, notif_falha };
   }, [eventos]);
 
   const toggle = (id: string) => {
@@ -327,7 +332,6 @@ function AdminAuditoriaPage() {
     });
   };
 
-  // Virtualização da lista
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const itemCount = eventos.length + (hasMore || loadingMore ? 1 : 0);
   const virtualizer = useVirtualizer({
@@ -343,7 +347,6 @@ function AdminAuditoriaPage() {
       index >= eventos.length ? "__sentinel__" : eventos[index].id,
   });
 
-  // Trigger de load-more quando o sentinela aparece
   const virtualItems = virtualizer.getVirtualItems();
   useEffect(() => {
     const last = virtualItems[virtualItems.length - 1];
@@ -353,7 +356,6 @@ function AdminAuditoriaPage() {
     }
   }, [virtualItems, eventos.length, hasMore, loadingMore, loading, loadMore]);
 
-  // Re-mede quando expanded muda (alturas variam)
   useEffect(() => {
     virtualizer.measure();
   }, [expanded, virtualizer]);
@@ -372,7 +374,6 @@ function AdminAuditoriaPage() {
             <Activity className="h-3.5 w-3.5" />
             {eventos.length}
             {hasMore ? "+" : ""} evento{eventos.length === 1 ? "" : "s"} carregado
-            {eventos.length === 1 ? "" : "s"}
           </Badge>
           <Button
             size="sm"
@@ -386,29 +387,27 @@ function AdminAuditoriaPage() {
         </div>
       </header>
 
-      {/* Resumo */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <ResumoCard icon={CreditCard} label="Planos / Assinaturas" value={stats.assinatura} tone="text-amber-600" />
-        <ResumoCard icon={Power} label="Suspensões / Unidades" value={stats.unidade} tone="text-indigo-600" />
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <ResumoCard icon={UserIcon} label="Usuários" value={stats.usuario} tone="text-blue-600" />
+        <ResumoCard icon={CreditCard} label="Assinaturas" value={stats.assinatura} tone="text-amber-600" />
+        <ResumoCard icon={Power} label="Unidades" value={stats.unidade} tone="text-indigo-600" />
         <ResumoCard icon={PhoneCall} label="Chamadas" value={stats.chamadas} tone="text-violet-600" />
-        <ResumoCard icon={Send} label="Notificações enviadas" value={stats.notif_ok} tone="text-emerald-600" />
+        <ResumoCard icon={Send} label="Notificações" value={stats.notif_ok} tone="text-emerald-600" />
         <ResumoCard
           icon={AlertTriangle}
-          label="Falhas de integração"
+          label="Falhas"
           value={stats.notif_falha}
           tone="text-destructive"
           highlight={stats.notif_falha > 0}
         />
       </div>
 
-      {/* Filtros */}
       <Card className="mb-6">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Filter className="h-4 w-4" />
             Filtros
           </CardTitle>
-          <CardDescription>Refine a trilha por unidade, tipo de evento, período ou busca textual.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1.5 lg:col-span-1">
@@ -472,13 +471,11 @@ function AdminAuditoriaPage() {
         </CardContent>
       </Card>
 
-      {/* Lista */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Trilha de eventos</CardTitle>
           <CardDescription>
-            Ordenado do mais recente para o mais antigo. Clique para ver os detalhes do payload. A
-            lista carrega mais registros automaticamente conforme você rola.
+            Ordenado do mais recente para o mais antigo. Clique para ver os detalhes.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -488,7 +485,7 @@ function AdminAuditoriaPage() {
             </div>
           ) : eventos.length === 0 ? (
             <div className="py-16 text-center text-sm text-muted-foreground">
-              Nenhum evento encontrado para os filtros selecionados.
+              Nenhum evento encontrado.
             </div>
           ) : (
             <div
@@ -502,95 +499,90 @@ function AdminAuditoriaPage() {
                   position: "relative",
                 }}
               >
-                {virtualItems.map((vRow) => {
-                  const isSentinel = vRow.index >= eventos.length;
+                {virtualizer.getVirtualItems().map((v) => {
+                  if (v.index >= eventos.length) {
+                    return (
+                      <div
+                        key={v.key}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: `${v.size}px`,
+                          transform: `translateY(${v.start}px)`,
+                        }}
+                        className="flex items-center justify-center border-t border-border/50 py-4 text-muted-foreground"
+                      >
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      </div>
+                    );
+                  }
+
+                  const ev = eventos[v.index];
+                  const isExpanded = expanded.has(ev.id);
+                  const meta = entidadeMeta(ev.entidade, ev.acao);
+                  const Icon = meta.icon;
+
                   return (
                     <div
-                      key={vRow.key}
-                      data-index={vRow.index}
+                      key={v.key}
+                      data-index={v.index}
                       ref={virtualizer.measureElement}
-                      className="absolute left-0 top-0 w-full border-b border-border last:border-b-0"
-                      style={{ transform: `translateY(${vRow.start}px)` }}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        transform: `translateY(${v.start}px)`,
+                      }}
+                      className={cn(
+                        "group border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors",
+                        isExpanded && "bg-muted/20"
+                      )}
                     >
-                      {isSentinel ? (
-                        <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
-                          {hasMore ? (
-                            <>
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Carregando mais eventos…
-                            </>
-                          ) : (
-                            <span>Fim da lista</span>
-                          )}
+                      <div
+                        className="flex cursor-pointer items-start gap-4 p-4"
+                        onClick={() => toggle(ev.id)}
+                      >
+                        <div className={cn("mt-1 rounded-full border p-1.5 shrink-0", meta.tone)}>
+                          <Icon className="h-4 w-4" />
                         </div>
-                      ) : (
-                        (() => {
-                          const ev = eventos[vRow.index];
-                          const meta = entidadeMeta(ev.entidade, ev.acao);
-                          const Icon = meta.icon;
-                          const isOpen = expanded.has(ev.id);
-                          const hasPayload = !!(ev.dados_antes || ev.dados_depois);
-                          return (
-                            <div className="px-3 py-3">
-                              <button
-                                type="button"
-                                onClick={() => hasPayload && toggle(ev.id)}
-                                className={`flex w-full items-start gap-3 text-left ${
-                                  hasPayload ? "cursor-pointer" : "cursor-default"
-                                }`}
-                              >
-                                <div
-                                  className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${meta.tone}`}
-                                >
-                                  <Icon className="h-4 w-4" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="outline" className={meta.tone}>
-                                      {meta.label}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground">
-                                      {fmtDateTime(ev.created_at)}
-                                    </span>
-                                  </div>
-                                  <p className="mt-1 text-sm font-medium leading-snug">
-                                    {ev.resumo}
-                                  </p>
-                                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                                    {ev.unidade_nome && (
-                                      <span className="inline-flex items-center gap-1">
-                                        <Building2 className="h-3 w-3" />
-                                        {ev.unidade_nome}
-                                      </span>
-                                    )}
-                                    <span className="inline-flex items-center gap-1">
-                                      <UserIcon className="h-3 w-3" />
-                                      {ev.ator_nome ?? (ev.ator_id ? "Usuário" : "Sistema")}
-                                    </span>
-                                  </div>
-                                </div>
-                                {hasPayload && (
-                                  <span className="mt-1 text-muted-foreground">
-                                    {isOpen ? (
-                                      <ChevronDown className="h-4 w-4" />
-                                    ) : (
-                                      <ChevronRight className="h-4 w-4" />
-                                    )}
-                                  </span>
-                                )}
-                              </button>
-
-                              {isOpen && hasPayload && (
-                                <div className="mt-3 ml-12">
-                                  <AuditoriaDiff
-                                    before={ev.dados_antes}
-                                    after={ev.dados_depois}
-                                  />
-                                </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                                {meta.label}
+                              </span>
+                              <span className="text-muted-foreground/30">•</span>
+                              <span className="text-[10px] font-medium text-muted-foreground">
+                                {fmtDateTime(ev.created_at)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-medium text-muted-foreground">
+                                {ev.unidade_nome ?? "Sistema"}
+                              </span>
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground/50" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground" />
                               )}
                             </div>
-                          );
-                        })()
+                          </div>
+                          <p className="mt-1 text-sm font-medium leading-tight">
+                            {ev.resumo}
+                          </p>
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            Ator: <span className="font-semibold text-foreground/80">{ev.ator_nome ?? "Sistema"}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="px-4 pb-4 pl-[60px]">
+                          <AuditoriaDiff before={ev.dados_antes} after={ev.dados_depois} />
+                        </div>
                       )}
                     </div>
                   );
@@ -609,28 +601,29 @@ function ResumoCard({
   label,
   value,
   tone,
-  highlight,
+  highlight = false,
 }: {
-  icon: typeof Activity;
+  icon: any;
   label: string;
   value: number;
   tone: string;
   highlight?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-lg border bg-card p-4 ${
-        highlight && value > 0 ? "border-destructive/40" : "border-border"
-      }`}
-    >
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon className={`h-4 w-4 ${tone}`} />
-        <span className="text-xs font-medium uppercase tracking-wide">{label}</span>
-      </div>
-      <p className={`mt-2 text-2xl font-bold ${highlight && value > 0 ? "text-destructive" : ""}`}>
-        {value.toLocaleString("pt-BR")}
-      </p>
-    </div>
+    <Card className={cn("transition-shadow hover:shadow-md", highlight && "border-destructive/30 bg-destructive/5")}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className={cn("rounded-md p-2 bg-muted/50", tone)}>
+            <Icon className="h-4 w-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {label}
+            </p>
+            <p className="text-xl font-bold tabular-nums">{value}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
-
