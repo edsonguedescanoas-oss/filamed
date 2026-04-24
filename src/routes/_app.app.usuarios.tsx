@@ -149,35 +149,33 @@ function UsuariosPage() {
     }
   };
 
-  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleInviteUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!unidadeId) return;
     setFormLoading(true);
     const formData = new FormData(e.currentTarget);
     const userData = {
       email: formData.get("email") as string,
-      password: formData.get("password") as string,
       nome_completo: formData.get("nome_completo") as string,
-      telefone: formData.get("telefone") as string,
       role: formData.get("role") as UnidadeRole,
     };
 
     try {
       const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
         body: {
-          action: "create",
+          action: "invite",
           unidadeId,
           userData
         }
       });
 
-      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao criar usuário");
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao enviar convite");
 
-      toast.success("Usuário criado com sucesso!");
+      toast.success("Convite enviado com sucesso!");
       setIsAddingUser(false);
       void carregarUsuarios();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao criar usuário");
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar convite");
     } finally {
       setFormLoading(false);
     }
