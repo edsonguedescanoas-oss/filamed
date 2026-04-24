@@ -53,8 +53,17 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
         (senha.triagem_dados as { observacoes?: string } | null)?.observacoes ?? "",
       );
       setConfirmouMudancaFila(false);
+      setSnapshotConfirmado(null);
     }
   }, [open, senha]);
+
+  // Quando o usuário troca a fila de destino, qualquer confirmação prévia
+  // perde o sentido — força nova confirmação contra a nova estimativa.
+  useEffect(() => {
+    setConfirmouMudancaFila(false);
+    setSnapshotConfirmado(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filaId]);
 
   const filaAtual = filas.find((f) => f.id === senha.fila_id);
   const filaNova = filas.find((f) => f.id === filaId);
@@ -65,6 +74,26 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
   const [previewPos, setPreviewPos] = useState<number | null>(null);
   const [previewTempo, setPreviewTempo] = useState<number | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  // Snapshot da contagem que o usuário VIU quando confirmou a regra.
+  // Usado para detectar corrida: se a contagem real no momento do save
+  // não bate, abortamos e pedimos nova confirmação.
+  const [snapshotConfirmado, setSnapshotConfirmado] = useState<number | null>(null);
+
+  // Função reutilizável para (re)calcular o preview. Retorna a contagem
+  // observada para que o handleSalvar consiga comparar antes/depois.
+  const fetchPreview = async (targetFilaId: string): Promise<number | null> => {
+    const { count, error } = await supabase
+      .from("senhas")
+      .select("id", { count: "exact", head: true })
+      .eq("fila_id", targetFilaId)
+      .eq("status", "aguardando");
+    if (error) return null;
+    const aguardando = count ?? 0;
+    const tempoPorPessoa = filas.find((f) => f.id === targetFilaId)?.tempo_espera_estimado ?? 10;
+    setPreviewPos(aguardando);
+    setPreviewTempo(aguardando * tempoPorPessoa);
+    return aguardando;
+  };
 
   useEffect(() => {
     if (!open || !mudouFila || !filaId) {
@@ -75,24 +104,32 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
     let cancelled = false;
     setPreviewLoading(true);
     void (async () => {
-      const { count } = await supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("fila_id", filaId)
-        .eq("status", "aguardando");
-      if (cancelled) return;
-      const aguardando = count ?? 0;
-      const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
-      // A senha entra ATRÁS de todas as que já estão aguardando, então a
-      // posição "na frente" é exatamente a contagem atual de aguardando.
-      setPreviewPos(aguardando);
-      setPreviewTempo(aguardando * tempoPorPessoa);
-      setPreviewLoading(false);
+      await fetchPreview(filaId);
+      if (!cancelled) setPreviewLoading(false);
     })();
+
+    // Mantém o preview "vivo" enquanto o diálogo está aberto: se chegarem
+    // novas senhas na fila de destino, a estimativa atualiza sozinha. Isso
+    // reduz (mas não elimina) a janela de corrida — a checagem definitiva
+    // continua sendo a re-validação no handleSalvar.
+    const channel = supabase
+      .channel(`edit-senha-preview:${senha.id}:${filaId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "senhas", filter: `fila_id=eq.${filaId}` },
+        () => {
+          if (cancelled) return;
+          void fetchPreview(filaId);
+        },
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
+      void supabase.removeChannel(channel);
     };
-  }, [open, mudouFila, filaId, filaNova?.tempo_espera_estimado]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mudouFila, filaId, senha.id]);
 
   const handleSalvar = async () => {
     if (!filaId) {
@@ -104,6 +141,33 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       return;
     }
     setSaving(true);
+
+    // Trava anti-corrida: re-checa a contagem de aguardando na fila de
+    // destino IMEDIATAMENTE antes do update. Se chegaram novas senhas
+    // entre o preview/confirmação e o clique em salvar, abortamos, atualiza
+    // o preview na tela e exigimos nova confirmação.
+    if (mudouFila) {
+      const atual = await fetchPreview(filaId);
+      if (atual === null) {
+        toast.error("Não foi possível confirmar a fila de destino. Tente novamente.");
+        setSaving(false);
+        return;
+      }
+      const esperado = snapshotConfirmado;
+      if (esperado === null || atual !== esperado) {
+        setConfirmouMudancaFila(false);
+        setSnapshotConfirmado(null);
+        const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
+        toast.warning(
+          esperado === null
+            ? "A estimativa foi atualizada. Confirme novamente antes de salvar."
+            : `A fila mudou: agora há ${atual} aguardando (~${atual * tempoPorPessoa} min). Confirme novamente.`,
+        );
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       // Mescla observações no triagem_dados sem perder demais campos.
       // Quando a fila muda, registra um marcador de "movido em" para auditoria
@@ -287,7 +351,14 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                     <label className="mt-2 flex items-start gap-2 pt-1">
                       <Checkbox
                         checked={confirmouMudancaFila}
-                        onCheckedChange={(v) => setConfirmouMudancaFila(v === true)}
+                        onCheckedChange={(v) => {
+                          const marcou = v === true;
+                          setConfirmouMudancaFila(marcou);
+                          // Captura o snapshot da contagem que o usuário
+                          // está vendo neste exato momento. Será comparado
+                          // contra a contagem real no save.
+                          setSnapshotConfirmado(marcou ? previewPos : null);
+                        }}
                         aria-label="Ok, entendi a regra de mudança de fila"
                       />
                       <span className="text-xs font-medium">
