@@ -27,6 +27,7 @@ type Chamada = {
   senha_codigo?: string;
   fila_nome?: string;
   paciente_nome?: string;
+  triagem_dados?: any;
 };
 
 /** Detecta se uma chamada é uma rechamada (manual ou automática). */
