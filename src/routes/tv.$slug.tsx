@@ -388,6 +388,23 @@ function TvPage() {
     })();
   }, [unidade?.id]);
 
+  // Carrega critérios de triagem para exibir os nomes
+  useEffect(() => {
+    if (!unidade?.id) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("triagem_criterios")
+        .select("id, nome")
+        .eq("unidade_id", unidade.id);
+      
+      if (data) {
+        const map: Record<string, string> = {};
+        data.forEach(c => map[c.id] = c.nome);
+        setCriterios(map);
+      }
+    })();
+  }, [unidade?.id]);
+
   // Busca status atual das senhas que aparecem no histórico (precisa pra
   // mostrar badges "em atendimento" / "ausente" / "atendimento finalizado").
   // Roda quando entram novas chamadas e ainda não conhecemos o status delas.
