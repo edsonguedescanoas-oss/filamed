@@ -141,6 +141,7 @@ export const Route = createFileRoute("/tv/$slug")({
         codigo: c.senha_codigo,
         fila_nome: c.fila_nome,
         paciente_nome: (c as any).paciente_nome,
+        triagem_dados: (c as any).triagem_dados,
       }
     }));
 
