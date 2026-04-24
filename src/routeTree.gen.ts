@@ -35,6 +35,7 @@ import { Route as AppAppVozRouteImport } from './routes/_app.app.voz'
 import { Route as AppAppUsuariosRouteImport } from './routes/_app.app.usuarios'
 import { Route as AppAppTvRouteImport } from './routes/_app.app.tv'
 import { Route as AppAppTriagemRouteImport } from './routes/_app.app.triagem'
+import { Route as AppAppSegurancaRouteImport } from './routes/_app.app.seguranca'
 import { Route as AppAppRelatoriosRouteImport } from './routes/_app.app.relatorios'
 import { Route as AppAppRecepcaoRouteImport } from './routes/_app.app.recepcao'
 import { Route as AppAppPontosRouteImport } from './routes/_app.app.pontos'
@@ -182,6 +183,11 @@ const AppAppTriagemRoute = AppAppTriagemRouteImport.update({
   path: '/triagem',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AppAppSegurancaRoute = AppAppSegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
+  getParentRoute: () => AppAppRoute,
+} as any)
 const AppAppRelatoriosRoute = AppAppRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/app/pontos': typeof AppAppPontosRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
+  '/app/seguranca': typeof AppAppSegurancaRoute
   '/app/triagem': typeof AppAppTriagemRoute
   '/app/tv': typeof AppAppTvRoute
   '/app/usuarios': typeof AppAppUsuariosRoute
@@ -354,6 +361,7 @@ export interface FileRoutesByTo {
   '/app/pontos': typeof AppAppPontosRoute
   '/app/recepcao': typeof AppAppRecepcaoRoute
   '/app/relatorios': typeof AppAppRelatoriosRoute
+  '/app/seguranca': typeof AppAppSegurancaRoute
   '/app/triagem': typeof AppAppTriagemRoute
   '/app/tv': typeof AppAppTvRoute
   '/app/usuarios': typeof AppAppUsuariosRoute
@@ -401,6 +409,7 @@ export interface FileRoutesById {
   '/_app/app/pontos': typeof AppAppPontosRoute
   '/_app/app/recepcao': typeof AppAppRecepcaoRoute
   '/_app/app/relatorios': typeof AppAppRelatoriosRoute
+  '/_app/app/seguranca': typeof AppAppSegurancaRoute
   '/_app/app/triagem': typeof AppAppTriagemRoute
   '/_app/app/tv': typeof AppAppTvRoute
   '/_app/app/usuarios': typeof AppAppUsuariosRoute
@@ -447,6 +456,7 @@ export interface FileRouteTypes {
     | '/app/pontos'
     | '/app/recepcao'
     | '/app/relatorios'
+    | '/app/seguranca'
     | '/app/triagem'
     | '/app/tv'
     | '/app/usuarios'
@@ -490,6 +500,7 @@ export interface FileRouteTypes {
     | '/app/pontos'
     | '/app/recepcao'
     | '/app/relatorios'
+    | '/app/seguranca'
     | '/app/triagem'
     | '/app/tv'
     | '/app/usuarios'
@@ -536,6 +547,7 @@ export interface FileRouteTypes {
     | '/_app/app/pontos'
     | '/_app/app/recepcao'
     | '/_app/app/relatorios'
+    | '/_app/app/seguranca'
     | '/_app/app/triagem'
     | '/_app/app/tv'
     | '/_app/app/usuarios'
@@ -751,6 +763,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppTriagemRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_app/app/seguranca': {
+      id: '/_app/app/seguranca'
+      path: '/seguranca'
+      fullPath: '/app/seguranca'
+      preLoaderRoute: typeof AppAppSegurancaRouteImport
+      parentRoute: typeof AppAppRoute
+    }
     '/_app/app/relatorios': {
       id: '/_app/app/relatorios'
       path: '/relatorios'
@@ -941,6 +960,7 @@ interface AppAppRouteChildren {
   AppAppPontosRoute: typeof AppAppPontosRoute
   AppAppRecepcaoRoute: typeof AppAppRecepcaoRoute
   AppAppRelatoriosRoute: typeof AppAppRelatoriosRoute
+  AppAppSegurancaRoute: typeof AppAppSegurancaRoute
   AppAppTriagemRoute: typeof AppAppTriagemRoute
   AppAppTvRoute: typeof AppAppTvRoute
   AppAppUsuariosRoute: typeof AppAppUsuariosRoute
@@ -959,6 +979,7 @@ const AppAppRouteChildren: AppAppRouteChildren = {
   AppAppPontosRoute: AppAppPontosRoute,
   AppAppRecepcaoRoute: AppAppRecepcaoRoute,
   AppAppRelatoriosRoute: AppAppRelatoriosRoute,
+  AppAppSegurancaRoute: AppAppSegurancaRoute,
   AppAppTriagemRoute: AppAppTriagemRoute,
   AppAppTvRoute: AppAppTvRoute,
   AppAppUsuariosRoute: AppAppUsuariosRoute,
