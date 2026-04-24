@@ -260,7 +260,16 @@ Avisaremos você quando for a sua vez!`;
         number: formattedTelefone,
         text: mensagem,
         textMessage: { text: mensagem },
-        options: { delay: 0, presence: "composing", linkPreview: false }
+        // Desabilita pré-visualização de link em todas as variantes aceitas
+        // pelas APIs WADuck/Evolution (v1 e v2).
+        linkPreview: false,
+        previewUrl: false,
+        options: {
+          delay: 0,
+          presence: "composing",
+          linkPreview: false,
+          previewUrl: false,
+        },
       };
 
       console.log(`Enviando WhatsApp para ${formattedTelefone} via ${fullUrl}`);
