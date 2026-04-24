@@ -1,5 +1,6 @@
 import { ArrowRight, Calendar, Sparkles, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WhatsAppFlow } from "@/components/whatsapp-flow";
 
 export function CTA() {
   return (
@@ -23,14 +24,9 @@ export function CTA() {
               Junte-se a centenas de gestores que transformaram o caos da recepção em uma operação lucrativa e de alta performance.
             </p>
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button asChild size="lg" className="h-16 px-10 bg-gradient-primary text-white shadow-elegant hover:scale-[1.03] active:scale-95 transition-all text-xl font-bold rounded-2xl w-full sm:w-auto">
-                <a href="https://wa.me/5584981155050" target="_blank" rel="noopener noreferrer">
-                  Falar com Consultor
-                  <ArrowRight className="ml-2 h-6 w-6" />
-                </a>
-              </Button>
+              <WhatsAppFlow />
               <Button asChild size="lg" variant="outline" className="h-16 px-10 border-white/20 text-white hover:bg-white/10 backdrop-blur text-xl rounded-2xl w-full sm:w-auto">
-                <a href="#analytics">
+                <a href="#reports-showcase">
                   <Calendar className="mr-2 h-5 w-5" />
                   Ver Dashboard
                 </a>
