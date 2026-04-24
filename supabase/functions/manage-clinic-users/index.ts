@@ -276,6 +276,40 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
+    } else if (action === "resend-invitation") {
+      const { invitationId } = body;
+      if (!invitationId) throw new Error("invitationId is required");
+
+      const { data: invitation, error: getError } = await supabaseClient
+        .from("invitations")
+        .select("*")
+        .eq("id", invitationId)
+        .single();
+
+      if (getError || !invitation) throw new Error("Invitation not found");
+
+      // Generate new token and update expiration
+      const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const { data: updated, error: updateError } = await supabaseClient
+        .from("invitations")
+        .update({
+          token: newToken,
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          accepted_at: null // In case it was somehow marked but we want to reset
+        })
+        .eq("id", invitationId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      const origin = req.headers.get("origin") || "";
+      const invitationUrl = `${origin}/aceitar-convite/${newToken}`;
+
+      return new Response(JSON.stringify({ invitation: updated, invitationUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     throw new Error("Invalid action");
