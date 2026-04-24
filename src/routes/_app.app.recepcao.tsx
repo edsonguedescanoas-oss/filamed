@@ -5,8 +5,10 @@ import {
   Loader2,
   Printer,
   Share2,
-  AlertCircle,
-  UserPlus,
+   AlertCircle,
+   UserPlus,
+   Activity,
+   Check,
 } from "lucide-react";
 import { TicketShareDialog } from "@/components/ticket-share-dialog";
 import { toast } from "sonner";
@@ -50,6 +52,10 @@ function maskTelefone(v: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
+ type TriageCriterion = Database["public"]["Tables"]["triagem_criterios"]["Row"];
+ 
+ const PRIO_RANK: Record<Prioridade, number> = { urgente: 3, preferencial: 2, normal: 1 };
+ 
 function RecepcaoPage() {
   const { profile, hasAnyRole } = useAuth();
   const unidadeId = profile?.unidade_id;
@@ -59,7 +65,10 @@ function RecepcaoPage() {
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
-  const [prioridade, setPrioridade] = useState<Prioridade>("normal");
+   const [prioridade, setPrioridade] = useState<Prioridade>("normal");
+   const [criterios, setCriterios] = useState<TriageCriterion[]>([]);
+   const [selectedCriterios, setSelectedCriterios] = useState<string[]>([]);
+   const [loadingCriterios, setLoadingCriterios] = useState(false);
   const [errors, setErrors] = useState<{ nome?: string; telefone?: string; data?: string }>({});
 
   const [emitting, setEmitting] = useState(false);
@@ -111,8 +120,22 @@ function RecepcaoPage() {
     setLoadingRecentes(false);
   };
 
+   const fetchCriterios = async () => {
+     if (!unidadeId) return;
+     setLoadingCriterios(true);
+     const { data, error } = await supabase
+       .from("triagem_criterios")
+       .select("*")
+       .eq("unidade_id", unidadeId)
+       .eq("ativo", true)
+       .order("ordem", { ascending: true });
+     if (!error) setCriterios(data || []);
+     setLoadingCriterios(false);
+   };
+ 
   useEffect(() => {
     void fetchRecentes();
+   void fetchCriterios();
     if (unidadeId) {
       void (async () => {
         const { data: u } = await supabase
@@ -154,13 +177,34 @@ function RecepcaoPage() {
     return Object.keys(next).length === 0;
   };
 
-  const limpar = () => {
-    setNome("");
-    setTelefone("");
-    setDataNascimento("");
-    setPrioridade("normal");
-    setErrors({});
-  };
+   const limpar = () => {
+     setNome("");
+     setTelefone("");
+     setDataNascimento("");
+     setPrioridade("normal");
+     setSelectedCriterios([]);
+     setErrors({});
+   };
+ 
+   const handleToggleCriterion = (id: string) => {
+     setSelectedCriterios((prev) => {
+       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+       
+       // Recalcular prioridade baseada nos critérios selecionados
+       if (next.length === 0) {
+         setPrioridade("normal");
+       } else {
+         const highestPrio = next.reduce((acc, currId) => {
+           const c = criterios.find((x) => x.id === currId);
+           if (!c) return acc;
+           return PRIO_RANK[c.prioridade] > PRIO_RANK[acc] ? c.prioridade : acc;
+         }, "normal" as Prioridade);
+         setPrioridade(highestPrio);
+       }
+       
+       return next;
+     });
+   };
 
   const handleGerar = async () => {
     if (!canGerar) {
@@ -172,13 +216,14 @@ function RecepcaoPage() {
 
     setEmitting(true);
     try {
-      const { data, error } = await supabase.rpc("gerar_senha_guiche", {
-        _unidade_id: unidadeId,
-        _nome: nome.trim(),
-        _telefone: onlyDigits(telefone) || undefined,
-        _data_nascimento: dataNascimento || undefined,
-        _prioridade: prioridade,
-      });
+       const { data, error } = await supabase.rpc("gerar_senha_guiche", {
+         _unidade_id: unidadeId,
+         _nome: nome.trim(),
+         _telefone: onlyDigits(telefone) || undefined,
+         _data_nascimento: dataNascimento || undefined,
+         _prioridade: prioridade,
+         _triagem_dados: selectedCriterios.length > 0 ? { criterios: selectedCriterios } : undefined,
+       });
       if (error) throw error;
       const senha = (Array.isArray(data) ? data[0] : data) as unknown as Senha | null;
       if (!senha?.id || !senha.codigo || !senha.token_publico) {
@@ -305,19 +350,74 @@ function RecepcaoPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Prioridade</Label>
-              <Select value={prioridade} onValueChange={(v) => setPrioridade(v as Prioridade)}>
-                <SelectTrigger className="h-11">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="preferencial">Preferencial (idoso, gestante…)</SelectItem>
-                  <SelectItem value="urgente">Urgente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+             <div className="space-y-3">
+               <Label className="flex items-center justify-between">
+                 <span>Classificação / Critérios</span>
+                 {selectedCriterios.length > 0 && (
+                   <Button 
+                     variant="ghost" 
+                     size="sm" 
+                     className="h-6 text-[10px] text-muted-foreground uppercase"
+                     onClick={() => {
+                       setSelectedCriterios([]);
+                       setPrioridade("normal");
+                     }}
+                   >
+                     Limpar seleção
+                   </Button>
+                 )}
+               </Label>
+               
+               {criterios.length > 0 ? (
+                 <div className="flex flex-wrap gap-2">
+                   {criterios.map((c) => {
+                     const isSelected = selectedCriterios.includes(c.id);
+                     return (
+                       <Button
+                         key={c.id}
+                         type="button"
+                         variant={isSelected ? "default" : "outline"}
+                         size="sm"
+                         className={cn(
+                           "h-auto py-2 px-3 text-left flex flex-col items-start gap-1 transition-all",
+                           isSelected && c.prioridade === "urgente" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                           isSelected && c.prioridade === "preferencial" && "bg-amber-500 text-white hover:bg-amber-600",
+                           isSelected && c.prioridade === "normal" && "bg-primary text-primary-foreground"
+                         )}
+                         onClick={() => handleToggleCriterion(c.id)}
+                       >
+                         <div className="flex items-center gap-2 w-full">
+                           <span className="text-xs font-medium leading-tight flex-1">{c.nome}</span>
+                           {isSelected && <Check className="h-3 w-3 shrink-0" />}
+                         </div>
+                         <span className={cn(
+                           "text-[9px] uppercase tracking-wider opacity-80",
+                           !isSelected && "text-muted-foreground"
+                         )}>
+                           {c.prioridade === "preferencial" ? "Prioritário" : c.prioridade}
+                         </span>
+                       </Button>
+                     );
+                   })}
+                 </div>
+               ) : (
+                 <div className="space-y-2">
+                   <Select value={prioridade} onValueChange={(v) => setPrioridade(v as Prioridade)}>
+                     <SelectTrigger className="h-11">
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="normal">Normal</SelectItem>
+                       <SelectItem value="preferencial">Prioritário (idoso, gestante…)</SelectItem>
+                       <SelectItem value="urgente">Urgente</SelectItem>
+                     </SelectContent>
+                   </Select>
+                   <p className="text-[10px] text-muted-foreground italic">
+                     Dica: Configure critérios na aba "Triagem" para classificação automática.
+                   </p>
+                 </div>
+               )}
+             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row gap-2 sm:justify-end">
               <Button variant="ghost" onClick={limpar} disabled={emitting}>
