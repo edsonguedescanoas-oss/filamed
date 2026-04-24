@@ -229,39 +229,70 @@ const RuleGroupEditor = ({
 };
 
 export const CriteriaEditor = () => {
-  const [criterias, setCriterias] = useState<Criteria[]>([
-    {
-      id: '1',
-      name: 'Febre Alta ou Saturação Baixa',
-      classification: 'Urgente',
-      rootGroup: {
-        id: 'g1',
-        logic: 'OR',
-        rules: [
-          { id: 'r1', field: 'temperatura', operator: '>=', value: '39' },
-          { id: 'r2', field: 'saturacao', operator: '<=', value: '92' }
-        ]
-      }
-    },
-    {
-      id: '2',
-      name: 'Idoso com Hipertensão',
-      classification: 'Prioritário',
-      rootGroup: {
-        id: 'g2',
-        logic: 'AND',
-        rules: [
-          { id: 'r3', field: 'idade', operator: '>=', value: '60' },
-          { id: 'r4', field: 'hipertenso', operator: '==', value: 'true' }
-        ]
-      }
-    }
-  ]);
-  const [editingId, setEditingId] = useState<string | null>('1');
+  const { profile } = useAuth();
+  const [criterias, setCriterias] = useState<Criteria[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const addNewCriteria = () => {
+  useEffect(() => {
+    if (profile?.unidade_id) {
+      fetchCriteria();
+    }
+  }, [profile?.unidade_id]);
+
+  const fetchCriteria = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('triagem_criterios')
+        .select('*')
+        .eq('unidade_id', profile?.unidade_id)
+        .order('ordem', { ascending: true });
+
+      if (error) throw error;
+
+      const mappedCriteria: Criteria[] = (data || []).map((item: any) => ({
+        id: item.id,
+        name: item.nome,
+        classification: mapDbToUiClassification(item.prioridade),
+        rootGroup: item.regras as RuleGroup,
+      }));
+
+      setCriterias(mappedCriteria);
+      if (mappedCriteria.length > 0 && !editingId) {
+        setEditingId(mappedCriteria[0].id);
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar critérios:', error);
+      toast.error('Não foi possível carregar os critérios');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapUiToDbClassification = (ui: ClassificationType): string => {
+    switch (ui) {
+      case 'Prioritário': return 'preferencial';
+      case 'Urgente': return 'urgente';
+      default: return 'normal';
+    }
+  };
+
+  const mapDbToUiClassification = (db: string): ClassificationType => {
+    switch (db) {
+      case 'preferencial': return 'Prioritário';
+      case 'urgente': return 'Urgente';
+      default: return 'Normal';
+    }
+  };
+
+  const addNewCriteria = async () => {
+    if (!profile?.unidade_id) return;
+
+    const newId = crypto.randomUUID();
     const newCriteria: Criteria = {
-      id: crypto.randomUUID(),
+      id: newId,
       name: 'Novo Critério',
       classification: 'Normal',
       rootGroup: {
@@ -270,23 +301,79 @@ export const CriteriaEditor = () => {
         rules: [],
       },
     };
-    setCriterias([...criterias, newCriteria]);
-    setEditingId(newCriteria.id);
+
+    try {
+      const { error } = await supabase
+        .from('triagem_criterios')
+        .insert({
+          id: newId,
+          unidade_id: profile.unidade_id,
+          nome: newCriteria.name,
+          prioridade: mapUiToDbClassification(newCriteria.classification),
+          regras: newCriteria.rootGroup,
+          ordem: criterias.length,
+        });
+
+      if (error) throw error;
+
+      setCriterias([...criterias, newCriteria]);
+      setEditingId(newId);
+      toast.success('Novo critério criado');
+    } catch (error: any) {
+      console.error('Erro ao criar critério:', error);
+      toast.error('Erro ao criar novo critério');
+    }
   };
 
-  const updateCriteria = (id: string, updates: Partial<Criteria>) => {
+  const updateCriteriaState = (id: string, updates: Partial<Criteria>) => {
     setCriterias(criterias.map((c) => (c.id === id ? { ...c, ...updates } : c)));
   };
 
-  const deleteCriteria = (id: string) => {
-    setCriterias(criterias.filter((c) => c.id !== id));
-    if (editingId === id) setEditingId(null);
-    toast.success('Critério removido');
+  const deleteCriteria = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('triagem_criterios')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setCriterias(criterias.filter((c) => c.id !== id));
+      if (editingId === id) setEditingId(null);
+      toast.success('Critério removido');
+    } catch (error: any) {
+      console.error('Erro ao remover critério:', error);
+      toast.error('Erro ao remover critério');
+    }
   };
 
-  const handleSave = () => {
-    console.log('Salvando critérios:', criterias);
-    toast.success('Configurações de classificação salvas com sucesso!');
+  const handleSave = async () => {
+    if (!editingId || !profile?.unidade_id) return;
+    
+    const criteriaToSave = criterias.find(c => c.id === editingId);
+    if (!criteriaToSave) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('triagem_criterios')
+        .update({
+          nome: criteriaToSave.name,
+          prioridade: mapUiToDbClassification(criteriaToSave.classification),
+          regras: criteriaToSave.rootGroup,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingId);
+
+      if (error) throw error;
+
+      toast.success('Critério salvo com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao salvar critério:', error);
+      toast.error('Erro ao salvar critério');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const editingCriteria = criterias.find((c) => c.id === editingId);
