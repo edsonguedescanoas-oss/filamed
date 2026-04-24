@@ -46,24 +46,29 @@ function AcceptancePage() {
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [accepting, setAccepting] = useState(false);
 
-  const fetchInvitation = useCallback(async () => {
+  const fetchInvitation = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const { data, error: e } = await supabase.rpc("check_invitation_token", { _token: token });
       
       const details = (data as any)?.[0] as InvitationData;
       
       if (e || !details) {
-        setError("Convite não encontrado ou inválido.");
+        if (!isSilent) setError("Convite não encontrado ou inválido.");
+        // Se já tínhamos o convite e agora deu erro, invalidamos localmente
+        if (isSilent && invitation) {
+          setInvitation(prev => prev ? { ...prev, is_valid: false } : null);
+        }
         return;
       }
       
       setInvitation(details);
     } catch (err) {
-      setError("Erro ao carregar convite.");
+      if (!isSilent) setError("Erro ao carregar convite.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
-  }, [token]);
+  }, [token, invitation]);
 
   useEffect(() => {
     void fetchInvitation();
