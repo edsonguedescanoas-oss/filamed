@@ -622,6 +622,15 @@ function AtendimentoPage() {
                     {pacientes.get(senhaAtiva.paciente_id)?.nome_completo ?? "Paciente"}
                   </div>
                 )}
+                {senhaAtiva.triagem_dados?.criterios && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {senhaAtiva.triagem_dados.criterios.map((cid: string) => (
+                      <Badge key={cid} variant="outline" className="text-[10px] py-0 h-5 bg-primary/10 border-primary/20 text-primary">
+                        {criterios.get(cid) || "Critério"}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-4">
