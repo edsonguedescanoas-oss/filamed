@@ -321,8 +321,19 @@ export function AuditoriaDiff({
   const fields = buildDiff(before, after);
   const changedCount = fields.filter((f) => f.status !== "unchanged").length;
 
+  // Detecta movimentacao de fila (marcador emitido pelo dialog de edicao).
+  // Quando presente, mostra um card "Antes vs Depois" amigavel acima do diff.
+  const showMovimentacaoFila = isMovimentacaoFila(before) && isMovimentacaoFila(after);
+
   return (
-    <div className="rounded-md border border-border bg-card overflow-hidden">
+    <div className="space-y-3">
+      {showMovimentacaoFila && (
+        <MovimentacaoFilaCard
+          before={before as MovimentacaoFila}
+          after={after as MovimentacaoFila}
+        />
+      )}
+      <div className="rounded-md border border-border bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
