@@ -1,0 +1,1 @@
+ALTER FUNCTION public.get_chamadas_recentes_detalhadas(uuid) SET search_path = public;
