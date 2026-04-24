@@ -271,6 +271,67 @@ function PublicSenhaPage() {
     void fetchInitialData();
   }, [fetchInitialData]);
 
+  // Revalidação da permissão de Notificação (iOS/Android):
+  // - quando a aba volta a ficar visível (usuário pode ter mudado em Configurações)
+  // - via Permissions API (quando suportada) com listener nativo de mudança
+  // Não pede permissão de novo aqui — só sincroniza o estado local com o real.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+
+    const sync = () => {
+      const flag = localStorage.getItem(NOTIF_KEY) === "1";
+      const denied = Notification.permission === "denied";
+      // Se o usuário revogou no SO, força reabrir o gate.
+      if (flag && denied) {
+        localStorage.removeItem(NOTIF_KEY);
+        setNotificacoesAtivas(false);
+        return;
+      }
+      // Se já temos permissão concedida e a flag local existe, mantém ativo.
+      // Se a flag sumiu mas a permissão é "granted" e o usuário já passou pelo
+      // gate antes em outro dispositivo/navegador, NÃO reativamos sozinhos —
+      // o gate exige um gesto para destravar áudio (iOS/Safari).
+      if (flag && !denied && !notificacoesAtivas) {
+        setNotificacoesAtivas(true);
+      }
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") sync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", sync);
+
+    // Permissions API: alguns navegadores (Chrome Android, desktop) emitem
+    // 'change' quando o usuário altera permissão sem recarregar a página.
+    let permStatus: PermissionStatus | null = null;
+    const setupPermObserver = async () => {
+      try {
+        const nav = navigator as Navigator & {
+          permissions?: { query: (d: { name: PermissionName }) => Promise<PermissionStatus> };
+        };
+        if (!nav.permissions?.query) return;
+        permStatus = await nav.permissions.query({ name: "notifications" as PermissionName });
+        permStatus.addEventListener("change", sync);
+      } catch {
+        /* não suportado em alguns Safaris — ok */
+      }
+    };
+    void setupPermObserver();
+
+    // Sincroniza uma vez no mount (cobre Safari iOS sem Permissions API).
+    sync();
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", sync);
+      permStatus?.removeEventListener("change", sync);
+    };
+    // notificacoesAtivas intencionalmente fora das deps para evitar loop;
+    // sync lê o valor atual e compara via setState (idempotente).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Realtime: acompanha mudanças na própria senha e chamadas
   useEffect(() => {
     if (!senha) return;
