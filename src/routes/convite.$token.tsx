@@ -46,22 +46,30 @@ function AcceptancePage() {
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [accepting, setAccepting] = useState(false);
 
-  const fetchInvitation = useCallback(async () => {
+  const fetchInvitation = useCallback(async (isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const { data, error: e } = await supabase.rpc("check_invitation_token", { _token: token });
       
       const details = (data as any)?.[0] as InvitationData;
       
       if (e || !details) {
-        setError("Convite não encontrado ou inválido.");
+        if (!isSilent) setError("Convite não encontrado ou inválido.");
+        // Se já tínhamos o convite e agora deu erro (ou foi aceito), invalidamos localmente
+        setInvitation(prev => {
+          if (prev && isSilent) {
+            return { ...prev, is_valid: false };
+          }
+          return prev;
+        });
         return;
       }
       
       setInvitation(details);
     } catch (err) {
-      setError("Erro ao carregar convite.");
+      if (!isSilent) setError("Erro ao carregar convite.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, [token]);
 
@@ -101,7 +109,18 @@ function AcceptancePage() {
     updateTimer();
 
     return () => clearInterval(timer);
-  }, [invitation?.expires_at, invitation?.is_valid]);
+  }, [invitation?.expires_at, invitation?.is_valid, fetchInvitation]);
+
+  // Revalidação periódica do convite no backend (a cada 10 segundos)
+  useEffect(() => {
+    if (!invitation?.is_valid || accepting) return;
+
+    const interval = setInterval(() => {
+      void fetchInvitation(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [fetchInvitation, invitation?.is_valid, accepting]);
 
   const handleAccept = async () => {
     if (!isAuthenticated) {
