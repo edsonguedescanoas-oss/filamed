@@ -55,10 +55,13 @@ function AcceptancePage() {
       
       if (e || !details) {
         if (!isSilent) setError("Convite não encontrado ou inválido.");
-        // Se já tínhamos o convite e agora deu erro, invalidamos localmente
-        if (isSilent && invitation) {
-          setInvitation(prev => prev ? { ...prev, is_valid: false } : null);
-        }
+        // Se já tínhamos o convite e agora deu erro (ou foi aceito), invalidamos localmente
+        setInvitation(prev => {
+          if (prev && isSilent) {
+            return { ...prev, is_valid: false };
+          }
+          return prev;
+        });
         return;
       }
       
@@ -68,7 +71,7 @@ function AcceptancePage() {
     } finally {
       if (!isSilent) setLoading(false);
     }
-  }, [token, invitation]);
+  }, [token]);
 
   useEffect(() => {
     void fetchInvitation();
