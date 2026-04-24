@@ -60,6 +60,7 @@ function LandingPage() {
         <Benefits />
         <Differentials />
         <ComoComecar />
+        <FAQ />
         <CTA />
       </main>
       <SiteFooter />
