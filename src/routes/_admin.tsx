@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, LogOut, Building2, Home, Package, ShieldCheck, BarChart3, Siren, ListChecks } from "lucide-react";
+import { Activity, LogOut, Building2, Home, Package, ShieldCheck, BarChart3, Siren, ListChecks, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_admin")({
 
 const NAV = [
   { to: "/admin", label: "Unidades", icon: Building2, exact: true },
+  { to: "/admin/convites", label: "Convites", icon: Mail, exact: false },
   { to: "/admin/metricas", label: "Métricas", icon: BarChart3, exact: false },
   { to: "/admin/classificacao", label: "Classificação", icon: ListChecks, exact: false },
   { to: "/admin/alertas", label: "Alertas", icon: Siren, exact: false, alertBadge: true },

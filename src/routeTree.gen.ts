@@ -47,6 +47,7 @@ import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendim
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 import { Route as AdminAdminMetricasRouteImport } from './routes/_admin.admin.metricas'
 import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
+import { Route as AdminAdminConvitesRouteImport } from './routes/_admin.admin.convites'
 import { Route as AdminAdminClassificacaoRouteImport } from './routes/_admin.admin.classificacao'
 import { Route as AdminAdminAuditoriaRouteImport } from './routes/_admin.admin.auditoria'
 import { Route as AdminAdminAlertasRouteImport } from './routes/_admin.admin.alertas'
@@ -241,6 +242,11 @@ const AdminAdminLogsRoute = AdminAdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminConvitesRoute = AdminAdminConvitesRouteImport.update({
+  id: '/convites',
+  path: '/convites',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminClassificacaoRoute = AdminAdminClassificacaoRouteImport.update({
   id: '/classificacao',
   path: '/classificacao',
@@ -291,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/classificacao': typeof AdminAdminClassificacaoRoute
+  '/admin/convites': typeof AdminAdminConvitesRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
@@ -333,6 +340,7 @@ export interface FileRoutesByTo {
   '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/classificacao': typeof AdminAdminClassificacaoRoute
+  '/admin/convites': typeof AdminAdminConvitesRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/_admin/admin/alertas': typeof AdminAdminAlertasRoute
   '/_admin/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/_admin/admin/classificacao': typeof AdminAdminClassificacaoRoute
+  '/_admin/admin/convites': typeof AdminAdminConvitesRoute
   '/_admin/admin/logs': typeof AdminAdminLogsRoute
   '/_admin/admin/metricas': typeof AdminAdminMetricasRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
@@ -424,6 +433,7 @@ export interface FileRouteTypes {
     | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/classificacao'
+    | '/admin/convites'
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
@@ -466,6 +476,7 @@ export interface FileRouteTypes {
     | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/classificacao'
+    | '/admin/convites'
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/alertas'
     | '/_admin/admin/auditoria'
     | '/_admin/admin/classificacao'
+    | '/_admin/admin/convites'
     | '/_admin/admin/logs'
     | '/_admin/admin/metricas'
     | '/_admin/admin/planos'
@@ -822,6 +834,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminLogsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/convites': {
+      id: '/_admin/admin/convites'
+      path: '/convites'
+      fullPath: '/admin/convites'
+      preLoaderRoute: typeof AdminAdminConvitesRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/classificacao': {
       id: '/_admin/admin/classificacao'
       path: '/classificacao'
@@ -879,6 +898,7 @@ interface AdminAdminRouteChildren {
   AdminAdminAlertasRoute: typeof AdminAdminAlertasRoute
   AdminAdminAuditoriaRoute: typeof AdminAdminAuditoriaRoute
   AdminAdminClassificacaoRoute: typeof AdminAdminClassificacaoRoute
+  AdminAdminConvitesRoute: typeof AdminAdminConvitesRoute
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminMetricasRoute: typeof AdminAdminMetricasRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
@@ -889,6 +909,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminAlertasRoute: AdminAdminAlertasRoute,
   AdminAdminAuditoriaRoute: AdminAdminAuditoriaRoute,
   AdminAdminClassificacaoRoute: AdminAdminClassificacaoRoute,
+  AdminAdminConvitesRoute: AdminAdminConvitesRoute,
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminMetricasRoute: AdminAdminMetricasRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
