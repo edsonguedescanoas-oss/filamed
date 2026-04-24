@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, Star, BellRing } from "lucide-react";
+import { Loader2, CheckCircle2, Megaphone, Clock, AlertCircle, Star, BellRing, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { QrCode } from "@/components/qr-code";
