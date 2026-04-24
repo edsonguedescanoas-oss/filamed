@@ -438,7 +438,7 @@ function GuichePage() {
                         <EditarSenhaDialog
                           senha={s}
                           filas={todasFilas}
-                          onUpdated={() => void fetchData()}
+                          onUpdated={() => void fetchData({ silent: true })}
                           trigger={
                             <Button size="sm" variant="ghost" className="h-7 px-2" title="Editar ticket">
                               <Pencil className="h-3.5 w-3.5" />
