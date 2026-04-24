@@ -57,11 +57,13 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
     }
   }, [open, senha]);
 
-  // Sempre que o usuário desmarcar o checkbox ou trocar a fila de destino,
-  // o snapshot deixa de ser válido e tem de ser recapturado.
+  // Quando o usuário troca a fila de destino, qualquer confirmação prévia
+  // perde o sentido — força nova confirmação contra a nova estimativa.
   useEffect(() => {
-    if (!confirmouMudancaFila) setSnapshotConfirmado(null);
-  }, [confirmouMudancaFila, filaId]);
+    setConfirmouMudancaFila(false);
+    setSnapshotConfirmado(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filaId]);
 
   const filaAtual = filas.find((f) => f.id === senha.fila_id);
   const filaNova = filas.find((f) => f.id === filaId);
