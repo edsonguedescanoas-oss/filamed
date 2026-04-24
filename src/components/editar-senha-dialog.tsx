@@ -160,9 +160,46 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
               </SelectContent>
             </Select>
             {mudouFila && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                A senha será movida para o final da nova fila.
-              </p>
+              <div className="rounded-md border border-amber-300/60 bg-amber-50 p-3 text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="space-y-1.5 text-xs leading-relaxed">
+                    <p className="font-semibold">
+                      Atenção: a senha vai para o FINAL da nova fila
+                    </p>
+                    <ul className="list-disc space-y-0.5 pl-4">
+                      <li>
+                        A senha <strong>{senha.codigo}</strong> sai de{" "}
+                        <strong>{filaAtual?.nome ?? "—"}</strong> e entra em{" "}
+                        <strong>{filaNova?.nome ?? "—"}</strong> como{" "}
+                        <strong>última da espera</strong>.
+                      </li>
+                      <li>
+                        A posição original na fila atual é perdida e o tempo de
+                        espera é recontado a partir de agora.
+                      </li>
+                      <li>
+                        A prioridade selecionada continua valendo, mas{" "}
+                        <strong>não recupera o tempo</strong> já aguardado.
+                      </li>
+                      <li>
+                        A operação fica registrada na auditoria com seu usuário.
+                      </li>
+                    </ul>
+                    <label className="mt-2 flex items-start gap-2 pt-1">
+                      <Checkbox
+                        checked={confirmouMudancaFila}
+                        onCheckedChange={(v) => setConfirmouMudancaFila(v === true)}
+                        aria-label="Ok, entendi a regra de mudança de fila"
+                      />
+                      <span className="text-xs font-medium">
+                        Ok, entendi — pode mover a senha para o final de{" "}
+                        {filaNova?.nome ?? "nova fila"}.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
