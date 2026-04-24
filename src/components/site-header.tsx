@@ -10,6 +10,7 @@ export function SiteHeader() {
   const navLinks = [
     { to: "/", hash: "funcionalidades", label: "Funcionalidades" },
     { to: "/", hash: "reports-showcase", label: "Relatórios" },
+    { to: "/", hash: "seguranca", label: "Segurança" },
     { to: "/demo", label: "Demonstração" },
     { to: "/precos", label: "Preços" },
     { to: "/casos", label: "Casos" },
