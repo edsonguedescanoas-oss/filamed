@@ -11,7 +11,9 @@ type InvitationData = {
   id: string;
   email: string;
   unidade_nome: string;
+  unidade_endereco: string | null;
   role: string;
+  role_permissions: string;
   is_valid: boolean;
   expires_at: string;
 };
