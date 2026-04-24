@@ -23,6 +23,10 @@ type SenhaPub = {
   unidade_id: string;
   created_at: string;
   updated_at: string;
+  // Calculados pela trigger `trg_senhas_recalcular_posicoes` no servidor.
+  // Fonte da verdade compartilhada entre paciente, guichê e TV.
+  posicao: number | null;
+  tempo_espera_estimado: number | null;
 };
 
 type FilaPub = { id: string; nome: string; cor: string | null; tempo_espera_estimado: number };
