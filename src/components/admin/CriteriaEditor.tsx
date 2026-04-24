@@ -35,13 +35,18 @@ export interface Criteria {
 
 const AVAILABLE_FIELDS = [
   { label: 'Idade', value: 'idade', type: 'number' },
-  { label: 'Temperatura', value: 'temperatura', type: 'number' },
-  { label: 'Saturação', value: 'saturacao', type: 'number' },
-  { label: 'Pressão Sistólica', value: 'pressao_sistolica', type: 'number' },
-  { label: 'Frequência Cardíaca', value: 'freq_cardiaca', type: 'number' },
+  { label: 'Temperatura (°C)', value: 'temperatura', type: 'number' },
+  { label: 'Saturação (%)', value: 'saturacao', type: 'number' },
+  { label: 'Pressão Sistólica (mmHg)', value: 'pressao_sistolica', type: 'number' },
+  { label: 'Pressão Diastólica (mmHg)', value: 'pressao_diastolica', type: 'number' },
+  { label: 'Frequência Cardíaca (bpm)', value: 'freq_cardiaca', type: 'number' },
+  { label: 'Frequência Respiratória (irpm)', value: 'freq_respiratoria', type: 'number' },
+  { label: 'Glicemia (mg/dL)', value: 'glicemia', type: 'number' },
   { label: 'Dor (0-10)', value: 'dor', type: 'number' },
   { label: 'Sintomas Respiratórios', value: 'sintomas_respiratorios', type: 'boolean' },
   { label: 'Gestante', value: 'gestante', type: 'boolean' },
+  { label: 'Diabético', value: 'diabetico', type: 'boolean' },
+  { label: 'Hipertenso', value: 'hipertenso', type: 'boolean' },
 ];
 
 const OPERATORS: { label: string; value: Operator }[] = [
@@ -222,8 +227,35 @@ const RuleGroupEditor = ({
 };
 
 export const CriteriaEditor = () => {
-  const [criterias, setCriterias] = useState<Criteria[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [criterias, setCriterias] = useState<Criteria[]>([
+    {
+      id: '1',
+      name: 'Febre Alta ou Saturação Baixa',
+      classification: 'Urgente',
+      rootGroup: {
+        id: 'g1',
+        logic: 'OR',
+        rules: [
+          { id: 'r1', field: 'temperatura', operator: '>=', value: '39' },
+          { id: 'r2', field: 'saturacao', operator: '<=', value: '92' }
+        ]
+      }
+    },
+    {
+      id: '2',
+      name: 'Idoso com Hipertensão',
+      classification: 'Prioritário',
+      rootGroup: {
+        id: 'g2',
+        logic: 'AND',
+        rules: [
+          { id: 'r3', field: 'idade', operator: '>=', value: '60' },
+          { id: 'r4', field: 'hipertenso', operator: '==', value: 'true' }
+        ]
+      }
+    }
+  ]);
+  const [editingId, setEditingId] = useState<string | null>('1');
 
   const addNewCriteria = () => {
     const newCriteria: Criteria = {
