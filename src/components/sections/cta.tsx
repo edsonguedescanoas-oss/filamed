@@ -1,35 +1,44 @@
-import { ArrowRight, Phone } from "lucide-react";
+import { ArrowRight, Calendar, Sparkles, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function CTA() {
   return (
-    <section id="cta" className="relative py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="relative overflow-hidden rounded-[2rem] border border-border bg-gradient-primary p-10 sm:p-16 text-center shadow-elegant">
-          <div aria-hidden className="absolute inset-0 opacity-30" style={{
-            backgroundImage: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.4) 0%, transparent 40%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.25) 0%, transparent 45%)",
-          }} />
-          <div className="relative mx-auto max-w-3xl">
-            <h2 className="font-display text-2xl font-bold leading-tight text-primary-foreground sm:text-4xl">
-              Pronto para eliminar filas caóticas e transformar seu atendimento?
+    <section id="cta" className="relative py-24 sm:py-32 overflow-hidden">
+      <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+      <div className="mx-auto max-w-7xl px-6 relative">
+        <div className="relative isolate overflow-hidden bg-foreground rounded-[3rem] px-6 py-20 shadow-2xl sm:px-24 sm:py-28 text-center reveal">
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 rounded-full blur-[100px]" />
+          <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-primary-glow/20 rounded-full blur-[100px]" />
+          
+          <div className="relative z-10 mx-auto max-w-2xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-primary mb-8">
+              <Sparkles className="h-3.5 w-3.5" />
+              Upgrade sua clínica hoje
+            </span>
+            <h2 className="text-4xl font-bold tracking-tight text-white sm:text-6xl font-display leading-tight">
+              Sua gestão merece a <br />
+              <span className="text-primary italic">melhor inteligência.</span>
             </h2>
-            <p className="mt-5 text-lg text-primary-foreground/85">
-              Agende uma demonstração gratuita e veja o FilaMed em ação na sua unidade em menos de 30 minutos.
+            <p className="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-slate-300">
+              Junte-se a centenas de gestores que transformaram o caos da recepção em uma operação lucrativa e de alta performance.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button asChild size="lg" variant="secondary" className="group shadow-soft">
-                <a href="mailto:contato@filamed.app?subject=Quero%20uma%20demonstra%C3%A7%C3%A3o">
-                  Agendar demonstração
-                  <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button asChild size="lg" className="h-16 px-10 bg-gradient-primary text-white shadow-elegant hover:scale-[1.03] active:scale-95 transition-all text-xl font-bold rounded-2xl w-full sm:w-auto">
+                <a href="https://wa.me/5584981155050" target="_blank" rel="noopener noreferrer">
+                  Falar com Consultor
+                  <ArrowRight className="ml-2 h-6 w-6" />
                 </a>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
-                <a href="tel:+5500000000000">
-                  <Phone className="mr-1 h-4 w-4" />
-                  Falar com especialista
+              <Button asChild size="lg" variant="outline" className="h-16 px-10 border-white/20 text-white hover:bg-white/10 backdrop-blur text-xl rounded-2xl w-full sm:w-auto">
+                <a href="#analytics">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Ver Dashboard
                 </a>
               </Button>
             </div>
+            <p className="mt-10 text-xs text-slate-500 font-medium uppercase tracking-[0.2em]">
+              Implementação em até 48h · Suporte Vitalício · LGPD Garantida
+            </p>
           </div>
         </div>
       </div>

@@ -11,22 +11,23 @@ import { Benefits } from "@/components/sections/benefits";
 import { Differentials } from "@/components/sections/differentials";
 import { ComoComecar } from "@/components/sections/como-comecar";
 import { CTA } from "@/components/sections/cta";
+import { AnalyticsShowcase } from "@/components/sections/analytics-showcase";
 import { useReveal } from "@/hooks/use-reveal";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "FilaMed — Gestão Inteligente de Filas para Saúde" },
+      { title: "FilaMed — Gestão Inteligente e Analytics para Clínicas" },
       {
         name: "description",
         content:
-          "Plataforma SaaS de gestão inteligente de filas para clínicas e hospitais. Reduza espera, automatize chamadas e integre toda a operação.",
+          "Assuma o controle total da sua clínica com relatórios inteligentes e gestão de filas de alta performance. Reduza custos e aumente o ROI.",
       },
-      { property: "og:title", content: "FilaMed — Gestão Inteligente de Filas para Saúde" },
+      { property: "og:title", content: "FilaMed — Gestão Inteligente e Analytics para Clínicas" },
       {
         property: "og:description",
         content:
-          "Filas inteligentes, notificações multicanal, painel de TV e analytics em tempo real para unidades de saúde.",
+          "Dashboards em tempo real, KPIs operacionais e gestão automatizada para unidades de saúde modernas.",
       },
       { property: "og:type", content: "website" },
     ],
@@ -42,8 +43,10 @@ function LandingPage() {
       <main>
         <Hero />
         <Problem />
+        <AnalyticsShowcase />
         <Solution />
         <Features />
+        {/* Architecture e Flow podem ser menos priorizados para gestores, mas mantidos */}
         <Architecture />
         <Flow />
         <Benefits />

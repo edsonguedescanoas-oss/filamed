@@ -9,10 +9,10 @@ export function SiteHeader() {
 
   const navLinks = [
     { to: "/", hash: "funcionalidades", label: "Funcionalidades" },
+    { to: "/", hash: "analytics", label: "Relatórios" },
     { to: "/precos", label: "Preços" },
     { to: "/casos", label: "Casos" },
-    { to: "/manual", label: "Manual" },
-    { to: "/", hash: "como-comecar", label: "Como começar" },
+    { to: "/", hash: "como-comecar", label: "Começar" },
   ];
 
   return (

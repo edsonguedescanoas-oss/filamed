@@ -1,6 +1,6 @@
 import {
   ListOrdered, QrCode, Tv, Megaphone, Volume2, Smartphone,
-  ShieldCheck, BarChart3, Building2, Code2,
+  ShieldCheck, BarChart3, Building2, Code2, LineChart, LayoutDashboard, CheckCircle2
 } from "lucide-react";
 
 type Feature = {
@@ -12,113 +12,69 @@ type Feature = {
 
 const features: Feature[] = [
   {
-    icon: ListOrdered,
-    title: "Gestão Inteligente de Filas",
-    desc: "Múltiplas filas simultâneas com priorização dinâmica e senhas alfanuméricas automáticas.",
+    icon: BarChart3,
+    title: "Analytics Avançado",
+    desc: "A inteligência que faltava para a sua tomada de decisão estratégica.",
     bullets: [
-      "Consultas (CONS-001), Exames (EXM-001), Enfermagem (ENF-001)",
-      "Urgência (URG-001), Farmácia (FAR-001), Laboratório (LAB-001)",
-      "Prioridade por urgência, idade e tipo de atendimento",
-      "Paciente em múltiplas filas simultâneas",
-      "Atendimento por nome — sem senha física",
+      "Tempo médio de espera por fila e médico",
+      "Picos de demanda preditivos",
+      "Relatórios de produtividade individual",
+      "Dashboards customizáveis para gestores",
     ],
   },
   {
-    icon: QrCode,
-    title: "Entrada Inteligente na Fila",
-    desc: "Quatro formas de entrada para qualquer perfil de paciente.",
+    icon: LayoutDashboard,
+    title: "Painel de Controle Total",
+    desc: "Visão 360º de todas as suas unidades em uma única tela.",
     bullets: [
-      "Recepção tradicional",
-      "Quiosque de autoatendimento",
-      "QR Code via celular",
-      "WebApp sem instalação",
+      "Gestão de múltiplos consultórios e guichês",
+      "Ajuste dinâmico de prioridades",
+      "Monitoramento de SLAs em tempo real",
+      "Controle de acesso granular por perfil",
+    ],
+  },
+  {
+    icon: ListOrdered,
+    title: "Triagem Inteligente",
+    desc: "Organização automática por gravidade e tipo de atendimento.",
+    bullets: [
+      "Priorização por protocolo de Manchester",
+      "Múltiplas filas (Urgência, Exames, Consultas)",
+      "Rechamadas automáticas inteligentes",
+      "Integração nativa com triagem de enfermagem",
     ],
   },
   {
     icon: Tv,
-    title: "Painel de Chamadas (TV)",
-    desc: "Display sincronizado em tempo real para ambientes públicos.",
+    title: "Painel de Chamada (Smart TV)",
+    desc: "Display de alta performance para ambientes de espera.",
     bullets: [
-      "Exibe senha, nome, destino e tempo estimado",
-      "Suporte multi-TV totalmente sincronizado",
-      "Atualização instantânea via WebSocket",
-      "Design limpo, legível à distância",
-    ],
-  },
-  {
-    icon: Megaphone,
-    title: "Sinalização Digital",
-    desc: "Transforme a TV em um canal de comunicação institucional.",
-    bullets: [
-      "Conteúdo educativo, vídeos e campanhas",
-      "Promoções e avisos contextuais",
-      "Upload remoto e agendamento de conteúdo",
+      "Chamada visual e sonora customizada",
+      "Sinalização digital (TV Corporativa)",
+      "Display de notícias e avisos institucionais",
+      "Sincronização instantânea via WebSocket",
     ],
   },
   {
     icon: Volume2,
-    title: "Voz e Notificações Multicanal",
-    desc: "Chamadas automatizadas que alcançam o paciente onde ele estiver.",
+    title: "Chamada por Voz e Mobile",
+    desc: "Comunicação multicanal para reduzir a ansiedade do paciente.",
     bullets: [
-      'Voz: "Paciente [Nome], senha [Número], dirija-se para [Local]"',
-      "WhatsApp, SMS e Telegram",
-      "Alertas de proximidade, chamada e tempo estimado",
-      "Controle remoto de volume por unidade",
-    ],
-  },
-  {
-    icon: Smartphone,
-    title: "WebApp do Paciente",
-    desc: "Acompanhamento da fila no celular, sem instalar app.",
-    bullets: [
-      "Posição atual em tempo real",
-      "Tempo estimado dinâmico",
-      "Notificações instantâneas",
-      "PWA com modo offline",
-    ],
-  },
-  {
-    icon: ShieldCheck,
-    title: "Painel Administrativo",
-    desc: "Controle total com perfis e permissões granulares.",
-    bullets: [
-      "Login seguro com JWT",
-      "Perfis: Administrador, Recepcionista, Médico, Enfermeiro, Gestor",
-      "Cadastro de pacientes e gestão de filas",
-      "Ajuste de prioridades e remoção de pacientes",
-      "Relatórios completos exportáveis",
-    ],
-  },
-  {
-    icon: BarChart3,
-    title: "Analytics em Tempo Real",
-    desc: "KPIs operacionais para decisões baseadas em dados.",
-    bullets: [
-      "Tempo médio de espera por fila",
-      "Picos de demanda por horário/dia",
-      "Eficiência por atendente e consultório",
-      "Dashboards customizáveis",
-    ],
-  },
-  {
-    icon: Building2,
-    title: "Gestão Multiunidade",
-    desc: "Opere uma rede inteira a partir de um único painel.",
-    bullets: [
-      "Controle centralizado",
-      "Configuração remota por unidade",
-      "Personalização de fluxos por filial",
+      "Voz humana sintetizada automatizada",
+      "Notificações via WhatsApp e SMS",
+      "WebApp do paciente (acompanha no celular)",
+      "Alertas de proximidade automáticos",
     ],
   },
   {
     icon: Code2,
-    title: "Integrações e API",
-    desc: "API REST completa + Webhooks em tempo real.",
+    title: "Integração Enterprise",
+    desc: "Conecte o FilaMed ao seu ecossistema de software atual.",
     bullets: [
-      "Prontuário Eletrônico, ERP e Agendamento",
-      "Sistemas de BI e Analytics",
-      "/api/pacientes · /api/filas · /api/chamadas",
-      "/api/sincronizacao · /api/integracoes",
+      "API REST completa para ERPs e HIS",
+      "Webhooks para automações externas",
+      "Segurança de dados (LGPD Compliant)",
+      "SLA de 99.9% garantido em contrato",
     ],
   },
 ];
@@ -127,21 +83,21 @@ export function Features() {
   return (
     <section id="funcionalidades" className="relative py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="mx-auto max-w-2xl text-center reveal">
+        <div className="mx-auto max-w-3xl text-center reveal">
           <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Funcionalidades</span>
-          <h2 className="mt-3 text-2xl font-bold sm:text-4xl">
-            Tudo que sua unidade precisa, em uma plataforma só.
+          <h2 className="mt-4 text-3xl font-bold sm:text-5xl font-display">
+            Tecnologia robusta desenhada <br /> para o <span className="text-gradient">sucesso da sua operação.</span>
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Cada módulo foi desenhado para resolver um gargalo real da operação de saúde.
+          <p className="mt-6 text-lg text-muted-foreground leading-relaxed">
+            Cada recurso foi desenvolvido ouvindo os maiores gestores de saúde do país. Menos operacional, mais estratégico.
           </p>
         </div>
 
-        <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-20 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((f, i) => (
             <article
               key={f.title}
-              className="reveal group relative overflow-hidden rounded-2xl border border-border bg-gradient-card p-6 transition-all hover:-translate-y-1 hover:shadow-elegant hover:border-primary/30"
+              className="reveal group relative overflow-hidden rounded-3xl border border-border bg-gradient-card p-8 transition-all hover:-translate-y-2 hover:shadow-elegant hover:border-primary/30"
               style={{ transitionDelay: `${(i % 3) * 80}ms` }}
             >
               <div
@@ -149,15 +105,15 @@ export function Features() {
                 className="absolute -right-12 -top-12 h-32 w-32 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
                 style={{ background: "var(--gradient-primary)" }}
               />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-primary shadow-soft">
-                <f.icon className="h-6 w-6 text-primary-foreground" />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-primary shadow-soft mb-8 group-hover:scale-110 transition-transform">
+                <f.icon className="h-7 w-7 text-primary-foreground" />
               </div>
-              <h3 className="relative mt-5 font-display text-xl font-semibold">{f.title}</h3>
-              <p className="relative mt-2 text-sm text-muted-foreground">{f.desc}</p>
-              <ul className="relative mt-4 space-y-1.5">
+              <h3 className="relative font-display text-2xl font-semibold mb-4">{f.title}</h3>
+              <p className="relative text-muted-foreground leading-relaxed mb-6">{f.desc}</p>
+              <ul className="relative space-y-3">
                 {f.bullets.map((b) => (
-                  <li key={b} className="flex items-start gap-2 text-sm text-foreground/80">
-                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                  <li key={b} className="flex items-start gap-3 text-sm text-foreground/80">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5 opacity-60" />
                     <span>{b}</span>
                   </li>
                 ))}
