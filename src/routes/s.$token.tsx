@@ -62,6 +62,9 @@ function PublicSenhaPage() {
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // Trava anti-duplicidade: guarda assinatura do último alerta + timestamp
+  // para descartar reenvios do Realtime ou disparos por visibilitychange rápidos.
+  const lastAlertRef = useRef<{ key: string; ts: number } | null>(null);
   // Persistência da ativação: usamos localStorage para não pedir de novo a
   // cada aba/refresh. A revalidação (abaixo) cuida de revogações no SO.
   const NOTIF_KEY = "ticket-notif-ativo";
@@ -230,6 +233,27 @@ function PublicSenhaPage() {
 
   const alertPaciente = useCallback(
     (type: AlertType, opts?: { title?: string; body?: string }) => {
+      // ---- Trava anti-duplicidade ----
+      // Mesmo (type + title + body) dentro de uma janela curta é considerado
+      // o mesmo evento (Realtime reentregando UPDATE, visibilitychange
+      // disparando novamente, INSERT em chamadas seguido de UPDATE em senhas, etc).
+      const DEDUP_WINDOW_MS = 4000;
+      const dedupKey = `${type}|${opts?.title ?? ""}|${opts?.body ?? ""}`;
+      const now = Date.now();
+      const last = lastAlertRef.current;
+      if (last && last.key === dedupKey && now - last.ts < DEDUP_WINDOW_MS) {
+        try {
+          console.info("[alertPaciente] suprimido (duplicado):", {
+            key: dedupKey,
+            sinceMs: now - last.ts,
+          });
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      lastAlertRef.current = { key: dedupKey, ts: now };
+
       const channels: AlertChannel[] = [];
       let pattern: number | number[] = 200;
       let tones: Array<{ f: number; t: number; type?: OscillatorType }> = [];
