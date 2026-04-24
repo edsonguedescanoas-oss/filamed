@@ -466,6 +466,40 @@ function PublicSenhaPage() {
     void fetchInitialData();
   }, [fetchInitialData]);
 
+  // iOS/iPadOS: rearma a sessão de áudio em QUALQUER interação subsequente
+  // do usuário e quando a aba volta a ficar visível. Garante que mesmo após
+  // o iOS suspender o AudioContext em background, o próximo toque destrava
+  // o pipeline antes do próximo alerta de Realtime chegar.
+  useEffect(() => {
+    if (!isIOS()) return;
+    if (!notificacoesAtivas) return;
+
+    const rearm = () => {
+      const ctx = audioCtxRef.current;
+      if (ctx && ctx.state === "suspended") {
+        void ctx.resume().catch(() => undefined);
+      }
+      kickIOSAudio();
+    };
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") rearm();
+    };
+
+    // {passive,once:false} — queremos rearmar a CADA interação, não apenas uma.
+    window.addEventListener("touchend", rearm, { passive: true });
+    window.addEventListener("click", rearm);
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", rearm);
+
+    return () => {
+      window.removeEventListener("touchend", rearm);
+      window.removeEventListener("click", rearm);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", rearm);
+    };
+  }, [isIOS, notificacoesAtivas, kickIOSAudio]);
+
   // Revalidação da permissão de Notificação (iOS/Android):
   // - quando a aba volta a ficar visível (usuário pode ter mudado em Configurações)
   // - via Permissions API (quando suportada) com listener nativo de mudança
