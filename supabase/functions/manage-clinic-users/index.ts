@@ -17,16 +17,20 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get the requester's identity
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user: requester }, error: authError } = await supabaseClient.auth.getUser(token);
-    
-    if (authError || !requester) {
-      throw new Error("Unauthorized");
+    const authHeader = req.headers.get("Authorization");
+    let requester = null;
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabaseClient.auth.getUser(token);
+      requester = user;
     }
 
     const body = await req.json();
     const { action, userData, unidadeId: targetUnidadeId } = body;
+
+    if (!requester && action !== "accept-invitation") {
+      throw new Error("Unauthorized");
+    }
 
     if (!targetUnidadeId && action !== "accept-invitation") {
       throw new Error("unidadeId is required");
