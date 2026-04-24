@@ -835,6 +835,7 @@ export type Database = {
           status: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado: number | null
           token_publico: string
+          triagem_dados: Json | null
           unidade_id: string
           updated_at: string
         }
@@ -853,6 +854,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado?: number | null
           token_publico?: string
+          triagem_dados?: Json | null
           unidade_id: string
           updated_at?: string
         }
@@ -871,6 +873,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado?: number | null
           token_publico?: string
+          triagem_dados?: Json | null
           unidade_id?: string
           updated_at?: string
         }
@@ -958,6 +961,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sinalizacao_digital_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      triagem_criterios: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          prioridade: Database["public"]["Enums"]["senha_prioridade"]
+          unidade_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          unidade_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          prioridade?: Database["public"]["Enums"]["senha_prioridade"]
+          unidade_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "triagem_criterios_unidade_id_fkey"
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
@@ -1510,6 +1554,7 @@ export type Database = {
           status: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado: number | null
           token_publico: string
+          triagem_dados: Json | null
           unidade_id: string
           updated_at: string
         }
@@ -1551,6 +1596,7 @@ export type Database = {
           status: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado: number | null
           token_publico: string
+          triagem_dados: Json | null
           unidade_id: string
           updated_at: string
         }
@@ -1584,6 +1630,7 @@ export type Database = {
           status: Database["public"]["Enums"]["senha_status"]
           tempo_espera_estimado: number | null
           token_publico: string
+          triagem_dados: Json | null
           unidade_id: string
           updated_at: string
         }
