@@ -11,6 +11,7 @@ export function SiteHeader() {
     { to: "/", hash: "funcionalidades", label: "Funcionalidades" },
     { to: "/precos", label: "Preços" },
     { to: "/casos", label: "Casos" },
+    { to: "/manual", label: "Manual" },
     { to: "/", hash: "como-comecar", label: "Como começar" },
   ];
 
