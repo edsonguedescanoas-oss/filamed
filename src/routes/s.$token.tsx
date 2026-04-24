@@ -62,6 +62,9 @@ function PublicSenhaPage() {
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // Trava anti-duplicidade: guarda assinatura do último alerta + timestamp
+  // para descartar reenvios do Realtime ou disparos por visibilitychange rápidos.
+  const lastAlertRef = useRef<{ key: string; ts: number } | null>(null);
   // Persistência da ativação: usamos localStorage para não pedir de novo a
   // cada aba/refresh. A revalidação (abaixo) cuida de revogações no SO.
   const NOTIF_KEY = "ticket-notif-ativo";
