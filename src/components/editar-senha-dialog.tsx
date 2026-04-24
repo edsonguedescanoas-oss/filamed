@@ -60,6 +60,40 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
   const filaNova = filas.find((f) => f.id === filaId);
   const mudouFila = filaId !== senha.fila_id;
 
+  // Pré-visualização do recálculo: quantas pessoas há aguardando na fila
+  // de destino agora, e a estimativa de espera resultante.
+  const [previewPos, setPreviewPos] = useState<number | null>(null);
+  const [previewTempo, setPreviewTempo] = useState<number | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !mudouFila || !filaId) {
+      setPreviewPos(null);
+      setPreviewTempo(null);
+      return;
+    }
+    let cancelled = false;
+    setPreviewLoading(true);
+    void (async () => {
+      const { count } = await supabase
+        .from("senhas")
+        .select("id", { count: "exact", head: true })
+        .eq("fila_id", filaId)
+        .eq("status", "aguardando");
+      if (cancelled) return;
+      const aguardando = count ?? 0;
+      const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
+      // A senha entra ATRÁS de todas as que já estão aguardando, então a
+      // posição "na frente" é exatamente a contagem atual de aguardando.
+      setPreviewPos(aguardando);
+      setPreviewTempo(aguardando * tempoPorPessoa);
+      setPreviewLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mudouFila, filaId, filaNova?.tempo_espera_estimado]);
+
   const handleSalvar = async () => {
     if (!filaId) {
       toast.error("Selecione a fila");
@@ -71,18 +105,43 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
     }
     setSaving(true);
     try {
-      // Mescla observações no triagem_dados sem perder demais campos
+      // Mescla observações no triagem_dados sem perder demais campos.
+      // Quando a fila muda, registra um marcador de "movido em" para auditoria
+      // e mantém o created_at original em fila_anterior_created_at.
       const dadosAtuais = (senha.triagem_dados as Record<string, unknown> | null) ?? {};
-      const novosDados = { ...dadosAtuais, observacoes: observacoes.trim() || undefined };
+      const novosDados: Record<string, unknown> = {
+        ...dadosAtuais,
+        observacoes: observacoes.trim() || undefined,
+      };
+      if (mudouFila) {
+        novosDados.fila_anterior_id = senha.fila_id;
+        novosDados.fila_anterior_created_at = senha.created_at;
+        novosDados.fila_movida_em = new Date().toISOString();
+      }
+
+      const agora = new Date().toISOString();
+
+      // Recalcula tempo_espera_estimado e posição quando muda de fila.
+      // - created_at é "rebobinado" para agora: a senha vai para o final da
+      //   nova fila pelo critério de ordenação por created_at usado em todo o
+      //   app (público, guichê, TV).
+      // - tempo_espera_estimado da senha passa a refletir a nova fila.
+      // - posicao é zerada (será recomputada on-demand).
+      const updatePayload: Record<string, unknown> = {
+        fila_id: filaId,
+        prioridade,
+        triagem_dados: novosDados,
+        updated_at: agora,
+      };
+      if (mudouFila) {
+        updatePayload.created_at = agora;
+        updatePayload.tempo_espera_estimado = filaNova?.tempo_espera_estimado ?? null;
+        updatePayload.posicao = null;
+      }
 
       const { error } = await supabase
         .from("senhas")
-        .update({
-          fila_id: filaId,
-          prioridade,
-          triagem_dados: novosDados,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", senha.id);
       if (error) throw error;
 
@@ -95,17 +154,25 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
           entidade_id: senha.id,
           acao: "editar_ticket_guiche",
           resumo: mudouFila
-            ? `Senha ${senha.codigo} movida de "${filaAtual?.nome ?? "?"}" para "${filaNova?.nome ?? "?"}"`
+            ? `Senha ${senha.codigo} movida de "${filaAtual?.nome ?? "?"}" para "${filaNova?.nome ?? "?"}" (recolocada no final, tempo recontado)`
             : `Senha ${senha.codigo} editada (prioridade/observações)`,
           dados_antes: {
             fila_id: senha.fila_id,
             prioridade: senha.prioridade,
             observacoes: (senha.triagem_dados as { observacoes?: string } | null)?.observacoes,
+            created_at: senha.created_at,
+            tempo_espera_estimado: (senha as { tempo_espera_estimado?: number | null })
+              .tempo_espera_estimado,
           },
           dados_depois: {
             fila_id: filaId,
             prioridade,
             observacoes: observacoes.trim() || undefined,
+            created_at: mudouFila ? agora : senha.created_at,
+            tempo_espera_estimado: mudouFila
+              ? filaNova?.tempo_espera_estimado ?? null
+              : (senha as { tempo_espera_estimado?: number | null }).tempo_espera_estimado,
+            posicao_estimada: mudouFila ? previewPos : undefined,
           },
         });
       } catch {
@@ -114,7 +181,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
 
       toast.success(
         mudouFila
-          ? `Senha ${senha.codigo} movida para ${filaNova?.nome}`
+          ? `Senha ${senha.codigo} → ${filaNova?.nome} (final da fila, ~${previewTempo ?? 0} min)`
           : `Senha ${senha.codigo} atualizada`,
       );
       setOpen(false);
