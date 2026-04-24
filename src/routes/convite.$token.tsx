@@ -183,15 +183,19 @@ function AcceptancePage() {
 
         <Card className="border-white/10 bg-slate-900/50 backdrop-blur-xl text-white shadow-2xl overflow-hidden">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="font-display text-2xl font-bold">Aceitar Convite</CardTitle>
+            <CardTitle className="font-display text-2xl font-bold">
+              {showConfirmation ? "Confirmar Ingresso" : "Aceitar Convite"}
+            </CardTitle>
             <CardDescription className="text-slate-400">
-              Você foi convidado para fazer parte da equipe.
+              {showConfirmation 
+                ? "Confirme se os dados da unidade e perfil estão corretos."
+                : "Você foi convidado para fazer parte da equipe."}
             </CardDescription>
           </CardHeader>
           
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-4">
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className={`flex items-start gap-4 p-4 rounded-2xl bg-white/5 border ${showConfirmation ? 'border-primary/50 bg-primary/5' : 'border-white/10'}`}>
                 <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/20 text-primary shrink-0">
                   <Building2 className="h-5 w-5" />
                 </div>
@@ -201,7 +205,7 @@ function AcceptancePage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className={`flex items-start gap-4 p-4 rounded-2xl bg-white/5 border ${showConfirmation ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/10'}`}>
                 <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-500 shrink-0">
                   <ShieldCheck className="h-5 w-5" />
                 </div>
@@ -211,7 +215,7 @@ function AcceptancePage() {
                 </div>
               </div>
 
-              {invitation.is_valid && (
+              {invitation.is_valid && !showConfirmation && (
                 <div className="flex items-center justify-between px-2">
                   <div className="flex items-center gap-2 text-slate-400 text-sm">
                     <Clock className="h-4 w-4" />
@@ -239,7 +243,7 @@ function AcceptancePage() {
             )}
           </CardContent>
 
-          <CardFooter className="bg-white/5 p-6 mt-2">
+          <CardFooter className="bg-white/5 p-6 mt-2 flex flex-col gap-3">
             <Button 
               className="w-full bg-gradient-primary h-12 text-lg font-bold shadow-glow" 
               disabled={isInvalid || accepting || !isAuthenticated}
@@ -251,10 +255,22 @@ function AcceptancePage() {
                 "Convite Inválido"
               ) : !isAuthenticated ? (
                 "Faça login para aceitar"
+              ) : showConfirmation ? (
+                "Sim, confirmar e entrar"
               ) : (
                 "Aceitar e Acessar"
               )}
             </Button>
+            
+            {showConfirmation && !accepting && (
+              <Button 
+                variant="ghost" 
+                className="w-full text-slate-400 hover:text-white hover:bg-white/5"
+                onClick={() => setShowConfirmation(false)}
+              >
+                Voltar
+              </Button>
+            )}
           </CardFooter>
         </Card>
 
