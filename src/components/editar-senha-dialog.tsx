@@ -232,9 +232,13 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
           <Button variant="ghost" onClick={() => setOpen(false)} disabled={saving}>
             Cancelar
           </Button>
-          <Button onClick={() => void handleSalvar()} disabled={saving} className="bg-gradient-primary">
+          <Button
+            onClick={() => void handleSalvar()}
+            disabled={saving || (mudouFila && !confirmouMudancaFila)}
+            className="bg-gradient-primary"
+          >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
-            Salvar alterações
+            {mudouFila && !confirmouMudancaFila ? "Confirme a mudança de fila" : "Salvar alterações"}
           </Button>
         </DialogFooter>
       </DialogContent>
