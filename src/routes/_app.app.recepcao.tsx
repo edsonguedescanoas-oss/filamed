@@ -175,8 +175,8 @@ function RecepcaoPage() {
       const { data, error } = await supabase.rpc("gerar_senha_guiche", {
         _unidade_id: unidadeId,
         _nome: nome.trim(),
-        _telefone: onlyDigits(telefone) || null,
-        _data_nascimento: dataNascimento || null,
+        _telefone: onlyDigits(telefone) || undefined,
+        _data_nascimento: dataNascimento || undefined,
         _prioridade: prioridade,
       });
       if (error) throw error;
