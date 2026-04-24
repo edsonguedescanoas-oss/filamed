@@ -121,19 +121,60 @@ function PublicSenhaPage() {
 
   // ---- helpers de notificação (som + vibração + Notification API) ----
   type AlertType = "next" | "called" | "finalized" | "warning";
+  type AlertChannel = "sound" | "vibration" | "notification" | "visual";
 
-  const vibrate = useCallback((pattern: number | number[]) => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+  // Detecta suporte real à Vibration API (iOS Safari, por exemplo, não suporta)
+  const supportsVibration = useCallback(() => {
+    return (
+      typeof navigator !== "undefined" &&
+      typeof (navigator as Navigator).vibrate === "function"
+    );
+  }, []);
+
+  const vibrate = useCallback(
+    (pattern: number | number[]): boolean => {
+      if (!supportsVibration()) return false;
       try {
-        navigator.vibrate?.(pattern);
+        const ok = navigator.vibrate(pattern);
+        // Alguns navegadores retornam false quando o gesto/visibilidade não permite
+        return ok !== false;
+      } catch {
+        return false;
+      }
+    },
+    [supportsVibration],
+  );
+
+  const logAlertChannels = useCallback(
+    (type: AlertType, channels: AlertChannel[]) => {
+      try {
+        const entry = {
+          ts: new Date().toISOString(),
+          type,
+          channels,
+          vibrationSupported: supportsVibration(),
+          notifPermission:
+            typeof Notification !== "undefined" ? Notification.permission : "unsupported",
+          visibility: typeof document !== "undefined" ? document.visibilityState : "n/a",
+        };
+        // Log no console para diagnóstico em campo
+        console.info("[alertPaciente] canais utilizados:", entry);
+        // Persiste últimos 20 eventos no localStorage
+        const KEY = "ticket-alert-log";
+        const raw = localStorage.getItem(KEY);
+        const list: typeof entry[] = raw ? JSON.parse(raw) : [];
+        list.push(entry);
+        while (list.length > 20) list.shift();
+        localStorage.setItem(KEY, JSON.stringify(list));
       } catch {
         /* ignore */
       }
-    }
-  }, []);
+    },
+    [supportsVibration],
+  );
 
   const playTone = useCallback(
-    (freqs: Array<{ f: number; t: number; type?: OscillatorType }>) => {
+    (freqs: Array<{ f: number; t: number; type?: OscillatorType }>): boolean => {
       try {
         const ctx =
           audioCtxRef.current ||
@@ -156,8 +197,10 @@ function PublicSenhaPage() {
           osc.stop(cursor + t + 0.02);
           cursor += t + 0.04;
         }
+        return ctx.state === "running";
       } catch (err) {
         console.warn("Erro ao tocar som:", err);
+        return false;
       }
     },
     [],
