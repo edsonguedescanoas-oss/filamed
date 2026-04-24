@@ -97,4 +97,38 @@ describe("WhatsAppFlow", () => {
       "_blank"
     );
   });
+
+  it("should handle 'Outro' specialty with custom input", async () => {
+    render(<WhatsAppFlow />);
+    
+    // Step 1
+    const openButton = screen.getByText(/Começar agora/i);
+    fireEvent.click(openButton);
+    const nomeInput = await screen.findByLabelText(/Qual o seu nome\?/i);
+    fireEvent.change(nomeInput, { target: { value: "Pedro" } });
+    fireEvent.click(screen.getByText(/Próximo/i));
+
+    // Step 2
+    const unidadeInput = await screen.findByLabelText(/Nome da Clínica \/ Unidade/i);
+    fireEvent.change(unidadeInput, { target: { value: "Clínica X" } });
+    fireEvent.click(screen.getByText(/Próximo/i));
+
+    // Step 3
+    const outroButton = await screen.findByText("Outro");
+    fireEvent.click(outroButton);
+    
+    const outroInput = screen.getByPlaceholderText(/Digite sua especialidade.../i);
+    fireEvent.change(outroInput, { target: { value: "Fisioterapia" } });
+
+    const finishButton = screen.getByText(/Finalizar e ir para WhatsApp/i);
+    fireEvent.click(finishButton);
+
+    const expectedMessage = "Olá! Meu nome é Pedro. Gostaria de saber mais sobre como o FilaMed pode modernizar o atendimento da minha clínica (Clínica X), que atua na área de Fisioterapia.";
+    const encodedMessage = encodeURIComponent(expectedMessage);
+    
+    expect(window.open).toHaveBeenCalledWith(
+      expect.stringContaining(`text=${encodedMessage}`),
+      "_blank"
+    );
+  });
 });
