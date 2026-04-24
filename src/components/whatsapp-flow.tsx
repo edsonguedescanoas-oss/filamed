@@ -110,18 +110,43 @@ export function WhatsAppFlow() {
 
           {step === 3 && (
             <div className="animate-fade-in space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <Label htmlFor="tipo" className="flex items-center gap-2">
                   <Stethoscope className="h-4 w-4 text-primary" />
-                  Tipo de Clínica / Especialidade
+                  Qual a especialidade da clínica?
                 </Label>
-                <Input 
-                  id="tipo" 
-                  placeholder="Ex: Odontologia, Pronto Atendimento, etc." 
-                  className="rounded-xl h-12 border-border/50 focus:border-primary/50"
-                  value={formData.tipo}
-                  onChange={(e) => setFormData({...formData, tipo: e.target.value})}
-                />
+                
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    "Odontologia", 
+                    "Estética", 
+                    "Pronto Atendimento", 
+                    "Clínica Médica",
+                    "Outro"
+                  ].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setFormData({...formData, tipo: option})}
+                      className={`text-left px-4 py-3 rounded-xl border transition-all ${
+                        formData.tipo === option 
+                          ? 'bg-primary/10 border-primary text-primary font-medium' 
+                          : 'bg-muted/30 border-border/50 hover:bg-muted/50'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+
+                {formData.tipo === "Outro" && (
+                  <Input 
+                    id="tipo-outro" 
+                    placeholder="Digite sua especialidade..." 
+                    className="rounded-xl h-12 border-border/50 focus:border-primary/50 mt-2"
+                    onChange={(e) => setFormData({...formData, tipo: e.target.value})}
+                  />
+                )}
               </div>
             </div>
           )}
