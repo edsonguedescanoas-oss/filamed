@@ -486,6 +486,50 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: string
+          token: string
+          unidade_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_by?: string | null
+          role: string
+          token: string
+          unidade_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: string
+          token?: string
+          unidade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes_log: {
         Row: {
           canal: Database["public"]["Enums"]["canal_notificacao"]
@@ -1545,6 +1589,16 @@ export type Database = {
       chamar_senha_do_ponto: {
         Args: { _ponto_atendimento_id: string; _senha_id: string }
         Returns: string
+      }
+      check_invitation_token: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          id: string
+          is_valid: boolean
+          role: string
+          unidade_nome: string
+        }[]
       }
       cleanup_expired_locks: { Args: never; Returns: undefined }
       cleanup_tts_cache: {

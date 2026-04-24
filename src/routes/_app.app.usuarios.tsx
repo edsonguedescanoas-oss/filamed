@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Eye, Loader2, Plus, Save, ShieldCheck, Trash2, Users, X } from "lucide-react";
+import { Check, Eye, Loader2, Plus, Save, ShieldCheck, Trash2, Users, X, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -149,35 +149,33 @@ function UsuariosPage() {
     }
   };
 
-  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleInviteUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!unidadeId) return;
     setFormLoading(true);
     const formData = new FormData(e.currentTarget);
     const userData = {
       email: formData.get("email") as string,
-      password: formData.get("password") as string,
       nome_completo: formData.get("nome_completo") as string,
-      telefone: formData.get("telefone") as string,
       role: formData.get("role") as UnidadeRole,
     };
 
     try {
       const { data, error } = await supabase.functions.invoke("manage-clinic-users", {
         body: {
-          action: "create",
+          action: "invite",
           unidadeId,
           userData
         }
       });
 
-      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao criar usuário");
+      if (error || data?.error) throw new Error(error?.message || data?.error || "Erro ao enviar convite");
 
-      toast.success("Usuário criado com sucesso!");
+      toast.success("Convite enviado com sucesso!");
       setIsAddingUser(false);
       void carregarUsuarios();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao criar usuário");
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar convite");
     } finally {
       setFormLoading(false);
     }
@@ -254,34 +252,26 @@ function UsuariosPage() {
             <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Adicionar usuário
+                  <Mail className="h-4 w-4" />
+                  Convidar usuário
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
-                <form onSubmit={handleAddUser}>
+                <form onSubmit={handleInviteUser}>
                   <DialogHeader>
-                    <DialogTitle>Adicionar novo usuário</DialogTitle>
+                    <DialogTitle>Convidar novo usuário</DialogTitle>
                     <DialogDescription>
-                      O usuário será criado no sistema com acesso à sua unidade.
+                      O usuário receberá um convite por e-mail para ativar seu acesso.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                       <Label htmlFor="nome_completo">Nome completo</Label>
-                      <Input id="nome_completo" name="nome_completo" required />
+                      <Input id="nome_completo" name="nome_completo" required placeholder="Ex: João Silva" />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" name="email" type="email" required />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="password">Senha inicial</Label>
-                      <Input id="password" name="password" type="password" required />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="telefone">Telefone (opcional)</Label>
-                      <Input id="telefone" name="telefone" />
+                      <Input id="email" name="email" type="email" required placeholder="email@exemplo.com" />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="role">Perfil de acesso</Label>
@@ -295,11 +285,14 @@ function UsuariosPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        O perfil define quais módulos o usuário poderá acessar.
+                      </p>
                     </div>
                   </div>
                   <DialogFooter>
                     <Button type="submit" disabled={formLoading}>
-                      {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar usuário"}
+                      {formLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Enviar convite"}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -434,17 +427,17 @@ function UsuariosPage() {
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 text-destructive opacity-70 hover:opacity-100"
+                                className="h-8 w-8 text-destructive opacity-50 hover:opacity-100"
                                 disabled={saving}
                               >
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta ação excluirá permanentemente a conta de <strong>{usuario.nome_completo}</strong> e removerá seu acesso à unidade.
+                                  Isso removerá o acesso de <strong>{usuario.nome_completo}</strong> a esta unidade permanentemente.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -453,15 +446,13 @@ function UsuariosPage() {
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   onClick={() => void handleDeleteUser(usuario.id)}
                                 >
-                                  Excluir usuário
+                                  Sim, excluir
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
                       )}
-                      
-                      {saving && <Save className="h-4 w-4 animate-pulse text-primary" />}
                     </div>
                   </div>
                 );
@@ -477,7 +468,7 @@ function UsuariosPage() {
             <DialogHeader>
               <DialogTitle>Editar usuário</DialogTitle>
               <DialogDescription>
-                Atualize as informações de {isEditingUser?.nome_completo}.
+                Atualize as informações básicas do usuário.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -489,16 +480,12 @@ function UsuariosPage() {
                 <Label htmlFor="edit_telefone">Telefone</Label>
                 <Input id="edit_telefone" name="telefone" defaultValue={isEditingUser?.telefone || ""} />
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between gap-2 rounded-lg border p-3">
                 <div className="space-y-0.5">
                   <Label htmlFor="edit_ativo">Usuário ativo</Label>
-                  <p className="text-xs text-muted-foreground">Define se o usuário pode acessar o sistema.</p>
+                  <p className="text-[10px] text-muted-foreground">Usuários inativos não conseguem fazer login.</p>
                 </div>
-                <Switch 
-                  id="edit_ativo" 
-                  name="ativo" 
-                  defaultChecked={isEditingUser?.ativo}
-                />
+                <Switch id="edit_ativo" name="ativo" defaultChecked={isEditingUser?.ativo} />
               </div>
             </div>
             <DialogFooter>
@@ -512,3 +499,5 @@ function UsuariosPage() {
     </div>
   );
 }
+
+export default UsuariosPage;
