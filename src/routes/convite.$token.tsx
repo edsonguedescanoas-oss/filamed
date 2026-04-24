@@ -126,7 +126,11 @@ function AcceptancePage() {
   const handleAccept = async () => {
     if (!isAuthenticated) {
       toast.error("Você precisa estar logado para aceitar o convite.");
-      // O formulário de login/cadastro deve ser mostrado aqui se não autenticado
+      return;
+    }
+
+    if (!showConfirmation) {
+      setShowConfirmation(true);
       return;
     }
 
