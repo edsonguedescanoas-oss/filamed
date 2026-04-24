@@ -282,6 +282,15 @@ function AtendimentoPage() {
       });
       if (error) throw error;
       toast.success(`${chamarSenha.codigo} chamada para ${pontoAtivo.nome}.`);
+      // Notifica o paciente via WhatsApp da chamada (idempotente por senha+chamada)
+      void supabase.functions.invoke("wa-duck-notify", {
+        body: {
+          senha_id: chamarSenha.id,
+          tipo: "chamada",
+          mesa_nome: pontoAtivo.nome,
+          idempotency_key: `chamada_${chamarSenha.id}_${pontoAtivo.id}_${Date.now()}`,
+        },
+      });
       setChamarSenha(null);
       setDestino("");
     } catch (err) {
