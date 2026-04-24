@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Loader2, Pencil } from "lucide-react";
+import { AlertTriangle, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
