@@ -44,6 +44,7 @@ function LandingPage() {
       <main>
         <Hero />
         <Problem />
+        <Segments />
         <AnalyticsShowcase />
         <Solution />
         <Features />
