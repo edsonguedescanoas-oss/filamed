@@ -62,9 +62,29 @@ function PublicSenhaPage() {
   const [error, setError] = useState<string | null>(null);
   const [aguardandoNaFrente, setAguardandoNaFrente] = useState<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // <audio> HTML5 silencioso usado como "keep-alive" da sessão de áudio do iOS:
+  // o iOS Safari só mantém um AudioContext destravado se houver mídia tocando ou
+  // foi ativada dentro de um gesto recente. Damos play/pause num WAV mudo aqui.
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
   // Trava anti-duplicidade: guarda assinatura do último alerta + timestamp
   // para descartar reenvios do Realtime ou disparos por visibilitychange rápidos.
   const lastAlertRef = useRef<{ key: string; ts: number } | null>(null);
+
+  // Detecção de iOS / iPadOS (inclui iPad em modo desktop, que se identifica como Mac com touch).
+  const isIOS = useCallback((): boolean => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent || "";
+    if (/iPad|iPhone|iPod/.test(ua)) return true;
+    // iPadOS 13+ no modo desktop: Mac + suporte a toque
+    if (/Macintosh/.test(ua) && typeof document !== "undefined") {
+      return (navigator as Navigator & { maxTouchPoints?: number }).maxTouchPoints! > 1;
+    }
+    return false;
+  }, []);
+
+  // WAV mudo de ~50ms — usado para o elemento <audio> de keep-alive no iOS.
+  const SILENT_WAV =
+    "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
   // Persistência da ativação: usamos localStorage para não pedir de novo a
   // cada aba/refresh. A revalidação (abaixo) cuida de revogações no SO.
   const NOTIF_KEY = "ticket-notif-ativo";
