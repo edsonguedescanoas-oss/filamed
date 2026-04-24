@@ -127,10 +127,11 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       //   app (público, guichê, TV).
       // - tempo_espera_estimado da senha passa a refletir a nova fila.
       // - posicao é zerada (será recomputada on-demand).
-      const updatePayload: Record<string, unknown> = {
+      type SenhaUpdate = Database["public"]["Tables"]["senhas"]["Update"];
+      const updatePayload: SenhaUpdate = {
         fila_id: filaId,
         prioridade,
-        triagem_dados: novosDados,
+        triagem_dados: novosDados as SenhaUpdate["triagem_dados"],
         updated_at: agora,
       };
       if (mudouFila) {
