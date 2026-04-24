@@ -11,6 +11,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { ArrowRight, MessageCircle, Building2, Stethoscope, User } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 export function WhatsAppFlow() {
   const [formData, setFormData] = useState({
@@ -28,8 +29,21 @@ export function WhatsAppFlow() {
 
   const handleWhatsAppRedirect = () => {
     const { nome, unidade, tipo } = formData;
-    let customMessage = "";
+    
+    // Track Form Submission and WhatsApp Click
+    trackEvent("form_submission", {
+      form_name: "whatsapp_flow",
+      user_name: nome,
+      unit_name: unidade,
+      unit_type: tipo
+    });
+    
+    trackEvent("whatsapp_click", {
+      location: "flow_dialog",
+      unit_type: tipo
+    });
 
+    let customMessage = "";
     const tipoLower = tipo.toLowerCase();
 
     if (tipoLower.includes("odont") || tipoLower.includes("dent")) {

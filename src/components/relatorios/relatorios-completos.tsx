@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { trackEvent } from "@/lib/analytics";
 
 /* ──────────────────────────────────────────────────────────
  * Tipos auxiliares
@@ -435,6 +436,7 @@ export function RelatoriosCompletos({ unidadeId }: { unidadeId: string }) {
   /* ───────── Export CSV ───────── */
 
   const exportarCSV = () => {
+    trackEvent("download_report", { format: "CSV", type: "operational_report", unit_id: unidadeId });
     const rows: (string | number)[][] = [
       ["Relatório operacional — Período de", `${periodo} dias`],
       [],

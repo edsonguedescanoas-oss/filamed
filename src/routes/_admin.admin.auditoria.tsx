@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AuditoriaDiff } from "@/components/admin/auditoria-diff";
+import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_admin/admin/auditoria")({
   head: () => ({
@@ -163,6 +164,7 @@ function escapeCsv(value: unknown): string {
 }
 
 function exportarCsv(rows: AuditoriaRow[]) {
+  trackEvent("download_report", { format: "CSV", type: "admin_audit_log" });
   const headers = [
     "data",
     "entidade",

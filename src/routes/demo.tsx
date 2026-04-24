@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { FileText, Download, FileSpreadsheet, Share2, Presentation, CheckCircle2, ArrowRight } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/demo")({
   component: DemoPage,
@@ -28,12 +29,16 @@ function DemoPage() {
                 <h3 className="text-xl font-bold mb-6">Opções de Exportação</h3>
                 <div className="space-y-4">
                   {[
-                    { icon: FileText, label: "PDF Executivo", desc: "Pronto para impressão e reuniões." },
-                    { icon: FileSpreadsheet, label: "CSV Detalhado", desc: "Para análise em Excel ou BI." },
-                    { icon: Presentation, label: "PowerPoint (Beta)", desc: "Gráficos prontos para slides." },
-                    { icon: Share2, label: "Link de Compartilhamento", desc: "Acesso seguro e temporário." }
+                    { icon: FileText, label: "PDF Executivo", desc: "Pronto para impressão e reuniões.", format: "PDF" },
+                    { icon: FileSpreadsheet, label: "CSV Detalhado", desc: "Para análise em Excel ou BI.", format: "CSV" },
+                    { icon: Presentation, label: "PowerPoint (Beta)", desc: "Gráficos prontos para slides.", format: "PPT" },
+                    { icon: Share2, label: "Link de Compartilhamento", desc: "Acesso seguro e temporário.", format: "Link" }
                   ].map((opt, i) => (
-                    <div key={i} className="flex gap-4 group cursor-pointer hover:bg-background/50 p-2 rounded-xl transition-all">
+                    <div 
+                      key={i} 
+                      className="flex gap-4 group cursor-pointer hover:bg-background/50 p-2 rounded-xl transition-all"
+                      onClick={() => trackEvent("download_report", { format: opt.format, type: "sidebar_option" })}
+                    >
                       <div className="w-10 h-10 rounded-lg bg-background border border-border flex items-center justify-center text-primary shadow-sm group-hover:border-primary/50">
                         <opt.icon className="h-5 w-5" />
                       </div>
@@ -54,7 +59,10 @@ function DemoPage() {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Nossos relatórios já vêm formatados com os KPIs que os diretores querem ver: Ocupação, Produtividade, ROI e Satisfação do Paciente.
                 </p>
-                <button className="mt-6 w-full py-3 bg-foreground text-background rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
+                <button 
+                  className="mt-6 w-full py-3 bg-foreground text-background rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+                  onClick={() => trackEvent("download_report", { format: "PDF", type: "model_template" })}
+                >
                   Baixar Modelo de Relatório
                 </button>
               </div>
@@ -68,7 +76,10 @@ function DemoPage() {
                     <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Unidade São Paulo · Março 2024</p>
                   </div>
                   <div className="flex gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border text-xs font-bold hover:bg-muted transition-colors">
+                    <button 
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background border border-border text-xs font-bold hover:bg-muted transition-colors"
+                      onClick={() => trackEvent("download_report", { format: "PDF", type: "main_panel" })}
+                    >
                       <Download className="h-3 w-3" />
                       Exportar PDF
                     </button>

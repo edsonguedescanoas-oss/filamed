@@ -3,6 +3,7 @@ import { Activity, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 
 export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +37,11 @@ export function SiteHeader() {
               hash={link.hash}
               className="hover:text-foreground transition-colors"
               activeProps={{ className: "text-foreground font-medium" }}
+              onClick={() => {
+                if (link.to === "/demo") {
+                  trackEvent("navigation_demo", { source: "header_nav" });
+                }
+              }}
             >
               {link.label}
             </Link>
@@ -44,10 +50,10 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" onClick={() => trackEvent("cta_click", { location: "header_ghost", text: "Falar com especialista" })}>
               <a href="#cta">Falar com especialista</a>
             </Button>
-            <Button asChild size="sm" className="bg-gradient-primary hover:opacity-90 shadow-soft">
+            <Button asChild size="sm" className="bg-gradient-primary hover:opacity-90 shadow-soft" onClick={() => trackEvent("cta_click", { location: "header_primary", text: "Solicitar demonstração" })}>
               <a href="#cta">Solicitar demonstração</a>
             </Button>
           </div>
@@ -72,7 +78,12 @@ export function SiteHeader() {
                     key={link.label}
                     to={link.to}
                     hash={link.hash}
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (link.to === "/demo") {
+                        trackEvent("navigation_demo", { source: "mobile_nav" });
+                      }
+                    }}
                     className="text-lg font-medium text-muted-foreground hover:text-foreground transition-colors"
                   >
                     {link.label}
