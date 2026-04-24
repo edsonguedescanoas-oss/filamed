@@ -24,7 +24,7 @@ export function Hero() {
             <span className="text-gradient">filas invisíveis</span> e falta de dados
           </h1>
           <p className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground sm:text-2xl leading-relaxed">
-            Tenha o controle total da produtividade da sua equipe e da satisfação dos pacientes com relatórios estratégicos que mostram onde sua clínica está perdendo eficiência.
+            Tenha o controle total da produtividade da sua equipe e da satisfação dos clientes com relatórios estratégicos que mostram onde seu negócio está perdendo eficiência.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button asChild size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl">
