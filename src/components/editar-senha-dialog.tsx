@@ -301,10 +301,12 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                               <Skeleton className="h-4 w-16 bg-amber-200/50 dark:bg-amber-800/20" />
                             </div>
                           </div>
-                          <div className="space-y-1.5 pt-1.5 border-t border-amber-400/10">
+                          <div className="space-y-1.5 pt-1.5 border-t border-amber-400/10 flex-1 flex flex-col justify-center">
                             <Skeleton className="h-2 w-24 bg-amber-200/50 dark:bg-amber-800/20" />
-                            <Skeleton className="h-6 w-16 bg-amber-200/50 dark:bg-amber-800/20" />
+                            <Skeleton className="h-6 w-16 bg-amber-200/50 dark:bg-amber-800/20 mt-1" />
+                            <Skeleton className="h-2 w-32 bg-amber-200/50 dark:bg-amber-800/20 mt-2" />
                           </div>
+
                         </div>
                       ) : (
                         <div className="animate-in fade-in duration-500">
