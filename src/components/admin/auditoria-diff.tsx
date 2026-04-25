@@ -1,4 +1,4 @@
-import { ArrowRight, Minus, Plus, Equal } from "lucide-react";
+import { ArrowRight, Minus, Plus, Equal, Info, Timer, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type JsonRecord = Record<string, unknown>;
