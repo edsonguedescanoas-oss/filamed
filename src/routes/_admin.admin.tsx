@@ -495,7 +495,7 @@ function CreateUnidadeDialog({
             <Label>Revenda (opcional)</Label>
             <RevendaSelect 
               value={form.revenda_id} 
-              onValueChange={(v) => setForm({ ...form, revenda_id: v })} 
+              onValueChange={(v: string) => setForm({ ...form, revenda_id: v })} 
             />
           </div>
           <div>
