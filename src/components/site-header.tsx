@@ -110,12 +110,20 @@ export function SiteHeader() {
                   </Link>
                 ))}
                 <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
-                  <Button asChild variant="ghost" className="justify-start px-0 hover:bg-transparent">
-                    <a href="#cta" onClick={() => setIsOpen(false)}>Falar com especialista</a>
-                  </Button>
-                  <Button asChild className="bg-gradient-primary w-full">
-                    <a href="#cta" onClick={() => setIsOpen(false)}>Solicitar demonstração</a>
-                  </Button>
+                  <WhatsAppFlow 
+                    trigger={
+                      <Button variant="ghost" className="justify-start px-0 hover:bg-transparent w-full">
+                        Falar com especialista
+                      </Button>
+                    }
+                  />
+                  <WhatsAppFlow 
+                    trigger={
+                      <Button className="bg-gradient-primary w-full">
+                        Solicitar demonstração
+                      </Button>
+                    }
+                  />
                 </div>
               </nav>
             </SheetContent>
