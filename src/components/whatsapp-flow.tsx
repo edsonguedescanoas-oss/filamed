@@ -164,7 +164,7 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
                   placeholder="Ex: gestao@clinica.com.br" 
                   className="rounded-xl h-12 border-border/50 focus:border-primary/50"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({...formData, email: e.target.value.toLowerCase().trim()})}
                 />
               </div>
             </div>
