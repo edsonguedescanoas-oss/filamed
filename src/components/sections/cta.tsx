@@ -1,4 +1,4 @@
-import { ArrowRight, Calendar, Sparkles, Phone } from "lucide-react";
+import { ArrowRight, Calendar, Sparkles, Phone, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WhatsAppFlow } from "@/components/whatsapp-flow";
 
