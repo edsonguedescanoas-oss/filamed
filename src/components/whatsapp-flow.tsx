@@ -43,6 +43,7 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
     
     trackEvent("whatsapp_click", {
       location: "flow_dialog",
+      source,
       unit_type: tipo
     });
 
