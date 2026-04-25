@@ -60,39 +60,63 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
   const filaNova = filas.find((f) => f.id === filaId);
   const mudouFila = filaId !== senha.fila_id;
 
-  // Pré-visualização do recálculo: quantas pessoas há aguardando na fila
-  // de destino agora, e a estimativa de espera resultante.
-  const [previewPos, setPreviewPos] = useState<number | null>(null);
-  const [previewTempo, setPreviewTempo] = useState<number | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  // Map de contagem de pessoas aguardando por fila para preview instantâneo.
+  const [contagens, setContagens] = useState<Record<string, number>>({});
+  const [loadingContagens, setLoadingContagens] = useState(false);
 
+  // Carrega contagens iniciais de todas as filas da unidade ao abrir.
   useEffect(() => {
-    if (!open || !mudouFila || !filaId) {
-      setPreviewPos(null);
-      setPreviewTempo(null);
-      return;
-    }
-    let cancelled = false;
-    setPreviewLoading(true);
-    void (async () => {
-      const { count } = await supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("fila_id", filaId)
-        .eq("status", "aguardando");
-      if (cancelled) return;
-      const aguardando = count ?? 0;
-      const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
-      // A senha entra ATRÁS de todas as que já estão aguardando, então a
-      // posição "na frente" é exatamente a contagem atual de aguardando.
-      setPreviewPos(aguardando);
-      setPreviewTempo(aguardando * tempoPorPessoa);
-      setPreviewLoading(false);
-    })();
-    return () => {
-      cancelled = true;
+    if (!open) return;
+    
+    const carregarContagens = async () => {
+      setLoadingContagens(true);
+      try {
+        const { data } = await supabase
+          .from("senhas")
+          .select("fila_id")
+          .eq("unidade_id", senha.unidade_id)
+          .eq("status", "aguardando");
+
+        const map: Record<string, number> = {};
+        data?.forEach((s) => {
+          map[s.fila_id] = (map[s.fila_id] || 0) + 1;
+        });
+        setContagens(map);
+      } catch (err) {
+        console.error("Erro ao carregar preview:", err);
+      } finally {
+        setLoadingContagens(false);
+      }
     };
-  }, [open, mudouFila, filaId, filaNova?.tempo_espera_estimado]);
+
+    void carregarContagens();
+
+    // Inscrição em tempo real para manter o preview atualizado se alguém for chamado ou emitir nova senha.
+    const channel = supabase
+      .channel(`preview-unidade-${senha.unidade_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "senhas",
+          filter: `unidade_id=eq.${senha.unidade_id}`,
+        },
+        () => {
+          void carregarContagens();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [open, senha.unidade_id]);
+
+  // Preview calculado localmente a partir do map de contagens
+  const previewPos = filaId ? (contagens[filaId] || 0) : 0;
+  const previewTempo = previewPos * (filaNova?.tempo_espera_estimado ?? 10);
+  const previewLoading = loadingContagens;
 
   const handleSalvar = async () => {
     if (!filaId) {
@@ -105,9 +129,6 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
     }
     setSaving(true);
     try {
-      // Mescla observações no triagem_dados sem perder demais campos.
-      // Quando a fila muda, registra um marcador de "movido em" para auditoria
-      // e mantém o created_at original em fila_anterior_created_at.
       const dadosAtuais = (senha.triagem_dados as Record<string, unknown> | null) ?? {};
       const novosDados: Record<string, unknown> = {
         ...dadosAtuais,
@@ -121,14 +142,6 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
 
       const agora = new Date().toISOString();
 
-      // Recalcula tempo_espera_estimado e posição quando muda de fila.
-      // - created_at é "rebobinado" para agora: a senha vai para o final da
-      //   nova fila pelo critério de ordenação por created_at usado em todo
-      //   o app (público, guichê, TV).
-      // - posicao e tempo_espera_estimado são recalculados automaticamente
-      //   pela trigger `trg_senhas_recalcular_posicoes` no servidor — não
-      //   enviamos esses campos para evitar divergência com a fonte da
-      //   verdade do banco.
       type SenhaUpdate = Database["public"]["Tables"]["senhas"]["Update"];
       const updatePayload: SenhaUpdate = {
         fila_id: filaId,
@@ -146,8 +159,6 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
         .eq("id", senha.id);
       if (error) throw error;
 
-      // Auditoria via insert direto (RLS permite leitura por super admin; insert não tem policy bloqueante)
-      // Usa ação informativa para o registro não ser perdido
       try {
         let posicaoAntes = 0;
         if (mudouFila) {
@@ -200,7 +211,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
           },
         });
       } catch {
-        // auditoria é best-effort — não bloqueia
+        // auditoria é best-effort
       }
 
       toast.success(
@@ -258,7 +269,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                     <p className="font-semibold">
                       Atenção: a senha vai para o FINAL da nova fila
                     </p>
-                    <ul className="list-disc space-y-0.5 pl-4">
+                    <ul className="list-disc space-y-0.5 pl-4 text-[11px]">
                       <li>
                         A senha <strong>{senha.codigo}</strong> sai de{" "}
                         <strong>{filaAtual?.nome ?? "—"}</strong> e entra em{" "}
@@ -266,48 +277,45 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                         <strong>última da espera</strong>.
                       </li>
                       <li>
-                        A posição original na fila atual é perdida e o tempo de
-                        espera é recontado a partir de agora.
-                      </li>
-                      <li>
-                        A prioridade selecionada continua valendo, mas{" "}
-                        <strong>não recupera o tempo</strong> já aguardado.
-                      </li>
-                      <li>
-                        A operação fica registrada na auditoria com seu usuário.
+                        O tempo de espera é recontado a partir de agora.
                       </li>
                     </ul>
-                    <div className="mt-2 rounded border border-amber-400/50 bg-amber-100/60 p-2 text-[11px] dark:bg-amber-400/10">
-                      <p className="font-semibold uppercase tracking-wide">
-                        Estimativa após a mudança
-                      </p>
-                      {previewLoading ? (
-                        <p className="text-amber-800/80 dark:text-amber-200/80">
-                          calculando…
+
+                    <div className="mt-2 space-y-2 rounded-lg border border-amber-400/40 bg-amber-100/50 p-3 dark:bg-amber-400/5 shadow-inner">
+                      <div className="flex items-center justify-between border-b border-amber-400/20 pb-1.5 mb-1.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900/80 dark:text-amber-200/80">
+                          Preview do Recálculo
                         </p>
-                      ) : (
-                        <p>
-                          {previewPos === 0 ? (
-                            <>
-                              Será a <strong>próxima</strong> a ser chamada em{" "}
-                              <strong>{filaNova?.nome ?? "—"}</strong>.
-                            </>
-                          ) : (
-                            <>
-                              Posição: <strong>{(previewPos ?? 0) + 1}º</strong> ·{" "}
-                              {previewPos ?? 0}{" "}
-                              {previewPos === 1 ? "pessoa" : "pessoas"} na frente ·
-                              espera estimada{" "}
-                              <strong>~{previewTempo ?? 0} min</strong>{" "}
-                              <span className="text-amber-700/80 dark:text-amber-200/70">
-                                ({filaNova?.tempo_espera_estimado ?? 10} min/pessoa)
-                              </span>
-                            </>
-                          )}
+                        {previewLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-600" />}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Nova Posição</p>
+                          <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                            {previewPos + 1}º <span className="text-[10px] font-normal text-amber-800/70 dark:text-amber-200/70">({previewPos} à frente)</span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Tempo Base</p>
+                          <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                            {filaNova?.tempo_espera_estimado ?? 10}min <span className="text-[10px] font-normal text-amber-800/70 dark:text-amber-200/70">/pessoa</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-1 pt-1.5 border-t border-amber-400/10">
+                        <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Estimativa de Espera</p>
+                        <p className="text-base font-black text-amber-600 dark:text-amber-400 leading-none mt-0.5">
+                          ~{previewTempo} min
                         </p>
-                      )}
+                        <p className="mt-1 text-[8px] italic text-amber-800/50 dark:text-amber-200/40 font-medium">
+                          Cálculo: {previewPos} pessoas × {filaNova?.tempo_espera_estimado ?? 10} min
+                        </p>
+                      </div>
                     </div>
-                    <label className="mt-2 flex items-start gap-2 pt-1">
+
+                    <label className="mt-2 flex items-start gap-2 pt-1 cursor-pointer">
                       <Checkbox
                         checked={confirmouMudancaFila}
                         onCheckedChange={(v) => setConfirmouMudancaFila(v === true)}
@@ -359,7 +367,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
             className="bg-gradient-primary"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />}
-            {mudouFila && !confirmouMudancaFila ? "Confirme a mudança de fila" : "Salvar alterações"}
+            {mudouFila && !confirmouMudancaFila ? "Confirme a mudança" : "Salvar alterações"}
           </Button>
         </DialogFooter>
       </DialogContent>
