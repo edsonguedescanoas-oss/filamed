@@ -1,4 +1,4 @@
-import { CheckCircle2, TrendingDown, TrendingUp, Calculator, ArrowRight } from "lucide-react";
+import { CheckCircle2, TrendingDown, TrendingUp, Calculator, ArrowRight, Quote, Star } from "lucide-react";
 
 export function SocialProof() {
   return (
