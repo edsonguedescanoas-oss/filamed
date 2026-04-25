@@ -397,6 +397,7 @@ function CreateUnidadeDialog({
       _telefone: form.telefone || null,
       _endereco: form.endereco || null,
       _trial_dias: form.trial_dias,
+      _revenda_id: form.revenda_id === "none" ? null : form.revenda_id,
     } as never);
     setSaving(false);
     if (error) {
