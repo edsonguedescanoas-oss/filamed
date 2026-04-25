@@ -23,10 +23,6 @@ type SenhaPub = {
   unidade_id: string;
   created_at: string;
   updated_at: string;
-  // Calculados pela trigger `trg_senhas_recalcular_posicoes` no servidor.
-  // Fonte da verdade compartilhada entre paciente, guichê e TV.
-  posicao: number | null;
-  tempo_espera_estimado: number | null;
 };
 
 type FilaPub = { id: string; nome: string; cor: string | null; tempo_espera_estimado: number };
@@ -680,48 +676,28 @@ function PublicSenhaPage() {
     return () => clearTimeout(t);
   }, [senha?.status]);
 
-  // Posição na fila e tempo estimado vêm do BANCO (calculados pela trigger
-  // `trg_senhas_recalcular_posicoes`), garantindo o mesmo valor exibido no
-  // guichê, na TV e aqui no WebApp do paciente — inclusive logo após uma
-  // mudança de fila feita pela recepção, porque a trigger atualiza todas as
-  // senhas da fila e o canal `pub:senha:${id}` recebe o UPDATE imediatamente.
-  //
-  // `aguardandoNaFrente` = posicao - 1 (a posição é 1-indexada). Se a senha
-  // ainda não tem posicao calculada (caso raro), cai num fallback que conta
-  // por created_at sem considerar prioridade.
+  // Conta quantas senhas estão na frente (mesma fila, criadas antes, ainda aguardando)
   const refreshPosition = useCallback(async () => {
     if (!senha || senha.status !== "aguardando") {
       setAguardandoNaFrente(null);
       return;
     }
-    let newPos: number;
-    if (typeof senha.posicao === "number" && senha.posicao > 0) {
-      newPos = senha.posicao - 1;
-    } else {
-      const { count } = await supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("fila_id", senha.fila_id)
-        .eq("status", "aguardando")
-        .lt("created_at", senha.created_at);
-      newPos = count ?? 0;
-    }
-
+    const { count } = await supabase
+      .from("senhas")
+      .select("id", { count: "exact", head: true })
+      .eq("fila_id", senha.fila_id)
+      .eq("status", "aguardando")
+      .lt("created_at", senha.created_at);
+    
+    const newPos = count ?? 0;
+    
     // Som se mudar para "você é o próximo" (pos 0)
     if (aguardandoNaFrente !== null && aguardandoNaFrente > 0 && newPos === 0) {
-      playNotificationSound("next");
+      playNotificationSound('next');
     }
-
+    
     setAguardandoNaFrente(newPos);
-  }, [
-    senha?.id,
-    senha?.status,
-    senha?.fila_id,
-    senha?.created_at,
-    senha?.posicao,
-    aguardandoNaFrente,
-    playNotificationSound,
-  ]);
+  }, [senha?.id, senha?.status, senha?.fila_id, senha?.created_at, aguardandoNaFrente, playNotificationSound]);
 
   useEffect(() => {
     void refreshPosition();
@@ -945,31 +921,14 @@ function PublicSenhaPage() {
                         : `${aguardandoNaFrente} ${aguardandoNaFrente === 1 ? "pessoa" : "pessoas"} na sua frente`}
                     </p>
                     
-                    {(() => {
-                      // Tempo vem da senha (calculado pelo trigger no servidor),
-                      // com fallback para o cálculo via fila quando ainda não
-                      // foi populado. Mantém TV/guichê/paciente sempre alinhados.
-                      const tempoServidor =
-                        typeof senha.tempo_espera_estimado === "number"
-                          ? senha.tempo_espera_estimado
-                          : null;
-                      const tempoFallback =
-                        fila?.tempo_espera_estimado && aguardandoNaFrente > 0
-                          ? aguardandoNaFrente * fila.tempo_espera_estimado
-                          : null;
-                      const tempo = tempoServidor ?? tempoFallback;
-                      if (!tempo || tempo <= 0) return null;
-                      return (
-                        <div className="rounded-2xl bg-white/5 border border-white/10 p-4 mt-4">
-                          <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">
-                            Expectativa de espera
-                          </div>
-                          <div className="text-2xl font-display font-bold text-primary">
-                            ~{tempo} min
-                          </div>
+                    {fila?.tempo_espera_estimado && aguardandoNaFrente > 0 && (
+                      <div className="rounded-2xl bg-white/5 border border-white/10 p-4 mt-4">
+                        <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Expectativa de espera</div>
+                        <div className="text-2xl font-display font-bold text-primary">
+                          ~{aguardandoNaFrente * fila.tempo_espera_estimado} min
                         </div>
-                      );
-                    })()}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

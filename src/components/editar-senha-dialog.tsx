@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,17 +53,8 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
         (senha.triagem_dados as { observacoes?: string } | null)?.observacoes ?? "",
       );
       setConfirmouMudancaFila(false);
-      setSnapshotConfirmado(null);
     }
   }, [open, senha]);
-
-  // Quando o usuário troca a fila de destino, qualquer confirmação prévia
-  // perde o sentido — força nova confirmação contra a nova estimativa.
-  useEffect(() => {
-    setConfirmouMudancaFila(false);
-    setSnapshotConfirmado(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filaId]);
 
   const filaAtual = filas.find((f) => f.id === senha.fila_id);
   const filaNova = filas.find((f) => f.id === filaId);
@@ -74,141 +65,34 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
   const [previewPos, setPreviewPos] = useState<number | null>(null);
   const [previewTempo, setPreviewTempo] = useState<number | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  // Snapshot da contagem que o usuário VIU quando confirmou a regra.
-  // Usado para detectar corrida: se a contagem real no momento do save
-  // não bate, abortamos e pedimos nova confirmação.
-  const [snapshotConfirmado, setSnapshotConfirmado] = useState<number | null>(null);
 
-  // Mapa local "fila_id → quantas senhas aguardando". Carregado UMA vez ao
-  // abrir o diálogo (uma única query agrupada para a unidade) e mantido
-  // sincronizado por Realtime. Permite que trocar o seletor de fila atualize
-  // a estimativa instantaneamente, sem novo round-trip.
-  const [contagemPorFila, setContagemPorFila] = useState<Record<string, number>>({});
-
-  // Aplica a estimativa derivada do mapa local (instantâneo).
-  const aplicarPreviewLocal = useCallback(
-    (targetFilaId: string, mapa: Record<string, number>) => {
-      const aguardando = mapa[targetFilaId] ?? 0;
-      const tempoPorPessoa =
-        filas.find((f) => f.id === targetFilaId)?.tempo_espera_estimado ?? 10;
-      setPreviewPos(aguardando);
-      setPreviewTempo(aguardando * tempoPorPessoa);
-      return aguardando;
-    },
-    [filas],
-  );
-
-  // Fonte da verdade para o save: re-checa direto no banco. Também atualiza
-  // o mapa local para que a UI reflita o número observado.
-  const fetchPreview = async (targetFilaId: string): Promise<number | null> => {
-    const { count, error } = await supabase
-      .from("senhas")
-      .select("id", { count: "exact", head: true })
-      .eq("fila_id", targetFilaId)
-      .eq("status", "aguardando");
-    if (error) return null;
-    const aguardando = count ?? 0;
-    setContagemPorFila((prev) =>
-      prev[targetFilaId] === aguardando ? prev : { ...prev, [targetFilaId]: aguardando },
-    );
-    const tempoPorPessoa = filas.find((f) => f.id === targetFilaId)?.tempo_espera_estimado ?? 10;
-    setPreviewPos(aguardando);
-    setPreviewTempo(aguardando * tempoPorPessoa);
-    return aguardando;
-  };
-
-  // Bootstrap: carrega contagens de TODAS as filas da unidade de uma vez
-  // quando o diálogo abre. Mantém vivo via Realtime no nível da unidade,
-  // de forma que trocar o seletor é sempre instantâneo.
   useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    setPreviewLoading(true);
-
-    void (async () => {
-      // Busca os fila_ids das senhas aguardando da unidade. Como Supabase
-      // não expõe GROUP BY direto pelo client, contamos no JS — barato
-      // porque a unidade típica tem dezenas, não milhares, de senhas vivas.
-      const { data, error } = await supabase
-        .from("senhas")
-        .select("fila_id")
-        .eq("unidade_id", senha.unidade_id)
-        .eq("status", "aguardando");
-      if (cancelled) return;
-      if (!error && data) {
-        const mapa: Record<string, number> = {};
-        for (const r of data as Array<{ fila_id: string }>) {
-          mapa[r.fila_id] = (mapa[r.fila_id] ?? 0) + 1;
-        }
-        setContagemPorFila(mapa);
-        // Se já há fila selecionada que difere da atual, mostra o preview já.
-        if (filaId && filaId !== senha.fila_id) {
-          aplicarPreviewLocal(filaId, mapa);
-        }
-      }
-      setPreviewLoading(false);
-    })();
-
-    // Realtime: qualquer mudança em senhas da unidade invalida o mapa.
-    // Usamos refetch agrupado (debounce simples) para evitar múltiplos
-    // hits em rajada (ex: bulk update da recepção).
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    const refetchAgregado = async () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(async () => {
-        const { data } = await supabase
-          .from("senhas")
-          .select("fila_id")
-          .eq("unidade_id", senha.unidade_id)
-          .eq("status", "aguardando");
-        if (cancelled || !data) return;
-        const mapa: Record<string, number> = {};
-        for (const r of data as Array<{ fila_id: string }>) {
-          mapa[r.fila_id] = (mapa[r.fila_id] ?? 0) + 1;
-        }
-        setContagemPorFila(mapa);
-        if (filaId && filaId !== senha.fila_id) {
-          aplicarPreviewLocal(filaId, mapa);
-        }
-      }, 200);
-    };
-
-    const channel = supabase
-      .channel(`edit-senha-preview:${senha.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "senhas",
-          filter: `unidade_id=eq.${senha.unidade_id}`,
-        },
-        () => {
-          if (!cancelled) void refetchAgregado();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      if (debounceTimer) clearTimeout(debounceTimer);
-      void supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, senha.id, senha.unidade_id]);
-
-  // Trocar o seletor: atualiza a estimativa INSTANTANEAMENTE a partir do
-  // mapa em memória, sem flicker de loading e sem esperar o servidor.
-  useEffect(() => {
-    if (!open) return;
-    if (!mudouFila || !filaId) {
+    if (!open || !mudouFila || !filaId) {
       setPreviewPos(null);
       setPreviewTempo(null);
       return;
     }
-    aplicarPreviewLocal(filaId, contagemPorFila);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, filaId, mudouFila, contagemPorFila, aplicarPreviewLocal]);
+    let cancelled = false;
+    setPreviewLoading(true);
+    void (async () => {
+      const { count } = await supabase
+        .from("senhas")
+        .select("id", { count: "exact", head: true })
+        .eq("fila_id", filaId)
+        .eq("status", "aguardando");
+      if (cancelled) return;
+      const aguardando = count ?? 0;
+      const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
+      // A senha entra ATRÁS de todas as que já estão aguardando, então a
+      // posição "na frente" é exatamente a contagem atual de aguardando.
+      setPreviewPos(aguardando);
+      setPreviewTempo(aguardando * tempoPorPessoa);
+      setPreviewLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mudouFila, filaId, filaNova?.tempo_espera_estimado]);
 
   const handleSalvar = async () => {
     if (!filaId) {
@@ -220,33 +104,6 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       return;
     }
     setSaving(true);
-
-    // Trava anti-corrida: re-checa a contagem de aguardando na fila de
-    // destino IMEDIATAMENTE antes do update. Se chegaram novas senhas
-    // entre o preview/confirmação e o clique em salvar, abortamos, atualiza
-    // o preview na tela e exigimos nova confirmação.
-    if (mudouFila) {
-      const atual = await fetchPreview(filaId);
-      if (atual === null) {
-        toast.error("Não foi possível confirmar a fila de destino. Tente novamente.");
-        setSaving(false);
-        return;
-      }
-      const esperado = snapshotConfirmado;
-      if (esperado === null || atual !== esperado) {
-        setConfirmouMudancaFila(false);
-        setSnapshotConfirmado(null);
-        const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
-        toast.warning(
-          esperado === null
-            ? "A estimativa foi atualizada. Confirme novamente antes de salvar."
-            : `A fila mudou: agora há ${atual} aguardando (~${atual * tempoPorPessoa} min). Confirme novamente.`,
-        );
-        setSaving(false);
-        return;
-      }
-    }
-
     try {
       // Mescla observações no triagem_dados sem perder demais campos.
       // Quando a fila muda, registra um marcador de "movido em" para auditoria
@@ -289,76 +146,54 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
         .eq("id", senha.id);
       if (error) throw error;
 
-      // Auditoria via insert direto (RLS permite leitura por super admin;
-      // insert nao tem policy bloqueante).
-      // Para mudancas de fila, emitimos um payload extra com:
-      //   - tipo: "movimentacao_fila" (marcador p/ a UI de auditoria
-      //     reconhecer e renderizar o card "Antes vs Depois")
-      //   - fila_nome (legivel p/ humanos, sem precisar joinar)
-      //   - posicao   (1-based: posicao na espera)
-      //   - tempo_espera_estimado (minutos)
+      // Auditoria via insert direto (RLS permite leitura por super admin; insert não tem policy bloqueante)
+      // Usa ação informativa para o registro não ser perdido
       try {
-        // Posicao ANTES da mudanca = senhas aguardando na fila atual com
-        // created_at <= a senha (mesma ordenacao temporal usada no app).
-        let posicaoAntes: number | null = null;
-        let tempoAntesMin: number | null = null;
-        try {
-          const tempoPorPessoaAntes = filaAtual?.tempo_espera_estimado ?? 10;
+        let posicaoAntes = 0;
+        if (mudouFila) {
           const { count } = await supabase
             .from("senhas")
             .select("id", { count: "exact", head: true })
             .eq("fila_id", senha.fila_id)
             .eq("status", "aguardando")
             .lte("created_at", senha.created_at);
-          posicaoAntes = count ?? null;
-          tempoAntesMin =
-            posicaoAntes !== null
-              ? Math.max(0, (posicaoAntes - 1) * tempoPorPessoaAntes)
-              : null;
-        } catch {
-          // segue sem posicao_antes
+          posicaoAntes = count ?? 0;
         }
-
-        const tempoPorPessoaDepois = filaNova?.tempo_espera_estimado ?? 10;
-        const previewPosNum = previewPos ?? 0;
 
         await supabase.from("audit_log").insert({
           unidade_id: senha.unidade_id,
           entidade: "senhas",
           entidade_id: senha.id,
-          acao: mudouFila ? "mover_senha_de_fila" : "editar_ticket_guiche",
+          acao: "mover_senha_de_fila",
           resumo: mudouFila
             ? `Senha ${senha.codigo} movida de "${filaAtual?.nome ?? "?"}" para "${filaNova?.nome ?? "?"}" (recolocada no final, tempo recontado)`
-            : `Senha ${senha.codigo} editada (prioridade/observacoes)`,
+            : `Senha ${senha.codigo} editada (prioridade/observações)`,
           dados_antes: {
-            ...(mudouFila ? { tipo: "movimentacao_fila" } : {}),
-            codigo: senha.codigo,
+            tipo: mudouFila ? "movimentacao_fila" : undefined,
             fila_id: senha.fila_id,
-            fila_nome: filaAtual?.nome ?? null,
+            fila_nome: filaAtual?.nome,
             prioridade: senha.prioridade,
-            observacoes: (senha.triagem_dados as { observacoes?: string } | null)?.observacoes,
-            created_at: senha.created_at,
             posicao: posicaoAntes,
-            tempo_espera_estimado:
-              (senha as { tempo_espera_estimado?: number | null }).tempo_espera_estimado ??
-              tempoAntesMin,
+            tempo_base: filaAtual?.tempo_espera_estimado ?? 10,
+            tempo_espera_estimado: (senha as { tempo_espera_estimado?: number | null })
+              .tempo_espera_estimado,
+            created_at: senha.created_at,
           },
           dados_depois: {
-            ...(mudouFila ? { tipo: "movimentacao_fila" } : {}),
-            codigo: senha.codigo,
+            tipo: mudouFila ? "movimentacao_fila" : undefined,
             fila_id: filaId,
-            fila_nome: filaNova?.nome ?? null,
+            fila_nome: filaNova?.nome,
             prioridade,
-            observacoes: observacoes.trim() || undefined,
-            created_at: mudouFila ? agora : senha.created_at,
-            posicao: mudouFila ? previewPosNum + 1 : posicaoAntes,
+            posicao: mudouFila ? (previewPos ?? 0) + 1 : undefined,
+            tempo_base: filaNova?.tempo_espera_estimado ?? 10,
             tempo_espera_estimado: mudouFila
-              ? previewPosNum * tempoPorPessoaDepois
+              ? previewTempo
               : (senha as { tempo_espera_estimado?: number | null }).tempo_espera_estimado,
+            created_at: mudouFila ? agora : senha.created_at,
           },
         });
       } catch {
-        // auditoria e best-effort — nao bloqueia
+        // auditoria é best-effort — não bloqueia
       }
 
       toast.success(
@@ -468,14 +303,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                     <label className="mt-2 flex items-start gap-2 pt-1">
                       <Checkbox
                         checked={confirmouMudancaFila}
-                        onCheckedChange={(v) => {
-                          const marcou = v === true;
-                          setConfirmouMudancaFila(marcou);
-                          // Captura o snapshot da contagem que o usuário
-                          // está vendo neste exato momento. Será comparado
-                          // contra a contagem real no save.
-                          setSnapshotConfirmado(marcou ? previewPos : null);
-                        }}
+                        onCheckedChange={(v) => setConfirmouMudancaFila(v === true)}
                         aria-label="Ok, entendi a regra de mudança de fila"
                       />
                       <span className="text-xs font-medium">
