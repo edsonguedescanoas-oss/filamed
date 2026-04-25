@@ -381,7 +381,7 @@ function CreateUnidadeDialog({
   });
   const [saving, setSaving] = useState(false);
 
-  const reset = () => setForm({ nome: "", slug: "", cnpj: "", telefone: "", endereco: "", trial_dias: 14 });
+  const reset = () => setForm({ nome: "", slug: "", cnpj: "", telefone: "", endereco: "", trial_dias: 14, revenda_id: "none" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
