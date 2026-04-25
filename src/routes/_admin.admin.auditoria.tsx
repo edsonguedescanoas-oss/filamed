@@ -17,6 +17,9 @@ import {
   Download,
   CreditCard,
   Power,
+  History,
+  Tag,
+  Clock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,9 +66,11 @@ interface UnidadeOpt {
 
 const ENTIDADES = [
   { value: "todas", label: "Todas as entidades" },
+  { value: "movimentacao_fila", label: "Movimentações de Fila" },
+  { value: "senhas", label: "Senhas (todas)" },
   { value: "assinatura", label: "Assinaturas / Planos" },
   { value: "unidade", label: "Unidades (suspensão/reativação)" },
-  { value: "fila", label: "Filas" },
+  { value: "fila", label: "Filas (configuração)" },
   { value: "chamada", label: "Chamadas" },
   { value: "notificacao", label: "Notificações" },
 ];
@@ -101,7 +106,17 @@ function fmtDateTime(iso: string) {
   });
 }
 
-function entidadeMeta(entidade: string, acao: string) {
+function entidadeMeta(entidade: string, acao: string, dados_depois?: Record<string, unknown> | null) {
+  if (entidade === "senhas") {
+    const isMov = acao === "mover_senha_de_fila" || dados_depois?.tipo === "movimentacao_fila";
+    return {
+      icon: isMov ? History : Tag,
+      label: isMov ? "Movimentação de Fila" : "Senha",
+      tone: isMov
+        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+        : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+    };
+  }
   if (entidade === "fila") {
     return {
       icon: ListTree,
@@ -248,19 +263,34 @@ function AdminAuditoriaPage() {
         ) => Promise<{ data: AuditoriaRow[] | null; error: unknown }>
       )("admin_listar_auditoria", {
         _unidade_id: unidadeId === "todas" ? null : unidadeId,
-        _entidade: entidade === "todas" ? null : entidade,
+        _entidade:
+          entidade === "todas"
+            ? null
+            : entidade === "movimentacao_fila"
+              ? "senhas"
+              : entidade,
         _desde: desde,
         _ate: cursorAte,
         _limite: PAGE_SIZE,
         _busca: buscaDebounced || null,
         _ator_id: null,
       });
+
       if (reqId !== reqIdRef.current) return null; // request obsoleta
       if (error) {
         console.error(error);
         return [];
       }
-      return data ?? [];
+
+      const rows = data ?? [];
+      if (entidade === "movimentacao_fila") {
+        return rows.filter(
+          (r) =>
+            r.acao === "mover_senha_de_fila" ||
+            (r.dados_depois as Record<string, unknown>)?.tipo === "movimentacao_fila",
+        );
+      }
+      return rows;
     },
     [unidadeId, entidade, periodo, buscaDebounced],
   );
@@ -528,7 +558,7 @@ function AdminAuditoriaPage() {
                       ) : (
                         (() => {
                           const ev = eventos[vRow.index];
-                          const meta = entidadeMeta(ev.entidade, ev.acao);
+                          const meta = entidadeMeta(ev.entidade, ev.acao, ev.dados_depois as Record<string, unknown> | null);
                           const Icon = meta.icon;
                           const isOpen = expanded.has(ev.id);
                           const hasPayload = !!(ev.dados_antes || ev.dados_depois);
