@@ -116,6 +116,7 @@ export function SiteHeader() {
                     }
                   />
                   <WhatsAppFlow 
+                    source="mobile_nav_primary"
                     trigger={
                       <Button className="bg-gradient-primary w-full">
                         Solicitar demonstração
