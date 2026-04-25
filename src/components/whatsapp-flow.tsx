@@ -25,6 +25,20 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
   const totalSteps = 4;
 
   const handleNext = () => {
+    if (step === 3) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast.error("Por favor, insira um e-mail válido.");
+        return;
+      }
+      
+      const blacklistedDomains = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "live.com", "icloud.com"];
+      const domain = formData.email.split("@")[1]?.toLowerCase();
+      if (blacklistedDomains.includes(domain)) {
+        toast.warning("Recomendamos o uso de um e-mail corporativo para um atendimento prioritário.");
+      }
+    }
+
     if (step < totalSteps) setStep(step + 1);
     else handleWhatsAppRedirect();
   };
