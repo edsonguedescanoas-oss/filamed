@@ -54,6 +54,8 @@ interface UnidadeRow {
   cnpj: string | null;
   telefone: string | null;
   endereco: string | null;
+  revenda_id: string | null;
+  revenda?: { nome: string } | null;
 }
 
 const STATUS_VARIANT: Record<AssinaturaStatus, { label: string; className: string }> = {
