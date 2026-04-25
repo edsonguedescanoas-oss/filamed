@@ -7,7 +7,6 @@ import {
   Clock, 
   ArrowRight, 
   BellRing, 
-  CheckCircle2,
   ChevronRight,
   Monitor
 } from "lucide-react";
