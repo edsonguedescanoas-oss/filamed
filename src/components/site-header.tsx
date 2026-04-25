@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Activity, Menu } from "lucide-react";
+import { Activity, Menu, PlayCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { WhatsAppFlow } from "@/components/whatsapp-flow";
 
 export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
