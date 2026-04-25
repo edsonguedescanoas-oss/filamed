@@ -63,9 +63,11 @@ interface UnidadeOpt {
 
 const ENTIDADES = [
   { value: "todas", label: "Todas as entidades" },
+  { value: "movimentacao_fila", label: "Movimentações de Fila" },
+  { value: "senhas", label: "Senhas (todas)" },
   { value: "assinatura", label: "Assinaturas / Planos" },
   { value: "unidade", label: "Unidades (suspensão/reativação)" },
-  { value: "fila", label: "Filas" },
+  { value: "fila", label: "Filas (configuração)" },
   { value: "chamada", label: "Chamadas" },
   { value: "notificacao", label: "Notificações" },
 ];
