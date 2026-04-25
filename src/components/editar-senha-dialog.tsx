@@ -282,38 +282,58 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                       </li>
                     </ul>
 
-                    <div className="mt-2 space-y-2 rounded-lg border border-amber-400/40 bg-amber-100/50 p-3 dark:bg-amber-400/5 shadow-inner">
+                    <div className="mt-2 space-y-2 rounded-lg border border-amber-400/40 bg-amber-100/50 p-3 dark:bg-amber-400/5 shadow-inner min-h-[140px]">
                       <div className="flex items-center justify-between border-b border-amber-400/20 pb-1.5 mb-1.5">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900/80 dark:text-amber-200/80">
                           Preview do Recálculo
                         </p>
-                        {previewLoading && <Loader2 className="h-3 w-3 animate-spin text-amber-600" />}
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Nova Posição</p>
-                          <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
-                            {previewPos + 1}º <span className="text-[10px] font-normal text-amber-800/70 dark:text-amber-200/70">({previewPos} à frente)</span>
-                          </p>
+                      {previewLoading ? (
+                        <div className="space-y-3 animate-in fade-in duration-300">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Skeleton className="h-2 w-12 bg-amber-200/50 dark:bg-amber-800/20" />
+                              <Skeleton className="h-4 w-20 bg-amber-200/50 dark:bg-amber-800/20" />
+                            </div>
+                            <div className="space-y-1">
+                              <Skeleton className="h-2 w-12 bg-amber-200/50 dark:bg-amber-800/20" />
+                              <Skeleton className="h-4 w-16 bg-amber-200/50 dark:bg-amber-800/20" />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5 pt-1.5 border-t border-amber-400/10">
+                            <Skeleton className="h-2 w-24 bg-amber-200/50 dark:bg-amber-800/20" />
+                            <Skeleton className="h-6 w-16 bg-amber-200/50 dark:bg-amber-800/20" />
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Tempo Base</p>
-                          <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
-                            {filaNova?.tempo_espera_estimado ?? 10}min <span className="text-[10px] font-normal text-amber-800/70 dark:text-amber-200/70">/pessoa</span>
-                          </p>
-                        </div>
-                      </div>
+                      ) : (
+                        <div className="animate-in fade-in duration-500">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Nova Posição</p>
+                              <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                                {previewPos + 1}º <span className="text-[10px] font-normal text-amber-800/70 dark:text-amber-200/70">({previewPos} à frente)</span>
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Tempo Base</p>
+                              <p className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                                {filaNova?.tempo_espera_estimado ?? 10}min <span className="text-[10px] font-normal text-amber-800/70 dark:text-amber-200/70">/pessoa</span>
+                              </p>
+                            </div>
+                          </div>
 
-                      <div className="mt-1 pt-1.5 border-t border-amber-400/10">
-                        <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Estimativa de Espera</p>
-                        <p className="text-base font-black text-amber-600 dark:text-amber-400 leading-none mt-0.5">
-                          ~{previewTempo} min
-                        </p>
-                        <p className="mt-1 text-[8px] italic text-amber-800/50 dark:text-amber-200/40 font-medium">
-                          Cálculo: {previewPos} pessoas × {filaNova?.tempo_espera_estimado ?? 10} min
-                        </p>
-                      </div>
+                          <div className="mt-1 pt-1.5 border-t border-amber-400/10">
+                            <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Estimativa de Espera</p>
+                            <p className="text-base font-black text-amber-600 dark:text-amber-400 leading-none mt-0.5">
+                              ~{previewTempo} min
+                            </p>
+                            <p className="mt-1 text-[8px] italic text-amber-800/50 dark:text-amber-200/40 font-medium">
+                              Cálculo: {previewPos} pessoas × {filaNova?.tempo_espera_estimado ?? 10} min
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <label className="mt-2 flex items-start gap-2 pt-1 cursor-pointer">
