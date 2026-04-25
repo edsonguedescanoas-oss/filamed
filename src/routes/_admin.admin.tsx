@@ -377,6 +377,7 @@ function CreateUnidadeDialog({
     telefone: "",
     endereco: "",
     trial_dias: 14,
+    revenda_id: "none",
   });
   const [saving, setSaving] = useState(false);
 
