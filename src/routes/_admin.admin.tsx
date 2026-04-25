@@ -362,6 +362,32 @@ function AdminUnidadesPage() {
   );
 }
 
+function RevendaSelect({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
+  const { data: revendas } = useQuery({
+    queryKey: ["admin_revendas_opts"],
+    queryFn: async () => {
+      const { data } = await supabase.from("revendas").select("id, nome").eq("ativa", true).order("nome");
+      return data || [];
+    },
+  });
+
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger>
+        <SelectValue placeholder="Sem revenda" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">Sem revenda (Direto)</SelectItem>
+        {revendas?.map((r) => (
+          <SelectItem key={r.id} value={r.id}>
+            {r.nome}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function CreateUnidadeDialog({
   open,
   onClose,
