@@ -80,6 +80,7 @@ export function FAQ() {
                 </a>
               </Button>
               <WhatsAppFlow 
+                source="faq"
                 trigger={
                   <Button size="lg" className="h-14 px-10 bg-gradient-primary rounded-2xl text-base font-bold shadow-glow">
                     <MessageCircle className="mr-2 h-5 w-5" />
