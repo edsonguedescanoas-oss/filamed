@@ -26,9 +26,9 @@ export function CTA() {
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
               <WhatsAppFlow />
               <Button asChild size="lg" variant="outline" className="h-16 px-10 border-white/20 text-white hover:bg-white/10 backdrop-blur text-xl rounded-2xl w-full sm:w-auto">
-                <a href="#reports-showcase">
-                  <Calendar className="mr-2 h-5 w-5" />
-                  Ver Dashboard
+                <a href="#como-funciona">
+                  <PlayCircle className="mr-2 h-5 w-5 text-primary" />
+                  Ver Como Funciona
                 </a>
               </Button>
             </div>
