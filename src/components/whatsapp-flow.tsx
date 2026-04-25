@@ -128,6 +128,25 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
 
           {step === 3 && (
             <div className="animate-fade-in space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  Seu E-mail Corporativo
+                </Label>
+                <Input 
+                  id="email" 
+                  type="email"
+                  placeholder="Ex: gestao@clinica.com.br" 
+                  className="rounded-xl h-12 border-border/50 focus:border-primary/50"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="animate-fade-in space-y-4">
               <div className="space-y-4">
                 <Label htmlFor="tipo" className="flex items-center gap-2">
                   <Stethoscope className="h-4 w-4 text-primary" />
