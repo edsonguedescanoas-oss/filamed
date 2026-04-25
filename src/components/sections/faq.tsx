@@ -4,7 +4,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, ArrowRight, PlayCircle, MessageCircle } from "lucide-react";
+import { WhatsAppFlow } from "@/components/whatsapp-flow";
+import { Button } from "@/components/ui/button";
 
 const faqData = [
   {
