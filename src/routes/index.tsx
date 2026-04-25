@@ -61,6 +61,7 @@ function LandingPage() {
         <Features />
         <Architecture />
         <Flow />
+        <InteractiveSim />
         <Benefits />
         <Differentials />
         <Security />
