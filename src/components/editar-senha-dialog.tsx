@@ -290,8 +290,8 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                       </div>
                       
                       <div className="relative flex-1">
-                        {previewLoading ? (
-                          <div className="absolute inset-0 space-y-3 animate-in fade-in duration-300">
+                        {previewLoading && (
+                          <div className="absolute inset-0 space-y-3 animate-in fade-in fade-out duration-300">
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1">
                                 <Skeleton className="h-2 w-12 bg-amber-200/50 dark:bg-amber-800/20" />
@@ -308,8 +308,9 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                               <Skeleton className="h-2 w-32 bg-amber-200/50 dark:bg-amber-800/20 mt-2" />
                             </div>
                           </div>
-                        ) : (
-                          <div className="animate-in fade-in duration-300">
+                        )}
+                        {!previewLoading && (
+                          <div className="animate-in fade-in duration-500">
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Nova Posição</p>
