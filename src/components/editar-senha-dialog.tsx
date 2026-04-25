@@ -149,31 +149,47 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
       // Auditoria via insert direto (RLS permite leitura por super admin; insert não tem policy bloqueante)
       // Usa ação informativa para o registro não ser perdido
       try {
+        let posicaoAntes = 0;
+        if (mudouFila) {
+          const { count } = await supabase
+            .from("senhas")
+            .select("id", { count: "exact", head: true })
+            .eq("fila_id", senha.fila_id)
+            .eq("status", "aguardando")
+            .lte("created_at", senha.created_at);
+          posicaoAntes = count ?? 0;
+        }
+
         await supabase.from("audit_log").insert({
           unidade_id: senha.unidade_id,
           entidade: "senhas",
           entidade_id: senha.id,
-          acao: "editar_ticket_guiche",
+          acao: "mover_senha_de_fila",
           resumo: mudouFila
             ? `Senha ${senha.codigo} movida de "${filaAtual?.nome ?? "?"}" para "${filaNova?.nome ?? "?"}" (recolocada no final, tempo recontado)`
             : `Senha ${senha.codigo} editada (prioridade/observações)`,
           dados_antes: {
+            tipo: mudouFila ? "movimentacao_fila" : undefined,
             fila_id: senha.fila_id,
+            fila_nome: filaAtual?.nome,
             prioridade: senha.prioridade,
-            observacoes: (senha.triagem_dados as { observacoes?: string } | null)?.observacoes,
-            created_at: senha.created_at,
+            posicao: posicaoAntes,
+            tempo_base: filaAtual?.tempo_espera_estimado ?? 10,
             tempo_espera_estimado: (senha as { tempo_espera_estimado?: number | null })
               .tempo_espera_estimado,
+            created_at: senha.created_at,
           },
           dados_depois: {
+            tipo: mudouFila ? "movimentacao_fila" : undefined,
             fila_id: filaId,
+            fila_nome: filaNova?.nome,
             prioridade,
-            observacoes: observacoes.trim() || undefined,
-            created_at: mudouFila ? agora : senha.created_at,
+            posicao: mudouFila ? (previewPos ?? 0) + 1 : undefined,
+            tempo_base: filaNova?.tempo_espera_estimado ?? 10,
             tempo_espera_estimado: mudouFila
-              ? filaNova?.tempo_espera_estimado ?? null
+              ? previewTempo
               : (senha as { tempo_espera_estimado?: number | null }).tempo_espera_estimado,
-            posicao_estimada: mudouFila ? previewPos : undefined,
+            created_at: mudouFila ? agora : senha.created_at,
           },
         });
       } catch {
