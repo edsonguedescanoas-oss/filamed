@@ -8,7 +8,8 @@ import {
   ArrowRight, 
   BellRing, 
   ChevronRight,
-  Monitor
+  Monitor,
+  CheckCircle2
 } from "lucide-react";
 
 const steps = [
