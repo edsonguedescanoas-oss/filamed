@@ -16,10 +16,14 @@ export function CaseStudy() {
             <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive mb-6">
               <Clock className="h-6 w-6" />
             </div>
-            <h3 className="text-xl font-bold mb-4">O Desafio (A Dor)</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Com média de 400 pacientes/dia, a clínica sofria com recepções lotadas, médicos ociosos entre picos de demanda e uma taxa de desistência de 18% devido à demora excessiva e falta de informação clara.
+            <h3 className="text-xl font-bold mb-4">O Desafio</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+              Com média de 400 pacientes/dia, a clínica sofria com recepções lotadas e uma taxa de desistência de 18% devido à demora excessiva.
             </p>
+            <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/10">
+              <p className="text-[10px] font-bold text-destructive uppercase mb-1">Impacto Financeiro</p>
+              <p className="text-sm font-bold">R$ 45.000/mês perdidos em desistências</p>
+            </div>
           </div>
 
           <div className="glass p-8 rounded-3xl border border-primary/20 bg-primary/5 reveal shadow-md hover:shadow-lg transition-all scale-105 z-10">
@@ -27,30 +31,38 @@ export function CaseStudy() {
               <Zap className="h-6 w-6" />
             </div>
             <h3 className="text-xl font-bold mb-4">A Solução</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Implementação do ecossistema FilaMed: Triagem digital inteligente, painéis de TV informativos e dashboards em tempo real para a coordenação ajustar as equipes instantaneamente conforme o volume de pacientes.
+            <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+              Implementação do ecossistema FilaMed: Triagem digital, painéis de TV informativos e dashboards de gestão em tempo real.
             </p>
+            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+              <p className="text-[10px] font-bold text-primary uppercase mb-1">Implementação</p>
+              <p className="text-sm font-bold">Setup completo em menos de 7 dias</p>
+            </div>
           </div>
 
           <div className="glass p-8 rounded-3xl border border-border reveal shadow-sm hover:shadow-md transition-all">
             <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center text-success mb-6">
               <CheckCircle2 className="h-6 w-6" />
             </div>
-            <h3 className="text-xl font-bold mb-4">O Resultado</h3>
-            <ul className="space-y-3 text-sm text-muted-foreground">
+            <h3 className="text-xl font-bold mb-4">Os Números</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground mb-4">
               <li className="flex items-center gap-2">
                 <div className="h-1 w-1 rounded-full bg-success" />
-                <span className="font-bold text-foreground">-40% tempo de espera</span>
+                <span className="font-bold text-foreground">-45% tempo de espera (28 min p/ 15 min)</span>
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1 w-1 rounded-full bg-success" />
-                <span className="font-bold text-foreground">+25% eficiência da equipe</span>
+                <span className="font-bold text-foreground">-85% na taxa de abandono de fichas</span>
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1 w-1 rounded-full bg-success" />
-                <span className="font-bold text-foreground">ROI atingido em 45 dias</span>
+                <span className="font-bold text-foreground">+20% de produtividade médica</span>
               </li>
             </ul>
+            <div className="p-3 rounded-xl bg-success/10 border border-success/20">
+              <p className="text-[10px] font-bold text-success uppercase mb-1">ROI Real</p>
+              <p className="text-sm font-bold">Payback total em apenas 45 dias</p>
+            </div>
           </div>
         </div>
 
