@@ -28,7 +28,7 @@ export function Hero() {
             Tenha o controle total da produtividade da sua equipe e da satisfação dos clientes com relatórios estratégicos que mostram onde seu negócio está perdendo eficiência.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <WhatsAppFlow />
+            <WhatsAppFlow source="hero" />
             <Button asChild size="lg" variant="outline" className="h-14 px-10 backdrop-blur text-lg hover:bg-primary/5 transition-colors rounded-xl border-primary/20">
               <a href="#como-funciona">
                 <PlayCircle className="mr-2 h-5 w-5 text-primary" />
