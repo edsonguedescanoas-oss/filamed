@@ -22,9 +22,10 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
   });
 
   const [step, setStep] = useState(1);
+  const totalSteps = 4;
 
   const handleNext = () => {
-    if (step < 3) setStep(step + 1);
+    if (step < totalSteps) setStep(step + 1);
     else handleWhatsAppRedirect();
   };
 
