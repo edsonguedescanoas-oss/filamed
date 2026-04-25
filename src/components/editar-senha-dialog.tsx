@@ -323,15 +323,16 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                             </div>
                           </div>
 
-                          <div className="mt-1 pt-1.5 border-t border-amber-400/10">
+                          <div className="mt-1 pt-1.5 border-t border-amber-400/10 flex-1">
                             <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Estimativa de Espera</p>
-                            <p className="text-base font-black text-amber-600 dark:text-amber-400 leading-none mt-0.5">
+                            <p className="text-base font-black text-amber-600 dark:text-amber-400 leading-none mt-1">
                               ~{previewTempo} min
                             </p>
-                            <p className="mt-1 text-[8px] italic text-amber-800/50 dark:text-amber-200/40 font-medium">
+                            <p className="mt-2 text-[8px] italic text-amber-800/50 dark:text-amber-200/40 font-medium leading-tight">
                               Cálculo: {previewPos} pessoas × {filaNova?.tempo_espera_estimado ?? 10} min
                             </p>
                           </div>
+
                         </div>
                       )}
                     </div>
