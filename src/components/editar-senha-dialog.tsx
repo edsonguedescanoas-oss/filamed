@@ -60,39 +60,64 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
   const filaNova = filas.find((f) => f.id === filaId);
   const mudouFila = filaId !== senha.fila_id;
 
-  // Pré-visualização do recálculo: quantas pessoas há aguardando na fila
-  // de destino agora, e a estimativa de espera resultante.
-  const [previewPos, setPreviewPos] = useState<number | null>(null);
-  const [previewTempo, setPreviewTempo] = useState<number | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  // Map de contagem de pessoas aguardando por fila para preview instantâneo.
+  const [contagens, setContagens] = useState<Record<string, number>>({});
+  const [loadingContagens, setLoadingContagens] = useState(false);
 
+  // Carrega contagens iniciais de todas as filas da unidade ao abrir.
   useEffect(() => {
-    if (!open || !mudouFila || !filaId) {
-      setPreviewPos(null);
-      setPreviewTempo(null);
-      return;
-    }
-    let cancelled = false;
-    setPreviewLoading(true);
-    void (async () => {
-      const { count } = await supabase
-        .from("senhas")
-        .select("id", { count: "exact", head: true })
-        .eq("fila_id", filaId)
-        .eq("status", "aguardando");
-      if (cancelled) return;
-      const aguardando = count ?? 0;
-      const tempoPorPessoa = filaNova?.tempo_espera_estimado ?? 10;
-      // A senha entra ATRÁS de todas as que já estão aguardando, então a
-      // posição "na frente" é exatamente a contagem atual de aguardando.
-      setPreviewPos(aguardando);
-      setPreviewTempo(aguardando * tempoPorPessoa);
-      setPreviewLoading(false);
-    })();
-    return () => {
-      cancelled = true;
+    if (!open) return;
+    
+    const carregarContagens = async () => {
+      setLoadingContagens(true);
+      try {
+        const { data } = await supabase
+          .from("senhas")
+          .select("fila_id")
+          .eq("unidade_id", senha.unidade_id)
+          .eq("status", "aguardando");
+
+        const map: Record<string, number> = {};
+        data?.forEach((s) => {
+          map[s.fila_id] = (map[s.fila_id] || 0) + 1;
+        });
+        setContagens(map);
+      } catch (err) {
+        console.error("Erro ao carregar preview:", err);
+      } finally {
+        setLoadingContagens(false);
+      }
     };
-  }, [open, mudouFila, filaId, filaNova?.tempo_espera_estimado]);
+
+    void carregarContagens();
+
+    // Inscrição em tempo real para manter o preview atualizado se alguém for chamado ou emitir nova senha.
+    const channel = supabase
+      .channel(`preview-unidade-${senha.unidade_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "senhas",
+          filter: `unidade_id=eq.${senha.unidade_id}`,
+        },
+        () => {
+          // Debounce simples: recarrega após 200ms de inatividade de eventos
+          void carregarContagens();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [open, senha.unidade_id]);
+
+  // Preview calculado localmente a partir do map de contagens
+  const previewPos = filaId ? (contagens[filaId] || 0) : 0;
+  const previewTempo = previewPos * (filaNova?.tempo_espera_estimado ?? 10);
+  const previewLoading = loadingContagens;
 
   const handleSalvar = async () => {
     if (!filaId) {
