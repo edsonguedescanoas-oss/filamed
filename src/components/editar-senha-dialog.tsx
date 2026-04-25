@@ -282,7 +282,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                       </li>
                     </ul>
 
-                    <div className="mt-2 space-y-2 rounded-lg border border-amber-400/40 bg-amber-100/50 p-3 dark:bg-amber-400/5 shadow-inner min-h-[140px]">
+                    <div className="mt-2 space-y-2 rounded-lg border border-amber-400/40 bg-amber-100/50 p-3 dark:bg-amber-400/5 shadow-inner min-h-[155px] flex flex-col">
                       <div className="flex items-center justify-between border-b border-amber-400/20 pb-1.5 mb-1.5">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900/80 dark:text-amber-200/80">
                           Preview do Recálculo
