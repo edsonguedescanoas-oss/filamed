@@ -63,10 +63,12 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
   return (
     <Dialog onOpenChange={(open) => !open && setStep(1)}>
       <DialogTrigger asChild>
-        <Button size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl w-full sm:w-auto">
-          Começar agora
-          <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-        </Button>
+        {trigger ?? (
+          <Button size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl w-full sm:w-auto">
+            Começar agora
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] rounded-3xl p-8 border border-primary/20 bg-background/95 backdrop-blur-xl">
         <DialogHeader className="mb-6">
