@@ -4,7 +4,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, ArrowRight, PlayCircle, MessageCircle } from "lucide-react";
+import { WhatsAppFlow } from "@/components/whatsapp-flow";
+import { Button } from "@/components/ui/button";
 
 const faqData = [
   {
@@ -62,6 +64,31 @@ export function FAQ() {
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+
+        <div className="mt-20 text-center reveal">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-4 p-8 rounded-[3rem] bg-white border border-border shadow-elegant">
+            <div className="text-left pr-8 border-r border-border hidden lg:block">
+              <p className="text-sm font-bold text-primary uppercase mb-1">Ainda tem dúvidas?</p>
+              <p className="text-xs text-muted-foreground">Fale agora com um consultor especialista.</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <Button asChild variant="outline" size="lg" className="h-14 px-8 rounded-2xl border-primary/20 hover:bg-primary/5 text-base font-bold">
+                <a href="#como-funciona">
+                  <PlayCircle className="mr-2 h-5 w-5 text-primary" />
+                  Ver Como Funciona
+                </a>
+              </Button>
+              <WhatsAppFlow 
+                trigger={
+                  <Button size="lg" className="h-14 px-10 bg-gradient-primary rounded-2xl text-base font-bold shadow-glow">
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    Solicitar Demonstração
+                  </Button>
+                }
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>

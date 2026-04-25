@@ -60,13 +60,9 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-2">
-            <WhatsAppFlow 
-              trigger={
-                <Button variant="ghost" size="sm" onClick={() => trackEvent("cta_click", { location: "header_ghost", text: "Falar com especialista" })}>
-                  Falar com especialista
-                </Button>
-              }
-            />
+            <Button asChild variant="ghost" size="sm" className="font-semibold text-muted-foreground hover:text-primary transition-colors">
+              <a href="#como-funciona">Ver Como Funciona</a>
+            </Button>
             <WhatsAppFlow 
               trigger={
                 <Button size="sm" className={`bg-gradient-primary hover:opacity-90 shadow-soft transition-all duration-300 ${isScrolled ? 'px-6 py-5 scale-105' : ''}`} onClick={() => trackEvent("cta_click", { location: "header_primary", text: "Solicitar demonstração" })}>
