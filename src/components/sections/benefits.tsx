@@ -1,4 +1,5 @@
-import { Heart, Building, Users } from "lucide-react";
+import { Heart, Building, Users, ArrowRight } from "lucide-react";
+import { WhatsAppFlow } from "@/components/whatsapp-flow";
 
 const groups = [
   {
