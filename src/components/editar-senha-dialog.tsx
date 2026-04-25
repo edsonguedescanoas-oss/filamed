@@ -160,6 +160,9 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
           posicaoAntes = count ?? 0;
         }
 
+        const session = await supabase.auth.getSession();
+        const userEmail = session.data.session?.user?.email ?? "Sistema";
+
         await supabase.from("audit_log").insert({
           unidade_id: senha.unidade_id,
           entidade: "senhas",
@@ -170,6 +173,8 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
             : `Senha ${senha.codigo} editada (prioridade/observações)`,
           dados_antes: {
             tipo: mudouFila ? "movimentacao_fila" : undefined,
+            movimentado_em: mudouFila ? new Date().toISOString() : undefined,
+            usuario: userEmail,
             fila_id: senha.fila_id,
             fila_nome: filaAtual?.nome,
             prioridade: senha.prioridade,
@@ -181,6 +186,8 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
           },
           dados_depois: {
             tipo: mudouFila ? "movimentacao_fila" : undefined,
+            movimentado_em: mudouFila ? new Date().toISOString() : undefined,
+            usuario: userEmail,
             fila_id: filaId,
             fila_nome: filaNova?.nome,
             prioridade,
