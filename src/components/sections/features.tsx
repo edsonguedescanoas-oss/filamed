@@ -130,6 +130,7 @@ export function Features() {
               Nossa equipe está pronta para desenhar o fluxo ideal para a sua operação.
             </p>
             <WhatsAppFlow 
+              source="features"
               trigger={
                 <button className="inline-flex items-center gap-2 px-10 py-5 bg-foreground text-background font-bold rounded-2xl shadow-xl hover:scale-105 transition-all">
                   Solicitar demonstração personalizada
