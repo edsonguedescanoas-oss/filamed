@@ -124,7 +124,10 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
                   placeholder="Seu nome completo" 
                   className="rounded-xl h-12 border-border/50 focus:border-primary/50"
                   value={formData.nome}
-                  onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[0-9]/g, ""); // Remove números de nomes
+                    setFormData({...formData, nome: val});
+                  }}
                 />
               </div>
             </div>
