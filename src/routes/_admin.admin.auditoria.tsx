@@ -17,6 +17,9 @@ import {
   Download,
   CreditCard,
   Power,
+  History,
+  Tag,
+  Clock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
