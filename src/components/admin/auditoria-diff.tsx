@@ -153,11 +153,31 @@ function MovimentacaoFilaCard({ before, after }: { before: JsonRecord; after: Js
 
   return (
     <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-3 py-2">
-        <Info className="h-4 w-4 text-primary" />
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-          Recálculo de Estimativa (Movimentação de Fila)
-        </h4>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/50 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Info className="h-4 w-4 text-primary" />
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+            Recálculo de Estimativa (Movimentação de Fila)
+          </h4>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+          {after.movimentado_em && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              <span>
+                {format(new Date(String(after.movimentado_em)), "dd/MM/yyyy HH:mm", {
+                  locale: ptBR,
+                })}
+              </span>
+            </div>
+          )}
+          {after.usuario && (
+            <div className="flex items-center gap-1">
+              <User className="h-3 w-3" />
+              <span className="font-medium">{String(after.usuario)}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2">
