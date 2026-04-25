@@ -46,6 +46,7 @@ import { Route as AppAppFilasRouteImport } from './routes/_app.app.filas'
 import { Route as AppAppContaRouteImport } from './routes/_app.app.conta'
 import { Route as AppAppAuditoriaRouteImport } from './routes/_app.app.auditoria'
 import { Route as AppAppAtendimentoRouteImport } from './routes/_app.app.atendimento'
+import { Route as AdminAdminRevendasRouteImport } from './routes/_admin.admin.revendas'
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 import { Route as AdminAdminMetricasRouteImport } from './routes/_admin.admin.metricas'
 import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
@@ -238,6 +239,11 @@ const AppAppAtendimentoRoute = AppAppAtendimentoRouteImport.update({
   path: '/atendimento',
   getParentRoute: () => AppAppRoute,
 } as any)
+const AdminAdminRevendasRoute = AdminAdminRevendasRouteImport.update({
+  id: '/revendas',
+  path: '/revendas',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminPlanosRoute = AdminAdminPlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
@@ -307,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
+  '/admin/revendas': typeof AdminAdminRevendasRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/auditoria': typeof AppAppAuditoriaRoute
   '/app/conta': typeof AppAppContaRoute
@@ -351,6 +358,7 @@ export interface FileRoutesByTo {
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
+  '/admin/revendas': typeof AdminAdminRevendasRoute
   '/app/atendimento': typeof AppAppAtendimentoRoute
   '/app/auditoria': typeof AppAppAuditoriaRoute
   '/app/conta': typeof AppAppContaRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/_admin/admin/logs': typeof AdminAdminLogsRoute
   '/_admin/admin/metricas': typeof AdminAdminMetricasRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
+  '/_admin/admin/revendas': typeof AdminAdminRevendasRoute
   '/_app/app/atendimento': typeof AppAppAtendimentoRoute
   '/_app/app/auditoria': typeof AppAppAuditoriaRoute
   '/_app/app/conta': typeof AppAppContaRoute
@@ -446,6 +455,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
+    | '/admin/revendas'
     | '/app/atendimento'
     | '/app/auditoria'
     | '/app/conta'
@@ -490,6 +500,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
+    | '/admin/revendas'
     | '/app/atendimento'
     | '/app/auditoria'
     | '/app/conta'
@@ -537,6 +548,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/logs'
     | '/_admin/admin/metricas'
     | '/_admin/admin/planos'
+    | '/_admin/admin/revendas'
     | '/_app/app/atendimento'
     | '/_app/app/auditoria'
     | '/_app/app/conta'
@@ -840,6 +852,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppAtendimentoRouteImport
       parentRoute: typeof AppAppRoute
     }
+    '/_admin/admin/revendas': {
+      id: '/_admin/admin/revendas'
+      path: '/revendas'
+      fullPath: '/admin/revendas'
+      preLoaderRoute: typeof AdminAdminRevendasRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/planos': {
       id: '/_admin/admin/planos'
       path: '/planos'
@@ -921,6 +940,7 @@ interface AdminAdminRouteChildren {
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminMetricasRoute: typeof AdminAdminMetricasRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
+  AdminAdminRevendasRoute: typeof AdminAdminRevendasRoute
   AdminAdminUnidadesUnidadeIdRoute: typeof AdminAdminUnidadesUnidadeIdRouteWithChildren
 }
 
@@ -931,6 +951,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminMetricasRoute: AdminAdminMetricasRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
+  AdminAdminRevendasRoute: AdminAdminRevendasRoute,
   AdminAdminUnidadesUnidadeIdRoute:
     AdminAdminUnidadesUnidadeIdRouteWithChildren,
 }

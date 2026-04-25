@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Building2, Loader2, Search, Plus, Settings2, Power, PowerOff, Pencil } from "lucide-react";
+import { Building2, Loader2, Search, Plus, Settings2, Power, PowerOff, Pencil, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -54,6 +55,8 @@ interface UnidadeRow {
   cnpj: string | null;
   telefone: string | null;
   endereco: string | null;
+  revenda_id: string | null;
+  revenda?: { nome: string } | null;
 }
 
 const STATUS_VARIANT: Record<AssinaturaStatus, { label: string; className: string }> = {
@@ -87,13 +90,13 @@ function AdminUnidadesPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("unidades")
-      .select("id, nome, slug, ativo, status_assinatura, trial_ends_at, created_at, cnpj, telefone, endereco")
+      .select("id, nome, slug, ativo, status_assinatura, trial_ends_at, created_at, cnpj, telefone, endereco, revenda_id, revenda:revendas(nome)")
       .order("created_at", { ascending: false });
     if (error) {
       console.error(error);
       toast.error("Erro ao carregar unidades");
     } else {
-      setUnidades((data ?? []) as UnidadeRow[]);
+      setUnidades((data ?? []) as unknown as UnidadeRow[]);
     }
     setLoading(false);
   };
@@ -211,6 +214,7 @@ function AdminUnidadesPage() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Trial</TableHead>
+                    <TableHead>Revenda</TableHead>
                     <TableHead>Criada em</TableHead>
                     <TableHead>Slug</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -243,6 +247,16 @@ function AdminUnidadesPage() {
                                 {dias} {dias === 1 ? "dia" : "dias"}
                               </span>
                             )
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {u.revenda?.nome ? (
+                            <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              {u.revenda.nome}
+                            </div>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -348,6 +362,32 @@ function AdminUnidadesPage() {
   );
 }
 
+function RevendaSelect({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
+  const { data: revendas } = useQuery({
+    queryKey: ["admin_revendas_opts"],
+    queryFn: async () => {
+      const { data } = await supabase.from("revendas").select("id, nome").eq("ativa", true).order("nome");
+      return data || [];
+    },
+  });
+
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger>
+        <SelectValue placeholder="Sem revenda" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">Sem revenda (Direto)</SelectItem>
+        {revendas?.map((r) => (
+          <SelectItem key={r.id} value={r.id}>
+            {r.nome}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function CreateUnidadeDialog({
   open,
   onClose,
@@ -364,10 +404,11 @@ function CreateUnidadeDialog({
     telefone: "",
     endereco: "",
     trial_dias: 14,
+    revenda_id: "none",
   });
   const [saving, setSaving] = useState(false);
 
-  const reset = () => setForm({ nome: "", slug: "", cnpj: "", telefone: "", endereco: "", trial_dias: 14 });
+  const reset = () => setForm({ nome: "", slug: "", cnpj: "", telefone: "", endereco: "", trial_dias: 14, revenda_id: "none" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,6 +424,7 @@ function CreateUnidadeDialog({
       _telefone: form.telefone || null,
       _endereco: form.endereco || null,
       _trial_dias: form.trial_dias,
+      _revenda_id: form.revenda_id === "none" ? null : form.revenda_id,
     } as never);
     setSaving(false);
     if (error) {
@@ -447,6 +489,13 @@ function CreateUnidadeDialog({
               id="endereco"
               value={form.endereco}
               onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label>Revenda (opcional)</Label>
+            <RevendaSelect 
+              value={form.revenda_id} 
+              onValueChange={(v: string) => setForm({ ...form, revenda_id: v })} 
             />
           </div>
           <div>
