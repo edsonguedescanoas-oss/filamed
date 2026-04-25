@@ -79,7 +79,7 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
           </div>
           <DialogTitle className="text-2xl font-bold text-center">Falar com Especialista</DialogTitle>
           <DialogDescription className="text-center">
-            Responda 3 perguntas rápidas para personalizarmos seu atendimento.
+            Responda {totalSteps} perguntas rápidas para personalizarmos seu atendimento.
           </DialogDescription>
         </DialogHeader>
 
