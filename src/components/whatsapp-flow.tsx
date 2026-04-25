@@ -13,7 +13,7 @@ import {
 import { ArrowRight, MessageCircle, Building2, Stethoscope, User, Mail } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
-export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
+export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.ReactNode, source?: string }) {
   const [formData, setFormData] = useState({
     nome: "",
     unidade: "",
@@ -35,6 +35,7 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
     // Track Form Submission and WhatsApp Click
     trackEvent("form_submission", {
       form_name: "whatsapp_flow",
+      source,
       user_name: nome,
       unit_name: unidade,
       unit_type: tipo
@@ -42,6 +43,7 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
     
     trackEvent("whatsapp_click", {
       location: "flow_dialog",
+      source,
       unit_type: tipo
     });
 
@@ -63,7 +65,12 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
   };
 
   return (
-    <Dialog onOpenChange={(open) => !open && setStep(1)}>
+    <Dialog onOpenChange={(open) => {
+      if (open) {
+        trackEvent("form_open", { source });
+      }
+      !open && setStep(1);
+    }}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl w-full sm:w-auto">

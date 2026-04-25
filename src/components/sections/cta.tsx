@@ -24,7 +24,7 @@ export function CTA() {
               Junte-se a centenas de gestores que transformaram o caos da recepção em uma operação lucrativa e de alta performance.
             </p>
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <WhatsAppFlow />
+              <WhatsAppFlow source="cta_section" />
               <Button asChild size="lg" variant="outline" className="h-16 px-10 border-white/20 text-white hover:bg-white/10 backdrop-blur text-xl rounded-2xl w-full sm:w-auto">
                 <a href="#como-funciona">
                   <PlayCircle className="mr-2 h-5 w-5 text-primary" />
