@@ -152,11 +152,15 @@ function MovimentacaoFilaCard({ before, after }: { before: JsonRecord; after: Js
   const delta = tempoDepois - tempoAntes;
 
   return (
-    <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+    <div 
+      className="mb-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm"
+      role="region" 
+      aria-label="Detalhamento da movimentação de fila"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/50 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Info className="h-4 w-4 text-primary" />
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+          <Info className="h-4 w-4 text-primary" aria-hidden="true" />
+          <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
             Recálculo de Estimativa (Movimentação de Fila)
           </h4>
         </div>
