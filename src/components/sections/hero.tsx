@@ -36,18 +36,22 @@ export function Hero() {
               </a>
             </Button>
           </div>
-          <div className="mt-10 flex items-center justify-center gap-6 text-xs text-muted-foreground font-medium">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-xs text-muted-foreground font-medium">
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse-glow" />
               Tempo real via WebSocket
             </div>
-            <div className="hidden sm:flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              LGPD compliant
+              150+ Unidades Ativas
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />
+              1M+ Pacientes/Mês
             </div>
             <div className="hidden sm:flex items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary-glow" />
-              ROI Comprovado
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              ROI Médio de 22%
             </div>
           </div>
         </div>
