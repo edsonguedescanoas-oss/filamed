@@ -13,7 +13,7 @@ import {
 import { ArrowRight, MessageCircle, Building2, Stethoscope, User } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
-export function WhatsAppFlow() {
+export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
   const [formData, setFormData] = useState({
     nome: "",
     unidade: "",
