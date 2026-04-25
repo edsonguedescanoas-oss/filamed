@@ -103,7 +103,17 @@ function fmtDateTime(iso: string) {
   });
 }
 
-function entidadeMeta(entidade: string, acao: string) {
+function entidadeMeta(entidade: string, acao: string, dados_depois?: Record<string, unknown> | null) {
+  if (entidade === "senhas") {
+    const isMov = acao === "mover_senha_de_fila" || dados_depois?.tipo === "movimentacao_fila";
+    return {
+      icon: isMov ? History : Tag,
+      label: isMov ? "Movimentação de Fila" : "Senha",
+      tone: isMov
+        ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+        : "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+    };
+  }
   if (entidade === "fila") {
     return {
       icon: ListTree,
