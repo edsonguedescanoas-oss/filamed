@@ -1,7 +1,8 @@
 import {
   ListOrdered, QrCode, Tv, Megaphone, Volume2, Smartphone,
-  ShieldCheck, BarChart3, Building2, Code2, LineChart, LayoutDashboard, CheckCircle2
+  ShieldCheck, BarChart3, Building2, Code2, LineChart, LayoutDashboard, CheckCircle2, ArrowRight
 } from "lucide-react";
+import { WhatsAppFlow } from "@/components/whatsapp-flow";
 
 type Feature = {
   icon: React.ComponentType<{ className?: string }>;
