@@ -282,7 +282,7 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                       </li>
                     </ul>
 
-                    <div className="mt-2 space-y-2 rounded-lg border border-amber-400/40 bg-amber-100/50 p-3 dark:bg-amber-400/5 shadow-inner min-h-[140px]">
+                    <div className="mt-2 space-y-2 rounded-lg border border-amber-400/40 bg-amber-100/50 p-3 dark:bg-amber-400/5 shadow-inner min-h-[155px] flex flex-col">
                       <div className="flex items-center justify-between border-b border-amber-400/20 pb-1.5 mb-1.5">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-amber-900/80 dark:text-amber-200/80">
                           Preview do Recálculo
@@ -301,10 +301,12 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                               <Skeleton className="h-4 w-16 bg-amber-200/50 dark:bg-amber-800/20" />
                             </div>
                           </div>
-                          <div className="space-y-1.5 pt-1.5 border-t border-amber-400/10">
+                          <div className="space-y-1.5 pt-1.5 border-t border-amber-400/10 flex-1 flex flex-col justify-center">
                             <Skeleton className="h-2 w-24 bg-amber-200/50 dark:bg-amber-800/20" />
-                            <Skeleton className="h-6 w-16 bg-amber-200/50 dark:bg-amber-800/20" />
+                            <Skeleton className="h-6 w-16 bg-amber-200/50 dark:bg-amber-800/20 mt-1" />
+                            <Skeleton className="h-2 w-32 bg-amber-200/50 dark:bg-amber-800/20 mt-2" />
                           </div>
+
                         </div>
                       ) : (
                         <div className="animate-in fade-in duration-500">
@@ -323,15 +325,16 @@ export function EditarSenhaDialog({ senha, filas, trigger, onUpdated }: Props) {
                             </div>
                           </div>
 
-                          <div className="mt-1 pt-1.5 border-t border-amber-400/10">
+                          <div className="mt-1 pt-1.5 border-t border-amber-400/10 flex-1">
                             <p className="text-[9px] font-medium uppercase text-amber-800/60 dark:text-amber-300/60">Estimativa de Espera</p>
-                            <p className="text-base font-black text-amber-600 dark:text-amber-400 leading-none mt-0.5">
+                            <p className="text-base font-black text-amber-600 dark:text-amber-400 leading-none mt-1">
                               ~{previewTempo} min
                             </p>
-                            <p className="mt-1 text-[8px] italic text-amber-800/50 dark:text-amber-200/40 font-medium">
+                            <p className="mt-2 text-[8px] italic text-amber-800/50 dark:text-amber-200/40 font-medium leading-tight">
                               Cálculo: {previewPos} pessoas × {filaNova?.tempo_espera_estimado ?? 10} min
                             </p>
                           </div>
+
                         </div>
                       )}
                     </div>
