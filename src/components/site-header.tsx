@@ -108,6 +108,7 @@ export function SiteHeader() {
                 ))}
                 <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
                   <WhatsAppFlow 
+                    source="mobile_nav_ghost"
                     trigger={
                       <Button variant="ghost" className="justify-start px-0 hover:bg-transparent w-full">
                         Falar com especialista
