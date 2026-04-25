@@ -863,6 +863,81 @@ export type Database = {
           },
         ]
       }
+      revenda_usuarios: {
+        Row: {
+          created_at: string
+          id: string
+          nivel: string
+          profile_id: string
+          revenda_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nivel?: string
+          profile_id: string
+          revenda_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nivel?: string
+          profile_id?: string
+          revenda_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenda_usuarios_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenda_usuarios_revenda_id_fkey"
+            columns: ["revenda_id"]
+            isOneToOne: false
+            referencedRelation: "revendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revendas: {
+        Row: {
+          ativa: boolean | null
+          configuracoes: Json | null
+          created_at: string
+          email_contato: string | null
+          id: string
+          logo_url: string | null
+          nome: string
+          telefone_contato: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean | null
+          configuracoes?: Json | null
+          created_at?: string
+          email_contato?: string | null
+          id?: string
+          logo_url?: string | null
+          nome: string
+          telefone_contato?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean | null
+          configuracoes?: Json | null
+          created_at?: string
+          email_contato?: string | null
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          telefone_contato?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string | null
@@ -1285,6 +1360,7 @@ export type Database = {
           google_review_url: string | null
           id: string
           nome: string
+          revenda_id: string | null
           slug: string
           status_assinatura: Database["public"]["Enums"]["assinatura_status"]
           telefone: string | null
@@ -1304,6 +1380,7 @@ export type Database = {
           google_review_url?: string | null
           id?: string
           nome: string
+          revenda_id?: string | null
           slug: string
           status_assinatura?: Database["public"]["Enums"]["assinatura_status"]
           telefone?: string | null
@@ -1323,6 +1400,7 @@ export type Database = {
           google_review_url?: string | null
           id?: string
           nome?: string
+          revenda_id?: string | null
           slug?: string
           status_assinatura?: Database["public"]["Enums"]["assinatura_status"]
           telefone?: string | null
@@ -1339,6 +1417,13 @@ export type Database = {
             columns: ["assinatura_id"]
             isOneToOne: false
             referencedRelation: "assinaturas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unidades_revenda_id_fkey"
+            columns: ["revenda_id"]
+            isOneToOne: false
+            referencedRelation: "revendas"
             referencedColumns: ["id"]
           },
         ]
@@ -1838,6 +1923,7 @@ export type Database = {
           slug: string
         }[]
       }
+      get_user_revenda_id: { Args: { p_uid: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
