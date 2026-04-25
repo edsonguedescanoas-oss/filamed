@@ -1,5 +1,7 @@
-import { ArrowRight, Minus, Plus, Equal, Info, Timer, Users } from "lucide-react";
+import { ArrowRight, Minus, Plus, Equal, Info, Timer, Users, Calendar, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type JsonRecord = Record<string, unknown>;
 
