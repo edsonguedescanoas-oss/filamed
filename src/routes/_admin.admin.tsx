@@ -250,6 +250,16 @@ function AdminUnidadesPage() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
+                        <TableCell className="text-sm">
+                          {u.revenda?.nome ? (
+                            <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              {u.revenda.nome}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {fmtDate(u.created_at)}
                         </TableCell>
