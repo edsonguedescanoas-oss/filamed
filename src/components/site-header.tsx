@@ -60,12 +60,22 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" onClick={() => trackEvent("cta_click", { location: "header_ghost", text: "Falar com especialista" })}>
-              <a href="#cta">Falar com especialista</a>
-            </Button>
-            <Button asChild size="sm" className="bg-gradient-primary hover:opacity-90 shadow-soft" onClick={() => trackEvent("cta_click", { location: "header_primary", text: "Solicitar demonstração" })}>
-              <a href="#cta">Solicitar demonstração</a>
-            </Button>
+            <WhatsAppFlow 
+              trigger={
+                <Button variant="ghost" size="sm" onClick={() => trackEvent("cta_click", { location: "header_ghost", text: "Falar com especialista" })}>
+                  Falar com especialista
+                </Button>
+              }
+            />
+            <WhatsAppFlow 
+              trigger={
+                <Button size="sm" className={`bg-gradient-primary hover:opacity-90 shadow-soft transition-all duration-300 ${isScrolled ? 'px-6 py-5 scale-105' : ''}`} onClick={() => trackEvent("cta_click", { location: "header_primary", text: "Solicitar demonstração" })}>
+                  {isScrolled && <PlayCircle className="mr-2 h-4 w-4" />}
+                  Solicitar demonstração
+                  {isScrolled && <ArrowRight className="ml-2 h-4 w-4" />}
+                </Button>
+              }
+            />
           </div>
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
