@@ -63,6 +63,26 @@ export function SocialProof() {
                   </div>
                 ))}
               </div>
+
+              <div className="p-8 rounded-3xl bg-card border border-border shadow-sm">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+                  ))}
+                </div>
+                <p className="text-sm italic text-muted-foreground leading-relaxed mb-4">
+                  "O FilaMed mudou completamente a nossa percepção sobre o tempo do paciente. O dashboard nos permite agir preventivamente antes que a recepção lote, otimizando o custo operacional por atendimento."
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                    MS
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">Mariana Silva</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Gestora de OP · Clínica Viver</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
