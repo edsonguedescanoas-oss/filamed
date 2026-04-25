@@ -193,11 +193,12 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
             disabled={
               (step === 1 && !formData.nome) || 
               (step === 2 && !formData.unidade) || 
-              (step === 3 && !formData.tipo)
+              (step === 3 && !formData.email) ||
+              (step === 4 && !formData.tipo)
             }
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity"
           >
-            {step < 3 ? "Próximo" : "Finalizar e ir para WhatsApp"}
+            {step < totalSteps ? "Próximo" : "Finalizar e ir para WhatsApp"}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           
