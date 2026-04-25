@@ -89,13 +89,13 @@ function AdminUnidadesPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("unidades")
-      .select("id, nome, slug, ativo, status_assinatura, trial_ends_at, created_at, cnpj, telefone, endereco")
+      .select("id, nome, slug, ativo, status_assinatura, trial_ends_at, created_at, cnpj, telefone, endereco, revenda_id, revenda:revendas(nome)")
       .order("created_at", { ascending: false });
     if (error) {
       console.error(error);
       toast.error("Erro ao carregar unidades");
     } else {
-      setUnidades((data ?? []) as UnidadeRow[]);
+      setUnidades((data ?? []) as unknown as UnidadeRow[]);
     }
     setLoading(false);
   };
