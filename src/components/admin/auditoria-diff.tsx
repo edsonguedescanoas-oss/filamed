@@ -129,6 +129,151 @@ function ValueCell({
   );
 }
 
+function fmtPos(p: unknown) {
+  const n = Number(p);
+  if (isNaN(n) || n === 0) return "—";
+  return `${n}º`;
+}
+
+function fmtMin(m: unknown) {
+  const n = Number(m);
+  if (isNaN(n)) return "—";
+  if (n < 60) return `${n}min`;
+  const h = Math.floor(n / 60);
+  const rest = n % 60;
+  return rest > 0 ? `${h}h${rest}min` : `${h}h`;
+}
+
+function MovimentacaoFilaCard({ before, after }: { before: JsonRecord; after: JsonRecord }) {
+  const tempoAntes = Number(before.tempo_espera_estimado ?? 0);
+  const tempoDepois = Number(after.tempo_espera_estimado ?? 0);
+  const delta = tempoDepois - tempoAntes;
+
+  return (
+    <div className="mb-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-3 py-2">
+        <Info className="h-4 w-4 text-primary" />
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+          Recálculo de Estimativa (Movimentação de Fila)
+        </h4>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2">
+        {/* Antes */}
+        <div className="border-b border-border p-4 md:border-b-0 md:border-r">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+            Fila de Origem
+          </p>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {String(before.fila_nome ?? "—")}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Fila anterior</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-md bg-muted/30 p-2">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  <span className="text-[10px] font-medium uppercase">Posição</span>
+                </div>
+                <p className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
+                  {fmtPos(before.posicao)}
+                </p>
+              </div>
+
+              <div className="rounded-md bg-muted/30 p-2">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Timer className="h-3 w-3" />
+                  <span className="text-[10px] font-medium uppercase">Tempo Base</span>
+                </div>
+                <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+                  {fmtMin(before.tempo_base)}
+                </p>
+                <p className="text-[9px] text-muted-foreground/70">por pessoa</p>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-border/50 bg-muted/20 p-3">
+              <p className="text-[10px] font-medium uppercase text-muted-foreground">
+                Estimativa Total Anterior
+              </p>
+              <p className="text-xl font-black text-foreground/70">{fmtMin(tempoAntes)}</p>
+              <p className="mt-1 text-[9px] italic text-muted-foreground/60">
+                Cálculo: {before.posicao ? Number(before.posicao) - 1 : 0} à frente ×{" "}
+                {Number(before.tempo_base ?? 10)} min
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Depois */}
+        <div className="bg-primary/5 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+              Nova Fila (Destino)
+            </p>
+            <div
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                delta > 0
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                  : delta < 0
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-amber-300"
+                    : "bg-muted text-muted-foreground",
+              )}
+            >
+              {delta > 0 ? `+${fmtMin(delta)}` : delta < 0 ? fmtMin(delta) : "Sem alteração"}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-bold text-primary">{String(after.fila_nome ?? "—")}</p>
+              <p className="text-[10px] text-primary/60">Nova alocação (final da fila)</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-md bg-primary/10 p-2">
+                <div className="flex items-center gap-1.5 text-primary/70">
+                  <Users className="h-3 w-3" />
+                  <span className="text-[10px] font-medium uppercase">Posição</span>
+                </div>
+                <p className="mt-0.5 text-lg font-bold tabular-nums text-primary">
+                  {fmtPos(after.posicao)}
+                </p>
+              </div>
+
+              <div className="rounded-md bg-primary/10 p-2">
+                <div className="flex items-center gap-1.5 text-primary/70">
+                  <Timer className="h-3 w-3" />
+                  <span className="text-[10px] font-medium uppercase">Tempo Base</span>
+                </div>
+                <p className="mt-0.5 text-sm font-semibold tabular-nums text-primary">
+                  {fmtMin(after.tempo_base)}
+                </p>
+                <p className="text-[9px] text-primary/60">por pessoa</p>
+              </div>
+            </div>
+
+            <div className="rounded-md border border-primary/20 bg-primary/10 p-3 ring-1 ring-primary/10">
+              <p className="text-[10px] font-bold uppercase text-primary/80">
+                Nova Estimativa de Espera
+              </p>
+              <p className="text-2xl font-black text-primary">{fmtMin(tempoDepois)}</p>
+              <p className="mt-1 text-[9px] font-medium text-primary/60">
+                Cálculo: {after.posicao ? Number(after.posicao) - 1 : 0} à frente ×{" "}
+                {Number(after.tempo_base ?? 10)} min
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AuditoriaDiff({
   before,
   after,
@@ -136,6 +281,8 @@ export function AuditoriaDiff({
   before: JsonRecord | null;
   after: JsonRecord | null;
 }) {
+  const isMovimentacao = after?.tipo === "movimentacao_fila";
+
   // Caso só exista um lado (criação ou exclusão sem snapshot anterior),
   // mostra apenas o payload disponível como bloco simples.
   if (!before && !after) return null;
