@@ -558,7 +558,7 @@ function AdminAuditoriaPage() {
                       ) : (
                         (() => {
                           const ev = eventos[vRow.index];
-                          const meta = entidadeMeta(ev.entidade, ev.acao);
+                          const meta = entidadeMeta(ev.entidade, ev.acao, ev.dados_depois as Record<string, unknown> | null);
                           const Icon = meta.icon;
                           const isOpen = expanded.has(ev.id);
                           const hasPayload = !!(ev.dados_antes || ev.dados_depois);
