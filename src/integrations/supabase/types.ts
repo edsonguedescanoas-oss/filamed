@@ -1538,17 +1538,30 @@ export type Database = {
         Args: { _imediato?: boolean; _unidade_id: string }
         Returns: undefined
       }
-      admin_criar_unidade: {
-        Args: {
-          _cnpj?: string
-          _endereco?: string
-          _nome: string
-          _slug?: string
-          _telefone?: string
-          _trial_dias?: number
-        }
-        Returns: string
-      }
+      admin_criar_unidade:
+        | {
+            Args: {
+              _cnpj?: string
+              _endereco?: string
+              _nome: string
+              _slug?: string
+              _telefone?: string
+              _trial_dias?: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _cnpj?: string
+              _endereco?: string
+              _nome: string
+              _revenda_id?: string
+              _slug?: string
+              _telefone?: string
+              _trial_dias?: number
+            }
+            Returns: string
+          }
       admin_detalhe_assinatura: {
         Args: { _unidade_id: string }
         Returns: {
