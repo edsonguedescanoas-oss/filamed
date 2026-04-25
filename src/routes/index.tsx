@@ -20,6 +20,7 @@ import { SocialProof } from "@/components/sections/social-proof";
 import { CaseStudy } from "@/components/sections/case-study";
 import { ROICalculator } from "@/components/sections/roi-calculator";
 import { useReveal } from "@/hooks/use-reveal";
+import { InteractiveSim } from "@/components/sections/interactive-sim";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -60,6 +61,7 @@ function LandingPage() {
         <Features />
         <Architecture />
         <Flow />
+        <InteractiveSim />
         <Benefits />
         <Differentials />
         <Security />

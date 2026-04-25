@@ -29,10 +29,10 @@ export function Hero() {
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
             <WhatsAppFlow />
-            <Button asChild size="lg" variant="outline" className="h-14 px-10 backdrop-blur text-lg hover:bg-primary/5 transition-colors rounded-xl">
-              <a href="#analytics">
-                <BarChart3 className="mr-2 h-5 w-5 text-primary" />
-                Ver Relatórios
+            <Button asChild size="lg" variant="outline" className="h-14 px-10 backdrop-blur text-lg hover:bg-primary/5 transition-colors rounded-xl border-primary/20">
+              <a href="#como-funciona">
+                <PlayCircle className="mr-2 h-5 w-5 text-primary" />
+                Ver Como Funciona
               </a>
             </Button>
           </div>
