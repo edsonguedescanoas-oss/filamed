@@ -65,7 +65,12 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
   };
 
   return (
-    <Dialog onOpenChange={(open) => !open && setStep(1)}>
+    <Dialog onOpenChange={(open) => {
+      if (open) {
+        trackEvent("form_open", { source });
+      }
+      !open && setStep(1);
+    }}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl w-full sm:w-auto">
