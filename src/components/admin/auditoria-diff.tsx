@@ -292,6 +292,9 @@ export function AuditoriaDiff({
     const isCreation = !before;
     return (
       <div className="rounded-md border border-border bg-muted/40 p-3">
+        {isMovimentacao && (
+          <MovimentacaoFilaCard before={before || {}} after={after || {}} />
+        )}
         <p
           className={cn(
             "mb-1.5 text-[10px] font-semibold uppercase tracking-wider",
@@ -311,7 +314,12 @@ export function AuditoriaDiff({
   const changedCount = fields.filter((f) => f.status !== "unchanged").length;
 
   return (
-    <div className="rounded-md border border-border bg-card overflow-hidden">
+    <div className="space-y-4">
+      {isMovimentacao && (
+        <MovimentacaoFilaCard before={before} after={after} />
+      )}
+      
+      <div className="rounded-md border border-border bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
