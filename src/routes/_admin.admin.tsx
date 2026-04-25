@@ -213,6 +213,7 @@ function AdminUnidadesPage() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Trial</TableHead>
+                    <TableHead>Revenda</TableHead>
                     <TableHead>Criada em</TableHead>
                     <TableHead>Slug</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
