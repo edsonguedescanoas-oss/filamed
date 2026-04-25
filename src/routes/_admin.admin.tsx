@@ -465,6 +465,13 @@ function CreateUnidadeDialog({
             />
           </div>
           <div>
+            <Label>Revenda (opcional)</Label>
+            <RevendaSelect 
+              value={form.revenda_id} 
+              onValueChange={(v) => setForm({ ...form, revenda_id: v })} 
+            />
+          </div>
+          <div>
             <Label htmlFor="trial_dias">Dias de trial</Label>
             <Input
               id="trial_dias"
