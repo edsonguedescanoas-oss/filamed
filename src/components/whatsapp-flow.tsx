@@ -17,7 +17,8 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
   const [formData, setFormData] = useState({
     nome: "",
     unidade: "",
-    tipo: ""
+    tipo: "",
+    email: ""
   });
 
   const [step, setStep] = useState(1);
