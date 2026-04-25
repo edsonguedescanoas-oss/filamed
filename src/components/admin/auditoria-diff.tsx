@@ -166,9 +166,10 @@ function MovimentacaoFilaCard({ before, after }: { before: JsonRecord; after: Js
         </div>
         <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
           {!!after.movimentado_em && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>
+            <div className="flex items-center gap-1" title="Horário da movimentação">
+              <Calendar className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only">Movimentado em:</span>
+              <span className="text-foreground font-medium">
                 {format(new Date(String(after.movimentado_em)), "dd/MM/yyyy HH:mm", {
                   locale: ptBR,
                 })}
@@ -176,9 +177,10 @@ function MovimentacaoFilaCard({ before, after }: { before: JsonRecord; after: Js
             </div>
           )}
           {!!after.usuario && (
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3" />
-              <span className="font-medium">{String(after.usuario)}</span>
+            <div className="flex items-center gap-1" title="Usuário responsável">
+              <User className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only">Responsável:</span>
+              <span className="font-bold text-foreground">{String(after.usuario)}</span>
             </div>
           )}
         </div>
