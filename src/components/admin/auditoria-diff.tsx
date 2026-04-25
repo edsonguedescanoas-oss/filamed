@@ -161,7 +161,7 @@ function MovimentacaoFilaCard({ before, after }: { before: JsonRecord; after: Js
           </h4>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
-          {after.movimentado_em && (
+          {!!after.movimentado_em && (
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               <span>
@@ -171,7 +171,7 @@ function MovimentacaoFilaCard({ before, after }: { before: JsonRecord; after: Js
               </span>
             </div>
           )}
-          {after.usuario && (
+          {!!after.usuario && (
             <div className="flex items-center gap-1">
               <User className="h-3 w-3" />
               <span className="font-medium">{String(after.usuario)}</span>
