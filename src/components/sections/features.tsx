@@ -122,6 +122,23 @@ export function Features() {
             </article>
           ))}
         </div>
+
+        <div className="mt-16 text-center reveal">
+          <div className="p-10 rounded-[2.5rem] bg-muted/30 border border-border/50 backdrop-blur">
+            <h3 className="text-2xl font-bold mb-4">Precisa de uma funcionalidade específica?</h3>
+            <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+              Nossa equipe está pronta para desenhar o fluxo ideal para a sua operação.
+            </p>
+            <WhatsAppFlow 
+              trigger={
+                <button className="inline-flex items-center gap-2 px-10 py-5 bg-foreground text-background font-bold rounded-2xl shadow-xl hover:scale-105 transition-all">
+                  Solicitar demonstração personalizada
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              }
+            />
+          </div>
+        </div>
       </div>
     </section>
   );
