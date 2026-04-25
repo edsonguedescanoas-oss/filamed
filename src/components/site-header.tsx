@@ -28,9 +28,9 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 glass">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-        <Link to="/" className="flex items-center gap-2 group">
+    <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${isScrolled ? 'glass py-1 shadow-lg' : 'bg-transparent py-3'}`}>
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
+        <Link to="/" className="flex items-center gap-2 group py-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-glow transition-transform group-hover:scale-105">
             <Activity className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
           </div>
