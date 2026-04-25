@@ -10,20 +10,22 @@ import {
   DialogTrigger,
   DialogDescription
 } from "@/components/ui/dialog";
-import { ArrowRight, MessageCircle, Building2, Stethoscope, User } from "lucide-react";
+import { ArrowRight, MessageCircle, Building2, Stethoscope, User, Mail } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
-export function WhatsAppFlow() {
+export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
   const [formData, setFormData] = useState({
     nome: "",
     unidade: "",
-    tipo: ""
+    tipo: "",
+    email: ""
   });
 
   const [step, setStep] = useState(1);
+  const totalSteps = 4;
 
   const handleNext = () => {
-    if (step < 3) setStep(step + 1);
+    if (step < totalSteps) setStep(step + 1);
     else handleWhatsAppRedirect();
   };
 
@@ -63,10 +65,12 @@ export function WhatsAppFlow() {
   return (
     <Dialog onOpenChange={(open) => !open && setStep(1)}>
       <DialogTrigger asChild>
-        <Button size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl w-full sm:w-auto">
-          Começar agora
-          <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-        </Button>
+        {trigger ?? (
+          <Button size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl w-full sm:w-auto">
+            Começar agora
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] rounded-3xl p-8 border border-primary/20 bg-background/95 backdrop-blur-xl">
         <DialogHeader className="mb-6">
@@ -81,7 +85,7 @@ export function WhatsAppFlow() {
 
         <div className="space-y-6">
           <div className="flex justify-between mb-2">
-             {[1, 2, 3].map(i => (
+             {[1, 2, 3, 4].map(i => (
                <div key={i} className={`h-1.5 flex-1 mx-1 rounded-full transition-colors ${step >= i ? 'bg-primary' : 'bg-muted'}`} />
              ))}
           </div>
@@ -123,6 +127,25 @@ export function WhatsAppFlow() {
           )}
 
           {step === 3 && (
+            <div className="animate-fade-in space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                  Seu E-mail Corporativo
+                </Label>
+                <Input 
+                  id="email" 
+                  type="email"
+                  placeholder="Ex: gestao@clinica.com.br" 
+                  className="rounded-xl h-12 border-border/50 focus:border-primary/50"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
             <div className="animate-fade-in space-y-4">
               <div className="space-y-4">
                 <Label htmlFor="tipo" className="flex items-center gap-2">
@@ -170,11 +193,12 @@ export function WhatsAppFlow() {
             disabled={
               (step === 1 && !formData.nome) || 
               (step === 2 && !formData.unidade) || 
-              (step === 3 && !formData.tipo)
+              (step === 3 && !formData.email) ||
+              (step === 4 && !formData.tipo)
             }
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity"
           >
-            {step < 3 ? "Próximo" : "Finalizar e ir para WhatsApp"}
+            {step < totalSteps ? "Próximo" : "Finalizar e ir para WhatsApp"}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           
