@@ -147,7 +147,7 @@ function RevendasPage() {
                       <Badge variant="outline">{revenda.usuarios?.[0]?.count || 0}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={revenda.ativa ? "success" : "destructive"} className="capitalize">
+                      <Badge variant={revenda.ativa ? "secondary" : "destructive"} className={revenda.ativa ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" : ""}>
                         {revenda.ativa ? "Ativa" : "Inativa"}
                       </Badge>
                     </TableCell>
