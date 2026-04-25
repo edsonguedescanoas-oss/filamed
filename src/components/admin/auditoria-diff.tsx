@@ -400,5 +400,6 @@ export function AuditoriaDiff({
         </div>
       )}
     </div>
+  </div>
   );
 }
