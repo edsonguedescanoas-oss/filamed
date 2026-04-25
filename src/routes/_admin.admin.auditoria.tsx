@@ -250,19 +250,34 @@ function AdminAuditoriaPage() {
         ) => Promise<{ data: AuditoriaRow[] | null; error: unknown }>
       )("admin_listar_auditoria", {
         _unidade_id: unidadeId === "todas" ? null : unidadeId,
-        _entidade: entidade === "todas" ? null : entidade,
+        _entidade:
+          entidade === "todas"
+            ? null
+            : entidade === "movimentacao_fila"
+              ? "senhas"
+              : entidade,
         _desde: desde,
         _ate: cursorAte,
         _limite: PAGE_SIZE,
         _busca: buscaDebounced || null,
         _ator_id: null,
       });
+
       if (reqId !== reqIdRef.current) return null; // request obsoleta
       if (error) {
         console.error(error);
         return [];
       }
-      return data ?? [];
+
+      const rows = data ?? [];
+      if (entidade === "movimentacao_fila") {
+        return rows.filter(
+          (r) =>
+            r.acao === "mover_senha_de_fila" ||
+            (r.dados_depois as Record<string, unknown>)?.tipo === "movimentacao_fila",
+        );
+      }
+      return rows;
     },
     [unidadeId, entidade, periodo, buscaDebounced],
   );
