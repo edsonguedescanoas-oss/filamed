@@ -91,7 +91,8 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
       form_name: "whatsapp_flow",
       user_name: nome,
       unit_name: unidade,
-      unit_type: tipo
+      unit_type: tipo,
+      phone: telefone
     });
     
     trackEvent("whatsapp_click", {
