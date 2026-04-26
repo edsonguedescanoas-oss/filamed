@@ -206,6 +206,30 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
 
           {step === 4 && (
             <div className="animate-fade-in space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="telefone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Telefone com DDD (WhatsApp)
+                </Label>
+                <Input 
+                  id="telefone" 
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="(11) 99999-9999" 
+                  className="rounded-xl h-12 border-border/50 focus:border-primary/50"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({...formData, telefone: maskPhone(e.target.value)})}
+                  maxLength={16}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Informe DDD + número. Celulares devem começar com 9.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="animate-fade-in space-y-4">
               <div className="space-y-4">
                 <Label htmlFor="tipo" className="flex items-center gap-2">
                   <Stethoscope className="h-4 w-4 text-primary" />
@@ -253,7 +277,8 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
               (step === 1 && !formData.nome) || 
               (step === 2 && !formData.unidade) || 
               (step === 3 && !formData.email) ||
-              (step === 4 && !formData.tipo)
+              (step === 4 && !formData.telefone) ||
+              (step === 5 && !formData.tipo)
             }
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity"
           >
