@@ -144,7 +144,7 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
 
         <div className="space-y-6">
           <div className="flex justify-between mb-2">
-             {[1, 2, 3, 4].map(i => (
+             {[1, 2, 3, 4, 5].map(i => (
                <div key={i} className={`h-1.5 flex-1 mx-1 rounded-full transition-colors ${step >= i ? 'bg-primary' : 'bg-muted'}`} />
              ))}
           </div>
