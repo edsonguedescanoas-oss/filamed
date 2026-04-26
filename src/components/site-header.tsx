@@ -64,7 +64,6 @@ export function SiteHeader() {
               <a href="#como-funciona">Ver Como Funciona</a>
             </Button>
             <WhatsAppFlow 
-              source="header_primary"
               trigger={
                 <Button size="sm" className={`bg-gradient-primary hover:opacity-90 shadow-soft transition-all duration-300 ${isScrolled ? 'px-6 py-5 scale-105' : ''}`} onClick={() => trackEvent("cta_click", { location: "header_primary", text: "Solicitar demonstração" })}>
                   {isScrolled && <PlayCircle className="mr-2 h-4 w-4" />}
@@ -108,7 +107,6 @@ export function SiteHeader() {
                 ))}
                 <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
                   <WhatsAppFlow 
-                    source="mobile_nav_ghost"
                     trigger={
                       <Button variant="ghost" className="justify-start px-0 hover:bg-transparent w-full">
                         Falar com especialista
@@ -116,7 +114,6 @@ export function SiteHeader() {
                     }
                   />
                   <WhatsAppFlow 
-                    source="mobile_nav_primary"
                     trigger={
                       <Button className="bg-gradient-primary w-full">
                         Solicitar demonstração

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,19 +10,59 @@ import {
   DialogTrigger,
   DialogDescription
 } from "@/components/ui/dialog";
-import { ArrowRight, MessageCircle, Building2, Stethoscope, User, Mail } from "lucide-react";
+import { ArrowRight, MessageCircle, Building2, Stethoscope, User, Mail, Phone } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { toast } from "sonner";
 
-export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.ReactNode, source?: string }) {
+// DDDs válidos no Brasil
+const VALID_DDDS = new Set([
+  11,12,13,14,15,16,17,18,19,
+  21,22,24,27,28,
+  31,32,33,34,35,37,38,
+  41,42,43,44,45,46,47,48,49,
+  51,53,54,55,
+  61,62,63,64,65,66,67,68,69,
+  71,73,74,75,77,79,
+  81,82,83,84,85,86,87,88,89,
+  91,92,93,94,95,96,97,98,99
+]);
+
+function maskPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function validatePhone(value: string): { ok: boolean; error?: string } {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length < 10 || digits.length > 11) {
+    return { ok: false, error: "Telefone deve ter 10 ou 11 dígitos (com DDD)." };
+  }
+  const ddd = parseInt(digits.slice(0, 2), 10);
+  if (!VALID_DDDS.has(ddd)) {
+    return { ok: false, error: `DDD ${digits.slice(0, 2)} inválido. Verifique o número.` };
+  }
+  if (digits.length === 11 && digits[2] !== "9") {
+    return { ok: false, error: "Celular deve começar com 9 após o DDD." };
+  }
+  return { ok: true };
+}
+
+export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
   const [formData, setFormData] = useState({
     nome: "",
     unidade: "",
     tipo: "",
-    email: ""
+    email: "",
+    telefone: ""
   });
 
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const handleNext = () => {
     if (step === 3) {
@@ -32,33 +71,32 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
         toast.error("Por favor, insira um e-mail válido.");
         return;
       }
-      
-      const blacklistedDomains = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "live.com", "icloud.com"];
-      const domain = formData.email.split("@")[1]?.toLowerCase();
-      if (blacklistedDomains.includes(domain)) {
-        toast.warning("Recomendamos o uso de um e-mail corporativo para um atendimento prioritário.");
+    }
+    if (step === 4) {
+      const result = validatePhone(formData.telefone);
+      if (!result.ok) {
+        toast.error(result.error!);
+        return;
       }
     }
-
     if (step < totalSteps) setStep(step + 1);
     else handleWhatsAppRedirect();
   };
 
   const handleWhatsAppRedirect = () => {
-    const { nome, unidade, tipo } = formData;
+    const { nome, unidade, tipo, telefone } = formData;
     
     // Track Form Submission and WhatsApp Click
     trackEvent("form_submission", {
       form_name: "whatsapp_flow",
-      source,
       user_name: nome,
       unit_name: unidade,
-      unit_type: tipo
+      unit_type: tipo,
+      phone: telefone
     });
     
     trackEvent("whatsapp_click", {
       location: "flow_dialog",
-      source,
       unit_type: tipo
     });
 
@@ -75,17 +113,16 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
       customMessage = `Olá! Meu nome é ${nome}. Gostaria de saber mais sobre como o FilaMed pode modernizar o atendimento da minha clínica (${unidade}), que atua na área de ${tipo}.`;
     }
 
+    if (telefone) {
+      customMessage += ` Meu telefone para contato é ${telefone}.`;
+    }
+
     const encodedText = encodeURIComponent(customMessage);
     window.open(`https://wa.me/5511999999999?text=${encodedText}`, "_blank");
   };
 
   return (
-    <Dialog onOpenChange={(open) => {
-      if (open) {
-        trackEvent("form_open", { source });
-      }
-      !open && setStep(1);
-    }}>
+    <Dialog onOpenChange={(open) => !open && setStep(1)}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="lg" className="h-14 px-10 bg-gradient-primary shadow-elegant hover:scale-[1.02] transition-transform group text-lg font-semibold rounded-xl w-full sm:w-auto">
@@ -107,7 +144,7 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
 
         <div className="space-y-6">
           <div className="flex justify-between mb-2">
-             {[1, 2, 3, 4].map(i => (
+             {[1, 2, 3, 4, 5].map(i => (
                <div key={i} className={`h-1.5 flex-1 mx-1 rounded-full transition-colors ${step >= i ? 'bg-primary' : 'bg-muted'}`} />
              ))}
           </div>
@@ -124,10 +161,7 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
                   placeholder="Seu nome completo" 
                   className="rounded-xl h-12 border-border/50 focus:border-primary/50"
                   value={formData.nome}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[0-9]/g, ""); // Remove números de nomes
-                    setFormData({...formData, nome: val});
-                  }}
+                  onChange={(e) => setFormData({...formData, nome: e.target.value})}
                 />
               </div>
             </div>
@@ -164,13 +198,37 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
                   placeholder="Ex: gestao@clinica.com.br" 
                   className="rounded-xl h-12 border-border/50 focus:border-primary/50"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value.toLowerCase().trim()})}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
               </div>
             </div>
           )}
 
           {step === 4 && (
+            <div className="animate-fade-in space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="telefone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Telefone com DDD (WhatsApp)
+                </Label>
+                <Input 
+                  id="telefone" 
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="(11) 99999-9999" 
+                  className="rounded-xl h-12 border-border/50 focus:border-primary/50"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({...formData, telefone: maskPhone(e.target.value)})}
+                  maxLength={16}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Informe DDD + número. Celulares devem começar com 9.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
             <div className="animate-fade-in space-y-4">
               <div className="space-y-4">
                 <Label htmlFor="tipo" className="flex items-center gap-2">
@@ -219,7 +277,8 @@ export function WhatsAppFlow({ trigger, source = "unknown" }: { trigger?: React.
               (step === 1 && !formData.nome) || 
               (step === 2 && !formData.unidade) || 
               (step === 3 && !formData.email) ||
-              (step === 4 && !formData.tipo)
+              (step === 4 && !formData.telefone) ||
+              (step === 5 && !formData.tipo)
             }
             className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 transition-opacity"
           >

@@ -62,7 +62,6 @@ export function Benefits() {
 
         <div className="mt-16 text-center reveal">
           <WhatsAppFlow 
-            source="benefits"
             trigger={
               <button className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg hover:scale-105 transition-all">
                 Garantir esses benefícios agora
