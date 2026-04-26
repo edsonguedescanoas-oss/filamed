@@ -234,6 +234,11 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
                   onChange={(e) => setFormData({...formData, telefone: maskPhone(e.target.value)})}
                   maxLength={16}
                 />
+                {getStateFromPhone(formData.telefone) && (
+                  <p className="text-xs font-medium text-primary animate-fade-in">
+                    Estado identificado: {getStateFromPhone(formData.telefone)}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Informe DDD + número. Celulares devem começar com 9.
                 </p>
