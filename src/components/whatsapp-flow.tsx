@@ -113,6 +113,10 @@ export function WhatsAppFlow({ trigger }: { trigger?: React.ReactNode }) {
       customMessage = `Olá! Meu nome é ${nome}. Gostaria de saber mais sobre como o FilaMed pode modernizar o atendimento da minha clínica (${unidade}), que atua na área de ${tipo}.`;
     }
 
+    if (telefone) {
+      customMessage += ` Meu telefone para contato é ${telefone}.`;
+    }
+
     const encodedText = encodeURIComponent(customMessage);
     window.open(`https://wa.me/5511999999999?text=${encodedText}`, "_blank");
   };
