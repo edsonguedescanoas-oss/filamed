@@ -102,10 +102,25 @@
   40%  { transform: scale(1.08); color: var(--primary); }
   100% { transform: scale(1);    color: inherit; }
 }
-/* Highlight rápido em linha do histórico ao chegar nova chamada. */
-@keyframes flash-highlight {
-  0%   { background-color: color-mix(in oklab, var(--primary) 22%, transparent); }
-  100% { background-color: transparent; }
+/* Linha do gráfico desenhando suavemente, como se o dado estivesse chegando. */
+@keyframes draw-line {
+  from { stroke-dashoffset: var(--dash-len, 600); }
+  to   { stroke-dashoffset: 0; }
+}
+/* Barra subindo do chão — efeito clássico de carga de dashboard. */
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+/* Pulso do dot no fim da linha — "ao vivo". */
+@keyframes live-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.6; }
+  50%      { transform: scale(1.6); opacity: 0; }
+}
+/* Donut girando suavemente na entrada. */
+@keyframes donut-in {
+  from { stroke-dashoffset: var(--seg-len, 88); opacity: 0.4; }
+  to   { stroke-dashoffset: var(--seg-final, 0); opacity: 1; }
 }
 
 :root {
