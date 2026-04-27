@@ -104,7 +104,7 @@ export function ReportsShowcase() {
                 </div>
 
                 {/* Line chart */}
-                <div className="rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4">
+                <div className="rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4 transition-all duration-300 hover:border-primary/30 hover:bg-muted/20">
                   <div className="flex items-start sm:items-center justify-between mb-2 sm:mb-3 gap-2 flex-wrap">
                     <div>
                       <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Senhas / dia</p>
@@ -129,10 +129,13 @@ export function ReportsShowcase() {
                     {[0, 30, 60, 90].map((y) => (
                       <line key={y} x1="0" x2="280" y1={y} y2={y} stroke="currentColor" className="text-border" strokeWidth="0.5" strokeDasharray="2 3" />
                     ))}
+                    {/* Área com fade-in */}
                     <path
                       d="M0,60 L20,52 L40,55 L60,40 L80,45 L100,30 L120,35 L140,22 L160,28 L180,18 L200,24 L220,15 L240,20 L260,10 L280,14 L280,90 L0,90 Z"
                       fill="url(#areaGrad)"
+                      style={{ animation: "fade-in 1.4s ease-out 0.6s both" }}
                     />
+                    {/* Linha principal "desenhando" */}
                     <path
                       d="M0,60 L20,52 L40,55 L60,40 L80,45 L100,30 L120,35 L140,22 L160,28 L180,18 L200,24 L220,15 L240,20 L260,10 L280,14"
                       fill="none"
@@ -140,7 +143,10 @@ export function ReportsShowcase() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                      strokeDasharray="600"
+                      style={{ animation: "draw-line 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both", ["--dash-len" as string]: "600" }}
                     />
+                    {/* Linha secundária tracejada */}
                     <path
                       d="M0,75 L20,72 L40,74 L60,68 L80,70 L100,65 L120,67 L140,62 L160,64 L180,60 L200,62 L220,58 L240,60 L260,56 L280,58"
                       fill="none"
@@ -148,9 +154,19 @@ export function ReportsShowcase() {
                       strokeOpacity="0.35"
                       strokeWidth="1.5"
                       strokeDasharray="3 3"
+                      style={{ animation: "fade-in 1.2s ease-out 1s both" }}
                     />
-                    <circle cx="260" cy="10" r="3" fill="hsl(var(--primary))" />
-                    <circle cx="260" cy="10" r="6" fill="hsl(var(--primary))" fillOpacity="0.2" />
+                    {/* Dot ao vivo com pulso */}
+                    <circle
+                      cx="260" cy="10" r="6"
+                      fill="hsl(var(--primary))"
+                      style={{ transformOrigin: "260px 10px", animation: "live-pulse 2s ease-out 1.6s infinite" }}
+                    />
+                    <circle
+                      cx="260" cy="10" r="3"
+                      fill="hsl(var(--primary))"
+                      style={{ animation: "scale-in 0.4s ease-out 1.6s both", transformOrigin: "260px 10px" }}
+                    />
                   </svg>
                 </div>
 
