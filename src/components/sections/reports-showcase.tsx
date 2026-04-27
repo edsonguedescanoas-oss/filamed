@@ -83,16 +83,17 @@ export function ReportsShowcase() {
                   ].map((k, i) => (
                     <div
                       key={i}
-                      className={`rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 ${
+                      className={`group rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40 hover:shadow-md cursor-default animate-[fade-up_0.6s_cubic-bezier(0.16,1,0.3,1)_both] ${
                         i === 2 ? "col-span-2 sm:col-span-1" : ""
                       }`}
+                      style={{ animationDelay: `${i * 100}ms` }}
                     >
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <k.icon className="h-3 w-3" />
+                      <div className="flex items-center gap-1.5 text-muted-foreground transition-colors group-hover:text-primary">
+                        <k.icon className="h-3 w-3 transition-transform group-hover:scale-110" />
                         <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{k.label}</span>
                       </div>
                       <div className="mt-1.5 flex items-end justify-between gap-1">
-                        <span className="text-base sm:text-lg font-bold text-foreground leading-none">{k.value}</span>
+                        <span className="text-base sm:text-lg font-bold text-foreground leading-none transition-colors group-hover:text-primary">{k.value}</span>
                         <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-success">
                           {k.down ? <TrendingDown className="h-2.5 w-2.5" /> : <ArrowUpRight className="h-2.5 w-2.5" />}
                           {k.delta}
