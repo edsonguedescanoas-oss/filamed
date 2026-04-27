@@ -367,10 +367,39 @@ export function ReportsShowcase() {
                             <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.35" />
                             <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
                           </linearGradient>
+                          {/* área de destaque para o intervalo "após 14h" */}
+                          <linearGradient id="spikeGrad" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity="0.18" />
+                            <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity="0" />
+                          </linearGradient>
                         </defs>
                         {[0, 30, 60, 90].map((y) => (
                           <line key={y} x1="0" x2="280" y1={y} y2={y} stroke="currentColor" className="text-border" strokeWidth="0.5" strokeDasharray="2 3" />
                         ))}
+
+                        {/* faixa de destaque "após 14h" — sincroniza com o insight */}
+                        <rect
+                          x="180" y="0" width="100" height="90"
+                          fill="url(#spikeGrad)"
+                          style={{ animation: "fade-in 1s ease-out 1.4s both" }}
+                        />
+                        {/* divisor vertical no ponto "14h" */}
+                        <line
+                          x1="180" x2="180" y1="0" y2="90"
+                          stroke="hsl(var(--destructive))"
+                          strokeOpacity="0.55"
+                          strokeWidth="1"
+                          strokeDasharray="2 2"
+                          style={{ animation: "fade-in 0.6s ease-out 1.4s both" }}
+                        />
+                        <text
+                          x="183" y="9"
+                          fontSize="6.5"
+                          fontWeight="700"
+                          fill="hsl(var(--destructive))"
+                          style={{ animation: "fade-in 0.6s ease-out 1.6s both" }}
+                        >14h</text>
+
                         <path
                           d="M0,60 L20,52 L40,55 L60,40 L80,45 L100,30 L120,35 L140,22 L160,28 L180,18 L200,24 L220,15 L240,20 L260,10 L280,14 L280,90 L0,90 Z"
                           fill="url(#areaGrad)"
@@ -386,15 +415,48 @@ export function ReportsShowcase() {
                           strokeDasharray="600"
                           style={{ animation: "draw-line 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both", ["--dash-len" as string]: "600" }}
                         />
+                        {/* curva de abandonos: estável até 14h, sobe ~15% depois */}
                         <path
-                          d="M0,75 L20,72 L40,74 L60,68 L80,70 L100,65 L120,67 L140,62 L160,64 L180,60 L200,62 L220,58 L240,60 L260,56 L280,58"
+                          d="M0,75 L20,72 L40,74 L60,68 L80,70 L100,65 L120,67 L140,62 L160,64 L180,60 L200,52 L220,46 L240,42 L260,40 L280,42"
                           fill="none"
-                          stroke="hsl(var(--primary))"
-                          strokeOpacity="0.35"
+                          stroke="hsl(var(--destructive))"
+                          strokeOpacity="0.6"
                           strokeWidth="1.5"
                           strokeDasharray="3 3"
                           style={{ animation: "fade-in 1.2s ease-out 1s both" }}
                         />
+
+                        {/* Ponto destacando o pico de abandonos após 14h (alinhado com o insight) */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <g className="cursor-help">
+                              <circle cx="240" cy="42" r="8" fill="transparent" />
+                              <circle
+                                cx="240" cy="42" r="4"
+                                fill="hsl(var(--destructive))"
+                                fillOpacity="0.25"
+                                style={{ transformOrigin: "240px 42px", animation: "live-pulse 2.4s ease-out 1.8s infinite" }}
+                              />
+                              <circle
+                                cx="240" cy="42" r="2.5"
+                                fill="hsl(var(--destructive))"
+                                style={{ animation: "scale-in 0.4s ease-out 1.8s both", transformOrigin: "240px 42px" }}
+                              />
+                            </g>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px]">
+                            <p className="font-bold text-xs mb-0.5">Pico de abandonos · 16h</p>
+                            <p className="text-[11px]">Aumento de <b className="text-destructive-foreground">+15%</b> vs. manhã. Unidade Centro.</p>
+                            <p className="text-[10px] text-primary-foreground/70 mt-0.5">Origem do insight automático abaixo.</p>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Badge "+15%" flutuante sobre o pico */}
+                        <g style={{ animation: "fade-in 0.6s ease-out 2s both" }}>
+                          <rect x="248" y="32" width="26" height="11" rx="5.5" fill="hsl(var(--destructive))" fillOpacity="0.95" />
+                          <text x="261" y="40" textAnchor="middle" fontSize="6.5" fontWeight="800" fill="hsl(var(--destructive-foreground))">+15%</text>
+                        </g>
+
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <g className="cursor-help">
@@ -417,10 +479,10 @@ export function ReportsShowcase() {
                           <TooltipContent side="top" className="max-w-[220px]">
                             <div className="flex items-center gap-1.5 mb-1">
                               <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-                              <p className="font-bold text-xs">Hoje · 14:32</p>
+                              <p className="font-bold text-xs">Hoje · 16:48 · Unidade Centro</p>
                             </div>
-                            <p className="text-[11px]"><b>142 atendidas</b> · 8 abandonos</p>
-                            <p className="text-[10px] text-primary-foreground/70 mt-0.5">Atualização em tempo real.</p>
+                            <p className="text-[11px]"><b>142 atendidas</b> · 23 abandonos <span className="text-destructive-foreground font-bold">(+15%)</span></p>
+                            <p className="text-[10px] text-primary-foreground/70 mt-0.5">Pico após 14h — veja o insight abaixo.</p>
                           </TooltipContent>
                         </Tooltip>
                       </svg>
