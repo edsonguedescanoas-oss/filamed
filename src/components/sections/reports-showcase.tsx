@@ -38,6 +38,25 @@ export function ReportsShowcase() {
     }
   ];
 
+  // Auto-rotaciona entre os estados pra dar sensação de produto vivo:
+  // loaded (5s) → loading (1.6s) → empty (3.5s) → loaded ...
+  const [state, setState] = useState<DashboardState>("loaded");
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const cycle: { s: DashboardState; ms: number }[] = [
+      { s: "loaded", ms: 5000 },
+      { s: "loading", ms: 1600 },
+      { s: "empty", ms: 3500 },
+    ];
+    const idx = cycle.findIndex((c) => c.s === state);
+    const current = cycle[idx === -1 ? 0 : idx];
+    const next = cycle[(idx + 1) % cycle.length];
+    const t = setTimeout(() => setState(next.s), current.ms);
+    return () => clearTimeout(t);
+  }, [state, paused]);
+
   return (
     <section id="reports-showcase" className="py-24 bg-muted/30">
       <div className="mx-auto max-w-7xl px-6">
