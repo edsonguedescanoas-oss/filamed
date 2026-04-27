@@ -185,7 +185,7 @@ ${publicUrl}`;
         const tempo_por_pessoa = fila.tempo_espera_estimado || 10;
         const tempo_total = (pessoas_na_frente + 1) * tempo_por_pessoa;
 
-        const publicUrl = `https://filamed.lovable.app/s/${senha.token_publico}`;
+        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
         mensagem = `Olá *${paciente.nome_completo}*, sua senha no *${unidade.nome}* foi gerada com sucesso!
 
 🎫 Senha: *${senha.codigo}*
