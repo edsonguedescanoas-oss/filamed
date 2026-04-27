@@ -250,6 +250,23 @@ export const handler = async (req: Request) => {
       throw new Error("senha_id is required for non-test types");
     }
 
+    // ----- Autenticação obrigatória -----
+    // Para `tipo=teste` precisamos saber a unidade alvo para checar role admin.
+    // Para os demais tipos a unidade vem da senha; o check acima de role é dispensado.
+    const auth = await verificarAutenticacao(
+      req,
+      tipo,
+      tipo === "teste" ? (testUnidadeId ?? null) : null,
+      supabaseClient,
+    );
+    if (!auth.ok) {
+      console.warn("[wa-duck-notify] auth bloqueada:", auth.status, auth.message);
+      return new Response(
+        JSON.stringify({ error: auth.message }),
+        { status: auth.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     let telefone = "";
     let mensagem = "";
     let config: any = {};
