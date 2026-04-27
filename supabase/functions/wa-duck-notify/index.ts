@@ -240,7 +240,8 @@ export const handler = async (req: Request) => {
       const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
 
       if (tipo === "chamada") {
-        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(", ") || "atendimento";
+        // Local padronizado: "Consultório 3", "Guichê 2", etc.
+        const localFormatado = formatarLocalChamada(fila.nome, mesa_nome);
         const vars = {
           nome: paciente.nome_completo,
           primeiro_nome: primeiroNome,
@@ -254,9 +255,11 @@ export const handler = async (req: Request) => {
           variantKey = variante.key;
           mensagem = aplicarTemplate(variante.texto, vars);
         } else {
-          const template = config.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.";
+          const template = config.template_chamada || "Olá {{primeiro_nome}}, sua senha *{{senha}}* foi chamada — dirija-se ao *{{local}}*.";
           mensagem = aplicarTemplate(template, vars);
         }
+        // CTA garantido: sempre fecha com "Acompanhe aqui: <link>"
+        mensagem = garantirCTAAcompanhamento(mensagem, publicUrl);
       } else if (tipo === "encaminhamento") {
         const vars = {
           nome: paciente.nome_completo,
