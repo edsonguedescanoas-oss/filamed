@@ -6,6 +6,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/**
+ * Retorna o domínio canônico da aplicação para construir links públicos.
+ *
+ * Ordem de prioridade:
+ *   1. PUBLIC_APP_URL — secret configurável (ex.: "https://filamed.com.br")
+ *   2. Domínio próprio padrão (filamed.com.br)
+ *
+ * Em fallback final usamos o domínio publicado do Lovable, que é sempre
+ * estável e válido mesmo se o domínio custom estiver com DNS pendente.
+ *
+ * Aliases aceitos pelo redirecionador `/r/{unidade_id}`:
+ *   - https://filamed.com.br
+ *   - https://www.filamed.com.br
+ *   - https://filamed.lovable.app
+ *   - https://id-preview--*.lovable.app
+ *
+ * Como a rota `/r/$unidadeId` é independente do host, qualquer um destes
+ * domínios funciona — escolhemos aqui apenas qual aparece na mensagem.
+ */
+function getCanonicalAppUrl(): string {
+  const fromEnv = Deno.env.get("PUBLIC_APP_URL")?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/+$/, "");
+  }
+  return "https://filamed.com.br";
+}
+
+
+
 export const handler = async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -117,7 +146,7 @@ export const handler = async (req: Request) => {
           .replace("{{senha}}", senha.codigo)
           .replace("{{local}}", localFormatado || "atendimento");
       } else if (tipo === "encaminhamento") {
-        const publicUrl = `https://filamed.lovable.app/s/${senha.token_publico}`;
+        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
         mensagem = `Olá *${paciente.nome_completo}*, sua senha foi atualizada no *${unidade.nome}*.
 
 🎫 Nova senha: *${senha.codigo}*
@@ -132,10 +161,12 @@ ${publicUrl}`;
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{unidade}}", unidade.nome);
         if (reviewUrl) {
-          // Usa link curto próprio (filamed.com.br/r/{unidade_id}) que redireciona
-          // para a URL completa do Google. Mantém a mensagem limpa e branded,
-          // já que o WhatsApp não suporta hiperlinks ocultos em mensagens de texto.
-          const shortUrl = `https://filamed.com.br/r/${unidade.id}`;
+          // Monta o link curto próprio que redireciona para o Google Review.
+          // Usa o domínio canônico configurado em PUBLIC_APP_URL (secret),
+          // com fallback para o domínio próprio e, por último, o domínio publicado
+          // do Lovable. Isso garante que o link funcione mesmo se o domínio
+          // custom (filamed.com.br) não estiver propagado/ativo no momento.
+          const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
           mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
         }
       } else {
@@ -151,7 +182,7 @@ ${publicUrl}`;
         const tempo_por_pessoa = fila.tempo_espera_estimado || 10;
         const tempo_total = (pessoas_na_frente + 1) * tempo_por_pessoa;
 
-        const publicUrl = `https://filamed.lovable.app/s/${senha.token_publico}`;
+        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
         mensagem = `Olá *${paciente.nome_completo}*, sua senha no *${unidade.nome}* foi gerada com sucesso!
 
 🎫 Senha: *${senha.codigo}*
