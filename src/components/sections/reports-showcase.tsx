@@ -429,19 +429,37 @@ export function ReportsShowcase() {
                     {/* Bottom: bars + donut */}
                     <div className="grid grid-cols-2 gap-2 sm:gap-3">
                       <div className="group rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3 transition-all duration-300 hover:border-primary/30 hover:bg-muted/20 hover:shadow-sm">
-                        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Ocupação</p>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 cursor-help inline-flex items-center gap-1">
+                              Ocupação <Info className="h-2.5 w-2.5 opacity-60" />
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px]">
+                            <p className="font-bold text-xs mb-0.5">Ocupação por consultório</p>
+                            <p className="text-[11px] leading-relaxed">% do tempo em que cada sala esteve em atendimento ativo no dia. Passe o mouse em cada barra para ver o detalhe.</p>
+                          </TooltipContent>
+                        </Tooltip>
                         <div className="flex items-end gap-1 sm:gap-1.5 h-12 sm:h-16">
                           {[55, 78, 42, 88, 65, 72, 60].map((h, i) => (
-                            <div key={i} className="flex-1 flex flex-col justify-end">
-                              <div
-                                className="w-full rounded-t-sm bg-gradient-to-t from-primary to-primary-glow transition-transform duration-300 group-hover:brightness-110"
-                                style={{
-                                  height: `${h}%`,
-                                  transformOrigin: "bottom",
-                                  animation: `bar-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${0.4 + i * 70}ms both`,
-                                }}
-                              />
-                            </div>
+                            <Tooltip key={i}>
+                              <TooltipTrigger asChild>
+                                <div className="flex-1 flex flex-col justify-end cursor-help group/bar">
+                                  <div
+                                    className="w-full rounded-t-sm bg-gradient-to-t from-primary to-primary-glow transition-all duration-300 group-hover:brightness-110 group-hover/bar:brightness-125 group-hover/bar:scale-y-[1.04]"
+                                    style={{
+                                      height: `${h}%`,
+                                      transformOrigin: "bottom",
+                                      animation: `bar-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${0.4 + i * 70}ms both`,
+                                    }}
+                                  />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="font-bold text-xs">Consultório {i + 1}</p>
+                                <p className="text-[11px]">Ocupação: <b>{h}%</b></p>
+                              </TooltipContent>
+                            </Tooltip>
                           ))}
                         </div>
                         <div className="flex justify-between mt-1.5 text-[7px] sm:text-[8px] text-muted-foreground font-semibold">
@@ -450,36 +468,71 @@ export function ReportsShowcase() {
                       </div>
 
                       <div className="group rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3 transition-all duration-300 hover:border-primary/30 hover:bg-muted/20 hover:shadow-sm">
-                        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Especialidades</p>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 cursor-help inline-flex items-center gap-1">
+                              Especialidades <Info className="h-2.5 w-2.5 opacity-60" />
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px]">
+                            <p className="font-bold text-xs mb-0.5">Mix de atendimentos</p>
+                            <p className="text-[11px] leading-relaxed">Distribuição percentual das senhas por especialidade no período. Útil para dimensionar escalas.</p>
+                          </TooltipContent>
+                        </Tooltip>
                         <div className="flex items-center gap-2 sm:gap-3">
                           <svg viewBox="0 0 36 36" className="h-12 w-12 sm:h-16 sm:w-16 -rotate-90 flex-shrink-0 transition-transform duration-500 group-hover:rotate-[-80deg]">
                             <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
-                            <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="5"
-                              strokeDasharray="44 88" strokeLinecap="round"
-                              style={{ strokeDashoffset: 44, animation: "donut-in 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s both", ["--seg-len" as string]: "44", ["--seg-final" as string]: "0" }} />
-                            <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.55" strokeWidth="5"
-                              strokeDasharray="26 88" strokeDashoffset="-44" strokeLinecap="round"
-                              style={{ animation: "fade-in 0.6s ease-out 1.1s both" }} />
-                            <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.25" strokeWidth="5"
-                              strokeDasharray="18 88" strokeDashoffset="-70" strokeLinecap="round"
-                              style={{ animation: "fade-in 0.6s ease-out 1.4s both" }} />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="5"
+                                  strokeDasharray="44 88" strokeLinecap="round"
+                                  className="cursor-help hover:stroke-[6] transition-all"
+                                  style={{ strokeDashoffset: 44, animation: "donut-in 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s both", ["--seg-len" as string]: "44", ["--seg-final" as string]: "0" }} />
+                              </TooltipTrigger>
+                              <TooltipContent><p className="text-[11px]"><b>Clínica Geral</b> · 50% (642 atendimentos)</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.55" strokeWidth="5"
+                                  strokeDasharray="26 88" strokeDashoffset="-44" strokeLinecap="round"
+                                  className="cursor-help hover:stroke-[6] transition-all"
+                                  style={{ animation: "fade-in 0.6s ease-out 1.1s both" }} />
+                              </TooltipTrigger>
+                              <TooltipContent><p className="text-[11px]"><b>Pediatria</b> · 30% (385 atendimentos)</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.25" strokeWidth="5"
+                                  strokeDasharray="18 88" strokeDashoffset="-70" strokeLinecap="round"
+                                  className="cursor-help hover:stroke-[6] transition-all"
+                                  style={{ animation: "fade-in 0.6s ease-out 1.4s both" }} />
+                              </TooltipTrigger>
+                              <TooltipContent><p className="text-[11px]"><b>Ginecologia</b> · 20% (257 atendimentos)</p></TooltipContent>
+                            </Tooltip>
                           </svg>
                           <div className="flex-1 space-y-1 min-w-0">
                             {[
-                              { l: "Clínica", v: "50%", c: "bg-primary" },
-                              { l: "Pediatria", v: "30%", c: "bg-primary/55" },
-                              { l: "Gineco", v: "20%", c: "bg-primary/25" },
+                              { l: "Clínica", v: "50%", c: "bg-primary", n: "642 atendimentos · maior demanda nas manhãs" },
+                              { l: "Pediatria", v: "30%", c: "bg-primary/55", n: "385 atendimentos · pico entre 10h–12h" },
+                              { l: "Gineco", v: "20%", c: "bg-primary/25", n: "257 atendimentos · agenda equilibrada" },
                             ].map((s, i) => (
-                              <div
-                                key={i}
-                                className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px]"
-                                style={{ animation: `fade-up 0.5s cubic-bezier(0.16,1,0.3,1) ${0.7 + i * 100}ms both` }}
-                              >
-                                <span className="flex items-center gap-1 text-muted-foreground truncate">
-                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.c}`} /> <span className="truncate">{s.l}</span>
-                                </span>
-                                <span className="font-bold text-foreground flex-shrink-0">{s.v}</span>
-                              </div>
+                              <Tooltip key={i}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px] cursor-help rounded px-1 -mx-1 hover:bg-muted/40 transition-colors"
+                                    style={{ animation: `fade-up 0.5s cubic-bezier(0.16,1,0.3,1) ${0.7 + i * 100}ms both` }}
+                                  >
+                                    <span className="flex items-center gap-1 text-muted-foreground truncate">
+                                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.c}`} /> <span className="truncate">{s.l}</span>
+                                    </span>
+                                    <span className="font-bold text-foreground flex-shrink-0">{s.v}</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="left">
+                                  <p className="font-bold text-xs">{s.l} · {s.v}</p>
+                                  <p className="text-[11px]">{s.n}</p>
+                                </TooltipContent>
+                              </Tooltip>
                             ))}
                           </div>
                         </div>
