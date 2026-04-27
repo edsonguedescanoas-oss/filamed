@@ -14,6 +14,50 @@ function getCanonicalAppUrl(): string {
   return "https://filamed.com.br";
 }
 
+/**
+ * Tipo de variante de mensagem armazenada em whatsapp_config.variantes[tipo].
+ * Cada tipo (chamada, encaminhamento, finalizacao) pode ter 1-3 variantes.
+ * O sistema escolhe aleatoriamente uma das variantes ATIVAS a cada envio.
+ */
+type Variante = {
+  key: string; // ex: "a", "b", "c"
+  ativo: boolean;
+  texto: string;
+};
+
+/**
+ * Escolhe uma variante aleatória entre as ativas. Retorna { key, texto }.
+ * Se não houver variantes ativas configuradas, retorna null (cai no template padrão).
+ */
+function escolherVariante(
+  variantes: unknown,
+  tipo: string,
+): { key: string; texto: string } | null {
+  if (!variantes || typeof variantes !== "object") return null;
+  const grupo = (variantes as Record<string, unknown>)[tipo];
+  if (!Array.isArray(grupo) || grupo.length === 0) return null;
+  const ativas = (grupo as Variante[]).filter(
+    (v) => v && typeof v.texto === "string" && v.texto.trim().length > 0 && v.ativo !== false,
+  );
+  if (ativas.length === 0) return null;
+  const escolhida = ativas[Math.floor(Math.random() * ativas.length)];
+  return { key: `${tipo}_${escolhida.key || "a"}`, texto: escolhida.texto };
+}
+
+/**
+ * Aplica substituições de placeholders em um template.
+ */
+function aplicarTemplate(
+  template: string,
+  vars: Record<string, string>,
+): string {
+  let out = template;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replaceAll(`{{${k}}}`, v);
+  }
+  return out;
+}
+
 
 
 export const handler = async (req: Request) => {
@@ -54,6 +98,7 @@ export const handler = async (req: Request) => {
     let config: any = {};
     let finalUnidadeId = null;
     let finalSenhaId = null;
+    let variantKey: string | null = null;
 
     if (tipo === "teste") {
       console.log(`Processando notificação de TESTE para telefone: ${testTelefone}`);
@@ -119,58 +164,76 @@ export const handler = async (req: Request) => {
       config = (unidade.whatsapp_config as any) || {};
       telefone = paciente.telefone;
 
-      // Primeiro nome para tom mais pessoal e natural no WhatsApp.
-      const primeiroNome = (paciente.nome_completo || "").trim().split(/\s+/)[0] || paciente.nome_completo;
-      const baseUrl = getCanonicalAppUrl(); // sempre https://filamed.com.br
-      const trackUrl = `${baseUrl}/s/${senha.token_publico}`;
+      // Variantes A/B configuradas para este tipo de mensagem
+      const variantes = config.variantes || {};
+      const primeiroNome = (paciente.nome_completo || "").split(" ")[0] || paciente.nome_completo;
+      const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
 
       if (tipo === "chamada") {
-        const template = config.template_chamada;
-        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(" · ");
-        if (template) {
-          mensagem = template
-            .replace("{{nome}}", primeiroNome)
-            .replace("{{senha}}", senha.codigo)
-            .replace("{{local}}", localFormatado || "atendimento");
+        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(", ") || "atendimento";
+        const vars = {
+          nome: paciente.nome_completo,
+          primeiro_nome: primeiroNome,
+          senha: senha.codigo,
+          local: localFormatado,
+          unidade: unidade.nome,
+          link: publicUrl,
+        };
+        const variante = escolherVariante(variantes, "chamada");
+        if (variante) {
+          variantKey = variante.key;
+          mensagem = aplicarTemplate(variante.texto, vars);
         } else {
-          mensagem = `🔔 *${primeiroNome}, é a sua vez!*
-
-Sua senha *${senha.codigo}* acaba de ser chamada em *${unidade.nome}*.
-
-📍 Dirija-se a: *${localFormatado || "recepção"}*
-
-👉 Acompanhe pelo link:
-${trackUrl}`;
+          const template = config.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.";
+          mensagem = aplicarTemplate(template, vars);
         }
       } else if (tipo === "encaminhamento") {
-        mensagem = `🔄 *${primeiroNome}, sua senha foi atualizada*
-
-Você foi encaminhado(a) em *${unidade.nome}*.
+        const vars = {
+          nome: paciente.nome_completo,
+          primeiro_nome: primeiroNome,
+          senha: senha.codigo,
+          fila: fila.nome,
+          unidade: unidade.nome,
+          link: publicUrl,
+        };
+        const variante = escolherVariante(variantes, "encaminhamento");
+        if (variante) {
+          variantKey = variante.key;
+          mensagem = aplicarTemplate(variante.texto, vars);
+        } else {
+          mensagem = `Olá *${paciente.nome_completo}*, sua senha foi atualizada no *${unidade.nome}*.
 
 🎫 Nova senha: *${senha.codigo}*
 📍 Fila: *${fila.nome}*
 
-👉 Continue acompanhando em tempo real:
-${trackUrl}`;
+Acompanhe em tempo real pelo mesmo link:
+${publicUrl}`;
+        }
       } else if (tipo === "finalizacao") {
         const reviewUrl = unidade.google_review_url;
-        const template = config.template_finalizacao;
-        if (template) {
-          mensagem = template
-            .replace("{{nome}}", primeiroNome)
-            .replace("{{unidade}}", unidade.nome);
+        const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
+        const vars = {
+          nome: paciente.nome_completo,
+          primeiro_nome: primeiroNome,
+          unidade: unidade.nome,
+          link_avaliacao: reviewUrl ? shortUrl : "",
+        };
+        const variante = escolherVariante(variantes, "finalizacao");
+        if (variante) {
+          variantKey = variante.key;
+          mensagem = aplicarTemplate(variante.texto, vars);
+          if (reviewUrl && !mensagem.includes(shortUrl) && !mensagem.includes("{{link_avaliacao}}")) {
+            mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
+          }
         } else {
-          mensagem = `✅ *${primeiroNome}, seu atendimento foi finalizado*
-
-Obrigado por escolher *${unidade.nome}*. Esperamos que tenha sido uma boa experiência!`;
-        }
-        if (reviewUrl) {
-          // Link curto canônico (filamed.com.br/r/...) → 302 → URL do Google.
-          const shortUrl = `${baseUrl}/r/${unidade.id}`;
-          mensagem += `\n\n⭐ *Sua opinião faz a diferença!*\nAvalie nosso atendimento no Google (leva menos de 1 minuto):\n👉 ${shortUrl}`;
+          const template = config.template_finalizacao || "Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado. Obrigado pela visita!";
+          mensagem = aplicarTemplate(template, vars);
+          if (reviewUrl) {
+            mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
+          }
         }
       } else {
-        // Criação de senha: calcula tempo estimado.
+        // criacao (default)
         const { count } = await supabaseClient
           .from("senhas")
           .select("*", { count: "exact", head: true })
@@ -182,17 +245,16 @@ Obrigado por escolher *${unidade.nome}*. Esperamos que tenha sido uma boa experi
         const tempo_por_pessoa = fila.tempo_espera_estimado || 10;
         const tempo_total = (pessoas_na_frente + 1) * tempo_por_pessoa;
 
-        mensagem = `👋 Olá, *${primeiroNome}*! Sua senha em *${unidade.nome}* foi gerada com sucesso.
+        mensagem = `Olá *${paciente.nome_completo}*, sua senha no *${unidade.nome}* foi gerada com sucesso!
 
 🎫 Senha: *${senha.codigo}*
-📍 Fila: *${fila.nome}*
+🕒 Tempo estimado de espera: *${tempo_total} minutos*
 👥 Pessoas na sua frente: *${pessoas_na_frente}*
-🕒 Tempo estimado: *${tempo_total} min*
 
-👉 *Acompanhe em tempo real:*
-${trackUrl}
+Você pode acompanhar o status da sua senha em tempo real pelo link:
+${publicUrl}
 
-Você receberá um aviso aqui quando for a sua vez. Não precisa ficar de olho na tela. 😉`;
+Avisaremos você quando for a sua vez!`;
       }
     }
 
@@ -357,6 +419,8 @@ Você receberá um aviso aqui quando for a sua vez. Não precisa ficar de olho n
         mensagem: mensagem,
         erro: response?.ok ? null : (responseText || "Erro desconhecido"),
         idempotency_key: currentIdempotencyKey,
+        tipo: tipo,
+        variant_key: variantKey,
       };
 
       // Se temos idempotency_key, usamos upsert para não duplicar logs de reenvio

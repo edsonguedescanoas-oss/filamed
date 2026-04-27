@@ -490,6 +490,20 @@ function PublicSenhaPage() {
     void fetchInitialData();
   }, [fetchInitialData]);
 
+  // Registra clique no link enviado por WhatsApp (A/B testing).
+  // Chamada apenas uma vez por carregamento, sem bloquear UI.
+  useEffect(() => {
+    if (!token) return;
+    const KEY = `clk_${token}`;
+    if (sessionStorage.getItem(KEY)) return;
+    sessionStorage.setItem(KEY, "1");
+    void supabase
+      .rpc("registrar_clique_notificacao_por_token" as never, { _token: token } as never)
+      .then(({ error }) => {
+        if (error) console.warn("[s.$token] click tracking failed:", error.message);
+      });
+  }, [token]);
+
   // iOS/iPadOS: rearma a sessão de áudio em QUALQUER interação subsequente
   // do usuário e quando a aba volta a ficar visível. Garante que mesmo após
   // o iOS suspender o AudioContext em background, o próximo toque destrava

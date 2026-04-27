@@ -23,6 +23,7 @@ import { RecursoGate } from "@/components/recurso-gate";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { WhatsappVariantesEditor } from "@/components/whatsapp-variantes-editor";
 
 export const Route = createFileRoute("/_app/app/notificacoes")({
   head: () => ({ meta: [{ title: "Notificações WhatsApp — FilaMed" }] }),
@@ -359,6 +360,8 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
             </Button>
           </CardContent>
         </Card>
+
+        <WhatsappVariantesEditor unidadeId={unidadeId} />
 
         <Card>
           <CardHeader>
