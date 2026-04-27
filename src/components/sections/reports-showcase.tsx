@@ -16,6 +16,29 @@ import {
 
 type DashboardState = "loading" | "empty" | "loaded";
 
+/** Barra de skeleton com shimmer — usa o keyframe global "shimmer" definido em styles.css */
+function SkeletonBar({
+  w = "100%",
+  h = "0.75rem",
+  rounded = "rounded-full",
+}: {
+  w?: string;
+  h?: string;
+  rounded?: string;
+}) {
+  return (
+    <div
+      className={`relative overflow-hidden bg-muted/50 ${rounded}`}
+      style={{ width: w, height: h }}
+    >
+      <div
+        className="absolute inset-0 animate-[shimmer_2s_linear_infinite] bg-gradient-to-r from-transparent via-primary/15 to-transparent"
+        style={{ backgroundSize: "200% 100%" }}
+      />
+    </div>
+  );
+}
+
 export function ReportsShowcase() {
   const kpis = [
     {
