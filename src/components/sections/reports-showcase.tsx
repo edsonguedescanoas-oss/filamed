@@ -58,7 +58,7 @@ export function ReportsShowcase() {
           </div>
 
           <div className="relative reveal pt-6 pb-20 sm:pb-6 px-2 sm:px-0">
-            <div className="glass rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col bg-background">
+            <div className="glass rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col bg-background transition-all duration-500 hover:shadow-elegant hover:-translate-y-1">
               {/* Title bar */}
               <div className="bg-muted/40 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border flex items-center justify-between gap-2">
                 <div className="flex gap-1.5 flex-shrink-0">
@@ -83,16 +83,17 @@ export function ReportsShowcase() {
                   ].map((k, i) => (
                     <div
                       key={i}
-                      className={`rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 ${
+                      className={`group rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40 hover:shadow-md cursor-default animate-[fade-up_0.6s_cubic-bezier(0.16,1,0.3,1)_both] ${
                         i === 2 ? "col-span-2 sm:col-span-1" : ""
                       }`}
+                      style={{ animationDelay: `${i * 100}ms` }}
                     >
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <k.icon className="h-3 w-3" />
+                      <div className="flex items-center gap-1.5 text-muted-foreground transition-colors group-hover:text-primary">
+                        <k.icon className="h-3 w-3 transition-transform group-hover:scale-110" />
                         <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{k.label}</span>
                       </div>
                       <div className="mt-1.5 flex items-end justify-between gap-1">
-                        <span className="text-base sm:text-lg font-bold text-foreground leading-none">{k.value}</span>
+                        <span className="text-base sm:text-lg font-bold text-foreground leading-none transition-colors group-hover:text-primary">{k.value}</span>
                         <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-success">
                           {k.down ? <TrendingDown className="h-2.5 w-2.5" /> : <ArrowUpRight className="h-2.5 w-2.5" />}
                           {k.delta}
@@ -103,7 +104,7 @@ export function ReportsShowcase() {
                 </div>
 
                 {/* Line chart */}
-                <div className="rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4">
+                <div className="rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4 transition-all duration-300 hover:border-primary/30 hover:bg-muted/20">
                   <div className="flex items-start sm:items-center justify-between mb-2 sm:mb-3 gap-2 flex-wrap">
                     <div>
                       <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Senhas / dia</p>
@@ -128,10 +129,13 @@ export function ReportsShowcase() {
                     {[0, 30, 60, 90].map((y) => (
                       <line key={y} x1="0" x2="280" y1={y} y2={y} stroke="currentColor" className="text-border" strokeWidth="0.5" strokeDasharray="2 3" />
                     ))}
+                    {/* Área com fade-in */}
                     <path
                       d="M0,60 L20,52 L40,55 L60,40 L80,45 L100,30 L120,35 L140,22 L160,28 L180,18 L200,24 L220,15 L240,20 L260,10 L280,14 L280,90 L0,90 Z"
                       fill="url(#areaGrad)"
+                      style={{ animation: "fade-in 1.4s ease-out 0.6s both" }}
                     />
+                    {/* Linha principal "desenhando" */}
                     <path
                       d="M0,60 L20,52 L40,55 L60,40 L80,45 L100,30 L120,35 L140,22 L160,28 L180,18 L200,24 L220,15 L240,20 L260,10 L280,14"
                       fill="none"
@@ -139,7 +143,10 @@ export function ReportsShowcase() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                      strokeDasharray="600"
+                      style={{ animation: "draw-line 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both", ["--dash-len" as string]: "600" }}
                     />
+                    {/* Linha secundária tracejada */}
                     <path
                       d="M0,75 L20,72 L40,74 L60,68 L80,70 L100,65 L120,67 L140,62 L160,64 L180,60 L200,62 L220,58 L240,60 L260,56 L280,58"
                       fill="none"
@@ -147,22 +154,36 @@ export function ReportsShowcase() {
                       strokeOpacity="0.35"
                       strokeWidth="1.5"
                       strokeDasharray="3 3"
+                      style={{ animation: "fade-in 1.2s ease-out 1s both" }}
                     />
-                    <circle cx="260" cy="10" r="3" fill="hsl(var(--primary))" />
-                    <circle cx="260" cy="10" r="6" fill="hsl(var(--primary))" fillOpacity="0.2" />
+                    {/* Dot ao vivo com pulso */}
+                    <circle
+                      cx="260" cy="10" r="6"
+                      fill="hsl(var(--primary))"
+                      style={{ transformOrigin: "260px 10px", animation: "live-pulse 2s ease-out 1.6s infinite" }}
+                    />
+                    <circle
+                      cx="260" cy="10" r="3"
+                      fill="hsl(var(--primary))"
+                      style={{ animation: "scale-in 0.4s ease-out 1.6s both", transformOrigin: "260px 10px" }}
+                    />
                   </svg>
                 </div>
 
                 {/* Bottom: bars + donut — stays 2 cols even on mobile (compact) */}
                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <div className="rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3">
+                  <div className="group rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3 transition-all duration-300 hover:border-primary/30 hover:bg-muted/20 hover:shadow-sm">
                     <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Ocupação</p>
                     <div className="flex items-end gap-1 sm:gap-1.5 h-12 sm:h-16">
                       {[55, 78, 42, 88, 65, 72, 60].map((h, i) => (
                         <div key={i} className="flex-1 flex flex-col justify-end">
                           <div
-                            className="w-full rounded-t-sm bg-gradient-to-t from-primary to-primary-glow"
-                            style={{ height: `${h}%` }}
+                            className="w-full rounded-t-sm bg-gradient-to-t from-primary to-primary-glow transition-transform duration-300 group-hover:brightness-110"
+                            style={{
+                              height: `${h}%`,
+                              transformOrigin: "bottom",
+                              animation: `bar-grow 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${0.4 + i * 70}ms both`,
+                            }}
                           />
                         </div>
                       ))}
@@ -172,17 +193,20 @@ export function ReportsShowcase() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3">
+                  <div className="group rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3 transition-all duration-300 hover:border-primary/30 hover:bg-muted/20 hover:shadow-sm">
                     <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Especialidades</p>
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <svg viewBox="0 0 36 36" className="h-12 w-12 sm:h-16 sm:w-16 -rotate-90 flex-shrink-0">
+                      <svg viewBox="0 0 36 36" className="h-12 w-12 sm:h-16 sm:w-16 -rotate-90 flex-shrink-0 transition-transform duration-500 group-hover:rotate-[-80deg]">
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="5"
-                          strokeDasharray="44 88" strokeLinecap="round" />
+                          strokeDasharray="44 88" strokeLinecap="round"
+                          style={{ strokeDashoffset: 44, animation: "donut-in 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s both", ["--seg-len" as string]: "44", ["--seg-final" as string]: "0" }} />
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.55" strokeWidth="5"
-                          strokeDasharray="26 88" strokeDashoffset="-44" strokeLinecap="round" />
+                          strokeDasharray="26 88" strokeDashoffset="-44" strokeLinecap="round"
+                          style={{ animation: "fade-in 0.6s ease-out 1.1s both" }} />
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.25" strokeWidth="5"
-                          strokeDasharray="18 88" strokeDashoffset="-70" strokeLinecap="round" />
+                          strokeDasharray="18 88" strokeDashoffset="-70" strokeLinecap="round"
+                          style={{ animation: "fade-in 0.6s ease-out 1.4s both" }} />
                       </svg>
                       <div className="flex-1 space-y-1 min-w-0">
                         {[
@@ -190,7 +214,11 @@ export function ReportsShowcase() {
                           { l: "Pediatria", v: "30%", c: "bg-primary/55" },
                           { l: "Gineco", v: "20%", c: "bg-primary/25" },
                         ].map((s, i) => (
-                          <div key={i} className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px]">
+                          <div
+                            key={i}
+                            className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px]"
+                            style={{ animation: `fade-up 0.5s cubic-bezier(0.16,1,0.3,1) ${0.7 + i * 100}ms both` }}
+                          >
                             <span className="flex items-center gap-1 text-muted-foreground truncate">
                               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.c}`} /> <span className="truncate">{s.l}</span>
                             </span>
