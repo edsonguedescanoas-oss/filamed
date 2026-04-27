@@ -418,29 +418,33 @@ export function ReportsShowcase() {
               </div>
             </div>
 
-            {/* Floating insight annotation — below card on mobile, overlapping on lg */}
-            <div className="mt-3 lg:mt-0 lg:absolute lg:-bottom-4 lg:-right-4 glass p-3 sm:p-4 rounded-xl shadow-xl border border-primary/20 lg:max-w-[220px] z-20 bg-background/95 backdrop-blur">
-              <div className="flex items-center gap-2 mb-1">
-                <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
-                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wide">Insight Automático</span>
+            {/* Floating insight annotation — só aparece com dados carregados */}
+            {state === "loaded" && (
+              <div className="mt-3 lg:mt-0 lg:absolute lg:-bottom-4 lg:-right-4 glass p-3 sm:p-4 rounded-xl shadow-xl border border-primary/20 lg:max-w-[220px] z-20 bg-background/95 backdrop-blur animate-[fade-up_0.6s_cubic-bezier(0.16,1,0.3,1)_both]">
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                  <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wide">Insight Automático</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  "O tempo de espera na unidade Centro aumentou 15% após as 14h. Recomendamos reforço na triagem."
+                </p>
               </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                "O tempo de espera na unidade Centro aumentou 15% após as 14h. Recomendamos reforço na triagem."
-              </p>
-            </div>
+            )}
 
-            {/* Floating top-left badge — hidden on small screens to avoid clutter */}
-            <div className="hidden sm:flex absolute -top-4 -left-4 glass p-3 rounded-xl shadow-lg border border-border z-20 bg-background/95 backdrop-blur animate-float">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-success" />
-                </div>
-                <div>
-                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold leading-none">Eficiência</p>
-                  <p className="text-sm font-bold text-foreground">+18,4%</p>
+            {/* Floating top-left badge — só com dados, oculto em mobile */}
+            {state === "loaded" && (
+              <div className="hidden sm:flex absolute -top-4 -left-4 glass p-3 rounded-xl shadow-lg border border-border z-20 bg-background/95 backdrop-blur animate-float">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold leading-none">Eficiência</p>
+                    <p className="text-sm font-bold text-foreground">+18,4%</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
