@@ -530,6 +530,57 @@ export type Database = {
           },
         ]
       }
+      notificacoes_alertas: {
+        Row: {
+          created_at: string | null
+          detalhes: Json | null
+          id: string
+          mensagem: string
+          resolvido: boolean | null
+          senha_id: string | null
+          tipo: string
+          unidade_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          mensagem: string
+          resolvido?: boolean | null
+          senha_id?: string | null
+          tipo: string
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          mensagem?: string
+          resolvido?: boolean | null
+          senha_id?: string | null
+          tipo?: string
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_alertas_senha_id_fkey"
+            columns: ["senha_id"]
+            isOneToOne: false
+            referencedRelation: "senhas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificacoes_alertas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes_log: {
         Row: {
           canal: Database["public"]["Enums"]["canal_notificacao"]
