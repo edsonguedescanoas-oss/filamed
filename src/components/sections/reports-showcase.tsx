@@ -92,7 +92,35 @@ export function ReportsShowcase() {
             </div>
           </div>
 
-          <div className="relative reveal pt-6 pb-20 sm:pb-6 px-2 sm:px-0">
+          <div
+            className="relative reveal pt-6 pb-20 sm:pb-6 px-2 sm:px-0"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+          >
+            {/* State switcher tabs (acima do mock) */}
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-full border border-border bg-background/95 p-1 shadow-lg backdrop-blur">
+              {([
+                { k: "loaded" as DashboardState, label: "Com dados", icon: BarChart3 },
+                { k: "loading" as DashboardState, label: "Carregando", icon: Loader2 },
+                { k: "empty" as DashboardState, label: "Sem dados", icon: Database },
+              ]).map(({ k, label, icon: Icon }) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setState(k)}
+                  className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    state === k
+                      ? "bg-gradient-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  }`}
+                  aria-pressed={state === k}
+                >
+                  <Icon className={`h-3 w-3 ${k === "loading" && state === k ? "animate-spin" : ""}`} />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              ))}
+            </div>
+
             <div className="glass rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col bg-background transition-all duration-500 hover:shadow-elegant hover:-translate-y-1">
               {/* Title bar */}
               <div className="bg-muted/40 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border flex items-center justify-between gap-2">
