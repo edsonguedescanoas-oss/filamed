@@ -34,18 +34,42 @@ export const Route = createFileRoute("/s/$token")({
   head: () => ({
     meta: [
       { title: "Acompanhe sua Senha — FilaMed" },
-      { name: "description", content: "Sua senha de atendimento está aqui. Acompanhe em tempo real e não perca sua vez!" },
-      { name: "robots", content: "noindex" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" },
-      // Open Graph / Social Preview
+      {
+        name: "description",
+        content:
+          "Acompanhe em tempo real a sua senha de atendimento. Você será avisado quando for sua vez.",
+      },
+      // Página transacional/privada: não indexar nem seguir.
+      { name: "robots", content: "noindex, nofollow, noarchive, nosnippet" },
+      { name: "googlebot", content: "noindex, nofollow" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+      },
+      { name: "theme-color", content: "#0F172A" },
+      { name: "format-detection", content: "telephone=no" },
+      { name: "referrer", content: "strict-origin-when-cross-origin" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      // Open Graph / WhatsApp preview
       { property: "og:type", content: "website" },
-      { property: "og:title", content: "Sua Vez Está Chegando! 🎫" },
-      { property: "og:description", content: "Clique para acompanhar sua senha de atendimento em tempo real. FilaMed: Cuidando do seu tempo." },
-      { property: "og:image", content: "https://images.unsplash.com/photo-1584982324675-97613c161f65?q=80&w=1200&auto=format&fit=crop" },
-      { property: "twitter:card", content: "summary_large_image" },
-      { property: "twitter:title", content: "Sua Vez Está Chegando! 🎫" },
-      { property: "twitter:description", content: "Acompanhe sua senha de atendimento em tempo real." },
-      { property: "twitter:image", content: "https://images.unsplash.com/photo-1584982324675-97613c161f65?q=80&w=1200&auto=format&fit=crop" },
+      { property: "og:site_name", content: "FilaMed" },
+      { property: "og:locale", content: "pt_BR" },
+      { property: "og:title", content: "Sua senha de atendimento — FilaMed" },
+      {
+        property: "og:description",
+        content: "Toque para acompanhar a sua senha em tempo real.",
+      },
+      { property: "twitter:card", content: "summary" },
+      { property: "twitter:title", content: "Sua senha de atendimento — FilaMed" },
+      {
+        property: "twitter:description",
+        content: "Toque para acompanhar a sua senha em tempo real.",
+      },
+    ],
+    links: [
+      // Evita que variantes de URL (preview vs canônico) duplem indexação acidental.
+      { rel: "canonical", href: "https://filamed.com.br" },
     ],
   }),
   component: PublicSenhaPage,

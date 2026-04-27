@@ -10,6 +10,36 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
  * na unidade (google_review_url), mantendo a mensagem do WhatsApp limpa.
  */
 export const Route = createFileRoute("/r/$unidadeId")({
+  head: () => ({
+    meta: [
+      { title: "Avaliar atendimento — FilaMed" },
+      {
+        name: "description",
+        content: "Redirecionando você para a página de avaliação no Google.",
+      },
+      // Link curto/transacional: não indexar.
+      { name: "robots", content: "noindex, nofollow, noarchive, nosnippet" },
+      { name: "googlebot", content: "noindex, nofollow" },
+      { name: "theme-color", content: "#0F172A" },
+      { name: "referrer", content: "strict-origin-when-cross-origin" },
+      // Preview no WhatsApp (caso o link seja exibido sem redirect imediato).
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "FilaMed" },
+      { property: "og:locale", content: "pt_BR" },
+      { property: "og:title", content: "Avalie seu atendimento ⭐" },
+      {
+        property: "og:description",
+        content: "Sua opinião ajuda a clínica a melhorar. Toque para avaliar no Google.",
+      },
+      { property: "twitter:card", content: "summary" },
+      { property: "twitter:title", content: "Avalie seu atendimento ⭐" },
+      {
+        property: "twitter:description",
+        content: "Sua opinião ajuda a clínica a melhorar.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "https://filamed.com.br" }],
+  }),
   server: {
     handlers: {
       GET: async ({ params }) => {
@@ -66,7 +96,16 @@ function renderFallbackHtml(message: string): string {
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="FilaMed" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:title" content="Avalie seu atendimento — FilaMed" />
+  <meta property="og:description" content="Sua opinião ajuda a clínica a melhorar." />
   <title>Avaliação indisponível — FilaMed</title>
   <style>
     * { box-sizing: border-box; }
