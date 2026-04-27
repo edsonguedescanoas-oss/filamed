@@ -419,6 +419,8 @@ Avisaremos você quando for a sua vez!`;
         mensagem: mensagem,
         erro: response?.ok ? null : (responseText || "Erro desconhecido"),
         idempotency_key: currentIdempotencyKey,
+        tipo: tipo,
+        variant_key: variantKey,
       };
 
       // Se temos idempotency_key, usamos upsert para não duplicar logs de reenvio
