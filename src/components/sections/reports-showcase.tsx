@@ -88,6 +88,7 @@ export function ReportsShowcase() {
   }, [state, paused]);
 
   return (
+    <TooltipProvider delayDuration={150}>
     <section id="reports-showcase" className="py-24 bg-muted/30">
       <div className="mx-auto max-w-7xl px-6">
         <div className="text-center max-w-3xl mx-auto mb-16 reveal">
