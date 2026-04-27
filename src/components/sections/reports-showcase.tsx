@@ -1,4 +1,20 @@
-import { LayoutDashboard, Download, CheckCircle2, TrendingDown, TrendingUp, Users, Clock, ArrowUpRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  LayoutDashboard,
+  Download,
+  CheckCircle2,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  Clock,
+  ArrowUpRight,
+  BarChart3,
+  Loader2,
+  Database,
+  Sparkles,
+} from "lucide-react";
+
+type DashboardState = "loading" | "empty" | "loaded";
 
 export function ReportsShowcase() {
   const kpis = [
