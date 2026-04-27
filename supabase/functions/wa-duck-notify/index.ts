@@ -132,10 +132,12 @@ ${publicUrl}`;
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{unidade}}", unidade.nome);
         if (reviewUrl) {
-          // Usa link curto próprio (filamed.com.br/r/{unidade_id}) que redireciona
-          // para a URL completa do Google. Mantém a mensagem limpa e branded,
-          // já que o WhatsApp não suporta hiperlinks ocultos em mensagens de texto.
-          const shortUrl = `https://filamed.com.br/r/${unidade.id}`;
+          // Monta o link curto próprio que redireciona para o Google Review.
+          // Usa o domínio canônico configurado em PUBLIC_APP_URL (secret),
+          // com fallback para o domínio próprio e, por último, o domínio publicado
+          // do Lovable. Isso garante que o link funcione mesmo se o domínio
+          // custom (filamed.com.br) não estiver propagado/ativo no momento.
+          const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
           mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
         }
       } else {
