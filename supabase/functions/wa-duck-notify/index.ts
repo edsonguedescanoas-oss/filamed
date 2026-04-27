@@ -121,12 +121,6 @@ function garantirCTAAcompanhamento(mensagem: string, publicUrl: string): string 
   if (mensagem.includes(publicUrl)) return mensagem;
   return `${mensagem.trimEnd()}\n\n👉 *Acompanhe aqui:* ${publicUrl}`;
 }
-  let out = template;
-  for (const [k, v] of Object.entries(vars)) {
-    out = out.replaceAll(`{{${k}}}`, v);
-  }
-  return out;
-}
 
 
 
