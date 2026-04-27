@@ -287,29 +287,37 @@ export function ReportsShowcase() {
                     {/* KPI cards: 2 cols on mobile (3rd full-width), 3 on sm+ */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                       {[
-                        { icon: Clock, label: "TME", value: "14min", delta: "-22%", down: true },
-                        { icon: Users, label: "Atendidos", value: "1.284", delta: "+8%", down: false },
-                        { icon: TrendingUp, label: "Throughput", value: "92%", delta: "+15%", down: false },
+                        { icon: Clock, label: "TME", value: "14min", delta: "-22%", down: true, tip: "Tempo Médio de Espera — mediana entre emissão e chamada da senha nas últimas 24h." },
+                        { icon: Users, label: "Atendidos", value: "1.284", delta: "+8%", down: false, tip: "Total de senhas atendidas no período. Inclui apenas chamadas concluídas com sucesso." },
+                        { icon: TrendingUp, label: "Throughput", value: "92%", delta: "+15%", down: false, tip: "Capacidade utilizada vs. capacidade nominal da unidade. Acima de 85% indica operação saudável." },
                       ].map((k, i) => (
-                        <div
-                          key={i}
-                          className={`group rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40 hover:shadow-md cursor-default animate-[fade-up_0.6s_cubic-bezier(0.16,1,0.3,1)_both] ${
-                            i === 2 ? "col-span-2 sm:col-span-1" : ""
-                          }`}
-                          style={{ animationDelay: `${i * 100}ms` }}
-                        >
-                          <div className="flex items-center gap-1.5 text-muted-foreground transition-colors group-hover:text-primary">
-                            <k.icon className="h-3 w-3 transition-transform group-hover:scale-110" />
-                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{k.label}</span>
-                          </div>
-                          <div className="mt-1.5 flex items-end justify-between gap-1">
-                            <span className="text-base sm:text-lg font-bold text-foreground leading-none transition-colors group-hover:text-primary">{k.value}</span>
-                            <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-success">
-                              {k.down ? <TrendingDown className="h-2.5 w-2.5" /> : <ArrowUpRight className="h-2.5 w-2.5" />}
-                              {k.delta}
-                            </span>
-                          </div>
-                        </div>
+                        <Tooltip key={i}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={`group rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/40 hover:shadow-md cursor-help animate-[fade-up_0.6s_cubic-bezier(0.16,1,0.3,1)_both] ${
+                                i === 2 ? "col-span-2 sm:col-span-1" : ""
+                              }`}
+                              style={{ animationDelay: `${i * 100}ms` }}
+                            >
+                              <div className="flex items-center gap-1.5 text-muted-foreground transition-colors group-hover:text-primary">
+                                <k.icon className="h-3 w-3 transition-transform group-hover:scale-110" />
+                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{k.label}</span>
+                              </div>
+                              <div className="mt-1.5 flex items-end justify-between gap-1">
+                                <span className="text-base sm:text-lg font-bold text-foreground leading-none transition-colors group-hover:text-primary">{k.value}</span>
+                                <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-success">
+                                  {k.down ? <TrendingDown className="h-2.5 w-2.5" /> : <ArrowUpRight className="h-2.5 w-2.5" />}
+                                  {k.delta}
+                                </span>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px]">
+                            <p className="font-bold text-xs mb-0.5">{k.label}</p>
+                            <p className="text-[11px] leading-relaxed">{k.tip}</p>
+                            <p className="text-[10px] mt-1 text-primary-foreground/70">Variação vs. período anterior: <span className="font-bold">{k.delta}</span></p>
+                          </TooltipContent>
+                        </Tooltip>
                       ))}
                     </div>
 
