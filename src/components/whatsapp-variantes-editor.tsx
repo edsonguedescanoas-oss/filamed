@@ -32,7 +32,7 @@ const TIPOS: { id: TipoVariante; label: string; placeholders: string[]; defaultT
     label: "Chamada",
     placeholders: ["{{primeiro_nome}}", "{{nome}}", "{{senha}}", "{{local}}", "{{unidade}}", "{{link}}"],
     defaultText:
-      "Olá {{primeiro_nome}}! 🔔 Sua senha *{{senha}}* foi chamada agora.\n\n👉 Dirija-se ao *{{local}}*.",
+      "Olá {{primeiro_nome}}! 🔔 Sua senha *{{senha}}* foi chamada.\n\n👉 Dirija-se ao *{{local}}*.",
   },
   {
     id: "encaminhamento",
