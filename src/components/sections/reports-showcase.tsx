@@ -605,16 +605,26 @@ export function ReportsShowcase() {
               </div>
             </div>
 
-            {/* Floating insight annotation — só aparece com dados carregados */}
+            {/* Floating insight annotation — vinculado ao pico marcado no gráfico */}
             {state === "loaded" && (
-              <div className="mt-3 lg:mt-0 lg:absolute lg:-bottom-4 lg:-right-4 glass p-3 sm:p-4 rounded-xl shadow-xl border border-primary/20 lg:max-w-[220px] z-20 bg-background/95 backdrop-blur animate-[fade-up_0.6s_cubic-bezier(0.16,1,0.3,1)_both]">
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+              <div className="mt-3 lg:mt-0 lg:absolute lg:-bottom-4 lg:-right-4 glass p-3 sm:p-4 rounded-xl shadow-xl border border-destructive/30 lg:max-w-[240px] z-20 bg-background/95 backdrop-blur animate-[fade-up_0.6s_cubic-bezier(0.16,1,0.3,1)_both]">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="relative flex h-2 w-2 flex-shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
+                  </span>
                   <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wide">Insight Automático</span>
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wider bg-destructive/15 text-destructive px-1.5 py-0.5 rounded-full">
+                    +15%
+                  </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  "O tempo de espera na unidade Centro aumentou 15% após as 14h. Recomendamos reforço na triagem."
+                  Abandonos na <b className="text-foreground">unidade Centro</b> subiram <b className="text-destructive">+15%</b> após as <b className="text-foreground">14h</b> (pico destacado no gráfico ↑). Recomendamos reforço na triagem.
                 </p>
+                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-semibold text-primary">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span>Ação sugerida: +1 atendente das 14h às 18h</span>
+                </div>
               </div>
             )}
 
