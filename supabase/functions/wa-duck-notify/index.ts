@@ -149,7 +149,7 @@ export const handler = async (req: Request) => {
           .replace("{{senha}}", senha.codigo)
           .replace("{{local}}", localFormatado || "atendimento");
       } else if (tipo === "encaminhamento") {
-        const publicUrl = `https://filamed.lovable.app/s/${senha.token_publico}`;
+        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
         mensagem = `Olá *${paciente.nome_completo}*, sua senha foi atualizada no *${unidade.nome}*.
 
 🎫 Nova senha: *${senha.codigo}*
