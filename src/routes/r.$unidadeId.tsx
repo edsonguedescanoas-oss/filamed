@@ -52,7 +52,6 @@ export const Route = createFileRoute("/r/$unidadeId")({
 
           if (error) {
             console.error("[/r/:unidadeId] DB error:", error);
-            // Renderiza fallback ao invés de quebrar
             return new Response(renderFallbackHtml("Erro ao buscar unidade. Tente novamente."), {
               status: 200,
               headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -70,6 +69,14 @@ export const Route = createFileRoute("/r/$unidadeId")({
               }
             );
           }
+
+          // Registra clique para A/B testing (não bloqueante).
+          // Marca o log de finalização mais recente desta unidade como "clicado".
+          void supabaseAdmin
+            .rpc("registrar_clique_avaliacao" as never, { _unidade_id: params.unidadeId } as never)
+            .then(({ error: rpcError }) => {
+              if (rpcError) console.warn("[/r/:unidadeId] click tracking failed:", rpcError.message);
+            });
 
           return new Response(null, {
             status: 302,
