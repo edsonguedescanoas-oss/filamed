@@ -52,19 +52,22 @@ export function ReportsShowcase() {
       title: "Tempo Médio de Espera (TME)",
       desc: "O KPI mais crítico. Reduzir o TME aumenta a conversão de pacientes particulares e a satisfação geral.",
       value: "Redução de 35%",
-      impact: "Alta"
+      impact: "Alta",
+      tooltip: "Tempo entre a emissão da senha e o início do atendimento. Calculado como mediana das últimas 24h para reduzir o efeito de outliers."
     },
     {
       title: "Taxa de Abandono",
       desc: "Mede quantos pacientes desistem antes de serem chamados. Crucial para identificar gargalos na recepção.",
       value: "Queda de 12%",
-      impact: "Média"
+      impact: "Média",
+      tooltip: "Percentual de senhas emitidas que nunca foram atendidas. Inclui pacientes que saíram sem aviso e os marcados manualmente como ausentes."
     },
     {
       title: "Throughput por Médico",
       desc: "Volume de atendimentos concluídos. Ajuda a balancear a carga de trabalho e identificar alta performance.",
       value: "+15% Capacidade",
-      impact: "Alta"
+      impact: "Alta",
+      tooltip: "Atendimentos concluídos por médico por hora ativa. Considera apenas o tempo logado em atendimento, descontando intervalos."
     }
   ];
 
