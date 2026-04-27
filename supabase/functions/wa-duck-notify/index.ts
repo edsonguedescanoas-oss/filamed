@@ -132,9 +132,11 @@ ${publicUrl}`;
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{unidade}}", unidade.nome);
         if (reviewUrl) {
-          // Utiliza markdown para simular um hiperlink (embora o WhatsApp exiba o texto e o link separadamente,
-          // o texto "Avalie agora" chama a atenção para o link logo abaixo).
-          mensagem += `\n\n⭐ *Avalie agora:* ${reviewUrl}`;
+          // Usa link curto próprio (filamed.com.br/r/{unidade_id}) que redireciona
+          // para a URL completa do Google. Mantém a mensagem limpa e branded,
+          // já que o WhatsApp não suporta hiperlinks ocultos em mensagens de texto.
+          const shortUrl = `https://filamed.com.br/r/${unidade.id}`;
+          mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
         }
       } else {
         // 2. Calcula tempo estimado

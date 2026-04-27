@@ -24,6 +24,7 @@ import { Route as TvSlugRouteImport } from './routes/tv.$slug'
 import { Route as TestLayoutsRouteImport } from './routes/test.layouts'
 import { Route as TestHorizontalRouteImport } from './routes/test.horizontal'
 import { Route as STokenRouteImport } from './routes/s.$token'
+import { Route as RUnidadeIdRouteImport } from './routes/r.$unidadeId'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
@@ -127,6 +128,11 @@ const TestHorizontalRoute = TestHorizontalRouteImport.update({
 const STokenRoute = STokenRouteImport.update({
   id: '/s/$token',
   path: '/s/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RUnidadeIdRoute = RUnidadeIdRouteImport.update({
+  id: '/r/$unidadeId',
+  path: '/r/$unidadeId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HooksHealthcheckRoute = HooksHealthcheckRouteImport.update({
@@ -302,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
   '/test/layouts': typeof TestLayoutsRoute
@@ -347,6 +354,7 @@ export interface FileRoutesByTo {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
   '/test/layouts': typeof TestLayoutsRoute
@@ -396,6 +404,7 @@ export interface FileRoutesById {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
   '/test/layouts': typeof TestLayoutsRoute
@@ -444,6 +453,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
     | '/test/layouts'
@@ -489,6 +499,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
     | '/test/layouts'
@@ -537,6 +548,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
     | '/test/layouts'
@@ -584,6 +596,7 @@ export interface RootRouteChildren {
   ConviteTokenRoute: typeof ConviteTokenRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
+  RUnidadeIdRoute: typeof RUnidadeIdRoute
   STokenRoute: typeof STokenRoute
   TestHorizontalRoute: typeof TestHorizontalRoute
   TestLayoutsRoute: typeof TestLayoutsRoute
@@ -696,6 +709,13 @@ declare module '@tanstack/react-router' {
       path: '/s/$token'
       fullPath: '/s/$token'
       preLoaderRoute: typeof STokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$unidadeId': {
+      id: '/r/$unidadeId'
+      path: '/r/$unidadeId'
+      fullPath: '/r/$unidadeId'
+      preLoaderRoute: typeof RUnidadeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/healthcheck': {
@@ -1036,6 +1056,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteTokenRoute: ConviteTokenRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
+  RUnidadeIdRoute: RUnidadeIdRoute,
   STokenRoute: STokenRoute,
   TestHorizontalRoute: TestHorizontalRoute,
   TestLayoutsRoute: TestLayoutsRoute,
