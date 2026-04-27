@@ -112,13 +112,24 @@ export function ReportsShowcase() {
             
             <div className="space-y-4">
               {kpis.map((kpi, i) => (
-                <div key={i} className="p-4 rounded-xl border border-border bg-background shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-foreground">{kpi.title}</h4>
-                    <span className="text-xs font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{kpi.value}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{kpi.desc}</p>
-                </div>
+                <Tooltip key={i}>
+                  <TooltipTrigger asChild>
+                    <div className="p-4 rounded-xl border border-border bg-background shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-help">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-foreground flex items-center gap-1.5">
+                          {kpi.title}
+                          <Info className="h-3 w-3 text-muted-foreground/60" />
+                        </h4>
+                        <span className="text-xs font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">{kpi.value}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{kpi.desc}</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-xs">
+                    <p className="font-bold mb-1">Como medimos</p>
+                    <p className="text-xs leading-relaxed">{kpi.tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </div>
