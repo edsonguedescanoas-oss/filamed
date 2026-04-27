@@ -584,6 +584,7 @@ export type Database = {
       notificacoes_log: {
         Row: {
           canal: Database["public"]["Enums"]["canal_notificacao"]
+          clicked_at: string | null
           created_at: string
           destinatario: string
           enviada_em: string | null
@@ -594,10 +595,13 @@ export type Database = {
           senha_id: string | null
           status: Database["public"]["Enums"]["notificacao_status"]
           tentativas: number | null
+          tipo: string | null
           unidade_id: string
+          variant_key: string | null
         }
         Insert: {
           canal: Database["public"]["Enums"]["canal_notificacao"]
+          clicked_at?: string | null
           created_at?: string
           destinatario: string
           enviada_em?: string | null
@@ -608,10 +612,13 @@ export type Database = {
           senha_id?: string | null
           status?: Database["public"]["Enums"]["notificacao_status"]
           tentativas?: number | null
+          tipo?: string | null
           unidade_id: string
+          variant_key?: string | null
         }
         Update: {
           canal?: Database["public"]["Enums"]["canal_notificacao"]
+          clicked_at?: string | null
           created_at?: string
           destinatario?: string
           enviada_em?: string | null
@@ -622,7 +629,9 @@ export type Database = {
           senha_id?: string | null
           status?: Database["public"]["Enums"]["notificacao_status"]
           tentativas?: number | null
+          tipo?: string | null
           unidade_id?: string
+          variant_key?: string | null
         }
         Relationships: [
           {
@@ -1543,7 +1552,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      notificacoes_variantes_stats: {
+        Row: {
+          cliques: number | null
+          ctr_percent: number | null
+          enviadas: number | null
+          tipo: string | null
+          ultimo_envio: string | null
+          unidade_id: string | null
+          variant_key: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_log_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _audit_ator_nome: { Args: { _user_id: string }; Returns: string }
@@ -2038,6 +2066,14 @@ export type Database = {
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
       recalcular_posicoes_fila: {
         Args: { p_fila_id: string }
+        Returns: undefined
+      }
+      registrar_clique_avaliacao: {
+        Args: { _unidade_id: string }
+        Returns: undefined
+      }
+      registrar_clique_notificacao_por_token: {
+        Args: { _token: string }
         Returns: undefined
       }
       retry_failed_notifications: { Args: never; Returns: undefined }
