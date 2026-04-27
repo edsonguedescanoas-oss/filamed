@@ -32,7 +32,7 @@ const TIPOS: { id: TipoVariante; label: string; placeholders: string[]; defaultT
     label: "Chamada",
     placeholders: ["{{primeiro_nome}}", "{{nome}}", "{{senha}}", "{{local}}", "{{unidade}}", "{{link}}"],
     defaultText:
-      "Olá {{primeiro_nome}}! 🔔 Sua senha *{{senha}}* foi chamada agora.\n\n👉 Dirija-se ao *{{local}}*.",
+      "Olá {{primeiro_nome}}! 🔔 Sua senha *{{senha}}* foi chamada.\n\n👉 Dirija-se ao *{{local}}*.",
   },
   {
     id: "encaminhamento",
@@ -185,6 +185,11 @@ export function WhatsappVariantesEditor({ unidadeId }: { unidadeId: string | nul
             const statsTipo = stats.filter((s) => s.tipo === t.id);
             return (
               <TabsContent key={t.id} value={t.id} className="space-y-4 pt-4">
+                {t.id === "chamada" && (
+                  <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2.5 text-[11px] leading-relaxed text-amber-900 dark:text-amber-200">
+                    💡 Dica: o sistema padroniza automaticamente o destino (ex.: "3" vira <strong>Consultório 3</strong>, "G2" vira <strong>Guichê 2</strong>) e sempre adiciona <strong>"👉 Acompanhe aqui: link"</strong> no final — você não precisa incluir o link manualmente.
+                  </div>
+                )}
                 <ComparacaoVariantes statsTipo={statsTipo} tipo={t.id} />
 
                 {lista.length === 0 ? (
