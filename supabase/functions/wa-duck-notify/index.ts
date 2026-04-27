@@ -163,36 +163,76 @@ export const handler = async (req: Request) => {
       config = (unidade.whatsapp_config as any) || {};
       telefone = paciente.telefone;
 
+      // Variantes A/B configuradas para este tipo de mensagem
+      const variantes = config.variantes || {};
+      const primeiroNome = (paciente.nome_completo || "").split(" ")[0] || paciente.nome_completo;
+      const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
+
       if (tipo === "chamada") {
-        const template = config.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.";
-        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(", ");
-        mensagem = template
-          .replace("{{nome}}", paciente.nome_completo)
-          .replace("{{senha}}", senha.codigo)
-          .replace("{{local}}", localFormatado || "atendimento");
+        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(", ") || "atendimento";
+        const vars = {
+          nome: paciente.nome_completo,
+          primeiro_nome: primeiroNome,
+          senha: senha.codigo,
+          local: localFormatado,
+          unidade: unidade.nome,
+          link: publicUrl,
+        };
+        const variante = escolherVariante(variantes, "chamada");
+        if (variante) {
+          variantKey = variante.key;
+          mensagem = aplicarTemplate(variante.texto, vars);
+        } else {
+          const template = config.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.";
+          mensagem = aplicarTemplate(template, vars);
+        }
       } else if (tipo === "encaminhamento") {
-        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
-        mensagem = `Olá *${paciente.nome_completo}*, sua senha foi atualizada no *${unidade.nome}*.
+        const vars = {
+          nome: paciente.nome_completo,
+          primeiro_nome: primeiroNome,
+          senha: senha.codigo,
+          fila: fila.nome,
+          unidade: unidade.nome,
+          link: publicUrl,
+        };
+        const variante = escolherVariante(variantes, "encaminhamento");
+        if (variante) {
+          variantKey = variante.key;
+          mensagem = aplicarTemplate(variante.texto, vars);
+        } else {
+          mensagem = `Olá *${paciente.nome_completo}*, sua senha foi atualizada no *${unidade.nome}*.
 
 🎫 Nova senha: *${senha.codigo}*
 📍 Fila: *${fila.nome}*
 
 Acompanhe em tempo real pelo mesmo link:
 ${publicUrl}`;
+        }
       } else if (tipo === "finalizacao") {
         const reviewUrl = unidade.google_review_url;
-        const template = config.template_finalizacao || "Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado. Obrigado pela visita!";
-        mensagem = template
-          .replace("{{nome}}", paciente.nome_completo)
-          .replace("{{unidade}}", unidade.nome);
-        if (reviewUrl) {
-          // Link curto próprio (filamed.com.br) que redireciona via 302
-          // para a URL de avaliação configurada na unidade.
-          const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
-          mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
+        const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
+        const vars = {
+          nome: paciente.nome_completo,
+          primeiro_nome: primeiroNome,
+          unidade: unidade.nome,
+          link_avaliacao: reviewUrl ? shortUrl : "",
+        };
+        const variante = escolherVariante(variantes, "finalizacao");
+        if (variante) {
+          variantKey = variante.key;
+          mensagem = aplicarTemplate(variante.texto, vars);
+          if (reviewUrl && !mensagem.includes(shortUrl) && !mensagem.includes("{{link_avaliacao}}")) {
+            mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
+          }
+        } else {
+          const template = config.template_finalizacao || "Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado. Obrigado pela visita!";
+          mensagem = aplicarTemplate(template, vars);
+          if (reviewUrl) {
+            mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
+          }
         }
       } else {
-        // 2. Calcula tempo estimado
+        // criacao (default)
         const { count } = await supabaseClient
           .from("senhas")
           .select("*", { count: "exact", head: true })
@@ -204,7 +244,6 @@ ${publicUrl}`;
         const tempo_por_pessoa = fila.tempo_espera_estimado || 10;
         const tempo_total = (pessoas_na_frente + 1) * tempo_por_pessoa;
 
-        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
         mensagem = `Olá *${paciente.nome_completo}*, sua senha no *${unidade.nome}* foi gerada com sucesso!
 
 🎫 Senha: *${senha.codigo}*
