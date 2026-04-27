@@ -22,12 +22,23 @@ export const Route = createFileRoute("/r/$unidadeId")({
 
           if (error) {
             console.error("[/r/:unidadeId] DB error:", error);
-            return new Response("Erro interno", { status: 500 });
+            // Renderiza fallback ao invés de quebrar
+            return new Response(renderFallbackHtml("Erro ao buscar unidade. Tente novamente."), {
+              status: 200,
+              headers: { "Content-Type": "text/html; charset=utf-8" },
+            });
           }
 
           if (!data?.google_review_url) {
-            // Cai no FallbackComponent
-            return new Response(null, { status: 404 });
+            return new Response(
+              renderFallbackHtml(
+                "Não foi possível encontrar uma URL de avaliação configurada para esta unidade. Entre em contato com a recepção."
+              ),
+              {
+                status: 200,
+                headers: { "Content-Type": "text/html; charset=utf-8" },
+              }
+            );
           }
 
           return new Response(null, {
@@ -39,14 +50,63 @@ export const Route = createFileRoute("/r/$unidadeId")({
           });
         } catch (err) {
           console.error("[/r/:unidadeId] handler exception:", err);
-          return new Response("Erro interno", { status: 500 });
+          return new Response(renderFallbackHtml("Erro interno ao processar o link."), {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          });
         }
       },
     },
   },
   component: FallbackComponent,
-  notFoundComponent: FallbackComponent,
 });
+
+function renderFallbackHtml(message: string): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Avaliação indisponível — FilaMed</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0F172A;
+      color: #F8FAFC;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      max-width: 28rem;
+      text-align: center;
+    }
+    h1 { font-size: 1.5rem; margin: 0 0 0.75rem; }
+    p { color: #94A3B8; line-height: 1.5; margin: 0 0 1.5rem; }
+    a {
+      display: inline-block;
+      padding: 0.625rem 1.25rem;
+      background: #3B82F6;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 0.5rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Link de avaliação indisponível</h1>
+    <p>${message}</p>
+    <a href="/">Voltar ao início</a>
+  </div>
+</body>
+</html>`;
+}
 
 function FallbackComponent() {
   return (
