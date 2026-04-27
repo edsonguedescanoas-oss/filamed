@@ -7,29 +7,10 @@ const corsHeaders = {
 };
 
 /**
- * Retorna o domínio canônico da aplicação para construir links públicos.
- *
- * Ordem de prioridade:
- *   1. PUBLIC_APP_URL — secret configurável (ex.: "https://filamed.com.br")
- *   2. Domínio próprio padrão (filamed.com.br)
- *
- * Em fallback final usamos o domínio publicado do Lovable, que é sempre
- * estável e válido mesmo se o domínio custom estiver com DNS pendente.
- *
- * Aliases aceitos pelo redirecionador `/r/{unidade_id}`:
- *   - https://filamed.com.br
- *   - https://www.filamed.com.br
- *   - https://filamed.lovable.app
- *   - https://id-preview--*.lovable.app
- *
- * Como a rota `/r/$unidadeId` é independente do host, qualquer um destes
- * domínios funciona — escolhemos aqui apenas qual aparece na mensagem.
+ * Domínio canônico da aplicação para construir links públicos.
+ * filamed.com.br está ativo e é o domínio oficial.
  */
 function getCanonicalAppUrl(): string {
-  const fromEnv = Deno.env.get("PUBLIC_APP_URL")?.trim();
-  if (fromEnv) {
-    return fromEnv.replace(/\/+$/, "");
-  }
   return "https://filamed.com.br";
 }
 
@@ -161,11 +142,8 @@ ${publicUrl}`;
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{unidade}}", unidade.nome);
         if (reviewUrl) {
-          // Monta o link curto próprio que redireciona para o Google Review.
-          // Usa o domínio canônico configurado em PUBLIC_APP_URL (secret),
-          // com fallback para o domínio próprio e, por último, o domínio publicado
-          // do Lovable. Isso garante que o link funcione mesmo se o domínio
-          // custom (filamed.com.br) não estiver propagado/ativo no momento.
+          // Link curto próprio (filamed.com.br) que redireciona via 302
+          // para a URL de avaliação configurada na unidade.
           const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
           mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
         }
