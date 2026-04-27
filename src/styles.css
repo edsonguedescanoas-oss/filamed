@@ -102,6 +102,11 @@
   40%  { transform: scale(1.08); color: var(--primary); }
   100% { transform: scale(1);    color: inherit; }
 }
+/* Highlight rápido em linha do histórico ao chegar nova chamada. */
+@keyframes flash-highlight {
+  0%   { background-color: color-mix(in oklab, var(--primary) 22%, transparent); }
+  100% { background-color: transparent; }
+}
 /* Linha do gráfico desenhando suavemente, como se o dado estivesse chegando. */
 @keyframes draw-line {
   from { stroke-dashoffset: var(--dash-len, 600); }
