@@ -58,6 +58,76 @@ function aplicarTemplate(
   return out;
 }
 
+/**
+ * Padroniza o destino/local da chamada para evitar variações como
+ * "consultorio 3", "C3", "Sala 02", etc. Saída sempre no formato
+ * "Consultório 3", "Guichê 2", "Sala 4" — ou o nome original capitalizado
+ * quando já vem completo (ex.: "Recepção Norte").
+ */
+function formatarLocalChamada(filaNome: string | null | undefined, mesaNome: string | null | undefined): string {
+  const raw = (mesaNome || filaNome || "").trim();
+  if (!raw) return "atendimento";
+
+  // Só número (ex.: "3", "02") → assume "Consultório N"
+  if (/^\d+$/.test(raw)) {
+    return `Consultório ${parseInt(raw, 10)}`;
+  }
+
+  // Letra + número curto (ex.: "C3", "G2", "S04")
+  const m = raw.match(/^([A-Za-z])\s*-?\s*(\d+)$/);
+  if (m) {
+    const prefixo = m[1].toUpperCase();
+    const num = parseInt(m[2], 10);
+    const mapa: Record<string, string> = { C: "Consultório", G: "Guichê", S: "Sala", M: "Mesa" };
+    return `${mapa[prefixo] ?? "Consultório"} ${num}`;
+  }
+
+  // Já vem com prefixo textual (ex.: "consultorio 3", "guiche 02", "sala 4")
+  const m2 = raw.match(/^(consult[óo]rio|gui[cç]h[êe]|sala|mesa|box|balc[ãa]o)\s*-?\s*(\d+)$/i);
+  if (m2) {
+    const prefixoMap: Record<string, string> = {
+      consultorio: "Consultório",
+      consultório: "Consultório",
+      guiche: "Guichê",
+      guichê: "Guichê",
+      sala: "Sala",
+      mesa: "Mesa",
+      box: "Box",
+      balcao: "Balcão",
+      balcão: "Balcão",
+    };
+    const chave = m2[1].toLowerCase();
+    const prefixo = prefixoMap[chave] ?? capitalizar(m2[1]);
+    return `${prefixo} ${parseInt(m2[2], 10)}`;
+  }
+
+  // Fallback: capitaliza primeira letra de cada palavra
+  return raw
+    .split(/\s+/)
+    .map(capitalizar)
+    .join(" ");
+}
+
+function capitalizar(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+/**
+ * Garante que a mensagem termine com um CTA contendo o link de acompanhamento.
+ * Se a mensagem já incluir o link, retorna inalterada.
+ */
+function garantirCTAAcompanhamento(mensagem: string, publicUrl: string): string {
+  if (mensagem.includes(publicUrl)) return mensagem;
+  return `${mensagem.trimEnd()}\n\n👉 *Acompanhe aqui:* ${publicUrl}`;
+}
+  let out = template;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replaceAll(`{{${k}}}`, v);
+  }
+  return out;
+}
+
 
 
 export const handler = async (req: Request) => {
