@@ -14,6 +14,50 @@ function getCanonicalAppUrl(): string {
   return "https://filamed.com.br";
 }
 
+/**
+ * Tipo de variante de mensagem armazenada em whatsapp_config.variantes[tipo].
+ * Cada tipo (chamada, encaminhamento, finalizacao) pode ter 1-3 variantes.
+ * O sistema escolhe aleatoriamente uma das variantes ATIVAS a cada envio.
+ */
+type Variante = {
+  key: string; // ex: "a", "b", "c"
+  ativo: boolean;
+  texto: string;
+};
+
+/**
+ * Escolhe uma variante aleatória entre as ativas. Retorna { key, texto }.
+ * Se não houver variantes ativas configuradas, retorna null (cai no template padrão).
+ */
+function escolherVariante(
+  variantes: unknown,
+  tipo: string,
+): { key: string; texto: string } | null {
+  if (!variantes || typeof variantes !== "object") return null;
+  const grupo = (variantes as Record<string, unknown>)[tipo];
+  if (!Array.isArray(grupo) || grupo.length === 0) return null;
+  const ativas = (grupo as Variante[]).filter(
+    (v) => v && typeof v.texto === "string" && v.texto.trim().length > 0 && v.ativo !== false,
+  );
+  if (ativas.length === 0) return null;
+  const escolhida = ativas[Math.floor(Math.random() * ativas.length)];
+  return { key: `${tipo}_${escolhida.key || "a"}`, texto: escolhida.texto };
+}
+
+/**
+ * Aplica substituições de placeholders em um template.
+ */
+function aplicarTemplate(
+  template: string,
+  vars: Record<string, string>,
+): string {
+  let out = template;
+  for (const [k, v] of Object.entries(vars)) {
+    out = out.replaceAll(`{{${k}}}`, v);
+  }
+  return out;
+}
+
 
 
 export const handler = async (req: Request) => {
