@@ -58,7 +58,7 @@ export function ReportsShowcase() {
           </div>
 
           <div className="relative reveal pt-6 pb-20 sm:pb-6 px-2 sm:px-0">
-            <div className="glass rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col bg-background">
+            <div className="glass rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col bg-background transition-all duration-500 hover:shadow-elegant hover:-translate-y-1">
               {/* Title bar */}
               <div className="bg-muted/40 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border flex items-center justify-between gap-2">
                 <div className="flex gap-1.5 flex-shrink-0">
