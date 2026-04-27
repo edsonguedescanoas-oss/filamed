@@ -142,11 +142,8 @@ ${publicUrl}`;
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{unidade}}", unidade.nome);
         if (reviewUrl) {
-          // Monta o link curto próprio que redireciona para o Google Review.
-          // Usa o domínio canônico configurado em PUBLIC_APP_URL (secret),
-          // com fallback para o domínio próprio e, por último, o domínio publicado
-          // do Lovable. Isso garante que o link funcione mesmo se o domínio
-          // custom (filamed.com.br) não estiver propagado/ativo no momento.
+          // Link curto próprio (filamed.com.br) que redireciona via 302
+          // para a URL de avaliação configurada na unidade.
           const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
           mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
         }
