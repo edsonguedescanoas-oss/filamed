@@ -93,8 +93,8 @@ async function googleTts(
   if (!apiKey) {
     return { ok: false, unavailable: true, reason: "GOOGLE_TTS_API_KEY não configurada", status: 0 };
   }
-  // Debug: mostra fingerprint da key (primeiros 6 + últimos 4) pra confirmar qual está em uso
-  console.log(`[tts] Google key fingerprint: ${apiKey.slice(0, 6)}...${apiKey.slice(-4)} (len=${apiKey.length})`);
+  // Não logar nada que derive do conteúdo da chave (evita vazamento parcial em logs).
+  console.log(`[tts] Google TTS configurado (key length=${apiKey.length})`);
 
   const voice = voiceId || "pt-BR-Neural2-C";
   const langCode = voice.split("-").slice(0, 2).join("-") || "pt-BR";
