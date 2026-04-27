@@ -352,11 +352,11 @@ export function ReportsShowcase() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="flex items-center gap-1 text-muted-foreground cursor-help hover:text-foreground transition-colors">
-                                <span className="w-2 h-2 rounded-full bg-primary/30" /> Abandonos
+                                <span className="w-2 h-2 rounded-full bg-destructive/70" /> Abandonos
                               </span>
                             </TooltipTrigger>
                             <TooltipContent side="top">
-                              <p className="text-[11px]">Pacientes que saíram antes da chamada ou foram marcados como ausentes.</p>
+                              <p className="text-[11px]">Pacientes que saíram antes da chamada. <b>Pico de +15% após 14h</b> nesta unidade.</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
