@@ -324,17 +324,41 @@ export function ReportsShowcase() {
                     {/* Line chart */}
                     <div className="rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4 transition-all duration-300 hover:border-primary/30 hover:bg-muted/20">
                       <div className="flex items-start sm:items-center justify-between mb-2 sm:mb-3 gap-2 flex-wrap">
-                        <div>
-                          <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Senhas / dia</p>
-                          <p className="text-xs sm:text-sm font-bold text-foreground">Últimos 14 dias</p>
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help">
+                              <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                                Senhas / dia <Info className="h-2.5 w-2.5 opacity-60" />
+                              </p>
+                              <p className="text-xs sm:text-sm font-bold text-foreground">Últimos 14 dias</p>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[240px]">
+                            <p className="font-bold text-xs mb-0.5">Volume diário</p>
+                            <p className="text-[11px] leading-relaxed">Comparativo de senhas <b>atendidas</b> vs. <b>abandonos</b> por dia. Cada ponto agrega o total das 24h.</p>
+                          </TooltipContent>
+                        </Tooltip>
                         <div className="flex items-center gap-2 sm:gap-3 text-[9px] font-semibold">
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <span className="w-2 h-2 rounded-full bg-primary" /> Atendidas
-                          </span>
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <span className="w-2 h-2 rounded-full bg-primary/30" /> Abandonos
-                          </span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                <span className="w-2 h-2 rounded-full bg-primary" /> Atendidas
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-[11px]">Senhas chamadas e finalizadas com sucesso.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 text-muted-foreground cursor-help hover:text-foreground transition-colors">
+                                <span className="w-2 h-2 rounded-full bg-primary/30" /> Abandonos
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-[11px]">Pacientes que saíram antes da chamada ou foram marcados como ausentes.</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </div>
                       <svg viewBox="0 0 280 90" className="w-full h-20 sm:h-24" preserveAspectRatio="none">
@@ -371,16 +395,34 @@ export function ReportsShowcase() {
                           strokeDasharray="3 3"
                           style={{ animation: "fade-in 1.2s ease-out 1s both" }}
                         />
-                        <circle
-                          cx="260" cy="10" r="6"
-                          fill="hsl(var(--primary))"
-                          style={{ transformOrigin: "260px 10px", animation: "live-pulse 2s ease-out 1.6s infinite" }}
-                        />
-                        <circle
-                          cx="260" cy="10" r="3"
-                          fill="hsl(var(--primary))"
-                          style={{ animation: "scale-in 0.4s ease-out 1.6s both", transformOrigin: "260px 10px" }}
-                        />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <g className="cursor-help">
+                              <circle
+                                cx="260" cy="10" r="9"
+                                fill="transparent"
+                              />
+                              <circle
+                                cx="260" cy="10" r="6"
+                                fill="hsl(var(--primary))"
+                                style={{ transformOrigin: "260px 10px", animation: "live-pulse 2s ease-out 1.6s infinite" }}
+                              />
+                              <circle
+                                cx="260" cy="10" r="3"
+                                fill="hsl(var(--primary))"
+                                style={{ animation: "scale-in 0.4s ease-out 1.6s both", transformOrigin: "260px 10px" }}
+                              />
+                            </g>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px]">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                              <p className="font-bold text-xs">Hoje · 14:32</p>
+                            </div>
+                            <p className="text-[11px]"><b>142 atendidas</b> · 8 abandonos</p>
+                            <p className="text-[10px] text-primary-foreground/70 mt-0.5">Atualização em tempo real.</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </svg>
                     </div>
 
