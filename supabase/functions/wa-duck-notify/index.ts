@@ -132,9 +132,9 @@ ${publicUrl}`;
           .replace("{{nome}}", paciente.nome_completo)
           .replace("{{unidade}}", unidade.nome);
         if (reviewUrl) {
-          // Formato compacto na mesma linha + linkPreview desabilitado no envio,
-          // para evitar a pré-visualização (imagem) gerada pelo WhatsApp.
-          mensagem += `\n\n⭐ *Avalie aqui:* ${reviewUrl}`;
+          // Utiliza markdown para simular um hiperlink (embora o WhatsApp exiba o texto e o link separadamente,
+          // o texto "Avalie agora" chama a atenção para o link logo abaixo).
+          mensagem += `\n\n⭐ *Avalie agora:* ${reviewUrl}`;
         }
       } else {
         // 2. Calcula tempo estimado
