@@ -57,37 +57,43 @@ export function ReportsShowcase() {
             </div>
           </div>
 
-          <div className="relative reveal">
+          <div className="relative reveal pt-6 pb-20 sm:pb-6 px-2 sm:px-0">
             <div className="glass rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col bg-background">
               {/* Title bar */}
-              <div className="bg-muted/40 px-4 py-2.5 border-b border-border flex items-center justify-between">
-                <div className="flex gap-1.5">
+              <div className="bg-muted/40 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-border flex items-center justify-between gap-2">
+                <div className="flex gap-1.5 flex-shrink-0">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                 </div>
-                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Dashboard Mensal · KPI Overview
+                <div className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest truncate">
+                  <span className="hidden sm:inline">Dashboard Mensal · KPI Overview</span>
+                  <span className="sm:hidden">KPI Overview</span>
                 </div>
-                <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                <Download className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
               </div>
 
-              <div className="flex-1 p-5 space-y-5">
-                {/* KPI cards */}
-                <div className="grid grid-cols-3 gap-3">
+              <div className="flex-1 p-3 sm:p-5 space-y-3 sm:space-y-5">
+                {/* KPI cards: 2 cols on mobile (3rd full-width), 3 on sm+ */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {[
                     { icon: Clock, label: "TME", value: "14min", delta: "-22%", down: true },
                     { icon: Users, label: "Atendidos", value: "1.284", delta: "+8%", down: false },
                     { icon: TrendingUp, label: "Throughput", value: "92%", delta: "+15%", down: false },
                   ].map((k, i) => (
-                    <div key={i} className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                    <div
+                      key={i}
+                      className={`rounded-lg border border-border/60 bg-muted/20 p-2.5 sm:p-3 ${
+                        i === 2 ? "col-span-2 sm:col-span-1" : ""
+                      }`}
+                    >
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <k.icon className="h-3 w-3" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider">{k.label}</span>
+                        <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">{k.label}</span>
                       </div>
                       <div className="mt-1.5 flex items-end justify-between gap-1">
-                        <span className="text-lg font-bold text-foreground leading-none">{k.value}</span>
-                        <span className={`flex items-center gap-0.5 text-[9px] font-bold ${k.down ? "text-success" : "text-success"}`}>
+                        <span className="text-base sm:text-lg font-bold text-foreground leading-none">{k.value}</span>
+                        <span className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-success">
                           {k.down ? <TrendingDown className="h-2.5 w-2.5" /> : <ArrowUpRight className="h-2.5 w-2.5" />}
                           {k.delta}
                         </span>
@@ -97,13 +103,13 @@ export function ReportsShowcase() {
                 </div>
 
                 {/* Line chart */}
-                <div className="rounded-xl border border-border/60 bg-muted/10 p-4">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="rounded-xl border border-border/60 bg-muted/10 p-3 sm:p-4">
+                  <div className="flex items-start sm:items-center justify-between mb-2 sm:mb-3 gap-2 flex-wrap">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Senhas / dia</p>
-                      <p className="text-sm font-bold text-foreground">Últimos 14 dias</p>
+                      <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Senhas / dia</p>
+                      <p className="text-xs sm:text-sm font-bold text-foreground">Últimos 14 dias</p>
                     </div>
-                    <div className="flex items-center gap-3 text-[9px] font-semibold">
+                    <div className="flex items-center gap-2 sm:gap-3 text-[9px] font-semibold">
                       <span className="flex items-center gap-1 text-muted-foreground">
                         <span className="w-2 h-2 rounded-full bg-primary" /> Atendidas
                       </span>
@@ -112,18 +118,16 @@ export function ReportsShowcase() {
                       </span>
                     </div>
                   </div>
-                  <svg viewBox="0 0 280 90" className="w-full h-24" preserveAspectRatio="none">
+                  <svg viewBox="0 0 280 90" className="w-full h-20 sm:h-24" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
                         <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.35" />
                         <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
                       </linearGradient>
                     </defs>
-                    {/* gridlines */}
                     {[0, 30, 60, 90].map((y) => (
                       <line key={y} x1="0" x2="280" y1={y} y2={y} stroke="currentColor" className="text-border" strokeWidth="0.5" strokeDasharray="2 3" />
                     ))}
-                    {/* main area */}
                     <path
                       d="M0,60 L20,52 L40,55 L60,40 L80,45 L100,30 L120,35 L140,22 L160,28 L180,18 L200,24 L220,15 L240,20 L260,10 L280,14 L280,90 L0,90 Z"
                       fill="url(#areaGrad)"
@@ -136,7 +140,6 @@ export function ReportsShowcase() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
-                    {/* secondary line */}
                     <path
                       d="M0,75 L20,72 L40,74 L60,68 L80,70 L100,65 L120,67 L140,62 L160,64 L180,60 L200,62 L220,58 L240,60 L260,56 L280,58"
                       fill="none"
@@ -145,18 +148,16 @@ export function ReportsShowcase() {
                       strokeWidth="1.5"
                       strokeDasharray="3 3"
                     />
-                    {/* highlight dot */}
                     <circle cx="260" cy="10" r="3" fill="hsl(var(--primary))" />
                     <circle cx="260" cy="10" r="6" fill="hsl(var(--primary))" fillOpacity="0.2" />
                   </svg>
                 </div>
 
-                {/* Bottom: bars + donut */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Bars: ocupação por consultório */}
-                  <div className="rounded-xl border border-border/60 bg-muted/10 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Ocupação</p>
-                    <div className="flex items-end gap-1.5 h-16">
+                {/* Bottom: bars + donut — stays 2 cols even on mobile (compact) */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                  <div className="rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3">
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Ocupação</p>
+                    <div className="flex items-end gap-1 sm:gap-1.5 h-12 sm:h-16">
                       {[55, 78, 42, 88, 65, 72, 60].map((h, i) => (
                         <div key={i} className="flex-1 flex flex-col justify-end">
                           <div
@@ -166,16 +167,15 @@ export function ReportsShowcase() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-between mt-1.5 text-[8px] text-muted-foreground font-semibold">
+                    <div className="flex justify-between mt-1.5 text-[7px] sm:text-[8px] text-muted-foreground font-semibold">
                       <span>C1</span><span>C2</span><span>C3</span><span>C4</span><span>C5</span><span>C6</span><span>C7</span>
                     </div>
                   </div>
 
-                  {/* Donut: especialidades */}
-                  <div className="rounded-xl border border-border/60 bg-muted/10 p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Especialidades</p>
-                    <div className="flex items-center gap-3">
-                      <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90">
+                  <div className="rounded-xl border border-border/60 bg-muted/10 p-2.5 sm:p-3">
+                    <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Especialidades</p>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <svg viewBox="0 0 36 36" className="h-12 w-12 sm:h-16 sm:w-16 -rotate-90 flex-shrink-0">
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="5"
                           strokeDasharray="44 88" strokeLinecap="round" />
@@ -184,17 +184,17 @@ export function ReportsShowcase() {
                         <circle cx="18" cy="18" r="14" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.25" strokeWidth="5"
                           strokeDasharray="18 88" strokeDashoffset="-70" strokeLinecap="round" />
                       </svg>
-                      <div className="flex-1 space-y-1">
+                      <div className="flex-1 space-y-1 min-w-0">
                         {[
                           { l: "Clínica", v: "50%", c: "bg-primary" },
                           { l: "Pediatria", v: "30%", c: "bg-primary/55" },
                           { l: "Gineco", v: "20%", c: "bg-primary/25" },
                         ].map((s, i) => (
-                          <div key={i} className="flex items-center justify-between text-[9px]">
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <span className={`w-1.5 h-1.5 rounded-full ${s.c}`} /> {s.l}
+                          <div key={i} className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px]">
+                            <span className="flex items-center gap-1 text-muted-foreground truncate">
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.c}`} /> <span className="truncate">{s.l}</span>
                             </span>
-                            <span className="font-bold text-foreground">{s.v}</span>
+                            <span className="font-bold text-foreground flex-shrink-0">{s.v}</span>
                           </div>
                         ))}
                       </div>
@@ -204,19 +204,19 @@ export function ReportsShowcase() {
               </div>
             </div>
 
-            {/* Floating insight annotation */}
-            <div className="absolute -bottom-4 -right-4 glass p-4 rounded-xl shadow-xl border border-primary/20 max-w-[220px] z-20 bg-background/95 backdrop-blur">
+            {/* Floating insight annotation — below card on mobile, overlapping on lg */}
+            <div className="mt-3 lg:mt-0 lg:absolute lg:-bottom-4 lg:-right-4 glass p-3 sm:p-4 rounded-xl shadow-xl border border-primary/20 lg:max-w-[220px] z-20 bg-background/95 backdrop-blur">
               <div className="flex items-center gap-2 mb-1">
-                <CheckCircle2 className="h-4 w-4 text-success" />
-                <span className="text-xs font-bold uppercase tracking-wide">Insight Automático</span>
+                <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wide">Insight Automático</span>
               </div>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 "O tempo de espera na unidade Centro aumentou 15% após as 14h. Recomendamos reforço na triagem."
               </p>
             </div>
 
-            {/* Floating top-left badge */}
-            <div className="absolute -top-4 -left-4 glass p-3 rounded-xl shadow-lg border border-border z-20 bg-background/95 backdrop-blur animate-float">
+            {/* Floating top-left badge — hidden on small screens to avoid clutter */}
+            <div className="hidden sm:flex absolute -top-4 -left-4 glass p-3 rounded-xl shadow-lg border border-border z-20 bg-background/95 backdrop-blur animate-float">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
                   <TrendingUp className="h-4 w-4 text-success" />
