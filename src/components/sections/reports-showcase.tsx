@@ -457,5 +457,6 @@ export function ReportsShowcase() {
         </div>
       </div>
     </section>
+    </TooltipProvider>
   );
 }
