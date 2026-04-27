@@ -96,7 +96,16 @@ function renderFallbackHtml(message: string): string {
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0F172A" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="FilaMed" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:title" content="Avalie seu atendimento — FilaMed" />
+  <meta property="og:description" content="Sua opinião ajuda a clínica a melhorar." />
   <title>Avaliação indisponível — FilaMed</title>
   <style>
     * { box-sizing: border-box; }
