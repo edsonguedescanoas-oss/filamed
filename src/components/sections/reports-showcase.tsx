@@ -12,7 +12,14 @@ import {
   Loader2,
   Database,
   Sparkles,
+  Info,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type DashboardState = "loading" | "empty" | "loaded";
 
