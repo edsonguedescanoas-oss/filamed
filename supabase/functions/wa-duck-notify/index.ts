@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.103.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-token",
 };
 
 /**
@@ -124,6 +124,99 @@ function garantirCTAAcompanhamento(mensagem: string, publicUrl: string): string 
 
 
 
+/**
+ * Verifica se a chamada está autenticada de uma das formas permitidas:
+ *  (a) header `x-internal-token` igual ao segredo armazenado em internal_config
+ *      (usado por triggers do banco), OU
+ *  (b) Authorization Bearer com um JWT válido de usuário Supabase.
+ *
+ * Para `tipo = "teste"` exigimos sempre (b) + papel admin/super_admin.
+ *
+ * Retorna { ok: true, user, viaInternal } em caso de sucesso, ou
+ * { ok: false, status, message } em caso de falha.
+ */
+async function verificarAutenticacao(
+  req: Request,
+  tipo: string,
+  unidadeIdAlvo: string | null,
+  supabaseClient: ReturnType<typeof createClient>,
+): Promise<
+  | { ok: true; user: { id: string } | null; viaInternal: boolean }
+  | { ok: false; status: number; message: string }
+> {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const internalToken = req.headers.get("x-internal-token") ?? "";
+
+  // (a) caminho interno: triggers do banco enviam x-internal-token
+  if (internalToken) {
+    const { data: cfg, error: cfgErr } = await supabaseClient
+      .from("internal_config")
+      .select("value")
+      .eq("key", "waduck_notify_secret")
+      .maybeSingle();
+    if (cfgErr) {
+      console.error("Erro ao ler internal_config:", cfgErr.message);
+      return { ok: false, status: 500, message: "Internal config error" };
+    }
+    const expected = (cfg?.value as string | undefined) ?? "";
+    // Comparação em tempo constante para evitar timing attacks
+    if (expected.length > 0 && expected.length === internalToken.length) {
+      let diff = 0;
+      for (let i = 0; i < expected.length; i++) {
+        diff |= expected.charCodeAt(i) ^ internalToken.charCodeAt(i);
+      }
+      if (diff === 0) {
+        // Caminho interno NÃO pode disparar `tipo=teste` (só admin autenticado pode)
+        if (tipo === "teste") {
+          return {
+            ok: false,
+            status: 403,
+            message: "Internal callers cannot use tipo=teste",
+          };
+        }
+        return { ok: true, user: null, viaInternal: true };
+      }
+    }
+    return { ok: false, status: 401, message: "Invalid internal token" };
+  }
+
+  // (b) caminho com JWT de usuário
+  if (!bearer) {
+    return { ok: false, status: 401, message: "Missing authentication" };
+  }
+
+  const { data: userData, error: userErr } = await supabaseClient.auth.getUser(bearer);
+  if (userErr || !userData?.user) {
+    return { ok: false, status: 401, message: "Invalid or expired token" };
+  }
+  const user = userData.user;
+
+  // Para `tipo=teste`, exigir admin ou super_admin na unidade alvo
+  if (tipo === "teste") {
+    if (!unidadeIdAlvo) {
+      return { ok: false, status: 400, message: "unidade_id é obrigatório para tipo=teste" };
+    }
+    const { data: roles, error: rolesErr } = await supabaseClient
+      .from("user_roles")
+      .select("role, unidade_id")
+      .eq("user_id", user.id);
+    if (rolesErr) {
+      console.error("Erro ao verificar role do usuário:", rolesErr.message);
+      return { ok: false, status: 500, message: "Role check error" };
+    }
+    const isSuper = (roles ?? []).some((r) => r.role === "super_admin");
+    const isAdminUnidade = (roles ?? []).some(
+      (r) => r.role === "admin" && r.unidade_id === unidadeIdAlvo,
+    );
+    if (!isSuper && !isAdminUnidade) {
+      return { ok: false, status: 403, message: "Apenas admin/super_admin pode disparar testes" };
+    }
+  }
+
+  return { ok: true, user: { id: user.id }, viaInternal: false };
+}
+
 export const handler = async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -142,7 +235,7 @@ export const handler = async (req: Request) => {
       console.error("Erro ao parsear o JSON do request:", e.message);
       throw new Error("Invalid JSON body");
     }
-    const { 
+    const {
       senha_id, 
       tipo = "criacao", 
       mesa_nome, 
