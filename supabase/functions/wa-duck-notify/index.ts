@@ -119,36 +119,58 @@ export const handler = async (req: Request) => {
       config = (unidade.whatsapp_config as any) || {};
       telefone = paciente.telefone;
 
+      // Primeiro nome para tom mais pessoal e natural no WhatsApp.
+      const primeiroNome = (paciente.nome_completo || "").trim().split(/\s+/)[0] || paciente.nome_completo;
+      const baseUrl = getCanonicalAppUrl(); // sempre https://filamed.com.br
+      const trackUrl = `${baseUrl}/s/${senha.token_publico}`;
+
       if (tipo === "chamada") {
-        const template = config.template_chamada || "Olá {{nome}}, sua senha {{senha}} foi chamada agora — dirija-se ao {{local}}.";
-        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(", ");
-        mensagem = template
-          .replace("{{nome}}", paciente.nome_completo)
-          .replace("{{senha}}", senha.codigo)
-          .replace("{{local}}", localFormatado || "atendimento");
+        const template = config.template_chamada;
+        const localFormatado = [fila.nome, mesa_nome].filter(Boolean).join(" · ");
+        if (template) {
+          mensagem = template
+            .replace("{{nome}}", primeiroNome)
+            .replace("{{senha}}", senha.codigo)
+            .replace("{{local}}", localFormatado || "atendimento");
+        } else {
+          mensagem = `🔔 *${primeiroNome}, é a sua vez!*
+
+Sua senha *${senha.codigo}* acaba de ser chamada em *${unidade.nome}*.
+
+📍 Dirija-se a: *${localFormatado || "recepção"}*
+
+👉 Acompanhe pelo link:
+${trackUrl}`;
+        }
       } else if (tipo === "encaminhamento") {
-        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
-        mensagem = `Olá *${paciente.nome_completo}*, sua senha foi atualizada no *${unidade.nome}*.
+        mensagem = `🔄 *${primeiroNome}, sua senha foi atualizada*
+
+Você foi encaminhado(a) em *${unidade.nome}*.
 
 🎫 Nova senha: *${senha.codigo}*
 📍 Fila: *${fila.nome}*
 
-Acompanhe em tempo real pelo mesmo link:
-${publicUrl}`;
+👉 Continue acompanhando em tempo real:
+${trackUrl}`;
       } else if (tipo === "finalizacao") {
         const reviewUrl = unidade.google_review_url;
-        const template = config.template_finalizacao || "Olá {{nome}}, seu atendimento no {{unidade}} foi finalizado. Obrigado pela visita!";
-        mensagem = template
-          .replace("{{nome}}", paciente.nome_completo)
-          .replace("{{unidade}}", unidade.nome);
+        const template = config.template_finalizacao;
+        if (template) {
+          mensagem = template
+            .replace("{{nome}}", primeiroNome)
+            .replace("{{unidade}}", unidade.nome);
+        } else {
+          mensagem = `✅ *${primeiroNome}, seu atendimento foi finalizado*
+
+Obrigado por escolher *${unidade.nome}*. Esperamos que tenha sido uma boa experiência!`;
+        }
         if (reviewUrl) {
-          // Link curto próprio (filamed.com.br) que redireciona via 302
-          // para a URL de avaliação configurada na unidade.
-          const shortUrl = `${getCanonicalAppUrl()}/r/${unidade.id}`;
-          mensagem += `\n\n⭐ *Avalie agora:* ${shortUrl}`;
+          // Link curto canônico (filamed.com.br/r/...) → 302 → URL do Google.
+          const shortUrl = `${baseUrl}/r/${unidade.id}`;
+          mensagem += `\n\n⭐ *Sua opinião faz a diferença!*\nAvalie nosso atendimento no Google (leva menos de 1 minuto):\n👉 ${shortUrl}`;
         }
       } else {
-        // 2. Calcula tempo estimado
+        // Criação de senha: calcula tempo estimado.
         const { count } = await supabaseClient
           .from("senhas")
           .select("*", { count: "exact", head: true })
@@ -160,17 +182,17 @@ ${publicUrl}`;
         const tempo_por_pessoa = fila.tempo_espera_estimado || 10;
         const tempo_total = (pessoas_na_frente + 1) * tempo_por_pessoa;
 
-        const publicUrl = `${getCanonicalAppUrl()}/s/${senha.token_publico}`;
-        mensagem = `Olá *${paciente.nome_completo}*, sua senha no *${unidade.nome}* foi gerada com sucesso!
+        mensagem = `👋 Olá, *${primeiroNome}*! Sua senha em *${unidade.nome}* foi gerada com sucesso.
 
 🎫 Senha: *${senha.codigo}*
-🕒 Tempo estimado de espera: *${tempo_total} minutos*
+📍 Fila: *${fila.nome}*
 👥 Pessoas na sua frente: *${pessoas_na_frente}*
+🕒 Tempo estimado: *${tempo_total} min*
 
-Você pode acompanhar o status da sua senha em tempo real pelo link:
-${publicUrl}
+👉 *Acompanhe em tempo real:*
+${trackUrl}
 
-Avisaremos você quando for a sua vez!`;
+Você receberá um aviso aqui quando for a sua vez. Não precisa ficar de olho na tela. 😉`;
       }
     }
 
