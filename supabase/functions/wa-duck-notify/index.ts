@@ -98,6 +98,7 @@ export const handler = async (req: Request) => {
     let config: any = {};
     let finalUnidadeId = null;
     let finalSenhaId = null;
+    let variantKey: string | null = null;
 
     if (tipo === "teste") {
       console.log(`Processando notificação de TESTE para telefone: ${testTelefone}`);
