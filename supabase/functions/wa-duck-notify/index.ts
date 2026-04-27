@@ -33,9 +33,6 @@ function getCanonicalAppUrl(): string {
   return "https://filamed.com.br";
 }
 
-function getFallbackAppUrl(): string {
-  return "https://filamed.lovable.app";
-}
 
 
 export const handler = async (req: Request) => {
