@@ -105,7 +105,7 @@ function LoginPage() {
             Entre com seu email ou crie uma conta para começar.
           </p>
 
-          <QuickLoginPanel />
+          {import.meta.env.DEV && <QuickLoginPanel />}
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")} className="mt-6">
             <TabsList className="grid w-full grid-cols-2">
