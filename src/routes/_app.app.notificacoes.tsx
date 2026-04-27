@@ -361,6 +361,8 @@ function NotificacoesConfig({ unidadeId }: { unidadeId: string | null }) {
           </CardContent>
         </Card>
 
+        <WhatsappVariantesEditor unidadeId={unidadeId} />
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
