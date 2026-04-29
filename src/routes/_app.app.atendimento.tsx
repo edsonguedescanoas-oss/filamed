@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { PontoAtendimentoSelector } from "@/components/ponto-atendimento-selector";
-import { cn } from "@/lib/utils";
+import { cn, formatarTempo } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
 import { RoleGuard } from "@/components/role-guard";
@@ -1011,11 +1011,7 @@ function Modal({
 }
 
 function formatDur(seg: number) {
-  const h = Math.floor(seg / 3600);
-  const m = Math.floor((seg % 3600) / 60);
-  const s = seg % 60;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+  return formatarTempo(seg);
 }
 
 function timeAgo(iso: string) {
