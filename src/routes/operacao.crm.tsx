@@ -217,6 +217,7 @@ function CRMOperacaoPage() {
       {/* Lead Detail Drawer */}
       <LeadDetail 
         lead={selectedLead} 
+        interacoes={interacoes}
         isOpen={isDetailOpen} 
         onClose={() => setIsDetailOpen(false)}
         onAddNote={handleAddNote}
