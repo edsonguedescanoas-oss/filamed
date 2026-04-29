@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import PipelineKanban from "@/components/Operacao/CRM/PipelineKanban";
 import LeadDetail, { Interacao } from "@/components/Operacao/CRM/LeadDetail";
 import { Lead, PipelineStage } from "@/components/Operacao/CRM/LeadCard";
@@ -11,8 +12,17 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Search, Filter, Plus, LayoutDashboard, ListFilter, TrendingUp, Clock } from "lucide-react";
+import { Search, Filter, Plus, LayoutDashboard, ListFilter, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter 
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/role-guard";
@@ -34,6 +44,10 @@ function CRMOperacaoPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
   const [filterValueRange, setFilterValueRange] = useState<string>("all");
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskContent, setTaskContent] = useState("");
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [leadForTask, setLeadForTask] = useState<Lead | null>(null);
 
   const [highlightThreshold, setHighlightThreshold] = useState<number>(3);
 
@@ -148,6 +162,46 @@ function CRMOperacaoPage() {
       });
     } catch (error: any) {
       toast.error("Erro ao mover lead", {
+        description: error.message,
+      });
+    }
+  };
+  const handleAddTaskClick = (lead: Lead) => {
+    setLeadForTask(lead);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleSaveTask = async () => {
+    if (!leadForTask || !taskContent.trim()) return;
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { error } = await supabase
+        .from('interacoes')
+        .insert({
+          lead_id: leadForTask.id,
+          tipo: 'tarefa',
+          conteudo: `TAREFA AGENDADA: ${taskContent}${taskDueDate ? ` | Para: ${format(new Date(taskDueDate), "dd/MM/yyyy HH:mm")}` : ''}`,
+          usuario_id: userData.user.id
+        });
+
+      if (error) throw error;
+
+      toast.success("Tarefa registrada", {
+        description: "A tarefa foi registrada no histórico do lead.",
+      });
+
+      setIsTaskModalOpen(false);
+      setTaskContent("");
+      setTaskDueDate("");
+      
+      if (selectedLead?.id === leadForTask.id) {
+        await fetchInteracoes(leadForTask.id);
+      }
+    } catch (error: any) {
+      toast.error("Erro ao agendar tarefa", {
         description: error.message,
       });
     }
@@ -306,6 +360,7 @@ function CRMOperacaoPage() {
             leads={filteredLeads} 
             onLeadMove={handleLeadMove}
             onLeadClick={handleLeadClick}
+            onAddTask={handleAddTaskClick}
             highlightDaysThreshold={highlightThreshold}
           />
         )}
@@ -319,6 +374,45 @@ function CRMOperacaoPage() {
         onClose={() => setIsDetailOpen(false)}
         onAddNote={handleAddNote}
       />
+
+      <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Agendar Tarefa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="lead">Lead</Label>
+              <Input id="lead" value={leadForTask?.nome_clinica || ""} disabled className="bg-muted" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="content">O que precisa ser feito?</Label>
+              <Textarea 
+                id="content" 
+                placeholder="Ex: Ligar para confirmar interesse na proposta..." 
+                value={taskContent}
+                onChange={(e) => setTaskContent(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="due_date">Data e Hora Limite (Opcional)</Label>
+              <Input 
+                id="due_date" 
+                type="datetime-local" 
+                value={taskDueDate}
+                onChange={(e) => setTaskDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTaskModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveTask} disabled={!taskContent.trim()}>Salvar Tarefa</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

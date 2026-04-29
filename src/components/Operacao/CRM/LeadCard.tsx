@@ -32,10 +32,11 @@ export interface Lead {
 interface LeadCardProps {
   lead: Lead;
   onClick: (lead: Lead) => void;
+  onAddTask?: (lead: Lead) => void;
   isDragging?: boolean;
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick, isDragging }) => {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick, onAddTask, isDragging }) => {
   const getTemperatureColor = (temp: LeadTemperature) => {
     switch (temp) {
       case 'quente': return 'bg-orange-500 hover:bg-orange-600';
@@ -95,8 +96,14 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onClick, isDragging }) => {
               <DropdownMenuItem className="gap-2">
                 <MessageSquare className="h-4 w-4" /> WhatsApp
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2">
-                <Calendar className="h-4 w-4" /> Agendar
+              <DropdownMenuItem 
+                className="gap-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddTask?.(lead);
+                }}
+              >
+                <Calendar className="h-4 w-4" /> Agendar Tarefa
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
