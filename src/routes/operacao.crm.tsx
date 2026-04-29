@@ -189,7 +189,7 @@ function CRMOperacaoPage() {
         <div className="relative w-full md:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Buscar clínicas ou contatos..." 
+            placeholder="Buscar clínicas, contatos, email..." 
             className="pl-9 h-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -204,10 +204,27 @@ function CRMOperacaoPage() {
           <SelectContent>
             <SelectItem value="all">Todos os estágios</SelectItem>
             <SelectItem value="novo_lead">Novo Lead</SelectItem>
+            <SelectItem value="contato_inicial">Contato Inicial</SelectItem>
             <SelectItem value="qualificacao">Qualificação</SelectItem>
+            <SelectItem value="demonstracao">Demonstração</SelectItem>
             <SelectItem value="proposta">Proposta</SelectItem>
+            <SelectItem value="negociacao">Negociação</SelectItem>
             <SelectItem value="fechado_ganho">Ganhos</SelectItem>
             <SelectItem value="fechado_perdido">Perdidos</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={filterValueRange} onValueChange={setFilterValueRange}>
+          <SelectTrigger className="w-full md:w-48 h-9">
+            <TrendingUp className="h-3.5 w-3.5 mr-2 text-primary" />
+            <SelectValue placeholder="Faixa de valor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Qualquer valor</SelectItem>
+            <SelectItem value="under_1k">Até R$ 1.000</SelectItem>
+            <SelectItem value="1k_5k">R$ 1.000 - R$ 5.000</SelectItem>
+            <SelectItem value="5k_10k">R$ 5.000 - R$ 10.000</SelectItem>
+            <SelectItem value="over_10k">Acima de R$ 10.000</SelectItem>
           </SelectContent>
         </Select>
 
