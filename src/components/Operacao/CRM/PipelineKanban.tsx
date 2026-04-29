@@ -5,10 +5,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+import { differenceInDays } from 'date-fns';
+
 interface PipelineKanbanProps {
   leads: Lead[];
   onLeadMove: (leadId: string, newStage: PipelineStage) => void;
   onLeadClick: (lead: Lead) => void;
+  highlightDaysThreshold?: number;
 }
 
 const STAGES: { id: PipelineStage; label: string }[] = [
@@ -22,7 +25,12 @@ const STAGES: { id: PipelineStage; label: string }[] = [
   { id: 'fechado_perdido', label: 'Perdidos' },
 ];
 
-const PipelineKanban: React.FC<PipelineKanbanProps> = ({ leads, onLeadMove, onLeadClick }) => {
+const PipelineKanban: React.FC<PipelineKanbanProps> = ({ 
+  leads, 
+  onLeadMove, 
+  onLeadClick,
+  highlightDaysThreshold = 3 // Padrão de 3 dias
+}) => {
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
