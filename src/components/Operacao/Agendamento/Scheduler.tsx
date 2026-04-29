@@ -9,6 +9,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { WorkflowEngine } from '@/lib/workflows/workflowEngine';
 
 const TIME_SLOTS = [
   '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'
@@ -34,15 +35,25 @@ const Scheduler: React.FC<SchedulerProps> = ({ leadId }) => {
     try {
       const [hours, minutes] = selectedTime.split(':');
       const scheduleDate = setMinutes(setHours(date, parseInt(hours)), parseInt(minutes));
+      const linkVideo = `https://meet.filamed.com.br/demo-${Math.random().toString(36).substring(7)}`;
 
       const { error } = await supabase.from('demonstracoes').insert({
         lead_id: leadId,
         data_hora: scheduleDate.toISOString(),
         status: 'agendada',
-        link_videochamada: `https://meet.filamed.com.br/demo-${Math.random().toString(36).substring(7)}`
-      });
+        link_videochamada: linkVideo
+      } as any);
 
       if (error) throw error;
+
+      // Disparar workflow de agendamento
+      await WorkflowEngine.disparar('demonstracao_agendada', {
+        leadId,
+        data: {
+          data_hora: format(scheduleDate, "dd/MM/yyyy 'às' HH:mm"),
+          link_videochamada: linkVideo
+        }
+      });
 
       setStep('success');
       toast.success("Demonstração agendada com sucesso!");
