@@ -62,9 +62,13 @@ function LoginPage() {
   // Redireciona já autenticado
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      void navigate({ to: "/app" });
+      if (roles.includes("super_admin")) {
+        void navigate({ to: "/admin" });
+      } else {
+        void navigate({ to: "/app" });
+      }
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [isLoading, isAuthenticated, roles, navigate]);
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
