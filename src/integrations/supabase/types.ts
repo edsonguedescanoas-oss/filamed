@@ -2046,6 +2046,7 @@ export type Database = {
           id: string
           lead_id: string
           status: string
+          tipo_acao: string | null
           trigger: string
           workflow_id: string
         }
@@ -2056,6 +2057,7 @@ export type Database = {
           id?: string
           lead_id: string
           status: string
+          tipo_acao?: string | null
           trigger: string
           workflow_id: string
         }
@@ -2066,6 +2068,7 @@ export type Database = {
           id?: string
           lead_id?: string
           status?: string
+          tipo_acao?: string | null
           trigger?: string
           workflow_id?: string
         }
