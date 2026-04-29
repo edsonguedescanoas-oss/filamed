@@ -23,12 +23,13 @@ export const ROLE_ROUTES: Record<AppRole, string[]> = {
     "/app/auditoria",
     "/app/usuarios",
     "/app/seguranca",
+    "/operacao/automacoes",
   ],
   recepcao: ["/app", "/app/recepcao", "/app/guiche", "/app/filas", "/app/pacientes", "/app/notificacoes"],
   medico: ["/app", "/app/atendimento", "/app/pacientes"],
   enfermeiro: ["/app", "/app/atendimento", "/app/pacientes"],
   gestor: ["/app", "/app/filas", "/app/pontos", "/app/pacientes", "/app/notificacoes", "/app/relatorios", "/app/auditoria", "/app/usuarios", "/app/seguranca"],
-  super_admin: [], // super_admin opera em /admin, não em /app
+  super_admin: ["/admin/automacoes", "/operacao/automacoes"], // super_admin opera em /admin, mas pode ver automacoes em ambos
 };
 
 /** Une todas as rotas permitidas para o conjunto de roles do usuário. */
