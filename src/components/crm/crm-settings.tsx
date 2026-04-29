@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Save, RefreshCw, Smartphone, Globe, CheckCircle2 } from "lucide-react";
+import { Copy, Save, RefreshCw, Smartphone, Globe, CheckCircle2, AlertCircle, Clock, Check } from "lucide-react";
 
 export function CRMSettings() {
   const [loading, setLoading] = useState(false);
@@ -15,11 +15,44 @@ export function CRMSettings() {
     whatsapp_number: "",
   });
   const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookLogs, setWebhookLogs] = useState<any[]>([]);
+  const [checkingLogs, setCheckingLogs] = useState(false);
 
   useEffect(() => {
     loadConfig();
     setWebhookUrl(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/waduk-webhook`);
+    fetchLogs();
+
+    // Listener para logs em tempo real
+    const channel = supabase
+      .channel('waduk_logs_changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'waduk_webhook_logs' },
+        () => fetchLogs()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  const fetchLogs = async () => {
+    setCheckingLogs(true);
+    try {
+      const { data } = await supabase
+        .from("waduk_webhook_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setWebhookLogs(data || []);
+    } catch (err) {
+      console.error("Erro ao buscar logs:", err);
+    } finally {
+      setCheckingLogs(false);
+    }
+  };
 
   const loadConfig = async () => {
     try {
@@ -149,6 +182,62 @@ export function CRMSettings() {
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-foreground">
             <p className="font-semibold mb-1">Se ainda não chegar mensagem:</p>
             <p>o WADUK ainda não está chamando esta URL. Depois de salvar o webhook no WADUK, envie uma mensagem nova para o número conectado.</p>
+          </div>
+
+          <div className="pt-4 border-t space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                Checklist de Integração
+                {checkingLogs && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
+              </h4>
+              <Button variant="ghost" size="sm" onClick={fetchLogs} className="h-8 text-xs">
+                Atualizar Status
+              </Button>
+            </div>
+
+            <div className="grid gap-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-card">
+                <div className={`mt-0.5 p-1 rounded-full ${webhookLogs.length > 0 ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                  {webhookLogs.length > 0 ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Recebimento de Dados</p>
+                  <p className="text-xs text-muted-foreground">
+                    {webhookLogs.length > 0 
+                      ? "O sistema já recebeu sinais do WADUK." 
+                      : "Aguardando primeira chamada do WADUK. Verifique se a URL está correta no painel."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-card">
+                <div className={`mt-0.5 p-1 rounded-full ${webhookLogs.some(l => l.event_type === 'message.received' || l.event_type === 'messages.upsert') ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                  {webhookLogs.some(l => l.event_type === 'message.received' || l.event_type === 'messages.upsert') ? <Check className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Eventos de Mensagem</p>
+                  <p className="text-xs text-muted-foreground">
+                    {webhookLogs.some(l => l.event_type === 'message.received' || l.event_type === 'messages.upsert')
+                      ? "Eventos de mensagem detectados com sucesso."
+                      : "Nenhum evento 'message.received' ou 'messages.upsert' detectado. Habilite-os no painel WADUK."}
+                  </p>
+                </div>
+              </div>
+
+              {webhookLogs.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground mb-2">Últimos Eventos</p>
+                  <div className="space-y-1">
+                    {webhookLogs.slice(0, 3).map((log) => (
+                      <div key={log.id} className="flex items-center justify-between text-[11px] p-1.5 rounded bg-muted/50 border border-transparent hover:border-border transition-colors">
+                        <span className="font-mono text-primary">{log.event_type}</span>
+                        <span className="text-muted-foreground">{new Date(log.created_at).toLocaleTimeString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
