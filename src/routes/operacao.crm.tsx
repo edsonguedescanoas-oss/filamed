@@ -48,10 +48,8 @@ function CRMOperacaoPage() {
       if (error) throw error;
       setLeads(data as unknown as Lead[]);
     } catch (error: any) {
-      toast({
-        title: "Erro ao buscar leads",
+      toast.error("Erro ao buscar leads", {
         description: error.message,
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
