@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { WorkflowEngine } from '@/lib/workflows/workflowEngine';
 
 const MinhaAgenda = () => {
   const [demos, setDemos] = useState<any[]>([]);
@@ -38,7 +39,7 @@ const MinhaAgenda = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('demonstracoes')
-        .select('*, lead:leads(nome_clinica, nome_contato, telefone)')
+        .select('*, lead:leads(id, nome_clinica, nome_contato, telefone)')
         .order('data_hora', { ascending: true });
 
       if (error) throw error;
@@ -50,15 +51,20 @@ const MinhaAgenda = () => {
     }
   }
 
-  const updateStatus = async (id: string, newStatus: string) => {
+  const updateStatus = async (demo: any, newStatus: string) => {
     try {
       const { error } = await supabase
         .from('demonstracoes')
         .update({ status: newStatus as any })
-        .eq('id', id);
+        .eq('id', demo.id);
 
       if (error) throw error;
-      setDemos(prev => prev.map(d => d.id === id ? { ...d, status: newStatus } : d));
+
+      if (newStatus === 'realizada') {
+        await WorkflowEngine.disparar('demonstracao_realizada', { leadId: demo.lead_id });
+      }
+
+      setDemos(prev => prev.map(d => d.id === demo.id ? { ...d, status: newStatus } : d));
       toast.success("Status atualizado");
     } catch (error: any) {
       toast.error("Erro ao atualizar", { description: error.message });
@@ -151,14 +157,14 @@ const MinhaAgenda = () => {
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2" onClick={() => updateStatus(demo.id, 'realizada')}>
+                      <DropdownContent align="end">
+                        <DropdownMenuItem className="gap-2" onClick={() => updateStatus(demo, 'realizada')}>
                           <CheckCircle2 className="h-4 w-4 text-green-500" /> Marcar como Realizada
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2" onClick={() => updateStatus(demo.id, 'nao_compareceu')}>
+                        <DropdownMenuItem className="gap-2" onClick={() => updateStatus(demo, 'nao_compareceu')}>
                           <XCircle className="h-4 w-4 text-orange-500" /> Lead não compareceu
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2" onClick={() => updateStatus(demo.id, 'cancelada')}>
+                        <DropdownMenuItem className="gap-2" onClick={() => updateStatus(demo, 'cancelada')}>
                           <XCircle className="h-4 w-4 text-red-500" /> Cancelar Reunião
                         </DropdownMenuItem>
                         <DropdownMenuItem className="gap-2">
