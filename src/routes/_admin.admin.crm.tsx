@@ -3,8 +3,9 @@ import { useState } from "react";
 import { RoleGuard } from "@/components/role-guard";
 import { ChatInterface } from "@/components/crm/chat-interface";
 import { AgentConfig } from "@/components/crm/agent-config";
+import { CRMSettings } from "@/components/crm/crm-settings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Users } from "lucide-react";
+import { MessageSquare, Users, Settings } from "lucide-react";
 
 export const Route = createFileRoute("/_admin/admin/crm")({
   component: () => (
