@@ -26,8 +26,8 @@ function CRMPage() {
           <p className="text-sm text-muted-foreground">Gerencie conversas via WhatsApp e agentes de suporte.</p>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-[400px]">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-[500px]">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="chat" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               Mensagens
@@ -35,6 +35,10 @@ function CRMPage() {
             <TabsTrigger value="agents" className="gap-2">
               <Users className="h-4 w-4" />
               Agentes (GHL)
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Configuração
             </TabsTrigger>
           </TabsList>
         </Tabs>
