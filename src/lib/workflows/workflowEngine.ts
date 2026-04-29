@@ -30,7 +30,6 @@ export class WorkflowEngine {
       case 'demonstracao_realizada':
         await this.handleDemoRealizada(contexto);
         break;
-      // Outros eventos seriam tratados aqui
     }
   }
 
@@ -39,40 +38,38 @@ export class WorkflowEngine {
     
     // 1. Buscar dados do lead
     const { data: lead } = await supabase.from('leads').select('*').eq('id', leadId).single();
-    if (!lead) return;
+    if (!lead || !lead.telefone) return;
 
     // 2. Enviar WhatsApp via WADUK
     await WadukClient.enviarTemplate(lead.telefone, 'demonstracao_agendada', {
-      nome: lead.nome_contato,
+      nome: lead.nome_contato || 'Cliente',
       data: data.data_hora,
       link: data.link_videochamada
     });
 
-    // 3. Agendar lembretes (em um sistema real, isso usaria um scheduler/cron)
-    console.log("Lembretes de 24h e 1h agendados para", lead.telefone);
+    console.log("Lembretes de 24h e 1h agendados (simulação) para", lead.telefone);
   }
 
   private static async handleDemoRealizada(ctx: WorkflowContext) {
     const { leadId } = ctx;
     
-    // Mover lead para estágio "demonstracao" e criar tarefa de follow-up
+    // Mover lead para estágio "demonstracao"
     await supabase.from('leads').update({ 
-      estagio: 'demonstracao',
+      estagio: 'demonstracao' as any,
       updated_at: new Date().toISOString()
     }).eq('id', leadId);
 
-    console.log("Lead movido para estágio 'demonstracao' e tarefa de follow-up criada.");
+    console.log("Lead movido para estágio 'demonstracao'");
   }
 
   private static async logExecucao(evento: string, ctx: WorkflowContext) {
-    // Tabela workflows_execucoes deve existir
     try {
       await supabase.from('workflows_execucoes').insert({
         lead_id: ctx.leadId,
         trigger: evento,
         status: 'sucesso',
-        detalhes: ctx.data
-      });
+        detalhes: ctx.data || {}
+      } as any);
     } catch (e) {
       console.warn("Falha ao logar execução do workflow", e);
     }
