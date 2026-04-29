@@ -390,7 +390,9 @@ export function ChatInterface() {
                       <div>
                         <p className="font-medium">Primeiro contato</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(selectedConversa.contato?.created_at), "PPP", { locale: ptBR })}
+                          {selectedConversa.contato?.created_at 
+                            ? format(new Date(selectedConversa.contato.created_at), "PPP", { locale: ptBR })
+                            : "N/A"}
                         </p>
                       </div>
                    </div>
@@ -399,7 +401,9 @@ export function ChatInterface() {
                       <div>
                         <p className="font-medium">Última interação</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(selectedConversa.ultima_mensagem_at), "PPp", { locale: ptBR })}
+                          {selectedConversa.ultima_mensagem_at
+                            ? format(new Date(selectedConversa.ultima_mensagem_at), "PPp", { locale: ptBR })
+                            : "N/A"}
                         </p>
                       </div>
                    </div>
