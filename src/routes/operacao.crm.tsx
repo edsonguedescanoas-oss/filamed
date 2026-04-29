@@ -69,15 +69,12 @@ function CRMOperacaoPage() {
         lead.id === leadId ? { ...lead, estagio_pipeline: newStage, data_atualizacao: new Date().toISOString() } : lead
       ));
 
-      toast({
-        title: "Estágio atualizado",
+      toast.success("Estágio atualizado", {
         description: "O lead foi movido com sucesso.",
       });
     } catch (error: any) {
-      toast({
-        title: "Erro ao mover lead",
+      toast.error("Erro ao mover lead", {
         description: error.message,
-        variant: "destructive",
       });
     }
   };
