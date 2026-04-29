@@ -797,10 +797,13 @@ export type Database = {
           nome_contato: string
           origem_lead: Database["public"]["Enums"]["lead_source"]
           responsavel_id: string | null
+          tags: string[] | null
           telefone: string | null
           temperatura_lead: Database["public"]["Enums"]["lead_temperature"]
+          ultimo_contato_em: string | null
           updated_at: string
           valor_potencial: number | null
+          workflow_atual: string | null
         }
         Insert: {
           cnpj?: string | null
@@ -815,10 +818,13 @@ export type Database = {
           nome_contato: string
           origem_lead?: Database["public"]["Enums"]["lead_source"]
           responsavel_id?: string | null
+          tags?: string[] | null
           telefone?: string | null
           temperatura_lead?: Database["public"]["Enums"]["lead_temperature"]
+          ultimo_contato_em?: string | null
           updated_at?: string
           valor_potencial?: number | null
+          workflow_atual?: string | null
         }
         Update: {
           cnpj?: string | null
@@ -833,10 +839,13 @@ export type Database = {
           nome_contato?: string
           origem_lead?: Database["public"]["Enums"]["lead_source"]
           responsavel_id?: string | null
+          tags?: string[] | null
           telefone?: string | null
           temperatura_lead?: Database["public"]["Enums"]["lead_temperature"]
+          ultimo_contato_em?: string | null
           updated_at?: string
           valor_potencial?: number | null
+          workflow_atual?: string | null
         }
         Relationships: []
       }
@@ -1859,6 +1868,99 @@ export type Database = {
           processed_at?: string
         }
         Relationships: []
+      }
+      workflows: {
+        Row: {
+          configuracao: Json
+          created_at: string
+          data_atualizacao: string
+          data_criacao: string
+          descricao: string | null
+          execucoes_total: number | null
+          id: string
+          status: string
+          sucesso_taxa: number | null
+          titulo: string
+          updated_at: string
+          usuario_id: string | null
+        }
+        Insert: {
+          configuracao?: Json
+          created_at?: string
+          data_atualizacao?: string
+          data_criacao?: string
+          descricao?: string | null
+          execucoes_total?: number | null
+          id?: string
+          status?: string
+          sucesso_taxa?: number | null
+          titulo: string
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          configuracao?: Json
+          created_at?: string
+          data_atualizacao?: string
+          data_criacao?: string
+          descricao?: string | null
+          execucoes_total?: number | null
+          id?: string
+          status?: string
+          sucesso_taxa?: number | null
+          titulo?: string
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      workflows_execucoes: {
+        Row: {
+          created_at: string
+          data_execucao: string
+          detalhes: Json | null
+          id: string
+          lead_id: string
+          status: string
+          trigger: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_execucao?: string
+          detalhes?: Json | null
+          id?: string
+          lead_id: string
+          status: string
+          trigger: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          data_execucao?: string
+          detalhes?: Json | null
+          id?: string
+          lead_id?: string
+          status?: string
+          trigger?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_execucoes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflows_execucoes_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
