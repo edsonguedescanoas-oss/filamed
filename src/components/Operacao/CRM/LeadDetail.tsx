@@ -1,11 +1,4 @@
 import React, { useState } from 'react';
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetDescription 
-} from '@/components/ui/dropdown-menu'; // Using generic UI or sheet
 import { Lead } from './LeadCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +21,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle 
+} from '@/components/ui/sheet';
 
 interface LeadDetailProps {
   lead: Lead | null;
@@ -35,14 +34,6 @@ interface LeadDetailProps {
   onClose: () => void;
   onAddNote: (content: string) => void;
 }
-
-// Since Sheet is often in components/ui/sheet.tsx
-import { 
-  Sheet as ShadcnSheet, 
-  SheetContent as ShadcnSheetContent, 
-  SheetHeader as ShadcnSheetHeader, 
-  SheetTitle as ShadcnSheetTitle 
-} from '@/components/ui/sheet';
 
 const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNote }) => {
   const [note, setNote] = useState('');
@@ -63,26 +54,25 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
   };
 
   return (
-    <ShadcnSheet open={isOpen} onOpenChange={onClose}>
-      <ShadcnSheetContent className="sm:max-w-xl w-full p-0 flex flex-col">
-        <ShadcnSheetHeader className="p-6 pb-2">
-          <div className="flex justify-between items-start">
-            <div>
-              <ShadcnSheetTitle className="text-2xl font-bold">{lead.nome_clinica}</ShadcnSheetTitle>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline" className="capitalize">
-                  {lead.estagio_pipeline.replace('_', ' ')}
-                </Badge>
-                <Badge className={cn(
-                  lead.temperatura_lead === 'quente' ? "bg-orange-500" : 
-                  lead.temperatura_lead === 'morno' ? "bg-yellow-500" : "bg-blue-500"
-                )}>
-                  {lead.temperatura_lead.toUpperCase()}
-                </Badge>
-              </div>
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent className="sm:max-w-xl w-full p-0 flex flex-col">
+        <SheetHeader className="p-6 pb-2 text-left">
+          <div className="flex flex-col">
+            <SheetTitle className="text-2xl font-bold">{lead.nome_clinica}</SheetTitle>
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="outline" className="capitalize text-[10px]">
+                {lead.estagio_pipeline.replace('_', ' ')}
+              </Badge>
+              <Badge className={cn(
+                "text-[10px]",
+                lead.temperatura_lead === 'quente' ? "bg-orange-500 hover:bg-orange-600" : 
+                lead.temperatura_lead === 'morno' ? "bg-yellow-500 hover:bg-yellow-600" : "bg-blue-500 hover:bg-blue-600"
+              )}>
+                {lead.temperatura_lead.toUpperCase()}
+              </Badge>
             </div>
           </div>
-        </ShadcnSheetHeader>
+        </SheetHeader>
 
         <Separator />
 
@@ -91,7 +81,7 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
             {/* Quick Actions */}
             <div className="grid grid-cols-4 gap-2">
               <Button variant="outline" size="sm" className="flex flex-col h-auto py-2 gap-1">
-                <Phone className="h-4 w-4" />
+                <Phone className="h-4 w-4 text-primary" />
                 <span className="text-[10px]">Ligar</span>
               </Button>
               <Button variant="outline" size="sm" className="flex flex-col h-auto py-2 gap-1 text-green-600 border-green-200 bg-green-50">
@@ -99,11 +89,11 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
                 <span className="text-[10px]">WhatsApp</span>
               </Button>
               <Button variant="outline" size="sm" className="flex flex-col h-auto py-2 gap-1">
-                <Mail className="h-4 w-4" />
+                <Mail className="h-4 w-4 text-blue-500" />
                 <span className="text-[10px]">E-mail</span>
               </Button>
               <Button variant="outline" size="sm" className="flex flex-col h-auto py-2 gap-1">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-4 w-4 text-purple-500" />
                 <span className="text-[10px]">Reunião</span>
               </Button>
             </div>
@@ -115,22 +105,22 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
               </h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <label className="text-xs text-muted-foreground block">Contato</label>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider block">Contato</label>
                   <span className="flex items-center gap-1 font-medium">
                     <User className="h-3 w-3" /> {lead.nome_contato}
                   </span>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block">Valor Potencial</label>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider block">Valor Potencial</label>
                   <span className="font-medium text-primary">{formatCurrency(lead.valor_potencial)}</span>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block">Telefone</label>
-                  <span className="font-medium">{lead.telefone || 'N/A'}</span>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider block">Telefone</label>
+                  <span className="font-medium">{lead.telefone || 'Não informado'}</span>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block">Email</label>
-                  <span className="font-medium truncate">{lead.email || 'N/A'}</span>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider block">Email</label>
+                  <span className="font-medium truncate">{lead.email || 'Não informado'}</span>
                 </div>
               </div>
             </div>
@@ -159,7 +149,7 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Lead importado via sistema automático de triagem.
+                      Lead importado para o pipeline comercial.
                     </p>
                   </div>
                 </div>
@@ -179,7 +169,6 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
                 </div>
                 
                 <div className="space-y-3 mt-6">
-                  {/* Placeholder for notes */}
                   <p className="text-center text-xs text-muted-foreground py-8 italic">
                     Nenhuma nota interna registrada ainda.
                   </p>
@@ -188,8 +177,8 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
             </Tabs>
           </div>
         </ScrollArea>
-      </ShadcnSheetContent>
-    </ShadcnSheet>
+      </SheetContent>
+    </Sheet>
   );
 };
 
