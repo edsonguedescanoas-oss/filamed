@@ -11,6 +11,7 @@ interface PipelineKanbanProps {
   leads: Lead[];
   onLeadMove: (leadId: string, newStage: PipelineStage) => void;
   onLeadClick: (lead: Lead) => void;
+  onAddTask?: (lead: Lead) => void;
   highlightDaysThreshold?: number;
 }
 
@@ -29,6 +30,7 @@ const PipelineKanban: React.FC<PipelineKanbanProps> = ({
   leads, 
   onLeadMove, 
   onLeadClick,
+  onAddTask,
   highlightDaysThreshold = 3 // Padrão de 3 dias
 }) => {
   const onDragEnd = (result: DropResult) => {
@@ -126,6 +128,7 @@ const PipelineKanban: React.FC<PipelineKanbanProps> = ({
                                 <LeadCard 
                                   lead={lead} 
                                   onClick={onLeadClick}
+                                  onAddTask={onAddTask}
                                   isDragging={snapshot.isDragging}
                                 />
                               </div>
