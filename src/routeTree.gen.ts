@@ -29,6 +29,7 @@ import { Route as RUnidadeIdRouteImport } from './routes/r.$unidadeId'
 import { Route as OperacaoRelatoriosRouteImport } from './routes/operacao.relatorios'
 import { Route as OperacaoDashboardRouteImport } from './routes/operacao.dashboard'
 import { Route as OperacaoCrmRouteImport } from './routes/operacao.crm'
+import { Route as OperacaoCadencesRouteImport } from './routes/operacao.cadences'
 import { Route as OperacaoAutomacoesRouteImport } from './routes/operacao.automacoes'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
@@ -160,6 +161,11 @@ const OperacaoDashboardRoute = OperacaoDashboardRouteImport.update({
 const OperacaoCrmRoute = OperacaoCrmRouteImport.update({
   id: '/operacao/crm',
   path: '/operacao/crm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacaoCadencesRoute = OperacaoCadencesRouteImport.update({
+  id: '/operacao/cadences',
+  path: '/operacao/cadences',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperacaoAutomacoesRoute = OperacaoAutomacoesRouteImport.update({
@@ -352,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/operacao/automacoes': typeof OperacaoAutomacoesRoute
+  '/operacao/cadences': typeof OperacaoCadencesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/operacao/dashboard': typeof OperacaoDashboardRoute
   '/operacao/relatorios': typeof OperacaoRelatoriosRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/operacao/automacoes': typeof OperacaoAutomacoesRoute
+  '/operacao/cadences': typeof OperacaoCadencesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/operacao/dashboard': typeof OperacaoDashboardRoute
   '/operacao/relatorios': typeof OperacaoRelatoriosRoute
@@ -462,6 +470,7 @@ export interface FileRoutesById {
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
   '/operacao/automacoes': typeof OperacaoAutomacoesRoute
+  '/operacao/cadences': typeof OperacaoCadencesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/operacao/dashboard': typeof OperacaoDashboardRoute
   '/operacao/relatorios': typeof OperacaoRelatoriosRoute
@@ -518,6 +527,7 @@ export interface FileRouteTypes {
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/operacao/automacoes'
+    | '/operacao/cadences'
     | '/operacao/crm'
     | '/operacao/dashboard'
     | '/operacao/relatorios'
@@ -571,6 +581,7 @@ export interface FileRouteTypes {
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/operacao/automacoes'
+    | '/operacao/cadences'
     | '/operacao/crm'
     | '/operacao/dashboard'
     | '/operacao/relatorios'
@@ -627,6 +638,7 @@ export interface FileRouteTypes {
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
     | '/operacao/automacoes'
+    | '/operacao/cadences'
     | '/operacao/crm'
     | '/operacao/dashboard'
     | '/operacao/relatorios'
@@ -682,6 +694,7 @@ export interface RootRouteChildren {
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
   OperacaoAutomacoesRoute: typeof OperacaoAutomacoesRoute
+  OperacaoCadencesRoute: typeof OperacaoCadencesRoute
   OperacaoCrmRoute: typeof OperacaoCrmRoute
   OperacaoDashboardRoute: typeof OperacaoDashboardRoute
   OperacaoRelatoriosRoute: typeof OperacaoRelatoriosRoute
@@ -833,6 +846,13 @@ declare module '@tanstack/react-router' {
       path: '/operacao/crm'
       fullPath: '/operacao/crm'
       preLoaderRoute: typeof OperacaoCrmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacao/cadences': {
+      id: '/operacao/cadences'
+      path: '/operacao/cadences'
+      fullPath: '/operacao/cadences'
+      preLoaderRoute: typeof OperacaoCadencesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operacao/automacoes': {
@@ -1200,6 +1220,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
   OperacaoAutomacoesRoute: OperacaoAutomacoesRoute,
+  OperacaoCadencesRoute: OperacaoCadencesRoute,
   OperacaoCrmRoute: OperacaoCrmRoute,
   OperacaoDashboardRoute: OperacaoDashboardRoute,
   OperacaoRelatoriosRoute: OperacaoRelatoriosRoute,
@@ -1213,13 +1234,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

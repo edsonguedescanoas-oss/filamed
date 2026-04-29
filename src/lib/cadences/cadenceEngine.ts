@@ -34,10 +34,13 @@ export class CadenceEngine {
     const { data: lead } = await supabase.from('leads').select('*').eq('id', leadId).single();
     if (!lead) return;
 
+    // Extração segura de metadados
+    const metadata = (lead.metadata as Record<string, any>) || {};
+
     const vars = {
       nome_contato: lead.nome_contato || 'Cliente',
       nome_clinica: lead.nome_clinica || 'sua clínica',
-      data_demo: lead.metadata?.data_demo || ''
+      data_demo: String(metadata.data_demo || '')
     };
 
     for (const step of steps) {
@@ -81,16 +84,16 @@ export class CadenceEngine {
 
     if (!leadsEmCadencia) return;
 
-    for (const lead of leadsEmCadencia) {
+    for (const lead of (leadsEmCadencia as any[])) {
       const cadence = CADENCE_TEMPLATES.find(c => c.id === lead.cadence_id);
       if (!cadence) continue;
 
-      // Cálculo simplificado de dias passados desde o início (em um sistema real usaria data_inicio_cadencia)
-      const dataInicio = new Date(lead.data_criacao); // Simulação
+      // Cálculo simplificado de dias passados desde o início
+      const dataInicio = new Date(lead.data_criacao); 
       const hoje = new Date();
       const diffDays = Math.floor((hoje.getTime() - dataInicio.getTime()) / (1000 * 3600 * 24));
 
-      // Verifica se há passos para o dia atual que ainda não foram executados
+      // Verifica se há passos para o dia atual
       await this.executarPassosDoDia(lead.id, cadence, diffDays);
     }
   }
