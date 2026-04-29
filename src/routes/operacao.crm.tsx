@@ -32,7 +32,6 @@ function CRMOperacaoPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchLeads();
