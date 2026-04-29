@@ -1919,6 +1919,39 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_queue: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          id: string
+          last_error: string | null
+          payload: Json
+          status: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          payload: Json
+          status?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          status?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       workflows: {
         Row: {
           configuracao: Json
