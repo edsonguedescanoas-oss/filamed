@@ -374,6 +374,45 @@ function CRMOperacaoPage() {
         onClose={() => setIsDetailOpen(false)}
         onAddNote={handleAddNote}
       />
+
+      <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Agendar Tarefa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="lead">Lead</Label>
+              <Input id="lead" value={leadForTask?.nome_clinica || ""} disabled className="bg-muted" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="content">O que precisa ser feito?</Label>
+              <Textarea 
+                id="content" 
+                placeholder="Ex: Ligar para confirmar interesse na proposta..." 
+                value={taskContent}
+                onChange={(e) => setTaskContent(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="due_date">Data e Hora Limite (Opcional)</Label>
+              <Input 
+                id="due_date" 
+                type="datetime-local" 
+                value={taskDueDate}
+                onChange={(e) => setTaskDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTaskModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveTask} disabled={!taskContent.trim()}>Salvar Tarefa</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
