@@ -105,10 +105,7 @@ function formatDataHora(iso: string): string {
 
 function formatDuracao(seg: number | null): string {
   if (seg == null || seg < 0) return "—";
-  const m = Math.floor(seg / 60);
-  const s = seg % 60;
-  if (m === 0) return `${s}s`;
-  return `${m}m ${s.toString().padStart(2, "0")}s`;
+  return formatarTempo(seg);
 }
 
 export function HistoricoPonto({
