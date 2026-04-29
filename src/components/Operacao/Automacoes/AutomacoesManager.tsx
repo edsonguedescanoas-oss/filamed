@@ -53,6 +53,30 @@ export default function AutomacoesManager({ showTitle = true }: AutomacoesManage
     fetchWorkflows();
     fetchExecutions();
     fetchActionMetrics();
+
+    // Inscrição para atualizações em tempo real das execuções e métricas
+    const channel = supabase
+      .channel('automacoes-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'workflows_execucoes' },
+        () => {
+          fetchExecutions();
+          fetchActionMetrics();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'workflows' },
+        () => {
+          fetchWorkflows();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function fetchWorkflows() {
