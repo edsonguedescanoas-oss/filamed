@@ -102,15 +102,12 @@ function CRMOperacaoPage() {
 
       if (error) throw error;
 
-      toast({
-        title: "Nota adicionada",
+      toast.success("Nota adicionada", {
         description: "A interação foi registrada no histórico.",
       });
     } catch (error: any) {
-      toast({
-        title: "Erro ao adicionar nota",
+      toast.error("Erro ao adicionar nota", {
         description: error.message,
-        variant: "destructive",
       });
     }
   };
