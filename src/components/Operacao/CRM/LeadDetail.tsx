@@ -14,7 +14,9 @@ import {
   History, 
   FileText,
   MessageSquare,
-  Plus
+  Plus,
+  StickyNote,
+  CheckCircle2
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,14 +30,24 @@ import {
   SheetTitle 
 } from '@/components/ui/sheet';
 
+export interface Interacao {
+  id: string;
+  lead_id: string;
+  tipo: 'whatsapp' | 'email' | 'ligacao' | 'reuniao' | 'tarefa' | 'nota';
+  conteudo: string;
+  data_criacao: string;
+  usuario_id: string;
+}
+
 interface LeadDetailProps {
   lead: Lead | null;
+  interacoes: Interacao[];
   isOpen: boolean;
   onClose: () => void;
   onAddNote: (content: string) => void;
 }
 
-const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNote }) => {
+const LeadDetail: React.FC<LeadDetailProps> = ({ lead, interacoes, isOpen, onClose, onAddNote }) => {
   const [note, setNote] = useState('');
 
   if (!lead) return null;
@@ -44,6 +56,18 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
     if (!note.trim()) return;
     onAddNote(note);
     setNote('');
+  };
+
+  const getInteractionIcon = (tipo: Interacao['tipo']) => {
+    switch (tipo) {
+      case 'whatsapp': return <MessageSquare className="h-3 w-3" />;
+      case 'email': return <Mail className="h-3 w-3" />;
+      case 'ligacao': return <Phone className="h-3 w-3" />;
+      case 'reuniao': return <Calendar className="h-3 w-3" />;
+      case 'tarefa': return <CheckCircle2 className="h-3 w-3" />;
+      case 'nota': return <StickyNote className="h-3 w-3" />;
+      default: return <Clock className="h-3 w-3" />;
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -140,18 +164,41 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
               
               <TabsContent value="historico" className="pt-4 space-y-4">
                 <div className="relative pl-6 border-l-2 border-muted ml-3 space-y-6">
-                  <div className="relative">
-                    <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-primary border-4 border-background" />
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-semibold">Lead Criado</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {format(new Date(lead.data_atualizacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </span>
+                  {interacoes.length > 0 ? (
+                    interacoes.map((interacao) => (
+                      <div key={interacao.id} className="relative">
+                        <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-primary border-4 border-background flex items-center justify-center">
+                          <div className="hidden group-hover:block absolute -left-8 bg-popover text-popover-foreground text-[8px] px-1 rounded shadow-sm">
+                            {interacao.tipo}
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs font-semibold flex items-center gap-2 capitalize">
+                            {getInteractionIcon(interacao.tipo)} {interacao.tipo.replace('_', ' ')}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {format(new Date(interacao.data_criacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                          {interacao.conteudo}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-primary border-4 border-background" />
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold">Lead Criado</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(lead.data_criacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Lead importado para o pipeline comercial.
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Lead importado para o pipeline comercial.
-                    </p>
-                  </div>
+                  )}
                 </div>
               </TabsContent>
 

@@ -23,6 +23,7 @@ export interface Lead {
   estagio_pipeline: PipelineStage;
   valor_potencial: number;
   temperatura_lead: LeadTemperature;
+  data_criacao: string;
   data_atualizacao: string;
   telefone?: string;
   email?: string;

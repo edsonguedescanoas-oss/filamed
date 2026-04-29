@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import PipelineKanban from "@/components/Operacao/CRM/PipelineKanban";
-import LeadDetail from "@/components/Operacao/CRM/LeadDetail";
+import LeadDetail, { Interacao } from "@/components/Operacao/CRM/LeadDetail";
 import { Lead, PipelineStage } from "@/components/Operacao/CRM/LeadCard";
 import { Input } from "@/components/ui/input";
 import { 
@@ -29,6 +29,7 @@ function CRMOperacaoPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [interacoes, setInteracoes] = useState<Interacao[]>([]);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
@@ -36,6 +37,29 @@ function CRMOperacaoPage() {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  useEffect(() => {
+    if (selectedLead) {
+      fetchInteracoes(selectedLead.id);
+    } else {
+      setInteracoes([]);
+    }
+  }, [selectedLead]);
+
+  async function fetchInteracoes(leadId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('interacoes')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('data_criacao', { ascending: false });
+
+      if (error) throw error;
+      setInteracoes(data as unknown as Interacao[]);
+    } catch (error: any) {
+      console.error("Erro ao buscar interações:", error.message);
+    }
+  }
 
   async function fetchLeads() {
     try {
@@ -101,6 +125,8 @@ function CRMOperacaoPage() {
         });
 
       if (error) throw error;
+
+      await fetchInteracoes(selectedLead.id);
 
       toast.success("Nota adicionada", {
         description: "A interação foi registrada no histórico.",
@@ -191,6 +217,7 @@ function CRMOperacaoPage() {
       {/* Lead Detail Drawer */}
       <LeadDetail 
         lead={selectedLead} 
+        interacoes={interacoes}
         isOpen={isDetailOpen} 
         onClose={() => setIsDetailOpen(false)}
         onAddNote={handleAddNote}
