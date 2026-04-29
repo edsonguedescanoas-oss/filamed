@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Save, RefreshCw, Smartphone, Globe } from "lucide-react";
+import { Copy, Save, RefreshCw, Smartphone, Globe, CheckCircle2 } from "lucide-react";
 
 export function CRMSettings() {
   const [loading, setLoading] = useState(false);
@@ -18,22 +18,8 @@ export function CRMSettings() {
 
   useEffect(() => {
     loadConfig();
-    generateWebhookUrl();
+    setWebhookUrl(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/waduk-webhook`);
   }, []);
-
-  const generateWebhookUrl = async () => {
-    // Em um cenário real, pegaríamos o ID do projeto do Supabase. 
-    // Aqui usaremos uma lógica para mostrar o URL provável.
-    const { data: { session } } = await supabase.auth.getSession();
-    const projectRef = window.location.hostname.split(".")[0];
-    
-    // Fallback se não estiver no domínio do supabase
-    if (projectRef.includes("localhost") || projectRef.includes("lovable")) {
-       setWebhookUrl("https://bccvpirrqwhqsinlmpth.supabase.co/functions/v1/waduk-webhook");
-    } else {
-       setWebhookUrl(`https://${projectRef}.supabase.co/functions/v1/waduk-webhook`);
-    }
-  };
 
   const loadConfig = async () => {
     try {
@@ -131,7 +117,7 @@ export function CRMSettings() {
             Configuração de Webhook
           </CardTitle>
           <CardDescription>
-            Copie este URL e cole no campo "Webhook URL" do seu painel WADUK para receber mensagens no CRM.
+            Copie esta URL e cole no campo de webhook/callback da instância do WhatsApp no painel WADUK.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -141,9 +127,28 @@ export function CRMSettings() {
               <Copy className="h-4 w-4" />
             </Button>
           </div>
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-            <p className="font-semibold mb-1">Importante:</p>
-            <p>Certifique-se de habilitar o evento <strong>message.received</strong> no WADUK para que o CRM possa processar as respostas dos clientes.</p>
+
+          <div className="rounded-lg border bg-muted/40 p-4 text-sm">
+            <p className="mb-3 font-semibold">Onde colocar no WADUK</p>
+            <ol className="space-y-2 text-muted-foreground">
+              <li className="flex gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                Abra a instância conectada ao número configurado acima.
+              </li>
+              <li className="flex gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                Entre em <strong className="text-foreground">Configurações / Webhook / Callback URL</strong>.
+              </li>
+              <li className="flex gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                Cole a URL acima e habilite eventos de mensagem recebida, como <strong className="text-foreground">message.received</strong> ou <strong className="text-foreground">messages.upsert</strong>.
+              </li>
+            </ol>
+          </div>
+
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-foreground">
+            <p className="font-semibold mb-1">Se ainda não chegar mensagem:</p>
+            <p>o WADUK ainda não está chamando esta URL. Depois de salvar o webhook no WADUK, envie uma mensagem nova para o número conectado.</p>
           </div>
         </CardContent>
       </Card>
