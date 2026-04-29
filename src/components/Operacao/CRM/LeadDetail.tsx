@@ -164,18 +164,41 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, interacoes, isOpen, onClo
               
               <TabsContent value="historico" className="pt-4 space-y-4">
                 <div className="relative pl-6 border-l-2 border-muted ml-3 space-y-6">
-                  <div className="relative">
-                    <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-primary border-4 border-background" />
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-semibold">Lead Criado</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {format(new Date(lead.data_atualizacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                      </span>
+                  {interacoes.length > 0 ? (
+                    interacoes.map((interacao) => (
+                      <div key={interacao.id} className="relative">
+                        <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-primary border-4 border-background flex items-center justify-center">
+                          <div className="hidden group-hover:block absolute -left-8 bg-popover text-popover-foreground text-[8px] px-1 rounded shadow-sm">
+                            {interacao.tipo}
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs font-semibold flex items-center gap-2 capitalize">
+                            {getInteractionIcon(interacao.tipo)} {interacao.tipo.replace('_', ' ')}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {format(new Date(interacao.data_criacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                          {interacao.conteudo}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="relative">
+                      <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full bg-primary border-4 border-background" />
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold">Lead Criado</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(lead.data_criacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Lead importado para o pipeline comercial.
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Lead importado para o pipeline comercial.
-                    </p>
-                  </div>
+                  )}
                 </div>
               </TabsContent>
 
