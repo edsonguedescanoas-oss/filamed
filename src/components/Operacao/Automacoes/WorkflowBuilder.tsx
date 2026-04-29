@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import ReactFlow, { 
   addEdge, 
   Background, 
@@ -9,15 +9,46 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Handle,
-  Position
+  Position,
+  NodeProps
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Save, Play, Trash2, Plus, Zap, ArrowRight, Settings2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Save, 
+  Play, 
+  Trash2, 
+  Plus, 
+  Zap, 
+  ArrowRight, 
+  Settings2, 
+  X,
+  MessageSquare,
+  Variable,
+  Eye
+} from 'lucide-react';
+import { 
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CRM_TRIGGERS } from '@/lib/workflows/triggers';
 import { CRM_ACTIONS } from '@/lib/workflows/actions';
+import { WadukTemplatePreview } from './WadukTemplatePreview';
 
 const initialNodes: Node[] = [
   {
