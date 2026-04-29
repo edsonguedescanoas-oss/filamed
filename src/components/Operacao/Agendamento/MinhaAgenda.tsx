@@ -157,7 +157,7 @@ const MinhaAgenda = () => {
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownContent align="end">
+                      <DropdownMenuContent align="end">
                         <DropdownMenuItem className="gap-2" onClick={() => updateStatus(demo, 'realizada')}>
                           <CheckCircle2 className="h-4 w-4 text-green-500" /> Marcar como Realizada
                         </DropdownMenuItem>
