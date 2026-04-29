@@ -272,23 +272,13 @@ function QueueCard({
 
       {/* CTA */}
       {canCall && (
-        <Button
-          onClick={onCall}
+        <BotaoChamada
+          variant="recepcao"
+          onCall={onCall}
           disabled={disabled}
-          className="mt-4 w-full bg-gradient-primary shadow-soft"
-        >
-          {calling ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Chamando…
-            </>
-          ) : (
-            <>
-              <PhoneCall className="h-4 w-4" />
-              Chamar próximo
-            </>
-          )}
-        </Button>
+          calling={calling}
+          className="mt-4"
+        />
       )}
     </div>
   );
