@@ -829,6 +829,8 @@ export type Database = {
       }
       leads: {
         Row: {
+          cadence_id: string | null
+          cadence_step_atual: number | null
           cnpj: string | null
           created_at: string
           data_atualizacao: string
@@ -850,6 +852,8 @@ export type Database = {
           workflow_atual: string | null
         }
         Insert: {
+          cadence_id?: string | null
+          cadence_step_atual?: number | null
           cnpj?: string | null
           created_at?: string
           data_atualizacao?: string
@@ -871,6 +875,8 @@ export type Database = {
           workflow_atual?: string | null
         }
         Update: {
+          cadence_id?: string | null
+          cadence_step_atual?: number | null
           cnpj?: string | null
           created_at?: string
           data_atualizacao?: string
