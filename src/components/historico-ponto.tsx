@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, formatarTempo } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
 type PontoTipo = Database["public"]["Enums"]["ponto_tipo"];
