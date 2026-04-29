@@ -55,7 +55,7 @@ export class WorkflowEngine {
     
     // Mover lead para estágio "demonstracao"
     await supabase.from('leads').update({ 
-      estagio: 'demonstracao' as any,
+      estagio_pipeline: 'demonstracao' as any,
       updated_at: new Date().toISOString()
     }).eq('id', leadId);
 
