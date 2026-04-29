@@ -245,6 +245,12 @@ function AppLayout() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {roles.includes("super_admin") && (
+                <DropdownMenuItem onClick={() => void navigate({ to: "/admin" })}>
+                  <Shield className="h-4 w-4" />
+                  <span>Painel Admin SaaS</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => void navigate({ to: "/app/conta" })}>
                 <CreditCard className="h-4 w-4" />
                 <span>Minha conta</span>
