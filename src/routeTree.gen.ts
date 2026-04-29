@@ -26,6 +26,7 @@ import { Route as TestHorizontalRouteImport } from './routes/test.horizontal'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as RUnidadeIdRouteImport } from './routes/r.$unidadeId'
 import { Route as OperacaoCrmRouteImport } from './routes/operacao.crm'
+import { Route as OperacaoAutomacoesRouteImport } from './routes/operacao.automacoes'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
@@ -141,6 +142,11 @@ const RUnidadeIdRoute = RUnidadeIdRouteImport.update({
 const OperacaoCrmRoute = OperacaoCrmRouteImport.update({
   id: '/operacao/crm',
   path: '/operacao/crm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacaoAutomacoesRoute = OperacaoAutomacoesRouteImport.update({
+  id: '/operacao/automacoes',
+  path: '/operacao/automacoes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HooksHealthcheckRoute = HooksHealthcheckRouteImport.update({
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/operacao/automacoes': typeof OperacaoAutomacoesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
@@ -375,6 +382,7 @@ export interface FileRoutesByTo {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/operacao/automacoes': typeof OperacaoAutomacoesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
@@ -428,6 +436,7 @@ export interface FileRoutesById {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/operacao/automacoes': typeof OperacaoAutomacoesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
@@ -480,6 +489,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/operacao/automacoes'
     | '/operacao/crm'
     | '/r/$unidadeId'
     | '/s/$token'
@@ -529,6 +539,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/operacao/automacoes'
     | '/operacao/crm'
     | '/r/$unidadeId'
     | '/s/$token'
@@ -581,6 +592,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/operacao/automacoes'
     | '/operacao/crm'
     | '/r/$unidadeId'
     | '/s/$token'
@@ -632,6 +644,7 @@ export interface RootRouteChildren {
   ConviteTokenRoute: typeof ConviteTokenRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
+  OperacaoAutomacoesRoute: typeof OperacaoAutomacoesRoute
   OperacaoCrmRoute: typeof OperacaoCrmRoute
   RUnidadeIdRoute: typeof RUnidadeIdRoute
   STokenRoute: typeof STokenRoute
@@ -760,6 +773,13 @@ declare module '@tanstack/react-router' {
       path: '/operacao/crm'
       fullPath: '/operacao/crm'
       preLoaderRoute: typeof OperacaoCrmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacao/automacoes': {
+      id: '/operacao/automacoes'
+      path: '/operacao/automacoes'
+      fullPath: '/operacao/automacoes'
+      preLoaderRoute: typeof OperacaoAutomacoesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/healthcheck': {
@@ -1118,6 +1138,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteTokenRoute: ConviteTokenRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
+  OperacaoAutomacoesRoute: OperacaoAutomacoesRoute,
   OperacaoCrmRoute: OperacaoCrmRoute,
   RUnidadeIdRoute: RUnidadeIdRoute,
   STokenRoute: STokenRoute,
