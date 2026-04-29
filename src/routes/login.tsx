@@ -35,10 +35,13 @@ export const Route = createFileRoute("/login")({
   }),
   // Já logado vai direto pra /app (ou para o redirect pretendido)
   beforeLoad: ({ context, search }) => {
-    if (context.auth.isAuthenticated && context.auth.profile?.unidade_id) {
-      throw redirect({ to: search.redirect ?? "/app" });
-    }
-    if (context.auth.isAuthenticated && !context.auth.profile?.unidade_id) {
+    if (context.auth.isAuthenticated) {
+      if (context.auth.roles.includes("super_admin")) {
+        throw redirect({ to: search.redirect ?? "/admin" });
+      }
+      if (context.auth.profile?.unidade_id) {
+        throw redirect({ to: search.redirect ?? "/app" });
+      }
       throw redirect({ to: "/setup" });
     }
   },
