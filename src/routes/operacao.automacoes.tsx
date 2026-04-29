@@ -12,7 +12,13 @@ import {
   AlertCircle,
   ChevronRight,
   MoreVertical,
-  History
+  History,
+  BarChart3,
+  MessageSquare,
+  Mail,
+  Smartphone,
+  CheckSquare,
+  MoveHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -45,10 +51,14 @@ function AutomacoesPage() {
   const [executions, setExecutions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [actionMetrics, setActionMetrics] = useState<any[]>([]);
+  const [summary, setSummary] = useState({ total24h: 0, successRate: 100 });
+  const [activeTab, setActiveTab] = useState("lista");
 
   useEffect(() => {
     fetchWorkflows();
     fetchExecutions();
+    fetchActionMetrics();
   }, []);
 
   async function fetchWorkflows() {
@@ -80,6 +90,55 @@ function AutomacoesPage() {
       setExecutions(data || []);
     } catch (error: any) {
       console.error(error);
+    }
+  }
+
+  async function fetchActionMetrics() {
+    try {
+      const { data, error } = await supabase
+        .from('workflows_execucoes')
+        .select('tipo_acao, status');
+
+      if (error) throw error;
+
+      const stats: Record<string, { total: number, success: number, fail: number }> = {};
+      
+      data?.forEach(row => {
+        if (row.tipo_acao === 'trigger') return; // Don't count trigger fires as actions
+        const type = row.tipo_acao || 'unknown';
+        if (!stats[type]) stats[type] = { total: 0, success: 0, fail: 0 };
+        stats[type].total++;
+        if (row.status === 'sucesso') stats[type].success++;
+        else stats[type].fail++;
+      });
+
+      const metricsArray = Object.entries(stats).map(([type, s]) => ({
+        type,
+        total: s.total,
+        success: s.success,
+        fail: s.fail,
+        successRate: s.total > 0 ? (s.success / s.total) * 100 : 0,
+        failRate: s.total > 0 ? (s.fail / s.total) * 100 : 0
+      }));
+
+      setActionMetrics(metricsArray);
+
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recent, error: recentError } = await supabase
+        .from('workflows_execucoes')
+        .select('status')
+        .gt('data_execucao', dayAgo);
+
+      if (!recentError && recent) {
+        const total = recent.length;
+        const success = recent.filter(r => r.status === 'sucesso').length;
+        setSummary({
+          total24h: total,
+          successRate: total > 0 ? (success / total) * 100 : 100
+        });
+      }
+    } catch (error: any) {
+      console.error("Erro ao carregar métricas:", error);
     }
   }
 
@@ -172,8 +231,8 @@ function AutomacoesPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Execuções (24h)</p>
-                      <p className="text-2xl font-bold">1.284</p>
+                      <p className="text-sm font-medium text-muted-foreground">Execuções (24h)</p>
+                      <p className="text-2xl font-bold">{summary.total24h.toLocaleString('pt-BR')}</p>
                     </div>
                     <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
                       <Activity className="h-6 w-6" />
@@ -186,7 +245,9 @@ function AutomacoesPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Taxa de Sucesso</p>
-                      <p className="text-2xl font-bold text-green-600">98.2%</p>
+                      <p className={`text-2xl font-bold ${summary.successRate > 95 ? 'text-green-600' : 'text-orange-600'}`}>
+                        {summary.successRate.toFixed(1)}%
+                      </p>
                     </div>
                     <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
                       <AlertCircle className="h-6 w-6" />
@@ -196,15 +257,68 @@ function AutomacoesPage() {
               </Card>
             </div>
 
-            <Tabs defaultValue="lista">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="lista" className="gap-2">
                   <Workflow className="h-4 w-4" /> Todos Workflows
+                </TabsTrigger>
+                <TabsTrigger value="metrics" className="gap-2">
+                  <BarChart3 className="h-4 w-4" /> Métricas por Ação
                 </TabsTrigger>
                 <TabsTrigger value="logs" className="gap-2">
                   <History className="h-4 w-4" /> Logs Recentes
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="metrics" className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    { type: 'enviar_whatsapp_template', label: 'WhatsApp', icon: MessageSquare, color: 'text-green-600', bg: 'bg-green-50' },
+                    { type: 'enviar_email', label: 'E-mail', icon: Mail, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { type: 'enviar_sms', label: 'SMS', icon: Smartphone, color: 'text-purple-600', bg: 'bg-purple-50' },
+                    { type: 'criar_tarefa', label: 'Tarefas', icon: CheckSquare, color: 'text-orange-600', bg: 'bg-orange-50' },
+                    { type: 'mover_lead_pipeline', label: 'Mover Pipeline', icon: MoveHorizontal, color: 'text-sky-600', bg: 'bg-sky-50' },
+                  ].map((action) => {
+                    const metric = actionMetrics.find(m => m.type === action.type) || { total: 0, success: 0, fail: 0, successRate: 0, failRate: 0 };
+                    const Icon = action.icon;
+                    return (
+                      <Card key={action.type}>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-2 rounded-lg ${action.bg}`}>
+                                <Icon className={`h-4 w-4 ${action.color}`} />
+                              </div>
+                              <CardTitle className="text-sm font-semibold">{action.label}</CardTitle>
+                            </div>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {metric.total} execs
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">Taxa de Sucesso</span>
+                              <span className="font-bold text-green-600">{metric.successRate.toFixed(1)}%</span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-green-500 transition-all" 
+                                style={{ width: `${metric.successRate}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
+                              <span>Falhas: {metric.failRate.toFixed(1)}%</span>
+                              <span>Total: {metric.total}</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </TabsContent>
 
               <TabsContent value="lista" className="pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
