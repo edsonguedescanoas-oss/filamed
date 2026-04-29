@@ -83,12 +83,7 @@ interface ProfileRow {
 
 function fmtMin(seg: number | null): string {
   if (seg === null || seg === 0) return "—";
-  const m = Math.floor(seg / 60);
-  const s = Math.floor(seg % 60);
-  if (m < 1) return `${s}s`;
-  if (m < 60) return `${m}min`;
-  const h = Math.floor(m / 60);
-  return `${h}h${(m % 60).toString().padStart(2, "0")}`;
+  return formatarTempo(seg);
 }
 
 function avg(xs: number[]): number {
