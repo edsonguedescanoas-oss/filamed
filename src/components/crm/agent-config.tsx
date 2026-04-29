@@ -3,14 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, 
-  Trash2, 
   UserPlus, 
   Shield, 
-  Settings,
-  MoreVertical,
-  Check,
-  X,
-  Search
+  Check, 
+  X, 
+  Search 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,10 +23,9 @@ import {
   Dialog, 
   DialogContent, 
   DialogDescription, 
-  DialogFooter, 
   DialogHeader, 
-  DialogTitle,
-  DialogTrigger
+  DialogTitle, 
+  DialogTrigger 
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -57,10 +53,9 @@ export function AgentConfig() {
   const { data: users } = useQuery({
     queryKey: ["available_users"],
     queryFn: async () => {
-      // Aqui poderíamos buscar todos os profiles que ainda não são agentes
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, nome_completo, email");
+        .select("id, nome_completo");
       if (error) throw error;
       return data;
     },
@@ -68,13 +63,12 @@ export function AgentConfig() {
   });
 
   const addAgentMutation = useMutation({
-    mutationFn: async (user: any) => {
+    mutationFn: async (profile: any) => {
       const { error } = await supabase
         .from("crm_agentes")
         .insert({
-          user_id: user.id,
-          nome: user.nome_completo || user.email,
-          email: user.email,
+          user_id: profile.id,
+          nome: profile.nome_completo || "Agente",
           ativo: true
         });
       if (error) throw error;
@@ -103,8 +97,7 @@ export function AgentConfig() {
   });
 
   const filteredAgentes = agentes?.filter(a => 
-    a.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    a.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    a.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -146,8 +139,7 @@ export function AgentConfig() {
                       className="w-full p-3 flex items-center justify-between hover:bg-muted text-left text-sm disabled:opacity-50"
                     >
                       <div>
-                        <p className="font-medium">{u.nome_completo || u.email}</p>
-                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                        <p className="font-medium">{u.nome_completo || "Sem nome"}</p>
                       </div>
                       <Plus className="h-4 w-4" />
                     </button>
@@ -175,7 +167,6 @@ export function AgentConfig() {
           <TableHeader>
             <TableRow>
               <TableHead>Agente</TableHead>
-              <TableHead>Email</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Desde</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -184,13 +175,13 @@ export function AgentConfig() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   Carregando agentes...
                 </TableCell>
               </TableRow>
             ) : filteredAgentes?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   Nenhum agente encontrado.
                 </TableCell>
               </TableRow>
@@ -207,19 +198,16 @@ export function AgentConfig() {
                       <span className="font-medium">{agente.nome}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {agente.email}
-                  </TableCell>
                   <TableCell>
                     <Badge 
                       variant={agente.ativo ? "secondary" : "outline"}
                       className={agente.ativo ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" : ""}
                     >
-                      {agente.ativo ? "Ativo" : "Inativo"}
+                      {agente.ativo ? "Ativo" : "Inativa"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {new Date(agente.created_at).toLocaleDateString()}
+                    {agente.created_at ? new Date(agente.created_at).toLocaleDateString() : "N/A"}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button 
