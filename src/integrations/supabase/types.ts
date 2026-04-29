@@ -665,6 +665,44 @@ export type Database = {
           },
         ]
       }
+      interacoes: {
+        Row: {
+          conteudo: string
+          created_at: string
+          data_criacao: string
+          id: string
+          lead_id: string
+          tipo: Database["public"]["Enums"]["interaction_type"]
+          usuario_id: string
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string
+          data_criacao?: string
+          id?: string
+          lead_id: string
+          tipo?: Database["public"]["Enums"]["interaction_type"]
+          usuario_id: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          data_criacao?: string
+          id?: string
+          lead_id?: string
+          tipo?: Database["public"]["Enums"]["interaction_type"]
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interacoes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_config: {
         Row: {
           key: string
@@ -744,6 +782,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leads: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          data_atualizacao: string
+          data_criacao: string
+          email: string | null
+          estagio_pipeline: Database["public"]["Enums"]["pipeline_stage"]
+          id: string
+          metadata: Json | null
+          nome_clinica: string
+          nome_contato: string
+          origem_lead: Database["public"]["Enums"]["lead_source"]
+          responsavel_id: string | null
+          telefone: string | null
+          temperatura_lead: Database["public"]["Enums"]["lead_temperature"]
+          updated_at: string
+          valor_potencial: number | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          data_atualizacao?: string
+          data_criacao?: string
+          email?: string | null
+          estagio_pipeline?: Database["public"]["Enums"]["pipeline_stage"]
+          id?: string
+          metadata?: Json | null
+          nome_clinica: string
+          nome_contato: string
+          origem_lead?: Database["public"]["Enums"]["lead_source"]
+          responsavel_id?: string | null
+          telefone?: string | null
+          temperatura_lead?: Database["public"]["Enums"]["lead_temperature"]
+          updated_at?: string
+          valor_potencial?: number | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          data_atualizacao?: string
+          data_criacao?: string
+          email?: string | null
+          estagio_pipeline?: Database["public"]["Enums"]["pipeline_stage"]
+          id?: string
+          metadata?: Json | null
+          nome_clinica?: string
+          nome_contato?: string
+          origem_lead?: Database["public"]["Enums"]["lead_source"]
+          responsavel_id?: string | null
+          telefone?: string | null
+          temperatura_lead?: Database["public"]["Enums"]["lead_temperature"]
+          updated_at?: string
+          valor_potencial?: number | null
+        }
+        Relationships: []
       }
       notificacoes_alertas: {
         Row: {
@@ -2363,7 +2458,33 @@ export type Database = {
         | "laboratorio"
         | "outro"
         | "guiche"
+      interaction_type:
+        | "whatsapp"
+        | "email"
+        | "ligacao"
+        | "reuniao"
+        | "tarefa"
+        | "nota"
+      lead_source:
+        | "site"
+        | "whatsapp"
+        | "indicacao"
+        | "evento"
+        | "linkedin"
+        | "ads"
+        | "cold_email"
+        | "parceiro"
+      lead_temperature: "frio" | "morno" | "quente"
       notificacao_status: "pendente" | "enviada" | "falhou" | "ignorado"
+      pipeline_stage:
+        | "novo_lead"
+        | "contato_inicial"
+        | "qualificacao"
+        | "demonstracao"
+        | "proposta"
+        | "negociacao"
+        | "fechado_ganho"
+        | "fechado_perdido"
       ponto_tipo: "guiche" | "consultorio" | "exame" | "outro"
       senha_prioridade: "normal" | "preferencial" | "urgente"
       senha_status:
@@ -2532,7 +2653,36 @@ export const Constants = {
         "outro",
         "guiche",
       ],
+      interaction_type: [
+        "whatsapp",
+        "email",
+        "ligacao",
+        "reuniao",
+        "tarefa",
+        "nota",
+      ],
+      lead_source: [
+        "site",
+        "whatsapp",
+        "indicacao",
+        "evento",
+        "linkedin",
+        "ads",
+        "cold_email",
+        "parceiro",
+      ],
+      lead_temperature: ["frio", "morno", "quente"],
       notificacao_status: ["pendente", "enviada", "falhou", "ignorado"],
+      pipeline_stage: [
+        "novo_lead",
+        "contato_inicial",
+        "qualificacao",
+        "demonstracao",
+        "proposta",
+        "negociacao",
+        "fechado_ganho",
+        "fechado_perdido",
+      ],
       ponto_tipo: ["guiche", "consultorio", "exame", "outro"],
       senha_prioridade: ["normal", "preferencial", "urgente"],
       senha_status: [
