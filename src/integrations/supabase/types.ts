@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_conflitos: {
+        Row: {
+          created_at: string | null
+          data_conflito: string | null
+          demonstracao_id: string | null
+          descricao: string | null
+          evento_externo_id: string | null
+          id: string
+          resolvido: boolean | null
+          tipo_calendario: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_conflito?: string | null
+          demonstracao_id?: string | null
+          descricao?: string | null
+          evento_externo_id?: string | null
+          id?: string
+          resolvido?: boolean | null
+          tipo_calendario?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_conflito?: string | null
+          demonstracao_id?: string | null
+          descricao?: string | null
+          evento_externo_id?: string | null
+          id?: string
+          resolvido?: boolean | null
+          tipo_calendario?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_conflitos_demonstracao_id_fkey"
+            columns: ["demonstracao_id"]
+            isOneToOne: false
+            referencedRelation: "demonstracoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assinaturas: {
         Row: {
           cancelada_em: string | null
@@ -2262,6 +2303,18 @@ export type Database = {
       chamar_senha_do_ponto: {
         Args: { _ponto_atendimento_id: string; _senha_id: string }
         Returns: string
+      }
+      check_agenda_conflict: {
+        Args: {
+          p_fim: string
+          p_ignore_id?: string
+          p_inicio: string
+          p_vendedor_id: string
+        }
+        Returns: {
+          conflito_id: string
+          tipo: string
+        }[]
       }
       check_invitation_token: {
         Args: { _token: string }
