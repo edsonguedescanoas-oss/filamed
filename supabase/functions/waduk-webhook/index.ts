@@ -62,6 +62,18 @@ serve(async (req) => {
     const parsed = parseIncoming(payload);
     console.log('[WADUK-Webhook] Parsed:', JSON.stringify(parsed));
 
+    // Logging do evento para a tabela de logs
+    try {
+      await supabase.from('waduk_webhook_logs').insert({
+        event_type: payload?.event || payload?.type || 'unknown',
+        payload: payload,
+        status: (parsed.isIncoming && parsed.from && parsed.text) ? 'success' : 'ignored',
+        error_message: (parsed.isIncoming && parsed.from && parsed.text) ? null : 'Ignorado: não é mensagem recebida ou faltam campos'
+      });
+    } catch (logErr) {
+      console.error('[WADUK-Webhook] Erro ao gravar log:', logErr);
+    }
+
     if (!parsed.isIncoming || !parsed.from || !parsed.text) {
       console.log('[WADUK-Webhook] Ignorado (não é mensagem recebida ou faltam campos)');
       return new Response(JSON.stringify({ success: true, ignored: true, reason: 'not_incoming_or_missing_fields' }), {
