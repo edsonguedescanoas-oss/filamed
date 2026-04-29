@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, LogOut, Building2, Home, Package, ShieldCheck, BarChart3, Siren, ListChecks } from "lucide-react";
+import { Activity, LogOut, Building2, Home, Package, ShieldCheck, BarChart3, Siren, ListChecks, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,6 +30,7 @@ const NAV = [
   { to: "/admin/auditoria", label: "Auditoria", icon: ShieldCheck, exact: false },
   { to: "/admin/logs", label: "Logs de Notificações", icon: Activity, exact: false },
   { to: "/admin/crm", label: "CRM Chat", icon: Package, exact: false },
+  { to: "/admin/automacoes", label: "Automações", icon: Zap, exact: false },
 ];
 
 function AdminLayout() {

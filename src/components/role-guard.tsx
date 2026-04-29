@@ -23,7 +23,7 @@ export function RoleGuard({ allow, permission, path, children }: RoleGuardProps)
   const { roles, hasPermission, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const isAdmin = roles.includes("admin");
+  const isAdmin = roles.includes("admin") || roles.includes("super_admin");
   const allowed = 
     isAdmin || 
     (allow && allow.some((r) => roles.includes(r))) || 

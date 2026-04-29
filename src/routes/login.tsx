@@ -35,10 +35,13 @@ export const Route = createFileRoute("/login")({
   }),
   // Já logado vai direto pra /app (ou para o redirect pretendido)
   beforeLoad: ({ context, search }) => {
-    if (context.auth.isAuthenticated && context.auth.profile?.unidade_id) {
-      throw redirect({ to: search.redirect ?? "/app" });
-    }
-    if (context.auth.isAuthenticated && !context.auth.profile?.unidade_id) {
+    if (context.auth.isAuthenticated) {
+      if (context.auth.roles.includes("super_admin")) {
+        throw redirect({ to: search.redirect ?? "/admin" });
+      }
+      if (context.auth.profile?.unidade_id) {
+        throw redirect({ to: search.redirect ?? "/app" });
+      }
       throw redirect({ to: "/setup" });
     }
   },
@@ -52,16 +55,20 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { isAuthenticated, isLoading, signIn, signUp } = useAuth();
+  const { isAuthenticated, isLoading, roles, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"signin" | "signup">("signin");
 
   // Redireciona já autenticado
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      void navigate({ to: "/app" });
+      if (roles.includes("super_admin")) {
+        void navigate({ to: "/admin" });
+      } else {
+        void navigate({ to: "/app" });
+      }
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [isLoading, isAuthenticated, roles, navigate]);
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">

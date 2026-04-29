@@ -60,7 +60,11 @@ export const Route = createFileRoute("/_app")({
         search: { redirect: location.href },
       });
     }
-    if (!auth.profile?.unidade_id) {
+    if (auth.roles.includes("super_admin") && !auth.roles.includes("admin") && !auth.roles.includes("gestor")) {
+      // Super admin sem funções clínicas é redirecionado para o painel SaaS
+      throw redirect({ to: "/admin" });
+    }
+    if (!auth.profile?.unidade_id && !auth.roles.includes("super_admin")) {
       throw redirect({ to: "/setup" });
     }
   },
