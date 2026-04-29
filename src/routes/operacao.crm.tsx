@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import PipelineKanban from "@/components/Operacao/CRM/PipelineKanban";
-import LeadDetail from "@/components/Operacao/CRM/LeadDetail";
+import LeadDetail, { Interacao } from "@/components/Operacao/CRM/LeadDetail";
 import { Lead, PipelineStage } from "@/components/Operacao/CRM/LeadCard";
 import { Input } from "@/components/ui/input";
 import { 
