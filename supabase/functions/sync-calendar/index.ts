@@ -1,11 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyAgendaConsistency } from "../../lib/agenda-consistency.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const googleClientId = Deno.env.get("GOOGLE_CALENDAR_CLIENT_ID");
-const googleClientSecret = Deno.env.get("GOOGLE_CALENDAR_CLIENT_SECRET");
-
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 serve(async (req) => {
@@ -16,16 +14,14 @@ serve(async (req) => {
   }
 
   try {
-    // Lógica simplificada de sincronização
-    // 1. Buscar tokens do vendedor (assumindo que estão salvos em uma tabela de integrações ou metadados)
-    // 2. Chamar API do Google Calendar
-    // 3. Atualizar tabela `demonstracoes`
+    const { vendedor_id, external_events } = await req.json();
 
-    // Para fins de implementação, este é o esqueleto da função.
-    // Em um cenário real, precisaríamos gerenciar o fluxo OAuth2.
+    if (vendedor_id && external_events) {
+      await verifyAgendaConsistency(vendedor_id, external_events);
+    }
 
     return new Response(
-      JSON.stringify({ message: "Sync calendar function initialized. Integration with Google Calendar API pending OAuth token storage." }),
+      JSON.stringify({ success: true, message: "Agenda consistency checked." }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
