@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
 import PipelineKanban from "@/components/Operacao/CRM/PipelineKanban";
 import LeadDetail, { Interacao } from "@/components/Operacao/CRM/LeadDetail";
 import { Lead, PipelineStage } from "@/components/Operacao/CRM/LeadCard";
