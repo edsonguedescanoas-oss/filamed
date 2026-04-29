@@ -47,7 +47,7 @@ interface LeadDetailProps {
   onAddNote: (content: string) => void;
 }
 
-const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNote }) => {
+const LeadDetail: React.FC<LeadDetailProps> = ({ lead, interacoes, isOpen, onClose, onAddNote }) => {
   const [note, setNote] = useState('');
 
   if (!lead) return null;
@@ -56,6 +56,18 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, isOpen, onClose, onAddNot
     if (!note.trim()) return;
     onAddNote(note);
     setNote('');
+  };
+
+  const getInteractionIcon = (tipo: Interacao['tipo']) => {
+    switch (tipo) {
+      case 'whatsapp': return <MessageSquare className="h-3 w-3" />;
+      case 'email': return <Mail className="h-3 w-3" />;
+      case 'ligacao': return <Phone className="h-3 w-3" />;
+      case 'reuniao': return <Calendar className="h-3 w-3" />;
+      case 'tarefa': return <CheckCircle2 className="h-3 w-3" />;
+      case 'nota': return <StickyNote className="h-3 w-3" />;
+      default: return <Clock className="h-3 w-3" />;
+    }
   };
 
   const formatCurrency = (value: number) => {
