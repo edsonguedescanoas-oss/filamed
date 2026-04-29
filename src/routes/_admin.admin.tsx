@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Building2, Loader2, Search, Plus, Settings2, Power, PowerOff, Pencil, ShieldCheck } from "lucide-react";
@@ -41,8 +41,18 @@ export const Route = createFileRoute("/_admin/admin")({
   head: () => ({
     meta: [{ title: "Admin · Unidades — FilaMed" }],
   }),
-  component: AdminUnidadesPage,
+  component: AdminAdminShell,
 });
+
+function AdminAdminShell() {
+  const location = useLocation();
+
+  if (location.pathname !== "/admin") {
+    return <Outlet />;
+  }
+
+  return <AdminUnidadesPage />;
+}
 
 interface UnidadeRow {
   id: string;

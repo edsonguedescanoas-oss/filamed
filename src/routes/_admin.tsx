@@ -74,7 +74,7 @@ function AdminLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-40 border-b border-border bg-background">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6">
           <Link to="/admin" className="flex items-center gap-2 shrink-0">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground">
               <Activity className="h-5 w-5 text-background" strokeWidth={2.5} />
@@ -87,7 +87,7 @@ function AdminLayout() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 ml-6">
+          <nav className="order-last flex w-full items-center gap-1 overflow-x-auto pb-1 md:order-none md:ml-6 md:w-auto md:overflow-visible md:pb-0">
             {NAV.map((item) => {
               const active = item.exact
                 ? location.pathname === item.to
@@ -99,7 +99,7 @@ function AdminLayout() {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     active
                       ? "bg-foreground/10 text-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
