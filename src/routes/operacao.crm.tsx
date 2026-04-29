@@ -14,7 +14,7 @@ import {
 import { Search, Filter, Plus, LayoutDashboard, ListFilter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { RoleGuard } from "@/components/role-guard";
 
 export const Route = createFileRoute("/operacao/crm")({
