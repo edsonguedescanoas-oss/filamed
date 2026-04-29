@@ -462,6 +462,50 @@ export type Database = {
           },
         ]
       }
+      demonstracoes: {
+        Row: {
+          created_at: string
+          data_hora: string
+          id: string
+          lead_id: string
+          link_videochamada: string | null
+          notas: string | null
+          status: Database["public"]["Enums"]["demo_status"]
+          updated_at: string
+          vendedor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_hora: string
+          id?: string
+          lead_id: string
+          link_videochamada?: string | null
+          notas?: string | null
+          status?: Database["public"]["Enums"]["demo_status"]
+          updated_at?: string
+          vendedor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          id?: string
+          lead_id?: string
+          link_videochamada?: string | null
+          notas?: string | null
+          status?: Database["public"]["Enums"]["demo_status"]
+          updated_at?: string
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demonstracoes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faturas: {
         Row: {
           assinatura_id: string
@@ -2550,6 +2594,12 @@ export type Database = {
       crm_conversa_status: "aberto" | "pendente" | "resolvido" | "arquivado"
       crm_mensagem_direcao: "entrada" | "saida"
       crm_mensagem_tipo: "whatsapp" | "sistema" | "nota"
+      demo_status:
+        | "agendada"
+        | "confirmada"
+        | "realizada"
+        | "cancelada"
+        | "nao_compareceu"
       fatura_status: "aberta" | "paga" | "falhou" | "reembolsada" | "cancelada"
       fila_tipo:
         | "consulta"
@@ -2744,6 +2794,13 @@ export const Constants = {
       crm_conversa_status: ["aberto", "pendente", "resolvido", "arquivado"],
       crm_mensagem_direcao: ["entrada", "saida"],
       crm_mensagem_tipo: ["whatsapp", "sistema", "nota"],
+      demo_status: [
+        "agendada",
+        "confirmada",
+        "realizada",
+        "cancelada",
+        "nao_compareceu",
+      ],
       fatura_status: ["aberta", "paga", "falhou", "reembolsada", "cancelada"],
       fila_tipo: [
         "consulta",

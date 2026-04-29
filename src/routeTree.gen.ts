@@ -16,6 +16,7 @@ import { Route as ManualRouteImport } from './routes/manual'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as CasosRouteImport } from './routes/casos'
+import { Route as AgendarDemoRouteImport } from './routes/agendar-demo'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -96,6 +97,11 @@ const DemoRoute = DemoRouteImport.update({
 const CasosRoute = CasosRouteImport.update({
   id: '/casos',
   path: '/casos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgendarDemoRoute = AgendarDemoRouteImport.update({
+  id: '/agendar-demo',
+  path: '/agendar-demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -331,6 +337,7 @@ const AdminAdminUnidadesUnidadeIdMetricasRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agendar-demo': typeof AgendarDemoRoute
   '/casos': typeof CasosRoute
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
@@ -384,6 +391,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agendar-demo': typeof AgendarDemoRoute
   '/casos': typeof CasosRoute
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
@@ -439,6 +447,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_admin': typeof AdminRouteWithChildren
   '/_app': typeof AppRouteWithChildren
+  '/agendar-demo': typeof AgendarDemoRoute
   '/casos': typeof CasosRoute
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
@@ -494,6 +503,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agendar-demo'
     | '/casos'
     | '/demo'
     | '/login'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agendar-demo'
     | '/casos'
     | '/demo'
     | '/login'
@@ -601,6 +612,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_admin'
     | '/_app'
+    | '/agendar-demo'
     | '/casos'
     | '/demo'
     | '/login'
@@ -657,6 +669,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  AgendarDemoRoute: typeof AgendarDemoRoute
   CasosRoute: typeof CasosRoute
   DemoRoute: typeof DemoRoute
   LoginRoute: typeof LoginRoute
@@ -729,6 +742,13 @@ declare module '@tanstack/react-router' {
       path: '/casos'
       fullPath: '/casos'
       preLoaderRoute: typeof CasosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agendar-demo': {
+      id: '/agendar-demo'
+      path: '/agendar-demo'
+      fullPath: '/agendar-demo'
+      preLoaderRoute: typeof AgendarDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -1167,6 +1187,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  AgendarDemoRoute: AgendarDemoRoute,
   CasosRoute: CasosRoute,
   DemoRoute: DemoRoute,
   LoginRoute: LoginRoute,
