@@ -29,6 +29,7 @@ const NAV = [
   { to: "/admin/planos", label: "Planos", icon: Package, exact: false },
   { to: "/admin/auditoria", label: "Auditoria", icon: ShieldCheck, exact: false },
   { to: "/admin/logs", label: "Logs de Notificações", icon: Activity, exact: false },
+  { to: "/admin/crm", label: "CRM Chat", icon: Package, exact: false },
 ];
 
 function AdminLayout() {

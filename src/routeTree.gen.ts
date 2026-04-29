@@ -51,6 +51,7 @@ import { Route as AdminAdminRevendasRouteImport } from './routes/_admin.admin.re
 import { Route as AdminAdminPlanosRouteImport } from './routes/_admin.admin.planos'
 import { Route as AdminAdminMetricasRouteImport } from './routes/_admin.admin.metricas'
 import { Route as AdminAdminLogsRouteImport } from './routes/_admin.admin.logs'
+import { Route as AdminAdminCrmRouteImport } from './routes/_admin.admin.crm'
 import { Route as AdminAdminClassificacaoRouteImport } from './routes/_admin.admin.classificacao'
 import { Route as AdminAdminAuditoriaRouteImport } from './routes/_admin.admin.auditoria'
 import { Route as AdminAdminAlertasRouteImport } from './routes/_admin.admin.alertas'
@@ -265,6 +266,11 @@ const AdminAdminLogsRoute = AdminAdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminAdminRoute,
 } as any)
+const AdminAdminCrmRoute = AdminAdminCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AdminAdminRoute,
+} as any)
 const AdminAdminClassificacaoRoute = AdminAdminClassificacaoRouteImport.update({
   id: '/classificacao',
   path: '/classificacao',
@@ -317,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/classificacao': typeof AdminAdminClassificacaoRoute
+  '/admin/crm': typeof AdminAdminCrmRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
@@ -363,6 +370,7 @@ export interface FileRoutesByTo {
   '/admin/alertas': typeof AdminAdminAlertasRoute
   '/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/admin/classificacao': typeof AdminAdminClassificacaoRoute
+  '/admin/crm': typeof AdminAdminCrmRoute
   '/admin/logs': typeof AdminAdminLogsRoute
   '/admin/metricas': typeof AdminAdminMetricasRoute
   '/admin/planos': typeof AdminAdminPlanosRoute
@@ -413,6 +421,7 @@ export interface FileRoutesById {
   '/_admin/admin/alertas': typeof AdminAdminAlertasRoute
   '/_admin/admin/auditoria': typeof AdminAdminAuditoriaRoute
   '/_admin/admin/classificacao': typeof AdminAdminClassificacaoRoute
+  '/_admin/admin/crm': typeof AdminAdminCrmRoute
   '/_admin/admin/logs': typeof AdminAdminLogsRoute
   '/_admin/admin/metricas': typeof AdminAdminMetricasRoute
   '/_admin/admin/planos': typeof AdminAdminPlanosRoute
@@ -462,6 +471,7 @@ export interface FileRouteTypes {
     | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/classificacao'
+    | '/admin/crm'
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/admin/alertas'
     | '/admin/auditoria'
     | '/admin/classificacao'
+    | '/admin/crm'
     | '/admin/logs'
     | '/admin/metricas'
     | '/admin/planos'
@@ -557,6 +568,7 @@ export interface FileRouteTypes {
     | '/_admin/admin/alertas'
     | '/_admin/admin/auditoria'
     | '/_admin/admin/classificacao'
+    | '/_admin/admin/crm'
     | '/_admin/admin/logs'
     | '/_admin/admin/metricas'
     | '/_admin/admin/planos'
@@ -900,6 +912,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminLogsRouteImport
       parentRoute: typeof AdminAdminRoute
     }
+    '/_admin/admin/crm': {
+      id: '/_admin/admin/crm'
+      path: '/crm'
+      fullPath: '/admin/crm'
+      preLoaderRoute: typeof AdminAdminCrmRouteImport
+      parentRoute: typeof AdminAdminRoute
+    }
     '/_admin/admin/classificacao': {
       id: '/_admin/admin/classificacao'
       path: '/classificacao'
@@ -957,6 +976,7 @@ interface AdminAdminRouteChildren {
   AdminAdminAlertasRoute: typeof AdminAdminAlertasRoute
   AdminAdminAuditoriaRoute: typeof AdminAdminAuditoriaRoute
   AdminAdminClassificacaoRoute: typeof AdminAdminClassificacaoRoute
+  AdminAdminCrmRoute: typeof AdminAdminCrmRoute
   AdminAdminLogsRoute: typeof AdminAdminLogsRoute
   AdminAdminMetricasRoute: typeof AdminAdminMetricasRoute
   AdminAdminPlanosRoute: typeof AdminAdminPlanosRoute
@@ -968,6 +988,7 @@ const AdminAdminRouteChildren: AdminAdminRouteChildren = {
   AdminAdminAlertasRoute: AdminAdminAlertasRoute,
   AdminAdminAuditoriaRoute: AdminAdminAuditoriaRoute,
   AdminAdminClassificacaoRoute: AdminAdminClassificacaoRoute,
+  AdminAdminCrmRoute: AdminAdminCrmRoute,
   AdminAdminLogsRoute: AdminAdminLogsRoute,
   AdminAdminMetricasRoute: AdminAdminMetricasRoute,
   AdminAdminPlanosRoute: AdminAdminPlanosRoute,
@@ -1066,3 +1087,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
