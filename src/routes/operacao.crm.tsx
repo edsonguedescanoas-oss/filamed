@@ -11,7 +11,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Search, Filter, Plus, LayoutDashboard, ListFilter } from "lucide-react";
+import { Search, Filter, Plus, LayoutDashboard, ListFilter, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ function CRMOperacaoPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
+  const [filterValueRange, setFilterValueRange] = useState<string>("all");
 
   useEffect(() => {
     fetchLeads();
@@ -139,10 +140,26 @@ function CRMOperacaoPage() {
   };
 
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.nome_clinica.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.nome_contato.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      lead.nome_clinica.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.nome_contato.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.email && lead.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (lead.telefone && lead.telefone.includes(searchTerm));
+      
     const matchesStage = filterStage === "all" || lead.estagio_pipeline === filterStage;
-    return matchesSearch && matchesStage;
+    
+    let matchesValue = true;
+    if (filterValueRange !== "all") {
+      const value = lead.valor_potencial;
+      switch (filterValueRange) {
+        case "under_1k": matchesValue = value < 1000; break;
+        case "1k_5k": matchesValue = value >= 1000 && value <= 5000; break;
+        case "5k_10k": matchesValue = value > 5000 && value <= 10000; break;
+        case "over_10k": matchesValue = value > 10000; break;
+      }
+    }
+    
+    return matchesSearch && matchesStage && matchesValue;
   });
 
   return (
@@ -172,7 +189,7 @@ function CRMOperacaoPage() {
         <div className="relative w-full md:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Buscar clínicas ou contatos..." 
+            placeholder="Buscar clínicas, contatos, email..." 
             className="pl-9 h-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,10 +204,27 @@ function CRMOperacaoPage() {
           <SelectContent>
             <SelectItem value="all">Todos os estágios</SelectItem>
             <SelectItem value="novo_lead">Novo Lead</SelectItem>
+            <SelectItem value="contato_inicial">Contato Inicial</SelectItem>
             <SelectItem value="qualificacao">Qualificação</SelectItem>
+            <SelectItem value="demonstracao">Demonstração</SelectItem>
             <SelectItem value="proposta">Proposta</SelectItem>
+            <SelectItem value="negociacao">Negociação</SelectItem>
             <SelectItem value="fechado_ganho">Ganhos</SelectItem>
             <SelectItem value="fechado_perdido">Perdidos</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={filterValueRange} onValueChange={setFilterValueRange}>
+          <SelectTrigger className="w-full md:w-48 h-9">
+            <TrendingUp className="h-3.5 w-3.5 mr-2 text-primary" />
+            <SelectValue placeholder="Faixa de valor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Qualquer valor</SelectItem>
+            <SelectItem value="under_1k">Até R$ 1.000</SelectItem>
+            <SelectItem value="1k_5k">R$ 1.000 - R$ 5.000</SelectItem>
+            <SelectItem value="5k_10k">R$ 5.000 - R$ 10.000</SelectItem>
+            <SelectItem value="over_10k">Acima de R$ 10.000</SelectItem>
           </SelectContent>
         </Select>
 
