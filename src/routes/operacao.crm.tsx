@@ -29,6 +29,7 @@ function CRMOperacaoPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [interacoes, setInteracoes] = useState<Interacao[]>([]);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
@@ -36,6 +37,29 @@ function CRMOperacaoPage() {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  useEffect(() => {
+    if (selectedLead) {
+      fetchInteracoes(selectedLead.id);
+    } else {
+      setInteracoes([]);
+    }
+  }, [selectedLead]);
+
+  async function fetchInteracoes(leadId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('interacoes')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('data_criacao', { ascending: false });
+
+      if (error) throw error;
+      setInteracoes(data as unknown as Interacao[]);
+    } catch (error: any) {
+      console.error("Erro ao buscar interações:", error.message);
+    }
+  }
 
   async function fetchLeads() {
     try {
