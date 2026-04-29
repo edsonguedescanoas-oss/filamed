@@ -1,0 +1,3 @@
+ALTER TABLE public.leads 
+ADD COLUMN IF NOT EXISTS cadence_id TEXT,
+ADD COLUMN IF NOT EXISTS cadence_step_atual INTEGER DEFAULT 0;
