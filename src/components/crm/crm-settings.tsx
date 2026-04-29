@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Save, RefreshCw, Smartphone, Globe, CheckCircle2, AlertCircle, Clock, Check } from "lucide-react";
+import { Copy, Save, RefreshCw, Smartphone, Globe, CheckCircle2, AlertCircle, Clock, Check, ExternalLink, MessageSquare, ListChecks } from "lucide-react";
 
 export function CRMSettings() {
   const [loading, setLoading] = useState(false);
@@ -161,27 +161,63 @@ export function CRMSettings() {
             </Button>
           </div>
 
-          <div className="rounded-lg border bg-muted/40 p-4 text-sm">
-            <p className="mb-3 font-semibold">Onde colocar no WADUK</p>
-            <ol className="space-y-2 text-muted-foreground">
-              <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                Abra a instância conectada ao número configurado acima.
-              </li>
-              <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                Entre em <strong className="text-foreground">Configurações / Webhook / Callback URL</strong>.
-              </li>
-              <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                Cole a URL acima e habilite eventos de mensagem recebida, como <strong className="text-foreground">message.received</strong> ou <strong className="text-foreground">messages.upsert</strong>.
-              </li>
-            </ol>
+          <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-4">
+            <div>
+              <p className="mb-3 font-semibold flex items-center gap-2">
+                <ListChecks className="h-4 w-4 text-primary" />
+                Guia de Configuração WADUK
+              </p>
+              <div className="space-y-4">
+                <div className="relative pl-6 border-l-2 border-primary/20 space-y-4">
+                  <div className="relative">
+                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
+                    <p className="font-medium text-foreground">Acesse sua Instância</p>
+                    <p className="text-muted-foreground text-xs">No painel WADUK, clique em "Instâncias" e selecione o número conectado.</p>
+                  </div>
+                  
+                  <div className="relative">
+                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">2</span>
+                    <p className="font-medium text-foreground">Configurações de Webhook</p>
+                    <p className="text-muted-foreground text-xs">No menu lateral da instância, vá em <strong className="text-foreground">Configurações</strong> e procure pela aba <strong className="text-foreground">Webhook / Callback</strong>.</p>
+                  </div>
+
+                  <div className="relative">
+                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">3</span>
+                    <p className="font-medium text-foreground">Cole a URL e Ative Eventos</p>
+                    <p className="text-muted-foreground text-xs">No campo "Webhook URL", cole o link acima. Marque as opções:</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-mono">message.received</span>
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-mono">messages.upsert</span>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">4</span>
+                    <p className="font-medium text-foreground">Teste a Integração</p>
+                    <p className="text-muted-foreground text-xs">Envie uma mensagem de <strong className="text-foreground">outro número</strong> para o seu WhatsApp conectado. O status abaixo deve mudar para verde instantaneamente.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              variant="outline" 
+              className="w-full text-xs gap-2" 
+              onClick={() => window.open('https://waduk.com.br', '_blank')}
+            >
+              <ExternalLink className="h-3 w-3" />
+              Abrir Painel WADUK
+            </Button>
           </div>
 
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-foreground">
-            <p className="font-semibold mb-1">Se ainda não chegar mensagem:</p>
-            <p>o WADUK ainda não está chamando esta URL. Depois de salvar o webhook no WADUK, envie uma mensagem nova para o número conectado.</p>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm flex gap-3 items-start">
+            <MessageSquare className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-primary mb-1">Como disparar o primeiro teste:</p>
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Pegue um celular diferente e envie um "Olá" para o número que você configurou no WADUK. Assim que a mensagem chegar no seu celular, o WADUK enviará o sinal para este CRM e o log aparecerá na checklist abaixo.
+              </p>
+            </div>
           </div>
 
           <div className="pt-4 border-t space-y-4">
