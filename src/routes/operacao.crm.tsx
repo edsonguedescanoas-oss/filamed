@@ -33,6 +33,7 @@ function CRMOperacaoPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
+  const [filterValueRange, setFilterValueRange] = useState<string>("all");
 
   useEffect(() => {
     fetchLeads();
@@ -139,10 +140,26 @@ function CRMOperacaoPage() {
   };
 
   const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.nome_clinica.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.nome_contato.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      lead.nome_clinica.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.nome_contato.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.email && lead.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (lead.telefone && lead.telefone.includes(searchTerm));
+      
     const matchesStage = filterStage === "all" || lead.estagio_pipeline === filterStage;
-    return matchesSearch && matchesStage;
+    
+    let matchesValue = true;
+    if (filterValueRange !== "all") {
+      const value = lead.valor_potencial;
+      switch (filterValueRange) {
+        case "under_1k": matchesValue = value < 1000; break;
+        case "1k_5k": matchesValue = value >= 1000 && value <= 5000; break;
+        case "5k_10k": matchesValue = value > 5000 && value <= 10000; break;
+        case "over_10k": matchesValue = value > 10000; break;
+      }
+    }
+    
+    return matchesSearch && matchesStage && matchesValue;
   });
 
   return (
