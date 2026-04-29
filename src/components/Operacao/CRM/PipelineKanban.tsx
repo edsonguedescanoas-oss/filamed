@@ -5,10 +5,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+import { differenceInDays } from 'date-fns';
+
 interface PipelineKanbanProps {
   leads: Lead[];
   onLeadMove: (leadId: string, newStage: PipelineStage) => void;
   onLeadClick: (lead: Lead) => void;
+  highlightDaysThreshold?: number;
 }
 
 const STAGES: { id: PipelineStage; label: string }[] = [
@@ -22,7 +25,12 @@ const STAGES: { id: PipelineStage; label: string }[] = [
   { id: 'fechado_perdido', label: 'Perdidos' },
 ];
 
-const PipelineKanban: React.FC<PipelineKanbanProps> = ({ leads, onLeadMove, onLeadClick }) => {
+const PipelineKanban: React.FC<PipelineKanbanProps> = ({ 
+  leads, 
+  onLeadMove, 
+  onLeadClick,
+  highlightDaysThreshold = 3 // Padrão de 3 dias
+}) => {
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
@@ -93,24 +101,38 @@ const PipelineKanban: React.FC<PipelineKanbanProps> = ({ leads, onLeadMove, onLe
                       ref={provided.innerRef}
                       className="min-h-[200px] flex flex-col"
                     >
-                      {stageLeads.map((lead, index) => (
-                        <Draggable key={lead.id} draggableId={lead.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              style={{ ...provided.draggableProps.style }}
-                            >
-                              <LeadCard 
-                                lead={lead} 
-                                onClick={onLeadClick}
-                                isDragging={snapshot.isDragging}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
+                      {stageLeads.map((lead, index) => {
+                        const daysSinceInteraction = differenceInDays(new Date(), new Date(lead.data_atualizacao));
+                        const isStale = daysSinceInteraction >= highlightDaysThreshold;
+
+                        return (
+                          <Draggable key={lead.id} draggableId={lead.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                style={{ ...provided.draggableProps.style }}
+                                className={cn(
+                                  "relative transition-all",
+                                  isStale && "ring-1 ring-red-500/30 rounded-lg mb-0.5"
+                                )}
+                              >
+                                {isStale && (
+                                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full z-20 shadow-sm animate-pulse">
+                                    {daysSinceInteraction}D
+                                  </div>
+                                )}
+                                <LeadCard 
+                                  lead={lead} 
+                                  onClick={onLeadClick}
+                                  isDragging={snapshot.isDragging}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        );
+                      })}
                       {provided.placeholder}
                     </div>
                   </ScrollArea>

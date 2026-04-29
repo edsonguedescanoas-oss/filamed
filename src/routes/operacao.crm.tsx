@@ -11,7 +11,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Search, Filter, Plus, LayoutDashboard, ListFilter, TrendingUp } from "lucide-react";
+import { Search, Filter, Plus, LayoutDashboard, ListFilter, TrendingUp, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,6 +34,8 @@ function CRMOperacaoPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStage, setFilterStage] = useState<string>("all");
   const [filterValueRange, setFilterValueRange] = useState<string>("all");
+
+  const [highlightThreshold, setHighlightThreshold] = useState<number>(3);
 
   useEffect(() => {
     fetchLeads();
@@ -275,6 +277,19 @@ function CRMOperacaoPage() {
           </SelectContent>
         </Select>
 
+        <Select value={highlightThreshold.toString()} onValueChange={(v) => setHighlightThreshold(parseInt(v))}>
+          <SelectTrigger className="w-full md:w-48 h-9">
+            <Clock className="h-3.5 w-3.5 mr-2" />
+            <SelectValue placeholder="Alerta de inatividade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">Sem interação há 1 dia</SelectItem>
+            <SelectItem value="3">Sem interação há 3 dias</SelectItem>
+            <SelectItem value="7">Sem interação há 7 dias</SelectItem>
+            <SelectItem value="15">Sem interação há 15 dias</SelectItem>
+          </SelectContent>
+        </Select>
+
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
           <span>{filteredLeads.length} leads encontrados</span>
         </div>
@@ -291,6 +306,7 @@ function CRMOperacaoPage() {
             leads={filteredLeads} 
             onLeadMove={handleLeadMove}
             onLeadClick={handleLeadClick}
+            highlightDaysThreshold={highlightThreshold}
           />
         )}
       </main>
