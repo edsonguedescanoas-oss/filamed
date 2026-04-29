@@ -25,6 +25,7 @@ import { Route as TestLayoutsRouteImport } from './routes/test.layouts'
 import { Route as TestHorizontalRouteImport } from './routes/test.horizontal'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as RUnidadeIdRouteImport } from './routes/r.$unidadeId'
+import { Route as OperacaoCrmRouteImport } from './routes/operacao.crm'
 import { Route as HooksHealthcheckRouteImport } from './routes/hooks/healthcheck'
 import { Route as HooksCleanupTtsCacheRouteImport } from './routes/hooks/cleanup-tts-cache'
 import { Route as ConviteTokenRouteImport } from './routes/convite.$token'
@@ -135,6 +136,11 @@ const STokenRoute = STokenRouteImport.update({
 const RUnidadeIdRoute = RUnidadeIdRouteImport.update({
   id: '/r/$unidadeId',
   path: '/r/$unidadeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacaoCrmRoute = OperacaoCrmRouteImport.update({
+  id: '/operacao/crm',
+  path: '/operacao/crm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HooksHealthcheckRoute = HooksHealthcheckRouteImport.update({
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/operacao/crm': typeof OperacaoCrmRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
@@ -368,6 +375,7 @@ export interface FileRoutesByTo {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/operacao/crm': typeof OperacaoCrmRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
@@ -420,6 +428,7 @@ export interface FileRoutesById {
   '/convite/$token': typeof ConviteTokenRoute
   '/hooks/cleanup-tts-cache': typeof HooksCleanupTtsCacheRoute
   '/hooks/healthcheck': typeof HooksHealthcheckRoute
+  '/operacao/crm': typeof OperacaoCrmRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
@@ -471,6 +480,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/operacao/crm'
     | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
@@ -519,6 +529,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/operacao/crm'
     | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
@@ -570,6 +581,7 @@ export interface FileRouteTypes {
     | '/convite/$token'
     | '/hooks/cleanup-tts-cache'
     | '/hooks/healthcheck'
+    | '/operacao/crm'
     | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
@@ -620,6 +632,7 @@ export interface RootRouteChildren {
   ConviteTokenRoute: typeof ConviteTokenRoute
   HooksCleanupTtsCacheRoute: typeof HooksCleanupTtsCacheRoute
   HooksHealthcheckRoute: typeof HooksHealthcheckRoute
+  OperacaoCrmRoute: typeof OperacaoCrmRoute
   RUnidadeIdRoute: typeof RUnidadeIdRoute
   STokenRoute: typeof STokenRoute
   TestHorizontalRoute: typeof TestHorizontalRoute
@@ -740,6 +753,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$unidadeId'
       fullPath: '/r/$unidadeId'
       preLoaderRoute: typeof RUnidadeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacao/crm': {
+      id: '/operacao/crm'
+      path: '/operacao/crm'
+      fullPath: '/operacao/crm'
+      preLoaderRoute: typeof OperacaoCrmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/healthcheck': {
@@ -1098,6 +1118,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConviteTokenRoute: ConviteTokenRoute,
   HooksCleanupTtsCacheRoute: HooksCleanupTtsCacheRoute,
   HooksHealthcheckRoute: HooksHealthcheckRoute,
+  OperacaoCrmRoute: OperacaoCrmRoute,
   RUnidadeIdRoute: RUnidadeIdRoute,
   STokenRoute: STokenRoute,
   TestHorizontalRoute: TestHorizontalRoute,
