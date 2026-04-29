@@ -126,6 +126,8 @@ function CRMOperacaoPage() {
 
       if (error) throw error;
 
+      await fetchInteracoes(selectedLead.id);
+
       toast.success("Nota adicionada", {
         description: "A interação foi registrada no histórico.",
       });
