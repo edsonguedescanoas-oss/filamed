@@ -11,7 +11,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Search, Filter, Plus, LayoutDashboard, ListFilter } from "lucide-react";
+import { Search, Filter, Plus, LayoutDashboard, ListFilter, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
