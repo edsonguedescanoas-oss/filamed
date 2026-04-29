@@ -51,10 +51,14 @@ function AutomacoesPage() {
   const [executions, setExecutions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [actionMetrics, setActionMetrics] = useState<any[]>([]);
+  const [summary, setSummary] = useState({ total24h: 0, successRate: 100 });
+  const [activeTab, setActiveTab] = useState("lista");
 
   useEffect(() => {
     fetchWorkflows();
     fetchExecutions();
+    fetchActionMetrics();
   }, []);
 
   async function fetchWorkflows() {
