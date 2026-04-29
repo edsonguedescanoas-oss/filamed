@@ -360,6 +360,7 @@ function CRMOperacaoPage() {
             leads={filteredLeads} 
             onLeadMove={handleLeadMove}
             onLeadClick={handleLeadClick}
+            onAddTask={handleAddTaskClick}
             highlightDaysThreshold={highlightThreshold}
           />
         )}
