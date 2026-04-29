@@ -35,6 +35,8 @@ function CRMOperacaoPage() {
   const [filterStage, setFilterStage] = useState<string>("all");
   const [filterValueRange, setFilterValueRange] = useState<string>("all");
 
+  const [highlightThreshold, setHighlightThreshold] = useState<number>(3);
+
   useEffect(() => {
     fetchLeads();
 
