@@ -62,24 +62,43 @@ const initialNodes: Node[] = [
 
 const initialEdges: Edge[] = [];
 
-const TriggerNode = ({ data }: any) => (
-  <div className="px-4 py-2 shadow-md rounded-md bg-sky-50 border-2 border-sky-500 min-w-[150px]">
-    <div className="flex items-center gap-2">
-      <Zap className="h-4 w-4 text-sky-600" />
-      <div className="text-xs font-bold text-sky-900">{data.label}</div>
+const TriggerNode = ({ data, selected }: NodeProps) => (
+  <div className={`px-4 py-3 shadow-lg rounded-xl bg-white border-2 transition-all ${selected ? 'border-sky-500 ring-4 ring-sky-500/20' : 'border-sky-100'} min-w-[200px]`}>
+    <div className="flex items-center gap-3">
+      <div className="p-2 bg-sky-100 rounded-lg">
+        <Zap className="h-5 w-5 text-sky-600" />
+      </div>
+      <div>
+        <div className="text-[10px] font-bold text-sky-500 uppercase tracking-wider">Gatilho</div>
+        <div className="text-sm font-semibold text-sky-900">{data.label}</div>
+      </div>
     </div>
-    <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-sky-500" />
+    <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-sky-500 border-2 border-white" />
   </div>
 );
 
-const ActionNode = ({ data }: any) => (
-  <div className="px-4 py-2 shadow-md rounded-md bg-green-50 border-2 border-green-500 min-w-[150px]">
-    <div className="flex items-center gap-2">
-      <Play className="h-4 w-4 text-green-600" />
-      <div className="text-xs font-bold text-green-900">{data.label}</div>
+const ActionNode = ({ data, selected }: NodeProps) => (
+  <div className={`px-4 py-3 shadow-lg rounded-xl bg-white border-2 transition-all ${selected ? 'border-green-500 ring-4 ring-green-500/20' : 'border-green-100'} min-w-[200px]`}>
+    <div className="flex items-center gap-3">
+      <div className="p-2 bg-green-100 rounded-lg">
+        {data.type === 'enviar_whatsapp_template' ? (
+          <MessageSquare className="h-5 w-5 text-green-600" />
+        ) : (
+          <Play className="h-5 w-5 text-green-600" />
+        )}
+      </div>
+      <div>
+        <div className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Ação</div>
+        <div className="text-sm font-semibold text-green-900">{data.label}</div>
+        {data.config?.template_nome && (
+          <div className="text-[10px] text-muted-foreground mt-1 truncate max-w-[120px]">
+            {data.config.template_nome}
+          </div>
+        )}
+      </div>
     </div>
-    <Handle type="target" position={Position.Top} className="w-3 h-3 bg-green-500" />
-    <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-green-500" />
+    <Handle type="target" position={Position.Top} className="w-3 h-3 bg-green-500 border-2 border-white" />
+    <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-green-500 border-2 border-white" />
   </div>
 );
 
@@ -91,6 +110,13 @@ const nodeTypes = {
 const WorkflowBuilder: React.FC<{ onSave: (config: any) => void }> = ({ onSave }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<Record<string, string>>({
+    "primeiro_nome": "João",
+    "unidade": "Clínica Central",
+    "link": "https://agende.vc/123"
+  });
 
   const onConnect = useCallback(
     (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
