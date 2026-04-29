@@ -163,6 +163,8 @@ function CRMOperacaoPage() {
       toast.error("Erro ao mover lead", {
         description: error.message,
       });
+    }
+  };
   const handleAddTaskClick = (lead: Lead) => {
     setLeadForTask(lead);
     setIsTaskModalOpen(true);
