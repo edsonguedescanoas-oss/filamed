@@ -265,6 +265,203 @@ export type Database = {
           },
         ]
       }
+      crm_agentes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          email: string | null
+          foto_url: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          foto_url?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      crm_config: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      crm_contatos: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          metadata: Json | null
+          nome: string | null
+          telefone: string
+          unidade_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          metadata?: Json | null
+          nome?: string | null
+          telefone: string
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          metadata?: Json | null
+          nome?: string | null
+          telefone?: string
+          unidade_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contatos_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_conversas: {
+        Row: {
+          agente_id: string | null
+          contato_id: string
+          created_at: string | null
+          id: string
+          status: Database["public"]["Enums"]["crm_conversa_status"] | null
+          ultima_mensagem_at: string | null
+          ultima_mensagem_preview: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agente_id?: string | null
+          contato_id: string
+          created_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["crm_conversa_status"] | null
+          ultima_mensagem_at?: string | null
+          ultima_mensagem_preview?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agente_id?: string | null
+          contato_id?: string
+          created_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["crm_conversa_status"] | null
+          ultima_mensagem_at?: string | null
+          ultima_mensagem_preview?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_conversas_agente_id_fkey"
+            columns: ["agente_id"]
+            isOneToOne: false
+            referencedRelation: "crm_agentes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_conversas_contato_id_fkey"
+            columns: ["contato_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_mensagens: {
+        Row: {
+          agente_id: string | null
+          conteudo: string
+          conversa_id: string
+          created_at: string | null
+          direcao: Database["public"]["Enums"]["crm_mensagem_direcao"]
+          id: string
+          metadata: Json | null
+          tipo: Database["public"]["Enums"]["crm_mensagem_tipo"] | null
+          wa_message_id: string | null
+          wa_status: string | null
+        }
+        Insert: {
+          agente_id?: string | null
+          conteudo: string
+          conversa_id: string
+          created_at?: string | null
+          direcao: Database["public"]["Enums"]["crm_mensagem_direcao"]
+          id?: string
+          metadata?: Json | null
+          tipo?: Database["public"]["Enums"]["crm_mensagem_tipo"] | null
+          wa_message_id?: string | null
+          wa_status?: string | null
+        }
+        Update: {
+          agente_id?: string | null
+          conteudo?: string
+          conversa_id?: string
+          created_at?: string | null
+          direcao?: Database["public"]["Enums"]["crm_mensagem_direcao"]
+          id?: string
+          metadata?: Json | null
+          tipo?: Database["public"]["Enums"]["crm_mensagem_tipo"] | null
+          wa_message_id?: string | null
+          wa_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_mensagens_agente_id_fkey"
+            columns: ["agente_id"]
+            isOneToOne: false
+            referencedRelation: "crm_agentes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "crm_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faturas: {
         Row: {
           assinatura_id: string
@@ -2153,6 +2350,9 @@ export type Database = {
         | "pausada"
       assinatura_status: "trial" | "ativo" | "suspenso" | "cancelado"
       canal_notificacao: "whatsapp" | "sms" | "telegram" | "push" | "email"
+      crm_conversa_status: "aberto" | "pendente" | "resolvido" | "arquivado"
+      crm_mensagem_direcao: "entrada" | "saida"
+      crm_mensagem_tipo: "whatsapp" | "sistema" | "nota"
       fatura_status: "aberta" | "paga" | "falhou" | "reembolsada" | "cancelada"
       fila_tipo:
         | "consulta"
@@ -2318,6 +2518,9 @@ export const Constants = {
       ],
       assinatura_status: ["trial", "ativo", "suspenso", "cancelado"],
       canal_notificacao: ["whatsapp", "sms", "telegram", "push", "email"],
+      crm_conversa_status: ["aberto", "pendente", "resolvido", "arquivado"],
+      crm_mensagem_direcao: ["entrada", "saida"],
+      crm_mensagem_tipo: ["whatsapp", "sistema", "nota"],
       fatura_status: ["aberta", "paga", "falhou", "reembolsada", "cancelada"],
       fila_tipo: [
         "consulta",
