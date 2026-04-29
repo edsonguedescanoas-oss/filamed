@@ -37,7 +37,54 @@ function CRMOperacaoPage() {
 
   useEffect(() => {
     fetchLeads();
-  }, []);
+
+    const leadsSubscription = supabase
+      .channel('leads-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newLead = payload.new as Lead;
+            setLeads(prev => [newLead, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedLead = payload.new as Lead;
+            setLeads(prev => prev.map(lead => 
+              lead.id === updatedLead.id ? updatedLead : lead
+            ));
+            if (selectedLead?.id === updatedLead.id) {
+              setSelectedLead(updatedLead);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setLeads(prev => prev.filter(lead => lead.id !== payload.old.id));
+            if (selectedLead?.id === payload.old.id) {
+              setIsDetailOpen(false);
+              setSelectedLead(null);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    const interacoesSubscription = supabase
+      .channel('interacoes-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'interacoes' },
+        (payload) => {
+          const newInteracao = payload.new as Interacao;
+          if (selectedLead?.id === newInteracao.lead_id) {
+            setInteracoes(prev => [newInteracao, ...prev]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leadsSubscription);
+      supabase.removeChannel(interacoesSubscription);
+    };
+  }, [selectedLead?.id]);
 
   useEffect(() => {
     if (selectedLead) {
