@@ -25,6 +25,7 @@ import { Route as TestLayoutsRouteImport } from './routes/test.layouts'
 import { Route as TestHorizontalRouteImport } from './routes/test.horizontal'
 import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as RUnidadeIdRouteImport } from './routes/r.$unidadeId'
+import { Route as OperacaoRelatoriosRouteImport } from './routes/operacao.relatorios'
 import { Route as OperacaoDashboardRouteImport } from './routes/operacao.dashboard'
 import { Route as OperacaoCrmRouteImport } from './routes/operacao.crm'
 import { Route as OperacaoAutomacoesRouteImport } from './routes/operacao.automacoes'
@@ -138,6 +139,11 @@ const STokenRoute = STokenRouteImport.update({
 const RUnidadeIdRoute = RUnidadeIdRouteImport.update({
   id: '/r/$unidadeId',
   path: '/r/$unidadeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperacaoRelatoriosRoute = OperacaoRelatoriosRouteImport.update({
+  id: '/operacao/relatorios',
+  path: '/operacao/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperacaoDashboardRoute = OperacaoDashboardRouteImport.update({
@@ -341,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/operacao/automacoes': typeof OperacaoAutomacoesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/operacao/dashboard': typeof OperacaoDashboardRoute
+  '/operacao/relatorios': typeof OperacaoRelatoriosRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
@@ -392,6 +399,7 @@ export interface FileRoutesByTo {
   '/operacao/automacoes': typeof OperacaoAutomacoesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/operacao/dashboard': typeof OperacaoDashboardRoute
+  '/operacao/relatorios': typeof OperacaoRelatoriosRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
@@ -447,6 +455,7 @@ export interface FileRoutesById {
   '/operacao/automacoes': typeof OperacaoAutomacoesRoute
   '/operacao/crm': typeof OperacaoCrmRoute
   '/operacao/dashboard': typeof OperacaoDashboardRoute
+  '/operacao/relatorios': typeof OperacaoRelatoriosRoute
   '/r/$unidadeId': typeof RUnidadeIdRoute
   '/s/$token': typeof STokenRoute
   '/test/horizontal': typeof TestHorizontalRoute
@@ -501,6 +510,7 @@ export interface FileRouteTypes {
     | '/operacao/automacoes'
     | '/operacao/crm'
     | '/operacao/dashboard'
+    | '/operacao/relatorios'
     | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
@@ -552,6 +562,7 @@ export interface FileRouteTypes {
     | '/operacao/automacoes'
     | '/operacao/crm'
     | '/operacao/dashboard'
+    | '/operacao/relatorios'
     | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
@@ -606,6 +617,7 @@ export interface FileRouteTypes {
     | '/operacao/automacoes'
     | '/operacao/crm'
     | '/operacao/dashboard'
+    | '/operacao/relatorios'
     | '/r/$unidadeId'
     | '/s/$token'
     | '/test/horizontal'
@@ -659,6 +671,7 @@ export interface RootRouteChildren {
   OperacaoAutomacoesRoute: typeof OperacaoAutomacoesRoute
   OperacaoCrmRoute: typeof OperacaoCrmRoute
   OperacaoDashboardRoute: typeof OperacaoDashboardRoute
+  OperacaoRelatoriosRoute: typeof OperacaoRelatoriosRoute
   RUnidadeIdRoute: typeof RUnidadeIdRoute
   STokenRoute: typeof STokenRoute
   TestHorizontalRoute: typeof TestHorizontalRoute
@@ -779,6 +792,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$unidadeId'
       fullPath: '/r/$unidadeId'
       preLoaderRoute: typeof RUnidadeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operacao/relatorios': {
+      id: '/operacao/relatorios'
+      path: '/operacao/relatorios'
+      fullPath: '/operacao/relatorios'
+      preLoaderRoute: typeof OperacaoRelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operacao/dashboard': {
@@ -1161,6 +1181,7 @@ const rootRouteChildren: RootRouteChildren = {
   OperacaoAutomacoesRoute: OperacaoAutomacoesRoute,
   OperacaoCrmRoute: OperacaoCrmRoute,
   OperacaoDashboardRoute: OperacaoDashboardRoute,
+  OperacaoRelatoriosRoute: OperacaoRelatoriosRoute,
   RUnidadeIdRoute: RUnidadeIdRoute,
   STokenRoute: STokenRoute,
   TestHorizontalRoute: TestHorizontalRoute,

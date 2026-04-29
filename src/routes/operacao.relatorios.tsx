@@ -173,7 +173,7 @@ function RelatoriosCRM() {
                 <h4 className="font-bold text-sm">Automação de Relatórios</h4>
                 <p className="text-xs text-muted-foreground">
                   Você pode agendar o envio automático destes relatórios para o seu e-mail semanalmente. 
-                  Configure em <b>Automações > Agendamentos</b>.
+                  Configure em <b>Automações &gt; Agendamentos</b>.
                 </p>
               </div>
               <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
