@@ -123,12 +123,41 @@ const WorkflowBuilder: React.FC<{ onSave: (config: any) => void }> = ({ onSave }
     [setEdges]
   );
 
+  const onNodeClick = (_: React.MouseEvent, node: Node) => {
+    setSelectedNode(node);
+  };
+
+  const updateNodeData = (nodeId: string, newData: any) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return { ...node, data: { ...node.data, ...newData } };
+        }
+        return node;
+      })
+    );
+  };
+
+  const updateActionConfig = (patch: any) => {
+    if (!selectedNode) return;
+    const currentConfig = selectedNode.data.config || {};
+    const newConfig = { ...currentConfig, ...patch };
+    updateNodeData(selectedNode.id, { config: newConfig });
+    // Also update label if type changed
+    if (patch.type) {
+      const actionDef = CRM_ACTIONS.find(a => a.type === patch.type);
+      if (actionDef) {
+        updateNodeData(selectedNode.id, { label: actionDef.label, type: patch.type });
+      }
+    }
+  };
+
   const addActionNode = () => {
     const newNode: Node = {
-      id: `action-${nodes.length + 1}`,
+      id: `action-${Date.now()}`,
       type: 'action',
-      position: { x: Math.random() * 400, y: nodes.length * 100 },
-      data: { label: 'Nova Ação' },
+      position: { x: 250, y: nodes.length * 80 + 100 },
+      data: { label: 'Nova Ação', type: 'enviar_whatsapp_template', config: {} },
     };
     setNodes((nds) => nds.concat(newNode));
   };
@@ -140,12 +169,26 @@ const WorkflowBuilder: React.FC<{ onSave: (config: any) => void }> = ({ onSave }
           <Button variant="outline" size="sm" onClick={addActionNode} className="gap-2">
             <Plus className="h-4 w-4" /> Add Ação
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            disabled={!selectedNode}
+            onClick={() => setSelectedNode(selectedNode)}
+          >
             <Settings2 className="h-4 w-4" /> Configurar
           </Button>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="text-destructive gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-destructive gap-2"
+            onClick={() => {
+              setNodes(initialNodes);
+              setEdges([]);
+            }}
+          >
             <Trash2 className="h-4 w-4" /> Limpar
           </Button>
           <Button size="sm" onClick={() => onSave({ nodes, edges })} className="gap-2">
@@ -161,6 +204,7 @@ const WorkflowBuilder: React.FC<{ onSave: (config: any) => void }> = ({ onSave }
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
           fitView
         >
@@ -185,6 +229,125 @@ const WorkflowBuilder: React.FC<{ onSave: (config: any) => void }> = ({ onSave }
           </div>
         </div>
       </div>
+
+      {/* Configuration Sidebar */}
+      <Sheet open={!!selectedNode} onOpenChange={(open) => !open && setSelectedNode(null)}>
+        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              Configurar {selectedNode?.type === 'action' ? 'Ação' : 'Gatilho'}
+            </SheetTitle>
+            <SheetDescription>
+              Ajuste os parâmetros para execução em produção.
+            </SheetDescription>
+          </SheetHeader>
+
+          {selectedNode?.type === 'action' && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label>Tipo de Ação</Label>
+                <Select 
+                  value={selectedNode.data.type} 
+                  onValueChange={(val) => updateActionConfig({ type: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a ação" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CRM_ACTIONS.map(a => (
+                      <SelectItem key={a.type} value={a.type}>{a.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedNode.data.type === 'enviar_whatsapp_template' && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-green-600" />
+                      Template WADUK
+                    </h4>
+                    <Badge variant="outline" className="text-[10px] text-green-600 border-green-200 bg-green-50">
+                      WhatsApp Oficial
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="template_nome">Nome do Template (WADUK)</Label>
+                    <Input 
+                      id="template_nome" 
+                      placeholder="ex: boas_vindas_v1"
+                      value={selectedNode.data.config?.template_nome || ''}
+                      onChange={(e) => updateActionConfig({ template_nome: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="template_content">Conteúdo do Template</Label>
+                    <Textarea 
+                      id="template_content" 
+                      placeholder="Olá {{primeiro_nome}}, bem-vindo à {{unidade}}!"
+                      className="min-h-[120px] font-mono text-sm"
+                      value={selectedNode.data.config?.template_content || ''}
+                      onChange={(e) => updateActionConfig({ template_content: e.target.value })}
+                    />
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {['{{primeiro_nome}}', '{{unidade}}', '{{link}}'].map(v => (
+                        <Badge 
+                          key={v} 
+                          variant="secondary" 
+                          className="text-[10px] cursor-pointer hover:bg-secondary/80"
+                          onClick={() => {
+                            const current = selectedNode.data.config?.template_content || '';
+                            updateActionConfig({ template_content: current + ' ' + v });
+                          }}
+                        >
+                          <Variable className="h-3 w-3 mr-1" /> {v}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs uppercase font-bold text-muted-foreground">Validação & Preview</Label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 text-[10px] gap-1"
+                        onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+                      >
+                        <Eye className="h-3 w-3" /> {isPreviewOpen ? 'Ocultar' : 'Mostrar'}
+                      </Button>
+                    </div>
+                    
+                    {isPreviewOpen && (
+                      <WadukTemplatePreview 
+                        template={selectedNode.data.config?.template_content || ''} 
+                        variables={previewData} 
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-6 border-t flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setSelectedNode(null)}>Cancelar</Button>
+                <Button onClick={() => setSelectedNode(null)}>Salvar Configuração</Button>
+              </div>
+            </div>
+          )}
+
+          {selectedNode?.type !== 'action' && (
+            <div className="py-10 text-center text-muted-foreground">
+              <Zap className="h-10 w-10 mx-auto mb-4 opacity-20" />
+              <p>Configurações do gatilho serão carregadas aqui.</p>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
