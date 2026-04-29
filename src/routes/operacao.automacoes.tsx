@@ -93,6 +93,55 @@ function AutomacoesPage() {
     }
   }
 
+  async function fetchActionMetrics() {
+    try {
+      const { data, error } = await supabase
+        .from('workflows_execucoes')
+        .select('tipo_acao, status');
+
+      if (error) throw error;
+
+      const stats: Record<string, { total: number, success: number, fail: number }> = {};
+      
+      data?.forEach(row => {
+        if (row.tipo_acao === 'trigger') return; // Don't count trigger fires as actions
+        const type = row.tipo_acao || 'unknown';
+        if (!stats[type]) stats[type] = { total: 0, success: 0, fail: 0 };
+        stats[type].total++;
+        if (row.status === 'sucesso') stats[type].success++;
+        else stats[type].fail++;
+      });
+
+      const metricsArray = Object.entries(stats).map(([type, s]) => ({
+        type,
+        total: s.total,
+        success: s.success,
+        fail: s.fail,
+        successRate: s.total > 0 ? (s.success / s.total) * 100 : 0,
+        failRate: s.total > 0 ? (s.fail / s.total) * 100 : 0
+      }));
+
+      setActionMetrics(metricsArray);
+
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recent, error: recentError } = await supabase
+        .from('workflows_execucoes')
+        .select('status')
+        .gt('data_execucao', dayAgo);
+
+      if (!recentError && recent) {
+        const total = recent.length;
+        const success = recent.filter(r => r.status === 'sucesso').length;
+        setSummary({
+          total24h: total,
+          successRate: total > 0 ? (success / total) * 100 : 100
+        });
+      }
+    } catch (error: any) {
+      console.error("Erro ao carregar métricas:", error);
+    }
+  }
+
   const toggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'ativo' ? 'pausado' : 'ativo';
     try {
