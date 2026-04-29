@@ -194,21 +194,26 @@ async function verificarAutenticacao(
 
   // Para `tipo=teste`, exigir admin ou super_admin na unidade alvo
   if (tipo === "teste") {
-    if (!unidadeIdAlvo) {
-      return { ok: false, status: 400, message: "unidade_id é obrigatório para tipo=teste" };
-    }
     const { data: roles, error: rolesErr } = await supabaseClient
       .from("user_roles")
       .select("role, unidade_id")
       .eq("user_id", user.id);
+      
     if (rolesErr) {
       console.error("Erro ao verificar role do usuário:", rolesErr.message);
       return { ok: false, status: 500, message: "Role check error" };
     }
+
     const isSuper = (roles ?? []).some((r) => r.role === "super_admin");
+    
+    if (!unidadeIdAlvo && !isSuper) {
+      return { ok: false, status: 400, message: "unidade_id é obrigatório para não-super-admins" };
+    }
+
     const isAdminUnidade = (roles ?? []).some(
       (r) => r.role === "admin" && r.unidade_id === unidadeIdAlvo,
     );
+
     if (!isSuper && !isAdminUnidade) {
       return { ok: false, status: 403, message: "Apenas admin/super_admin pode disparar testes" };
     }
