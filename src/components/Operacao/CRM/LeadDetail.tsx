@@ -14,7 +14,9 @@ import {
   History, 
   FileText,
   MessageSquare,
-  Plus
+  Plus,
+  StickyNote,
+  CheckCircle2
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,8 +30,18 @@ import {
   SheetTitle 
 } from '@/components/ui/sheet';
 
+export interface Interacao {
+  id: string;
+  lead_id: string;
+  tipo: 'whatsapp' | 'email' | 'ligacao' | 'reuniao' | 'tarefa' | 'nota';
+  conteudo: string;
+  data_criacao: string;
+  usuario_id: string;
+}
+
 interface LeadDetailProps {
   lead: Lead | null;
+  interacoes: Interacao[];
   isOpen: boolean;
   onClose: () => void;
   onAddNote: (content: string) => void;
