@@ -60,7 +60,15 @@ export const Route = createFileRoute("/_app")({
         search: { redirect: location.href },
       });
     }
-    if (!auth.profile?.unidade_id) {
+    if (auth.roles.includes("super_admin") && !auth.roles.includes("admin") && !auth.roles.includes("gestor")) {
+      // Super admin sem funções clínicas deve ir para o painel admin
+      if (location.pathname.startsWith("/app")) {
+        // Opcional: permitir /app se houver algo útil lá, mas o usuário pediu para não ter acesso a funções de clínica.
+        // Se quisermos ser estritos:
+        // throw redirect({ to: "/admin" });
+      }
+    }
+    if (!auth.profile?.unidade_id && !auth.roles.includes("super_admin")) {
       throw redirect({ to: "/setup" });
     }
   },
