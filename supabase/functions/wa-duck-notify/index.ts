@@ -281,13 +281,31 @@ export const handler = async (req: Request) => {
       config = testConfig;
       finalUnidadeId = testUnidadeId;
 
-      if ((!config || !config.api_url) && testUnidadeId) {
+      if ((!config || !config.api_key) && testUnidadeId) {
         const { data: unidade } = await supabaseClient
           .from("unidades")
           .select("whatsapp_config")
           .eq("id", testUnidadeId)
           .single();
         config = unidade?.whatsapp_config || {};
+      }
+      
+      // Fallback para config global do CRM se ainda estiver vazio
+      if (!config || !config.api_key) {
+        const { data: crmCfg } = await supabaseClient
+          .from("crm_config")
+          .select("value")
+          .eq("key", "waduk_settings")
+          .maybeSingle();
+        if (crmCfg?.value) {
+          const crmVal = crmCfg.value as any;
+          config = {
+            api_url: "https://api.waduk.pro/v1", // Default se não houver
+            ...config,
+            api_key: crmVal.waduk_api_key,
+            instance_id: crmVal.waduk_instance_id
+          };
+        }
       }
       
       if (!telefone) throw new Error("telefone is required for test");
