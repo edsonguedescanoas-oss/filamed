@@ -45,11 +45,17 @@ function CRMPage() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {activeTab === "chat" ? (
+        {activeTab === "chat" && (
           <ChatInterface />
-        ) : (
+        )}
+        {activeTab === "agents" && (
           <div className="p-6 max-w-4xl mx-auto h-full overflow-y-auto">
              <AgentConfig />
+          </div>
+        )}
+        {activeTab === "settings" && (
+          <div className="p-6 max-w-4xl mx-auto h-full overflow-y-auto">
+             <CRMSettings />
           </div>
         )}
       </div>
