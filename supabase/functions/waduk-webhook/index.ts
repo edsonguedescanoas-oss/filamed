@@ -25,30 +25,104 @@ serve(async (req) => {
       const { from, text, timestamp } = payload.data
       const cleanNumber = from.replace(/\D/g, '').replace(/^55/, '') // Remove DDI 55 para busca
 
-      // 2. Localizar lead pelo número de telefone
+      // 2. Localizar lead pelo número de telefone (Fluxo de Automação)
       const { data: lead } = await supabase
         .from('leads')
-        .select('id')
+        .select('id, nome_contato')
         .or(`telefone.ilike.%${cleanNumber}%,telefone.ilike.%${from}%`)
-        .single()
+        .maybeSingle()
 
       if (lead) {
-        // 3. Registrar interação de WhatsApp
+        // Registrar interação de WhatsApp no histórico do Lead
         await supabase.from('interacoes').insert({
           lead_id: lead.id,
           tipo: 'whatsapp',
           conteudo: text,
-          usuario_id: '00000000-0000-0000-0000-000000000000', // ID de sistema para interações automáticas
+          usuario_id: '00000000-0000-0000-0000-000000000000', 
           data_criacao: new Date(timestamp * 1000).toISOString()
         })
 
-        // 4. Atualizar data de último contato
+        // Atualizar data de último contato no Lead
         await supabase.from('leads').update({
           ultimo_contato_em: new Date().toISOString()
         }).eq('id', lead.id)
 
-        // 5. Notificar via workflow (seria integrado à engine server-side)
-        console.log(`[WADUK-Webhook] Workflow disparado para lead: ${lead.id}`)
+        console.log(`[WADUK-Webhook] Mensagem registrada para lead: ${lead.id}`)
+      }
+
+      // 3. Fluxo de Atendimento (CRM Conversas)
+      // Localizar contato no CRM pelo número
+      let { data: contato } = await supabase
+        .from('crm_contatos')
+        .select('id')
+        .or(`telefone.ilike.%${cleanNumber}%,telefone.ilike.%${from}%`)
+        .maybeSingle()
+
+      // Se não existe contato no CRM, criar um
+      if (!contato && lead) {
+        const { data: newContato } = await supabase
+          .from('crm_contatos')
+          .insert({
+            nome: lead.nome_contato || `Lead ${cleanNumber}`,
+            telefone: from,
+            lead_id: lead.id
+          })
+          .select()
+          .single()
+        contato = newContato
+      } else if (!contato) {
+        const { data: newContato } = await supabase
+          .from('crm_contatos')
+          .insert({
+            nome: `WhatsApp ${cleanNumber}`,
+            telefone: from
+          })
+          .select()
+          .single()
+        contato = newContato
+      }
+
+      if (contato) {
+        // Localizar ou criar conversa ativa
+        let { data: conversa } = await supabase
+          .from('crm_conversas')
+          .select('id')
+          .eq('contato_id', contato.id)
+          .order('ultima_mensagem_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (!conversa) {
+          const { data: newConversa } = await supabase
+            .from('crm_conversas')
+            .insert({
+              contato_id: contato.id,
+              status: 'aberto'
+            })
+            .select()
+            .single()
+          conversa = newConversa
+        }
+
+        // Inserir mensagem
+        await supabase.from('crm_mensagens').insert({
+          conversa_id: conversa.id,
+          conteudo: text,
+          direcao: 'entrada',
+          tipo: 'whatsapp',
+          wa_message_id: payload.data.id || null,
+          created_at: new Date(timestamp * 1000).toISOString()
+        })
+
+        // Atualizar conversa
+        await supabase.from('crm_conversas').update({
+          ultima_mensagem_preview: text.substring(0, 100),
+          ultima_mensagem_at: new Date().toISOString(),
+          status: 'aberto', // Garante que a conversa volta para aberto se estava resolvida
+          updated_at: new Date().toISOString()
+        }).eq('id', conversa.id)
+
+        console.log(`[WADUK-Webhook] Mensagem inserida no CRM para contato: ${contato.id}`)
       }
     }
 

@@ -194,21 +194,26 @@ async function verificarAutenticacao(
 
   // Para `tipo=teste`, exigir admin ou super_admin na unidade alvo
   if (tipo === "teste") {
-    if (!unidadeIdAlvo) {
-      return { ok: false, status: 400, message: "unidade_id é obrigatório para tipo=teste" };
-    }
     const { data: roles, error: rolesErr } = await supabaseClient
       .from("user_roles")
       .select("role, unidade_id")
       .eq("user_id", user.id);
+      
     if (rolesErr) {
       console.error("Erro ao verificar role do usuário:", rolesErr.message);
       return { ok: false, status: 500, message: "Role check error" };
     }
+
     const isSuper = (roles ?? []).some((r) => r.role === "super_admin");
+    
+    if (!unidadeIdAlvo && !isSuper) {
+      return { ok: false, status: 400, message: "unidade_id é obrigatório para não-super-admins" };
+    }
+
     const isAdminUnidade = (roles ?? []).some(
       (r) => r.role === "admin" && r.unidade_id === unidadeIdAlvo,
     );
+
     if (!isSuper && !isAdminUnidade) {
       return { ok: false, status: 403, message: "Apenas admin/super_admin pode disparar testes" };
     }
@@ -281,13 +286,31 @@ export const handler = async (req: Request) => {
       config = testConfig;
       finalUnidadeId = testUnidadeId;
 
-      if ((!config || !config.api_url) && testUnidadeId) {
+      if ((!config || !config.api_key) && testUnidadeId) {
         const { data: unidade } = await supabaseClient
           .from("unidades")
           .select("whatsapp_config")
           .eq("id", testUnidadeId)
           .single();
         config = unidade?.whatsapp_config || {};
+      }
+      
+      // Fallback para config global do CRM se ainda estiver vazio
+      if (!config || !config.api_key) {
+        const { data: crmCfg } = await supabaseClient
+          .from("crm_config")
+          .select("value")
+          .eq("key", "waduk_settings")
+          .maybeSingle();
+        if (crmCfg?.value) {
+          const crmVal = crmCfg.value as any;
+          config = {
+            api_url: "https://api.waduk.pro/v1", // Default se não houver
+            ...config,
+            api_key: crmVal.waduk_api_key,
+            instance_id: crmVal.waduk_instance_id
+          };
+        }
       }
       
       if (!telefone) throw new Error("telefone is required for test");
