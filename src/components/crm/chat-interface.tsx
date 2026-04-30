@@ -100,7 +100,8 @@ export function ChatInterface() {
     [conversas, selectedConversaId]
   );
 
-  // 2. Carregar mensagens da conversa selecionada com paginação infinita (histórico)
+  // 2. Carregar mensagens da conversa selecionada com paginação infinita (histórico).
+  // Carrega em ordem decrescente (mais recentes primeiro) para facilitar o scroll infinito para cima.
   const { 
     data: mensagensData, 
     isLoading: loadingMensagens,
@@ -129,6 +130,7 @@ export function ChatInterface() {
     },
     enabled: !!selectedConversaId,
   });
+
 
   const mensagens = useMemo(() => {
     const allMsgs = mensagensData?.pages.flat() || [];
