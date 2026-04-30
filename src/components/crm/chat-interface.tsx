@@ -14,7 +14,8 @@ import {
   ChevronRight,
   UserPlus,
   MessageSquare,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -275,41 +276,47 @@ export function ChatInterface() {
   }, [messageText, sendMutation, selectedConversaId]);
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden relative">
+    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden relative w-full">
       {/* Sidebar - Lista de Conversas */}
       <div className={cn(
-        "absolute inset-0 z-20 bg-background md:relative md:flex md:inset-auto w-full md:w-80 lg:w-96 border-r flex-col shrink-0 transition-transform duration-300 ease-in-out",
-        !showSidebar && "-translate-x-full md:translate-x-0"
+        "absolute inset-0 z-20 bg-background md:relative md:flex md:inset-auto w-full md:w-80 lg:w-96 border-r flex-col shrink-0 transition-all duration-300 ease-in-out",
+        !showSidebar && "-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto"
       )}>
-        <div className="p-4 space-y-4 border-b">
+        <div className="p-4 space-y-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold text-xl tracking-tight">Conversas</h2>
+            <h2 className="font-display font-bold text-xl tracking-tight text-foreground">Conversas</h2>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Filtrar">
-                <Filter className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted" aria-label="Filtrar">
+                <Filter className="h-4 w-4 text-muted-foreground" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full md:hidden" onClick={() => setShowSidebar(false)} aria-label="Fechar menu">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full md:hidden hover:bg-muted" onClick={() => setShowSidebar(false)} aria-label="Fechar menu">
                 <ChevronRight className="h-4 w-4 rotate-180" />
               </Button>
             </div>
           </div>
           <div className="relative group">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input placeholder="Buscar por nome ou telefone..." className="pl-9 h-10 bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-xl" />
+            <Input 
+              placeholder="Buscar por nome ou telefone..." 
+              className="pl-9 h-10 bg-muted/30 border-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-xl text-sm" 
+            />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="divide-y divide-border/40">
+          <div className="divide-y divide-border/40 pb-20 md:pb-0">
             {loadingConversas ? (
               <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span className="text-sm font-medium">Carregando conversas...</span>
               </div>
             ) : conversas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
-                <MessageSquare className="h-10 w-10 opacity-20" />
-                <span className="text-sm">Nenhuma conversa encontrada.</span>
+              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground text-center">
+                <div className="h-16 w-16 rounded-full bg-muted/30 flex items-center justify-center mb-2">
+                  <MessageSquare className="h-8 w-8 opacity-20" />
+                </div>
+                <span className="text-sm font-medium">Nenhuma conversa encontrada.</span>
+                <p className="text-xs max-w-[200px]">Inicie uma conversa ou aguarde o recebimento de mensagens.</p>
               </div>
             ) : (
               <>
@@ -328,9 +335,9 @@ export function ChatInterface() {
                       size="sm" 
                       onClick={() => fetchNextConversas()}
                       disabled={isFetchingNextConversas}
-                      className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                      className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                     >
-                      {isFetchingNextConversas ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {isFetchingNextConversas ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
                       {isFetchingNextConversas ? "Buscando..." : "Ver mais conversas"}
                     </Button>
                   </div>
@@ -342,41 +349,48 @@ export function ChatInterface() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-gradient-mesh">
+      <div className={cn(
+        "flex-1 flex flex-col overflow-hidden min-w-0 bg-gradient-mesh transition-all duration-300",
+        showSidebar && "opacity-50 md:opacity-100"
+      )}>
         {selectedConversa ? (
           <>
             {/* Chat Header */}
-            <div className="h-16 px-4 border-b flex items-center justify-between bg-background/80 backdrop-blur-md sticky top-0 z-10">
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="h-16 px-4 border-b flex items-center justify-between bg-background/95 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-9 w-9 md:hidden shrink-0" 
+                  className="h-9 w-9 md:hidden shrink-0 hover:bg-muted" 
                   onClick={() => setShowSidebar(true)}
                   aria-label="Voltar para lista"
                 >
                   <ChevronRight className="h-5 w-5 rotate-180" />
                 </Button>
-                <Avatar className="h-10 w-10 border-2 border-background shadow-sm shrink-0">
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold">
-                    {selectedConversa.contato?.nome?.[0] || "C"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-sm truncate leading-tight">{selectedConversa.contato?.nome}</h3>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                    <div className="h-1.5 w-1.5 rounded-full bg-success" />
-                    Ativo agora
+                <div className="relative">
+                  <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border border-border shadow-sm shrink-0">
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold text-xs sm:text-sm">
+                      {selectedConversa.contato?.nome?.[0] || "C"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-success animate-pulse" />
+                </div>
+                <div className="min-w-0 overflow-hidden">
+                  <h3 className="font-bold text-sm truncate leading-tight text-foreground">{selectedConversa.contato?.nome}</h3>
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-0.5">
+                    <span className="text-success font-bold">Online</span>
+                    <span className="opacity-30">•</span>
+                    <span className="truncate">{selectedConversa.contato?.telefone}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" className="hidden sm:flex h-8 gap-2 text-[10px] font-bold uppercase tracking-wider rounded-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <Button variant="outline" size="sm" className="hidden sm:flex h-8 gap-2 text-[10px] font-bold uppercase tracking-wider rounded-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-all active:scale-95">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Finalizar
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Mais opções">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted" aria-label="Mais opções">
+                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </div>
             </div>
@@ -445,9 +459,9 @@ export function ChatInterface() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t bg-background">
+            <div className="p-3 sm:p-4 border-t bg-background/95 backdrop-blur-md sticky bottom-0 z-20 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.05)]">
               <form onSubmit={handleSend} className="flex items-end gap-2 max-w-4xl mx-auto">
-                <div className="flex-1">
+                <div className="flex-1 relative group">
                   <textarea
                     rows={1}
                     value={messageText}
@@ -459,32 +473,48 @@ export function ChatInterface() {
                       }
                     }}
                     placeholder="Digite sua mensagem..."
-                    className="w-full bg-muted/50 border-none focus:ring-1 focus:ring-primary rounded-xl px-4 py-2.5 text-sm resize-none"
+                    className="w-full bg-muted/40 border-border/40 focus:border-primary/50 focus:bg-background focus:ring-4 focus:ring-primary/5 rounded-2xl px-4 py-3 text-sm resize-none transition-all duration-200 min-h-[46px] max-h-[150px]"
                   />
+                  <div className="absolute right-3 bottom-3 flex items-center gap-2 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest hidden sm:block">Shift + Enter para quebrar linha</span>
+                  </div>
                 </div>
                 <Button 
                   type="submit" 
                   disabled={!messageText.trim() || sendMutation.isPending}
                   size="icon" 
-                  className="rounded-full h-10 w-10 shrink-0"
+                  className="rounded-xl h-[46px] w-[46px] shrink-0 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95"
                 >
                   {sendMutation.isPending ? (
-                    <Clock className="h-4 w-4 animate-pulse" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <Send className="h-5 w-5" />
                   )}
                 </Button>
               </form>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground space-y-4">
-            <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center">
-              <MessageSquare className="h-10 w-10" />
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-6 bg-muted/5">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+              <div className="relative h-24 w-24 sm:h-32 sm:w-32 bg-background border border-border shadow-xl rounded-full flex items-center justify-center">
+                <MessageSquare className="h-10 w-10 sm:h-14 sm:w-14 text-primary/40" />
+              </div>
+              <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                 <Sparkles className="h-5 w-5" />
+              </div>
             </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-lg text-foreground">Sua Caixa de Entrada</h3>
-              <p className="max-w-xs mx-auto">Selecione uma conversa ao lado para começar o atendimento.</p>
+            <div className="text-center max-w-sm">
+              <h3 className="font-bold text-xl sm:text-2xl text-foreground mb-2">Suas conversas esperam por você</h3>
+              <p className="text-sm sm:text-base text-muted-foreground/80 leading-relaxed">Selecione uma conversa na lista lateral para iniciar o atendimento e gerenciar seus contatos.</p>
+              <Button 
+                variant="outline" 
+                className="mt-8 rounded-full md:hidden" 
+                onClick={() => setShowSidebar(true)}
+              >
+                Ver Conversas
+              </Button>
             </div>
           </div>
         )}
