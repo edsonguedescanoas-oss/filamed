@@ -169,33 +169,33 @@ export function CRMSettings() {
                 Guia de Configuração WADUK
               </p>
               <div className="space-y-4">
-                <div className="relative pl-6 border-l-2 border-primary/20 space-y-4">
+                <div className="relative pl-7 sm:pl-8 border-l-2 border-primary/20 space-y-5 sm:space-y-6">
                   <div className="relative">
-                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">1</span>
-                    <p className="font-medium text-foreground">Acesse sua Instância</p>
-                    <p className="text-muted-foreground text-xs">No painel WADUK, clique em "Instâncias" e selecione o número conectado.</p>
+                    <span className="absolute -left-[32px] sm:-left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] sm:text-xs font-bold text-primary-foreground shadow-sm">1</span>
+                    <p className="font-bold text-foreground text-sm sm:text-base">Acesse sua Instância</p>
+                    <p className="text-muted-foreground text-[11px] sm:text-xs leading-relaxed">No painel WADUK, clique em "Instâncias" e selecione o número conectado.</p>
                   </div>
                   
                   <div className="relative">
-                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">2</span>
-                    <p className="font-medium text-foreground">Configurações de Webhook</p>
-                    <p className="text-muted-foreground text-xs">No menu lateral da instância, vá em <strong className="text-foreground">Configurações</strong> e procure pela aba <strong className="text-foreground">Webhook / Callback</strong>.</p>
+                    <span className="absolute -left-[32px] sm:-left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] sm:text-xs font-bold text-primary-foreground shadow-sm">2</span>
+                    <p className="font-bold text-foreground text-sm sm:text-base">Configurações de Webhook</p>
+                    <p className="text-muted-foreground text-[11px] sm:text-xs leading-relaxed">No menu lateral da instância, vá em <strong className="text-foreground">Configurações</strong> e procure pela aba <strong className="text-foreground">Webhook / Callback</strong>.</p>
                   </div>
-
+ 
                   <div className="relative">
-                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">3</span>
-                    <p className="font-medium text-foreground">Cole a URL e Ative Eventos</p>
-                    <p className="text-muted-foreground text-xs">No campo "Webhook URL", cole o link acima. Marque as opções:</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-mono">message.received</span>
-                      <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-mono">messages.upsert</span>
+                    <span className="absolute -left-[32px] sm:-left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] sm:text-xs font-bold text-primary-foreground shadow-sm">3</span>
+                    <p className="font-bold text-foreground text-sm sm:text-base">Cole a URL e Ative Eventos</p>
+                    <p className="text-muted-foreground text-[11px] sm:text-xs leading-relaxed">No campo "Webhook URL", cole o link acima. Marque as opções:</p>
+                    <div className="mt-2.5 flex flex-wrap gap-1.5 sm:gap-2">
+                      <code className="px-2 py-1 bg-primary/10 text-primary rounded text-[9px] sm:text-[10px] font-bold border border-primary/20">message.received</code>
+                      <code className="px-2 py-1 bg-primary/10 text-primary rounded text-[9px] sm:text-[10px] font-bold border border-primary/20">messages.upsert</code>
                     </div>
                   </div>
-
+ 
                   <div className="relative">
-                    <span className="absolute -left-[27px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">4</span>
-                    <p className="font-medium text-foreground">Teste a Integração</p>
-                    <p className="text-muted-foreground text-xs">Envie uma mensagem de <strong className="text-foreground">outro número</strong> para o seu WhatsApp conectado. O status abaixo deve mudar para verde instantaneamente.</p>
+                    <span className="absolute -left-[32px] sm:-left-[35px] top-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] sm:text-xs font-bold text-primary-foreground shadow-sm">4</span>
+                    <p className="font-bold text-foreground text-sm sm:text-base">Teste a Integração</p>
+                    <p className="text-muted-foreground text-[11px] sm:text-xs leading-relaxed">Envie uma mensagem de <strong className="text-foreground">outro número</strong> para o seu WhatsApp conectado. O status abaixo deve mudar para verde instantaneamente.</p>
                   </div>
                 </div>
               </div>
