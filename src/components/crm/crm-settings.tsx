@@ -154,10 +154,11 @@ export function CRMSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input readOnly value={webhookUrl} className="font-mono text-xs bg-muted" />
-            <Button variant="outline" size="icon" onClick={() => copyToClipboard(webhookUrl)}>
-              <Copy className="h-4 w-4" />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input readOnly value={webhookUrl} className="font-mono text-[10px] sm:text-xs bg-muted truncate" />
+            <Button variant="outline" size="sm" onClick={() => copyToClipboard(webhookUrl)} className="shrink-0 gap-2">
+              <Copy className="h-3.5 w-3.5" />
+              <span className="sm:hidden">Copiar URL</span>
             </Button>
           </div>
 
