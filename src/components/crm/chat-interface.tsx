@@ -355,37 +355,41 @@ export function ChatInterface() {
         {selectedConversa ? (
           <>
             {/* Chat Header */}
-            <div className="h-16 px-4 border-b flex items-center justify-between bg-background/80 backdrop-blur-md sticky top-0 z-10">
-              <div className="flex items-center gap-3 min-w-0">
+            <div className="h-16 px-4 border-b flex items-center justify-between bg-background/95 backdrop-blur-md sticky top-0 z-30 shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-9 w-9 md:hidden shrink-0" 
+                  className="h-9 w-9 md:hidden shrink-0 hover:bg-muted" 
                   onClick={() => setShowSidebar(true)}
                   aria-label="Voltar para lista"
                 >
                   <ChevronRight className="h-5 w-5 rotate-180" />
                 </Button>
-                <Avatar className="h-10 w-10 border-2 border-background shadow-sm shrink-0">
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold">
-                    {selectedConversa.contato?.nome?.[0] || "C"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-sm truncate leading-tight">{selectedConversa.contato?.nome}</h3>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                    <div className="h-1.5 w-1.5 rounded-full bg-success" />
-                    Ativo agora
+                <div className="relative">
+                  <Avatar className="h-9 w-9 sm:h-10 sm:w-10 border border-border shadow-sm shrink-0">
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold text-xs sm:text-sm">
+                      {selectedConversa.contato?.nome?.[0] || "C"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-success animate-pulse" />
+                </div>
+                <div className="min-w-0 overflow-hidden">
+                  <h3 className="font-bold text-sm truncate leading-tight text-foreground">{selectedConversa.contato?.nome}</h3>
+                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium uppercase tracking-widest mt-0.5">
+                    <span className="text-success font-bold">Online</span>
+                    <span className="opacity-30">•</span>
+                    <span className="truncate">{selectedConversa.contato?.telefone}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" className="hidden sm:flex h-8 gap-2 text-[10px] font-bold uppercase tracking-wider rounded-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <Button variant="outline" size="sm" className="hidden sm:flex h-8 gap-2 text-[10px] font-bold uppercase tracking-wider rounded-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-all active:scale-95">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Finalizar
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Mais opções">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted" aria-label="Mais opções">
+                  <MoreVertical className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </div>
             </div>
