@@ -267,28 +267,42 @@ export function ChatInterface() {
   }, [messageText, sendMutation, selectedConversaId]);
 
   return (
-    <div className="flex h-full bg-background overflow-hidden">
+    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden relative">
       {/* Sidebar - Lista de Conversas */}
-      <div className="w-80 md:w-96 border-r flex flex-col shrink-0">
-        <div className="p-4 space-y-4">
+      <div className={cn(
+        "absolute inset-0 z-20 bg-background md:relative md:flex md:inset-auto w-full md:w-80 lg:w-96 border-r flex-col shrink-0 transition-transform duration-300 ease-in-out",
+        !showSidebar && "-translate-x-full md:translate-x-0"
+      )}>
+        <div className="p-4 space-y-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg">Caixa de Entrada</h2>
-            <Button variant="ghost" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
+            <h2 className="font-display font-bold text-xl tracking-tight">Conversas</h2>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Filtrar">
+                <Filter className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full md:hidden" onClick={() => setShowSidebar(false)} aria-label="Fechar menu">
+                <ChevronRight className="h-4 w-4 rotate-180" />
+              </Button>
+            </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar conversas..." className="pl-9" />
+          <div className="relative group">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input placeholder="Buscar por nome ou telefone..." className="pl-9 h-10 bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-xl" />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="divide-y">
+          <div className="divide-y divide-border/40">
             {loadingConversas ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
+              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="text-sm font-medium">Carregando conversas...</span>
+              </div>
             ) : conversas.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma conversa.</div>
+              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
+                <MessageSquare className="h-10 w-10 opacity-20" />
+                <span className="text-sm">Nenhuma conversa encontrada.</span>
+              </div>
             ) : (
               <>
                 {conversas.map((conversa: any) => (
@@ -306,8 +320,10 @@ export function ChatInterface() {
                       size="sm" 
                       onClick={() => fetchNextConversas()}
                       disabled={isFetchingNextConversas}
+                      className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                     >
-                      {isFetchingNextConversas ? <Loader2 className="h-4 w-4 animate-spin" /> : "Carregar mais"}
+                      {isFetchingNextConversas ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {isFetchingNextConversas ? "Buscando..." : "Ver mais conversas"}
                     </Button>
                   </div>
                 )}
@@ -318,31 +334,40 @@ export function ChatInterface() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-gradient-mesh">
         {selectedConversa ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b flex items-center justify-between bg-background/95 backdrop-blur">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9 border">
-                  <AvatarFallback className="bg-primary/10 text-primary uppercase">
-                    {selectedConversa.contato?.nome?.[0]}
+            <div className="h-16 px-4 border-b flex items-center justify-between bg-background/80 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center gap-3 min-w-0">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-9 w-9 md:hidden shrink-0" 
+                  onClick={() => setShowSidebar(true)}
+                  aria-label="Voltar para lista"
+                >
+                  <ChevronRight className="h-5 w-5 rotate-180" />
+                </Button>
+                <Avatar className="h-10 w-10 border-2 border-background shadow-sm shrink-0">
+                  <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold">
+                    {selectedConversa.contato?.nome?.[0] || "C"}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-semibold leading-none">{selectedConversa.contato?.nome}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                    <Phone className="h-3 w-3" />
-                    {selectedConversa.contato?.telefone}
-                  </p>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm truncate leading-tight">{selectedConversa.contato?.nome}</h3>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    <div className="h-1.5 w-1.5 rounded-full bg-success" />
+                    Ativo agora
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <Button variant="outline" size="sm" className="hidden sm:flex h-8 gap-2 text-[10px] font-bold uppercase tracking-wider rounded-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Resolver
+                  Finalizar
                 </Button>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Mais opções">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </div>
