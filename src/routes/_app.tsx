@@ -160,21 +160,29 @@ function AppLayout() {
     item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2 sm:px-6">
+    <div className="min-h-screen bg-background/50 selection:bg-primary/20">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
           {/* Logo */}
-          <Link to="/app" className="flex items-center gap-2 shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary">
+          <Link 
+            to="/app" 
+            className="group flex items-center gap-2.5 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg transition-all active:scale-95"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-primary shadow-glow shadow-primary/20 transition-transform group-hover:rotate-3">
               <Activity className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
             </div>
-            <span className="font-display text-base font-semibold">
-              Fila<span className="text-gradient">Med</span>
-            </span>
+            <div className="flex flex-col leading-none">
+              <span className="font-display text-lg font-bold tracking-tight">
+                Fila<span className="text-gradient">Med</span>
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                Healthcare
+              </span>
+            </div>
           </Link>
 
           {/* Nav desktop */}
-          <nav className="hidden lg:flex items-center gap-1 ml-4">
+          <nav className="hidden lg:flex items-center gap-1 ml-6 h-10 px-1 rounded-xl bg-muted/30 border border-border/50">
             {visibleItems.map((item) => {
               const active = isItemActive(item);
               const Icon = item.icon;
@@ -183,14 +191,17 @@ function AppLayout() {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                    "relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary",
                     active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/50",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={cn("h-3.5 w-3.5 transition-transform", active && "scale-110")} />
                   {item.label}
+                  {active && (
+                    <span className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                  )}
                 </Link>
               );
             })}
@@ -202,14 +213,16 @@ function AppLayout() {
           {/* Badge do plano atual (desktop) */}
           <Link
             to="/app/conta"
-            className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:border-primary/40 hover:bg-primary/5 transition-colors"
+            className="hidden md:inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-primary"
             title="Ver detalhes da assinatura"
           >
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            {plano ? plano.plano_nome : trial?.status_assinatura === "trial" ? "Trial" : "Sem plano"}
+            <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse-glow" />
+            <span className="opacity-90">
+              {plano ? plano.plano_nome : trial?.status_assinatura === "trial" ? "Trial" : "Sem plano"}
+            </span>
             {plano && (
-              <span className="text-[10px] text-muted-foreground">
-                · {plano.ciclo === "anual" ? "anual" : "mensal"}
+              <span className="text-[10px] text-muted-foreground font-normal">
+                ({plano.ciclo === "anual" ? "anual" : "mensal"})
               </span>
             )}
           </Link>
