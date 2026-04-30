@@ -114,6 +114,9 @@ export function AgentConfig() {
     }
   });
 
+  /**
+   * Alterna o estado de ativação de um agente.
+   */
   const toggleAgentMutation = useMutation({
     mutationFn: async ({ id, ativo }: { id: string, ativo: boolean }) => {
       const { error } = await supabase
@@ -126,6 +129,7 @@ export function AgentConfig() {
       void queryClient.invalidateQueries({ queryKey: ["crm_agentes"] });
     }
   });
+
 
   const filteredAgentes = agentes?.filter(a => 
     a.nome.toLowerCase().includes(searchTerm.toLowerCase())
