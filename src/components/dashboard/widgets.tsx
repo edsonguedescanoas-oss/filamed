@@ -100,16 +100,26 @@ function StatCard({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elegant animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accentBg}`}>
-        <Icon className={`h-5 w-5 ${iconColor}`} />
+    <div className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-elegant animate-in fade-in slide-in-from-bottom-2">
+      {/* Decorative gradient blur */}
+      <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full blur-3xl opacity-0 transition-opacity group-hover:opacity-20 ${accent === 'primary' ? 'bg-primary' : accent === 'success' ? 'bg-success' : accent === 'warning' ? 'bg-amber-500' : 'bg-destructive'}`} />
+      
+      <div className="flex items-center justify-between">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm transition-transform group-hover:scale-110 group-hover:rotate-3 ${accentBg}`}>
+          <Icon className={`h-6 w-6 ${iconColor}`} />
+        </div>
+        {trend && !loading && renderTrend()}
       </div>
-      <div className="mt-5 font-display text-3xl font-bold">
-        {loading ? <Skeleton className="h-8 w-16" /> : value}
+
+      <div className="mt-6">
+        <div className="font-display text-3xl font-bold tracking-tight">
+          {loading ? <Skeleton className="h-9 w-20" /> : value}
+        </div>
+        <div className="mt-1 flex items-center gap-1.5 font-semibold text-muted-foreground/80 group-hover:text-foreground transition-colors">
+          <span className="text-sm uppercase tracking-wider">{label}</span>
+        </div>
+        {hint && <div className="mt-1 text-xs text-muted-foreground/60">{hint}</div>}
       </div>
-      <div className="mt-1 font-medium">{label}</div>
-      {hint && <div className="text-sm text-muted-foreground">{hint}</div>}
-      {trend && !loading && <div className="mt-2">{renderTrend()}</div>}
     </div>
   );
 }
