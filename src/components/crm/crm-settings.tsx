@@ -7,7 +7,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Copy, Save, RefreshCw, Smartphone, Globe, CheckCircle2, AlertCircle, Clock, Check, ExternalLink, MessageSquare, ListChecks } from "lucide-react";
 
+/**
+ * CRMSettings: Configurações de integração com WaDuck e gerenciamento de Webhooks.
+ */
 export function CRMSettings() {
+
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState({
     waduk_api_key: "",
