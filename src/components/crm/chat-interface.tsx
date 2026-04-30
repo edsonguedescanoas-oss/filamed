@@ -1,23 +1,24 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Search, 
   Filter, 
   MoreVertical, 
   Send, 
-  User, 
+  User,
   Phone, 
   Calendar,
   CheckCircle2,
   Clock,
   ChevronRight,
   UserPlus,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useInView } from "react-intersection-observer";
 
 export function ChatInterface() {
   const queryClient = useQueryClient();
@@ -32,10 +34,18 @@ export function ChatInterface() {
   const [messageText, setMessageText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 1. Carregar conversas
-  const { data: conversas, isLoading: loadingConversas } = useQuery({
+  // 1. Carregar conversas com paginação infinita
+  const { 
+    data: conversasData, 
+    isLoading: loadingConversas,
+    fetchNextPage: fetchNextConversas,
+    hasNextPage: hasNextConversas,
+    isFetchingNextPage: isFetchingNextConversas
+  } = useInfiniteQuery({
     queryKey: ["crm_conversas"],
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      const pageSize = 20;
       const { data, error } = await supabase
         .from("crm_conversas")
         .select(`
@@ -43,32 +53,70 @@ export function ChatInterface() {
           contato:crm_contatos(*),
           agente:crm_agentes(id, nome)
         `)
-        .order("ultima_mensagem_at", { ascending: false });
+        .order("ultima_mensagem_at", { ascending: false })
+        .range(pageParam, pageParam + pageSize - 1);
+        
       if (error) throw error;
       return data;
     },
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < 20) return undefined;
+      return allPages.length * 20;
+    },
   });
+
+  const conversas = useMemo(() => 
+    conversasData?.pages.flat() || [], 
+    [conversasData]
+  );
 
   const selectedConversa = useMemo(() => 
     conversas?.find(c => c.id === selectedConversaId), 
     [conversas, selectedConversaId]
   );
 
-  // 2. Carregar mensagens da conversa selecionada
-  const { data: mensagens, isLoading: loadingMensagens } = useQuery({
+  // 2. Carregar mensagens da conversa selecionada com paginação infinita (histórico)
+  const { 
+    data: mensagensData, 
+    isLoading: loadingMensagens,
+    fetchNextPage: fetchNextMensagens,
+    hasNextPage: hasNextMensagens,
+    isFetchingNextPage: isFetchingNextMensagens
+  } = useInfiniteQuery({
     queryKey: ["crm_mensagens", selectedConversaId],
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
       if (!selectedConversaId) return [];
+      const pageSize = 30;
       const { data, error } = await supabase
         .from("crm_mensagens")
         .select("*")
         .eq("conversa_id", selectedConversaId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false }) // Buscamos as mais recentes primeiro para o chat
+        .range(pageParam, pageParam + pageSize - 1);
+        
       if (error) throw error;
       return data;
     },
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < 30) return undefined;
+      return allPages.length * 30;
+    },
     enabled: !!selectedConversaId,
   });
+
+  const mensagens = useMemo(() => {
+    const allMsgs = mensagensData?.pages.flat() || [];
+    return [...allMsgs].reverse(); // Revertemos para exibir cronologicamente no chat
+  }, [mensagensData]);
+
+  const { ref: loadMoreMsgsRef, inView: moreMsgsInView } = useInView();
+
+  useEffect(() => {
+    if (moreMsgsInView && hasNextMensagens && !isFetchingNextMensagens) {
+      void fetchNextMensagens();
+    }
+  }, [moreMsgsInView, hasNextMensagens, isFetchingNextMensagens, fetchNextMensagens]);
 
   // Realtime updates para mensagens
   useEffect(() => {
@@ -180,17 +228,31 @@ export function ChatInterface() {
           <div className="divide-y">
             {loadingConversas ? (
               <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
-            ) : conversas?.length === 0 ? (
+            ) : conversas.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma conversa.</div>
             ) : (
-              conversas?.map((conversa: any) => (
-                <ConversationItem 
-                  key={conversa.id}
-                  conversa={conversa}
-                  isSelected={selectedConversaId === conversa.id}
-                  onSelect={setSelectedConversaId}
-                />
-              ))
+              <>
+                {conversas.map((conversa: any) => (
+                  <ConversationItem 
+                    key={conversa.id}
+                    conversa={conversa}
+                    isSelected={selectedConversaId === conversa.id}
+                    onSelect={setSelectedConversaId}
+                  />
+                ))}
+                {hasNextConversas && (
+                  <div className="p-4 flex justify-center">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => fetchNextConversas()}
+                      disabled={isFetchingNextConversas}
+                    >
+                      {isFetchingNextConversas ? <Loader2 className="h-4 w-4 animate-spin" /> : "Carregar mais"}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
@@ -227,7 +289,6 @@ export function ChatInterface() {
               </div>
             </div>
 
-            {/* Messages Scroll Area */}
             <div 
               ref={scrollRef}
               className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20"
@@ -236,50 +297,59 @@ export function ChatInterface() {
                 <div className="flex items-center justify-center h-full">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-              ) : mensagens?.map((msg: any) => {
-                const isSystem = msg.tipo === "sistema" || msg.tipo === "nota";
-                const isOut = msg.direcao === "saida";
-                
-                if (isSystem) {
-                  return (
-                    <div key={msg.id} className="flex justify-center">
-                      <span className="text-[10px] bg-muted px-2 py-1 rounded-full text-muted-foreground uppercase tracking-wider font-semibold">
-                        {msg.conteudo}
-                      </span>
+              ) : (
+                <>
+                  {hasNextMensagens && (
+                    <div ref={loadMoreMsgsRef} className="flex justify-center p-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     </div>
-                  );
-                }
-
-                return (
-                  <div 
-                    key={msg.id} 
-                    className={cn(
-                      "flex max-w-[80%]",
-                      isOut ? "ml-auto flex-row-reverse" : "mr-auto"
-                    )}
-                  >
-                    <div className={cn(
-                      "group relative px-4 py-2 rounded-2xl text-sm shadow-sm",
-                      isOut 
-                        ? "bg-primary text-primary-foreground rounded-tr-none" 
-                        : "bg-background border rounded-tl-none"
-                    )}>
-                      <p className="whitespace-pre-wrap">{msg.conteudo}</p>
-                      <div className={cn(
-                        "mt-1 flex items-center gap-1.5 text-[10px]",
-                        isOut ? "text-primary-foreground/70 justify-end" : "text-muted-foreground"
-                      )}>
-                        {format(new Date(msg.created_at), "HH:mm")}
-                        {isOut && (
-                          <span className="flex items-center">
-                             {msg.wa_status === "read" ? "✓✓" : "✓"}
+                  )}
+                  {mensagens.map((msg: any) => {
+                    const isSystem = msg.tipo === "sistema" || msg.tipo === "nota";
+                    const isOut = msg.direcao === "saida";
+                    
+                    if (isSystem) {
+                      return (
+                        <div key={msg.id} className="flex justify-center">
+                          <span className="text-[10px] bg-muted px-2 py-1 rounded-full text-muted-foreground uppercase tracking-wider font-semibold">
+                            {msg.conteudo}
                           </span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div 
+                        key={msg.id} 
+                        className={cn(
+                          "flex max-w-[80%]",
+                          isOut ? "ml-auto flex-row-reverse" : "mr-auto"
                         )}
+                      >
+                        <div className={cn(
+                          "group relative px-4 py-2 rounded-2xl text-sm shadow-sm",
+                          isOut 
+                            ? "bg-primary text-primary-foreground rounded-tr-none" 
+                            : "bg-background border rounded-tl-none"
+                        )}>
+                          <p className="whitespace-pre-wrap">{msg.conteudo}</p>
+                          <div className={cn(
+                            "mt-1 flex items-center gap-1.5 text-[10px]",
+                            isOut ? "text-primary-foreground/70 justify-end" : "text-muted-foreground"
+                          )}>
+                            {format(new Date(msg.created_at), "HH:mm")}
+                            {isOut && (
+                              <span className="flex items-center">
+                                 {msg.wa_status === "read" ? "✓✓" : "✓"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </>
+              )}
             </div>
 
             {/* Input Area */}
