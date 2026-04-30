@@ -14,7 +14,8 @@ import {
   ChevronRight,
   UserPlus,
   MessageSquare,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
