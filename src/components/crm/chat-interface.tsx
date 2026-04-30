@@ -30,6 +30,9 @@ import { ptBR } from "date-fns/locale";
 import { useInView } from "react-intersection-observer";
 import { ConversationItem } from "./ConversationItem";
 
+/**
+ * Utilitário para formatar datas com segurança evitando erros de Invalid Date.
+ */
 const safeFormat = (date: any, formatStr: string) => {
   if (!date) return "";
   const d = new Date(date);
@@ -37,8 +40,10 @@ const safeFormat = (date: any, formatStr: string) => {
   return format(d, formatStr, { locale: ptBR });
 };
 
-
-
+/**
+ * ChatInterface: Componente principal do CRM para atendimento via WhatsApp.
+ * Gerencia a lista de conversas, histórico de mensagens e envio em tempo real.
+ */
 export function ChatInterface() {
   const queryClient = useQueryClient();
   const [selectedConversaId, setSelectedConversaId] = useState<string | null>(null);
@@ -46,12 +51,13 @@ export function ChatInterface() {
   const [showSidebar, setShowSidebar] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // No mobile, se selecionou uma conversa, esconde a sidebar automaticamente
+  // No mobile, se selecionou uma conversa, esconde a sidebar automaticamente para liberar espaço.
   useEffect(() => {
     if (selectedConversaId && window.innerWidth < 768) {
       setShowSidebar(false);
     }
   }, [selectedConversaId]);
+
 
   // 1. Carregar conversas com paginação infinita
   const { 
