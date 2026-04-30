@@ -145,7 +145,7 @@ export function ChatInterface() {
     }
   }, [moreMsgsInView, hasNextMensagens, isFetchingNextMensagens, fetchNextMensagens]);
 
-  // Realtime updates para mensagens
+  // Configuração do canal de Realtime do Supabase para escutar novas mensagens.
   useEffect(() => {
     if (!selectedConversaId) return;
 
@@ -160,6 +160,7 @@ export function ChatInterface() {
           filter: `conversa_id=eq.${selectedConversaId}`,
         },
         () => {
+          // Invalida o cache para forçar a recarga e exibir a nova mensagem imediatamente.
           void queryClient.invalidateQueries({ queryKey: ["crm_mensagens", selectedConversaId] });
           void queryClient.invalidateQueries({ queryKey: ["crm_conversas"] });
         }
@@ -170,6 +171,7 @@ export function ChatInterface() {
       void supabase.removeChannel(channel);
     };
   }, [selectedConversaId, queryClient]);
+
 
   // Auto-scroll para o fim
   useEffect(() => {
