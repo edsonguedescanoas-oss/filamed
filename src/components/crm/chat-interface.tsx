@@ -275,41 +275,47 @@ export function ChatInterface() {
   }, [messageText, sendMutation, selectedConversaId]);
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden relative">
+    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden relative w-full">
       {/* Sidebar - Lista de Conversas */}
       <div className={cn(
-        "absolute inset-0 z-20 bg-background md:relative md:flex md:inset-auto w-full md:w-80 lg:w-96 border-r flex-col shrink-0 transition-transform duration-300 ease-in-out",
-        !showSidebar && "-translate-x-full md:translate-x-0"
+        "absolute inset-0 z-20 bg-background md:relative md:flex md:inset-auto w-full md:w-80 lg:w-96 border-r flex-col shrink-0 transition-all duration-300 ease-in-out",
+        !showSidebar && "-translate-x-full md:translate-x-0 opacity-0 md:opacity-100 pointer-events-none md:pointer-events-auto"
       )}>
-        <div className="p-4 space-y-4 border-b">
+        <div className="p-4 space-y-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center justify-between">
-            <h2 className="font-display font-bold text-xl tracking-tight">Conversas</h2>
+            <h2 className="font-display font-bold text-xl tracking-tight text-foreground">Conversas</h2>
             <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Filtrar">
-                <Filter className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted" aria-label="Filtrar">
+                <Filter className="h-4 w-4 text-muted-foreground" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full md:hidden" onClick={() => setShowSidebar(false)} aria-label="Fechar menu">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full md:hidden hover:bg-muted" onClick={() => setShowSidebar(false)} aria-label="Fechar menu">
                 <ChevronRight className="h-4 w-4 rotate-180" />
               </Button>
             </div>
           </div>
           <div className="relative group">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-            <Input placeholder="Buscar por nome ou telefone..." className="pl-9 h-10 bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-xl" />
+            <Input 
+              placeholder="Buscar por nome ou telefone..." 
+              className="pl-9 h-10 bg-muted/30 border-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-xl text-sm" 
+            />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="divide-y divide-border/40">
+          <div className="divide-y divide-border/40 pb-20 md:pb-0">
             {loadingConversas ? (
               <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span className="text-sm font-medium">Carregando conversas...</span>
               </div>
             ) : conversas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
-                <MessageSquare className="h-10 w-10 opacity-20" />
-                <span className="text-sm">Nenhuma conversa encontrada.</span>
+              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground text-center">
+                <div className="h-16 w-16 rounded-full bg-muted/30 flex items-center justify-center mb-2">
+                  <MessageSquare className="h-8 w-8 opacity-20" />
+                </div>
+                <span className="text-sm font-medium">Nenhuma conversa encontrada.</span>
+                <p className="text-xs max-w-[200px]">Inicie uma conversa ou aguarde o recebimento de mensagens.</p>
               </div>
             ) : (
               <>
@@ -328,9 +334,9 @@ export function ChatInterface() {
                       size="sm" 
                       onClick={() => fetchNextConversas()}
                       disabled={isFetchingNextConversas}
-                      className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                      className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
                     >
-                      {isFetchingNextConversas ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {isFetchingNextConversas ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
                       {isFetchingNextConversas ? "Buscando..." : "Ver mais conversas"}
                     </Button>
                   </div>
@@ -342,7 +348,10 @@ export function ChatInterface() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-gradient-mesh">
+      <div className={cn(
+        "flex-1 flex flex-col overflow-hidden min-w-0 bg-gradient-mesh transition-all duration-300",
+        showSidebar && "opacity-50 md:opacity-100"
+      )}>
         {selectedConversa ? (
           <>
             {/* Chat Header */}
