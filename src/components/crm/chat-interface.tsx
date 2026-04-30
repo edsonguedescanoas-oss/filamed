@@ -458,9 +458,9 @@ export function ChatInterface() {
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t bg-background">
+            <div className="p-3 sm:p-4 border-t bg-background/95 backdrop-blur-md sticky bottom-0 z-20 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.05)]">
               <form onSubmit={handleSend} className="flex items-end gap-2 max-w-4xl mx-auto">
-                <div className="flex-1">
+                <div className="flex-1 relative group">
                   <textarea
                     rows={1}
                     value={messageText}
@@ -472,32 +472,48 @@ export function ChatInterface() {
                       }
                     }}
                     placeholder="Digite sua mensagem..."
-                    className="w-full bg-muted/50 border-none focus:ring-1 focus:ring-primary rounded-xl px-4 py-2.5 text-sm resize-none"
+                    className="w-full bg-muted/40 border-border/40 focus:border-primary/50 focus:bg-background focus:ring-4 focus:ring-primary/5 rounded-2xl px-4 py-3 text-sm resize-none transition-all duration-200 min-h-[46px] max-h-[150px]"
                   />
+                  <div className="absolute right-3 bottom-3 flex items-center gap-2 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest hidden sm:block">Shift + Enter para quebrar linha</span>
+                  </div>
                 </div>
                 <Button 
                   type="submit" 
                   disabled={!messageText.trim() || sendMutation.isPending}
                   size="icon" 
-                  className="rounded-full h-10 w-10 shrink-0"
+                  className="rounded-xl h-[46px] w-[46px] shrink-0 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95"
                 >
                   {sendMutation.isPending ? (
-                    <Clock className="h-4 w-4 animate-pulse" />
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <Send className="h-5 w-5" />
                   )}
                 </Button>
               </form>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground space-y-4">
-            <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center">
-              <MessageSquare className="h-10 w-10" />
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-6 bg-muted/5">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+              <div className="relative h-24 w-24 sm:h-32 sm:w-32 bg-background border border-border shadow-xl rounded-full flex items-center justify-center">
+                <MessageSquare className="h-10 w-10 sm:h-14 sm:w-14 text-primary/40" />
+              </div>
+              <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                 <Sparkles className="h-5 w-5" />
+              </div>
             </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-lg text-foreground">Sua Caixa de Entrada</h3>
-              <p className="max-w-xs mx-auto">Selecione uma conversa ao lado para começar o atendimento.</p>
+            <div className="text-center max-w-sm">
+              <h3 className="font-bold text-xl sm:text-2xl text-foreground mb-2">Suas conversas esperam por você</h3>
+              <p className="text-sm sm:text-base text-muted-foreground/80 leading-relaxed">Selecione uma conversa na lista lateral para iniciar o atendimento e gerenciar seus contatos.</p>
+              <Button 
+                variant="outline" 
+                className="mt-8 rounded-full md:hidden" 
+                onClick={() => setShowSidebar(true)}
+              >
+                Ver Conversas
+              </Button>
             </div>
           </div>
         )}
