@@ -153,25 +153,25 @@ function AdminUnidadesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-6 flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8">
+      <div className="mb-6 flex flex-col sm:flex-row items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Unidades</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="font-display text-2xl font-bold sm:text-3xl tracking-tight">Unidades</h1>
+          <p className="mt-1 text-sm text-muted-foreground max-w-md">
             Gerencie clínicas cadastradas: criar, editar, suspender e ver integrações.
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto shadow-lg shadow-primary/20 transition-all active:scale-95">
           <Plus className="h-4 w-4" />
           Nova unidade
         </Button>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total de unidades" value={stats.total} />
-        <StatCard label="Em trial" value={stats.trial} />
-        <StatCard label="Assinantes ativos" value={stats.ativo} />
-        <StatCard label="Bloqueadas" value={stats.bloqueadas} variant="danger" />
+      <div className="mb-8 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total" value={stats.total} />
+        <StatCard label="Em trial" value={stats.trial} accent="primary" />
+        <StatCard label="Assinantes" value={stats.ativo} accent="success" />
+        <StatCard label="Bloqueadas" value={stats.bloqueadas} accent="danger" />
       </div>
 
       <Card>
