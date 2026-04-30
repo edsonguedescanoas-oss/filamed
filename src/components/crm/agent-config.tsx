@@ -51,11 +51,18 @@ export function AgentConfig() {
 
   // 2. Carregar usuários disponíveis para serem agentes
   const { data: users } = useQuery({
-    queryKey: ["available_users"],
+    queryKey: ["available_users", searchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("profiles")
-        .select("id, nome_completo");
+        .select("id, nome_completo")
+        .limit(10);
+      
+      if (searchTerm) {
+        query = query.ilike("nome_completo", `%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
