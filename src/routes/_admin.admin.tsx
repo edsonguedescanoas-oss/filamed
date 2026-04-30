@@ -645,17 +645,16 @@ function StatCard({
   variant?: "danger";
 }) {
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <Card className="overflow-hidden transition-all hover:shadow-md">
+      <CardContent className="p-4 sm:p-6">
+        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
           {label}
         </p>
         <p
-          className={
-            variant === "danger" && value > 0
-              ? "mt-2 text-3xl font-bold text-destructive"
-              : "mt-2 text-3xl font-bold"
-          }
+          className={cn(
+            "mt-1 sm:mt-2 text-2xl sm:text-3xl font-black tracking-tight",
+            variant === "danger" && value > 0 ? "text-destructive" : "text-foreground"
+          )}
         >
           {value}
         </p>
