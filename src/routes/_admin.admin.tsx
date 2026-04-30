@@ -728,30 +728,3 @@ function EditUnidadeDialog({
   );
 }
 
-function StatCard({
-  label,
-  value,
-  variant,
-}: {
-  label: string;
-  value: number;
-  variant?: "danger";
-}) {
-  return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <CardContent className="p-4 sm:p-6">
-        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
-          {label}
-        </p>
-        <p
-          className={cn(
-            "mt-1 sm:mt-2 text-2xl sm:text-3xl font-black tracking-tight",
-            variant === "danger" && value > 0 ? "text-destructive" : "text-foreground"
-          )}
-        >
-          {value}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
