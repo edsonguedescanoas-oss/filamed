@@ -169,9 +169,9 @@ function AdminUnidadesPage() {
 
       <div className="mb-8 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total" value={stats.total} />
-        <StatCard label="Em trial" value={stats.trial} accent="primary" />
-        <StatCard label="Assinantes" value={stats.ativo} accent="success" />
-        <StatCard label="Bloqueadas" value={stats.bloqueadas} accent="danger" />
+        <StatCard label="Em trial" value={stats.trial} />
+        <StatCard label="Assinantes" value={stats.ativo} />
+        <StatCard label="Bloqueadas" value={stats.bloqueadas} variant="danger" />
       </div>
 
       <Card>
