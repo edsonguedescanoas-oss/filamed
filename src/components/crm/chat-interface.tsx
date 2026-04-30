@@ -6,6 +6,7 @@ import {
   Filter, 
   MoreVertical, 
   Send, 
+  User,
   Phone, 
   Calendar,
   CheckCircle2,
