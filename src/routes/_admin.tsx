@@ -146,7 +146,7 @@ function AdminLayout() {
               <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider">Super Admin</span>
             </div>
             
-            <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted" title="Ver Site">
+            <Button asChild variant="ghost" size="icon" className="hidden xs:flex h-9 w-9 rounded-full hover:bg-muted" title="Ver Site">
               <Link to="/">
                 <Home className="h-4 w-4" />
               </Link>
@@ -155,6 +155,63 @@ function AdminLayout() {
             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => void handleLogout()} title="Sair">
               <LogOut className="h-4 w-4" />
             </Button>
+
+            {/* Hamburger mobile */}
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 p-0">
+                <SheetHeader className="border-b border-border px-6 py-4">
+                  <SheetTitle className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground shadow-lg">
+                      <Activity className="h-4 w-4 text-background" strokeWidth={2.5} />
+                    </div>
+                    <span className="font-display">Painel Administrativo</span>
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-1 p-4">
+                  {NAV.map((item) => {
+                    const active = item.exact
+                      ? location.pathname === item.to
+                      : location.pathname.startsWith(item.to);
+                    const Icon = item.icon;
+                    const showBadge = item.alertBadge && alertasCount.total > 0;
+                    return (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className={cn(
+                          "flex items-center justify-between rounded-lg px-3 py-3 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-primary/10 text-primary font-bold"
+                            : "text-foreground hover:bg-muted",
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className={cn("h-5 w-5", showBadge && alertasCount.criticos > 0 && "text-destructive")} />
+                          {item.label}
+                        </div>
+                        {showBadge && (
+                          <Badge
+                            className={cn(
+                              "h-5 min-w-[20px] justify-center px-1.5 text-[10px] font-black border-none shadow-sm",
+                              alertasCount.criticos > 0
+                                ? "bg-destructive text-destructive-foreground"
+                                : "bg-amber-500 text-white",
+                            )}
+                          >
+                            {alertasCount.total}
+                          </Badge>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>
