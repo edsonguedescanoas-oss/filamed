@@ -37,6 +37,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { AssinaturaStatus } from "@/hooks/use-auth";
+import { AdminStatCard } from "@/components/admin/AdminStatCard";
+
 
 export const Route = createFileRoute("/_admin/admin")({
   head: () => ({
@@ -169,10 +171,10 @@ function AdminUnidadesPage() {
       </div>
 
       <div className="mb-8 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total" value={stats.total} />
-        <StatCard label="Em trial" value={stats.trial} />
-        <StatCard label="Assinantes" value={stats.ativo} />
-        <StatCard label="Bloqueadas" value={stats.bloqueadas} variant="danger" />
+        <AdminStatCard label="Total" value={stats.total} />
+        <AdminStatCard label="Em trial" value={stats.trial} />
+        <AdminStatCard label="Assinantes" value={stats.ativo} />
+        <AdminStatCard label="Bloqueadas" value={stats.bloqueadas} variant="danger" />
       </div>
 
       <Card>
@@ -726,30 +728,3 @@ function EditUnidadeDialog({
   );
 }
 
-function StatCard({
-  label,
-  value,
-  variant,
-}: {
-  label: string;
-  value: number;
-  variant?: "danger";
-}) {
-  return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <CardContent className="p-4 sm:p-6">
-        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
-          {label}
-        </p>
-        <p
-          className={cn(
-            "mt-1 sm:mt-2 text-2xl sm:text-3xl font-black tracking-tight",
-            variant === "danger" && value > 0 ? "text-destructive" : "text-foreground"
-          )}
-        >
-          {value}
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
