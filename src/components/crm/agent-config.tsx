@@ -32,7 +32,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
+/**
+ * AgentConfig: Componente para gerenciar os agentes de atendimento do CRM.
+ * Permite listar, adicionar (através de perfis existentes) e ativar/desativar agentes.
+ */
 export function AgentConfig() {
+
   const queryClient = useQueryClient();
   const [openAdd, setOpenAdd] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
