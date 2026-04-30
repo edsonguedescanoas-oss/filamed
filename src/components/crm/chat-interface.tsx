@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -49,7 +49,10 @@ export function ChatInterface() {
     },
   });
 
-  const selectedConversa = conversas?.find(c => c.id === selectedConversaId);
+  const selectedConversa = useMemo(() => 
+    conversas?.find(c => c.id === selectedConversaId), 
+    [conversas, selectedConversaId]
+  );
 
   // 2. Carregar mensagens da conversa selecionada
   const { data: mensagens, isLoading: loadingMensagens } = useQuery({
@@ -150,11 +153,11 @@ export function ChatInterface() {
     }
   });
 
-  const handleSend = (e?: React.FormEvent) => {
+  const handleSend = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
     if (!messageText.trim() || sendMutation.isPending) return;
     sendMutation.mutate({ text: messageText });
-  };
+  }, [messageText, sendMutation, selectedConversaId]);
 
   return (
     <div className="flex h-full bg-background overflow-hidden">
@@ -181,42 +184,12 @@ export function ChatInterface() {
               <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma conversa.</div>
             ) : (
               conversas?.map((conversa: any) => (
-                <button
+                <ConversationItem 
                   key={conversa.id}
-                  onClick={() => setSelectedConversaId(conversa.id)}
-                  className={cn(
-                    "w-full p-4 flex gap-3 text-left transition-colors hover:bg-muted/50",
-                    selectedConversaId === conversa.id && "bg-muted"
-                  )}
-                >
-                  <Avatar className="h-10 w-10 border">
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {conversa.contato?.nome?.[0] || "C"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium truncate">{conversa.contato?.nome || "Sem Nome"}</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {conversa.ultima_mensagem_at && format(new Date(conversa.ultima_mensagem_at), "HH:mm")}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {conversa.ultima_mensagem_preview || "Sem mensagens"}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                       <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
-                        {conversa.status}
-                       </Badge>
-                       {conversa.agente && (
-                         <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                           <User className="h-2.5 w-2.5" />
-                           {conversa.agente.nome}
-                         </span>
-                       )}
-                    </div>
-                  </div>
-                </button>
+                  conversa={conversa}
+                  isSelected={selectedConversaId === conversa.id}
+                  onSelect={setSelectedConversaId}
+                />
               ))
             )}
           </div>
@@ -439,3 +412,46 @@ export function ChatInterface() {
     </div>
   );
 }
+
+// Sub-componente memoizado para cada item da lista de conversas
+const ConversationItem = React.memo(({ conversa, isSelected, onSelect }: any) => {
+  return (
+    <button
+      onClick={() => onSelect(conversa.id)}
+      className={cn(
+        "w-full p-4 flex gap-3 text-left transition-colors hover:bg-muted/50",
+        isSelected && "bg-muted"
+      )}
+    >
+      <Avatar className="h-10 w-10 border">
+        <AvatarFallback className="bg-primary/10 text-primary">
+          {conversa.contato?.nome?.[0] || "C"}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <span className="font-medium truncate">{conversa.contato?.nome || "Sem Nome"}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {conversa.ultima_mensagem_at && format(new Date(conversa.ultima_mensagem_at), "HH:mm")}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground truncate">
+          {conversa.ultima_mensagem_preview || "Sem mensagens"}
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+           <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+            {conversa.status}
+           </Badge>
+           {conversa.agente && (
+             <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+               <User className="h-2.5 w-2.5" />
+               {conversa.agente.nome}
+             </span>
+           )}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+ConversationItem.displayName = "ConversationItem";

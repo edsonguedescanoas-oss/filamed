@@ -87,33 +87,39 @@ serve(async (req) => {
     const text = parsed.text;
     const timestamp = parsed.timestamp!;
 
-    // 1. Localizar lead
-    const { data: lead } = await supabase
-      .from('leads')
-      .select('id, nome_contato')
-      .or(`telefone.ilike.%${cleanNumber}%,telefone.ilike.%${from}%`)
-      .maybeSingle()
+    // 1 & 2. Localizar lead e contato em paralelo
+    const [leadResult, contatoResult] = await Promise.all([
+      supabase
+        .from('leads')
+        .select('id, nome_contato')
+        .or(`telefone.ilike.%${cleanNumber}%,telefone.ilike.%${from}%`)
+        .maybeSingle(),
+      supabase
+        .from('crm_contatos')
+        .select('id')
+        .or(`telefone.ilike.%${cleanNumber}%,telefone.ilike.%${from}%`)
+        .maybeSingle()
+    ]);
+
+    const lead = leadResult.data;
+    let contato = contatoResult.data;
 
     if (lead) {
-      await supabase.from('interacoes').insert({
+      // Registrar interação de forma assíncrona (não bloqueia o resto do fluxo)
+      void supabase.from('interacoes').insert({
         lead_id: lead.id,
         tipo: 'whatsapp',
         conteudo: text,
         usuario_id: '00000000-0000-0000-0000-000000000000',
         data_criacao: new Date(timestamp * 1000).toISOString()
-      })
-      await supabase.from('leads').update({
-        ultimo_contato_em: new Date().toISOString()
-      }).eq('id', lead.id)
-      console.log(`[WADUK-Webhook] Interação registrada no lead: ${lead.id}`)
-    }
+      }).then(({ error }) => {
+        if (error) console.error('[WADUK-Webhook] Erro ao registrar interação:', error);
+      });
 
-    // 2. CRM Conversas
-    let { data: contato } = await supabase
-      .from('crm_contatos')
-      .select('id')
-      .or(`telefone.ilike.%${cleanNumber}%,telefone.ilike.%${from}%`)
-      .maybeSingle()
+      void supabase.from('leads').update({
+        ultimo_contato_em: new Date().toISOString()
+      }).eq('id', lead.id);
+    }
 
     if (!contato) {
       const { data: newContato, error: contatoErr } = await supabase
@@ -123,49 +129,50 @@ serve(async (req) => {
           telefone: from,
         })
         .select()
-        .single()
+        .single();
       if (contatoErr) console.error('[WADUK-Webhook] Erro criando contato:', contatoErr);
-      contato = newContato
+      contato = newContato;
     }
 
     if (contato) {
+      // Tentar buscar conversa existente
       let { data: conversa } = await supabase
         .from('crm_conversas')
         .select('id')
         .eq('contato_id', contato.id)
         .order('ultima_mensagem_at', { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .maybeSingle();
 
       if (!conversa) {
         const { data: newConversa, error: convErr } = await supabase
           .from('crm_conversas')
           .insert({ contato_id: contato.id, status: 'aberto' })
           .select()
-          .single()
+          .single();
         if (convErr) console.error('[WADUK-Webhook] Erro criando conversa:', convErr);
-        conversa = newConversa
+        conversa = newConversa;
       }
 
       if (conversa) {
-        const { error: msgErr } = await supabase.from('crm_mensagens').insert({
-          conversa_id: conversa.id,
-          conteudo: text,
-          direcao: 'entrada',
-          tipo: 'whatsapp',
-          wa_message_id: parsed.messageId || null,
-          created_at: new Date(timestamp * 1000).toISOString()
-        })
-        if (msgErr) console.error('[WADUK-Webhook] Erro inserindo mensagem:', msgErr);
-
-        await supabase.from('crm_conversas').update({
-          ultima_mensagem_preview: text.substring(0, 100),
-          ultima_mensagem_at: new Date().toISOString(),
-          status: 'aberto',
-          updated_at: new Date().toISOString()
-        }).eq('id', conversa.id)
-
-        console.log(`[WADUK-Webhook] Mensagem inserida no CRM (contato: ${contato.id}, conversa: ${conversa.id})`)
+        // Inserir mensagem e atualizar conversa em paralelo
+        await Promise.all([
+          supabase.from('crm_mensagens').insert({
+            conversa_id: conversa.id,
+            conteudo: text,
+            direcao: 'entrada',
+            tipo: 'whatsapp',
+            wa_message_id: parsed.messageId || null,
+            created_at: new Date(timestamp * 1000).toISOString()
+          }),
+          supabase.from('crm_conversas').update({
+            ultima_mensagem_preview: text.substring(0, 100),
+            ultima_mensagem_at: new Date().toISOString(),
+            status: 'aberto',
+            updated_at: new Date().toISOString()
+          }).eq('id', conversa.id)
+        ]);
+        console.log(`[WADUK-Webhook] Processamento CRM concluído para conversa: ${conversa.id}`);
       }
     }
 
