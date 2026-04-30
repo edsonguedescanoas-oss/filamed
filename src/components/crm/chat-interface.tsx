@@ -83,7 +83,15 @@ export function ChatInterface() {
   const queryClient = useQueryClient();
   const [selectedConversaId, setSelectedConversaId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
+  const [showSidebar, setShowSidebar] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // No mobile, se selecionou uma conversa, esconde a sidebar automaticamente
+  useEffect(() => {
+    if (selectedConversaId && window.innerWidth < 768) {
+      setShowSidebar(false);
+    }
+  }, [selectedConversaId]);
 
   // 1. Carregar conversas com paginação infinita
   const { 
