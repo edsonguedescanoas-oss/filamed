@@ -24,10 +24,11 @@ export function CRMSettings() {
 
   useEffect(() => {
     loadConfig();
+    // Gera a URL do webhook baseada na URL base do projeto (configurada no Edge Function do Supabase).
     setWebhookUrl(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/waduk-webhook`);
     fetchLogs();
 
-    // Listener para logs em tempo real
+    // Listener para logs em tempo real: atualiza a lista de logs sempre que houver uma nova inserção.
     const channel = supabase
       .channel('waduk_logs_changes')
       .on(
@@ -41,6 +42,7 @@ export function CRMSettings() {
       supabase.removeChannel(channel);
     };
   }, []);
+
 
   const fetchLogs = async () => {
     setCheckingLogs(true);
