@@ -218,115 +218,205 @@ function AdminUnidadesPage() {
               Nenhuma unidade encontrada.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Trial</TableHead>
-                    <TableHead>Revenda</TableHead>
-                    <TableHead>Criada em</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((u) => {
-                    const dias = diasRestantes(u.trial_ends_at);
-                    const variant = STATUS_VARIANT[u.status_assinatura];
-                    const podeAtivar = u.status_assinatura === "suspenso" || u.status_assinatura === "cancelado";
-                    return (
-                      <TableRow key={u.id}>
-                        <TableCell className="font-medium">
-                          {u.nome}
-                          {!u.ativo && (
-                            <span className="ml-2 text-xs text-muted-foreground">(inativa)</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={variant.className}>
-                            {variant.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {u.status_assinatura === "trial" ? (
-                            dias === 0 ? (
-                              <span className="text-destructive">Expirado</span>
-                            ) : (
-                              <span>
-                                {dias} {dias === 1 ? "dia" : "dias"}
-                              </span>
-                            )
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {u.revenda?.nome ? (
-                            <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
-                              <ShieldCheck className="h-3.5 w-3.5" />
-                              {u.revenda.nome}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {fmtDate(u.created_at)}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
-                          {u.slug}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              asChild
-                              title="Ver integração"
-                            >
-                              <Link to="/admin/unidades/$unidadeId" params={{ unidadeId: u.id }}>
-                                <Settings2 className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setEditing(u)}
-                              title="Editar"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            {podeAtivar ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setStatusChange({ unidade: u, novoStatus: "ativo" })}
-                                title="Reativar"
-                                className="text-emerald-600 hover:text-emerald-700"
-                              >
-                                <Power className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setStatusChange({ unidade: u, novoStatus: "suspenso" })}
-                                title="Suspender"
-                                className="text-amber-600 hover:text-amber-700"
-                              >
-                                <PowerOff className="h-4 w-4" />
-                              </Button>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Trial</TableHead>
+                      <TableHead>Revenda</TableHead>
+                      <TableHead>Criada em</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((u) => {
+                      const dias = diasRestantes(u.trial_ends_at);
+                      const variant = STATUS_VARIANT[u.status_assinatura];
+                      const podeAtivar = u.status_assinatura === "suspenso" || u.status_assinatura === "cancelado";
+                      return (
+                        <TableRow key={u.id} className="group transition-colors">
+                          <TableCell className="font-semibold text-foreground">
+                            {u.nome}
+                            {!u.ativo && (
+                              <span className="ml-2 text-[10px] text-muted-foreground uppercase font-bold tracking-tighter opacity-60">(inativa)</span>
                             )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("text-[10px] font-bold uppercase tracking-wider", variant.className)}>
+                              {variant.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {u.status_assinatura === "trial" ? (
+                              dias === 0 ? (
+                                <span className="text-destructive font-bold text-xs">Expirado</span>
+                              ) : (
+                                <span className="text-xs">
+                                  {dias} {dias === 1 ? "dia" : "dias"}
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-muted-foreground text-xs opacity-40">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {u.revenda?.nome ? (
+                              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold text-xs">
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                {u.revenda.nome}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs opacity-40">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {fmtDate(u.created_at)}
+                          </TableCell>
+                          <TableCell className="font-mono text-[10px] text-muted-foreground/60">
+                            {u.slug}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                asChild
+                                title="Ver integração"
+                                className="h-8 w-8 rounded-full"
+                              >
+                                <Link to="/admin/unidades/$unidadeId" params={{ unidadeId: u.id }}>
+                                  <Settings2 className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => setEditing(u)}
+                                title="Editar"
+                                className="h-8 w-8 rounded-full"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {podeAtivar ? (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => setStatusChange({ unidade: u, novoStatus: "ativo" })}
+                                  title="Reativar"
+                                  className="h-8 w-8 rounded-full text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                >
+                                  <Power className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  onClick={() => setStatusChange({ unidade: u, novoStatus: "suspenso" })}
+                                  title="Suspender"
+                                  className="h-8 w-8 rounded-full text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                >
+                                  <PowerOff className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile List View */}
+              <div className="md:hidden space-y-4">
+                {filtered.map((u) => {
+                  const dias = diasRestantes(u.trial_ends_at);
+                  const variant = STATUS_VARIANT[u.status_assinatura];
+                  const podeAtivar = u.status_assinatura === "suspenso" || u.status_assinatura === "cancelado";
+                  return (
+                    <div key={u.id} className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-bold text-base truncate">{u.nome}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground truncate">{u.slug}</p>
+                        </div>
+                        <Badge variant="outline" className={cn("text-[9px] font-black uppercase tracking-widest px-2 py-0.5 shrink-0", variant.className)}>
+                          {variant.label}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-y-2 py-2 border-y border-border/40">
+                        <div>
+                          <p className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-wider">Criada em</p>
+                          <p className="text-xs font-medium">{fmtDate(u.created_at)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-wider">Trial</p>
+                          <p className="text-xs font-medium">
+                            {u.status_assinatura === "trial" ? (dias === 0 ? "Expirado" : `${dias} dias`) : "—"}
+                          </p>
+                        </div>
+                        {u.revenda?.nome && (
+                          <div className="col-span-2">
+                            <p className="text-[9px] uppercase font-bold text-muted-foreground/60 tracking-wider">Revenda</p>
+                            <p className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                              <ShieldCheck className="h-3 w-3" />
+                              {u.revenda.nome}
+                            </p>
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button 
+                          asChild 
+                          className="flex-1 text-xs gap-2 rounded-lg" 
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Link to="/admin/unidades/$unidadeId" params={{ unidadeId: u.id }}>
+                            <Settings2 className="h-3.5 w-3.5" />
+                            Integração
+                          </Link>
+                        </Button>
+                        <Button 
+                          onClick={() => setEditing(u)} 
+                          className="h-8 w-8 shrink-0 rounded-lg" 
+                          variant="outline"
+                          size="icon"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        {podeAtivar ? (
+                          <Button
+                            onClick={() => setStatusChange({ unidade: u, novoStatus: "ativo" })}
+                            className="h-8 w-8 shrink-0 rounded-lg text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+                            variant="outline"
+                            size="icon"
+                          >
+                            <Power className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => setStatusChange({ unidade: u, novoStatus: "suspenso" })}
+                            className="h-8 w-8 shrink-0 rounded-lg text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100"
+                            variant="outline"
+                            size="icon"
+                          >
+                            <PowerOff className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
