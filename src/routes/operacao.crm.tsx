@@ -183,7 +183,7 @@ function CRMOperacaoPage() {
         .insert({
           lead_id: leadForTask.id,
           tipo: 'tarefa',
-          conteudo: `TAREFA AGENDADA: ${taskContent}${taskDueDate ? ` | Para: ${format(new Date(taskDueDate), "dd/MM/yyyy HH:mm")}` : ''}`,
+          conteudo: `TAREFA AGENDADA: ${taskContent}${taskDueDate ? ` | Para: ${new Date(taskDueDate).toLocaleString('pt-BR')}` : ''}`,
           usuario_id: userData.user.id
         });
 
