@@ -6,6 +6,12 @@ import { cn } from "@/lib/utils";
 import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+/**
+ * Formata com segurança uma data ou string de data.
+ * @param date Data a ser formatada.
+ * @param formatStr Padrão de formatação (ex: 'HH:mm').
+ * @returns String formatada ou vazia em caso de erro.
+ */
 const safeFormat = (date: any, formatStr: string) => {
   if (!date) return "";
   const d = new Date(date);
@@ -14,11 +20,18 @@ const safeFormat = (date: any, formatStr: string) => {
 };
 
 interface ConversationItemProps {
+  /** Dados da conversa provenientes do Supabase. */
   conversa: any;
+  /** Indica se esta conversa é a atualmente selecionada. */
   isSelected: boolean;
+  /** Callback disparado ao clicar no item da lista. */
   onSelect: (id: string) => void;
 }
 
+/**
+ * Item individual na lista lateral do CRM Chat.
+ * Memoizado para evitar renderizações desnecessárias ao alternar entre conversas.
+ */
 export const ConversationItem = React.memo(({ conversa, isSelected, onSelect }: ConversationItemProps) => {
   return (
     <button
@@ -68,3 +81,4 @@ export const ConversationItem = React.memo(({ conversa, isSelected, onSelect }: 
 });
 
 ConversationItem.displayName = "ConversationItem";
+

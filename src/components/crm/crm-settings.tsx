@@ -7,7 +7,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Copy, Save, RefreshCw, Smartphone, Globe, CheckCircle2, AlertCircle, Clock, Check, ExternalLink, MessageSquare, ListChecks } from "lucide-react";
 
+/**
+ * CRMSettings: Configurações de integração com WaDuck e gerenciamento de Webhooks.
+ */
 export function CRMSettings() {
+
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState({
     waduk_api_key: "",
@@ -20,10 +24,11 @@ export function CRMSettings() {
 
   useEffect(() => {
     loadConfig();
+    // Gera a URL do webhook baseada na URL base do projeto (configurada no Edge Function do Supabase).
     setWebhookUrl(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/waduk-webhook`);
     fetchLogs();
 
-    // Listener para logs em tempo real
+    // Listener para logs em tempo real: atualiza a lista de logs sempre que houver uma nova inserção.
     const channel = supabase
       .channel('waduk_logs_changes')
       .on(
@@ -37,6 +42,7 @@ export function CRMSettings() {
       supabase.removeChannel(channel);
     };
   }, []);
+
 
   const fetchLogs = async () => {
     setCheckingLogs(true);

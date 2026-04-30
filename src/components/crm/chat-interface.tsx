@@ -30,6 +30,9 @@ import { ptBR } from "date-fns/locale";
 import { useInView } from "react-intersection-observer";
 import { ConversationItem } from "./ConversationItem";
 
+/**
+ * Utilitário para formatar datas com segurança evitando erros de Invalid Date.
+ */
 const safeFormat = (date: any, formatStr: string) => {
   if (!date) return "";
   const d = new Date(date);
@@ -37,8 +40,10 @@ const safeFormat = (date: any, formatStr: string) => {
   return format(d, formatStr, { locale: ptBR });
 };
 
-
-
+/**
+ * ChatInterface: Componente principal do CRM para atendimento via WhatsApp.
+ * Gerencia a lista de conversas, histórico de mensagens e envio em tempo real.
+ */
 export function ChatInterface() {
   const queryClient = useQueryClient();
   const [selectedConversaId, setSelectedConversaId] = useState<string | null>(null);
@@ -46,12 +51,13 @@ export function ChatInterface() {
   const [showSidebar, setShowSidebar] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // No mobile, se selecionou uma conversa, esconde a sidebar automaticamente
+  // No mobile, se selecionou uma conversa, esconde a sidebar automaticamente para liberar espaço.
   useEffect(() => {
     if (selectedConversaId && window.innerWidth < 768) {
       setShowSidebar(false);
     }
   }, [selectedConversaId]);
+
 
   // 1. Carregar conversas com paginação infinita
   const { 
@@ -94,7 +100,8 @@ export function ChatInterface() {
     [conversas, selectedConversaId]
   );
 
-  // 2. Carregar mensagens da conversa selecionada com paginação infinita (histórico)
+  // 2. Carregar mensagens da conversa selecionada com paginação infinita (histórico).
+  // Carrega em ordem decrescente (mais recentes primeiro) para facilitar o scroll infinito para cima.
   const { 
     data: mensagensData, 
     isLoading: loadingMensagens,
@@ -124,6 +131,7 @@ export function ChatInterface() {
     enabled: !!selectedConversaId,
   });
 
+
   const mensagens = useMemo(() => {
     const allMsgs = mensagensData?.pages.flat() || [];
     return [...allMsgs].reverse(); // Revertemos para exibir cronologicamente no chat
@@ -137,7 +145,7 @@ export function ChatInterface() {
     }
   }, [moreMsgsInView, hasNextMensagens, isFetchingNextMensagens, fetchNextMensagens]);
 
-  // Realtime updates para mensagens
+  // Configuração do canal de Realtime do Supabase para escutar novas mensagens.
   useEffect(() => {
     if (!selectedConversaId) return;
 
@@ -152,6 +160,7 @@ export function ChatInterface() {
           filter: `conversa_id=eq.${selectedConversaId}`,
         },
         () => {
+          // Invalida o cache para forçar a recarga e exibir a nova mensagem imediatamente.
           void queryClient.invalidateQueries({ queryKey: ["crm_mensagens", selectedConversaId] });
           void queryClient.invalidateQueries({ queryKey: ["crm_conversas"] });
         }
@@ -162,6 +171,7 @@ export function ChatInterface() {
       void supabase.removeChannel(channel);
     };
   }, [selectedConversaId, queryClient]);
+
 
   // Auto-scroll para o fim
   useEffect(() => {
