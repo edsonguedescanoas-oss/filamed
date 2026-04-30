@@ -68,6 +68,11 @@ function AdminLayout() {
     };
   }, []);
 
+  // Fecha o menu mobile ao trocar de rota
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = async () => {
     await signOut();
     void navigate({ to: "/login" });
