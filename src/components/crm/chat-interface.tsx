@@ -24,9 +24,60 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useInView } from "react-intersection-observer";
+
+const safeFormat = (date: any, formatStr: string) => {
+  if (!date) return "";
+  const d = new Date(date);
+  if (!isValid(d)) return "";
+  return format(d, formatStr, { locale: ptBR });
+};
+
+// Sub-componente memoizado para cada item da lista de conversas
+const ConversationItem = React.memo(({ conversa, isSelected, onSelect }: any) => {
+  return (
+    <button
+      onClick={() => onSelect(conversa.id)}
+      className={cn(
+        "w-full p-4 flex gap-3 text-left transition-colors hover:bg-muted/50",
+        isSelected && "bg-muted"
+      )}
+    >
+      <Avatar className="h-10 w-10 border">
+        <AvatarFallback className="bg-primary/10 text-primary">
+          {conversa.contato?.nome?.[0] || "C"}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <span className="font-medium truncate">{conversa.contato?.nome || "Sem Nome"}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {conversa.ultima_mensagem_at && safeFormat(conversa.ultima_mensagem_at, "HH:mm")}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground truncate">
+          {conversa.ultima_mensagem_preview || "Sem mensagens"}
+        </p>
+        <div className="mt-2 flex items-center gap-2">
+           <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+            {conversa.status}
+           </Badge>
+           {conversa.agente && (
+             <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+               <User className="h-2.5 w-2.5" />
+               {conversa.agente.nome}
+             </span>
+           )}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+ConversationItem.displayName = "ConversationItem";
+
 
 export function ChatInterface() {
   const queryClient = useQueryClient();
@@ -337,7 +388,7 @@ export function ChatInterface() {
                             "mt-1 flex items-center gap-1.5 text-[10px]",
                             isOut ? "text-primary-foreground/70 justify-end" : "text-muted-foreground"
                           )}>
-                            {format(new Date(msg.created_at), "HH:mm")}
+                            {safeFormat(msg.created_at, "HH:mm")}
                             {isOut && (
                               <span className="flex items-center">
                                  {msg.wa_status === "read" ? "✓✓" : "✓"}
@@ -433,8 +484,8 @@ export function ChatInterface() {
                       <div>
                         <p className="font-medium">Primeiro contato</p>
                         <p className="text-xs text-muted-foreground">
-                          {selectedConversa.contato?.created_at 
-                            ? format(new Date(selectedConversa.contato.created_at), "PPP", { locale: ptBR })
+                            {selectedConversa.contato?.created_at 
+                            ? safeFormat(selectedConversa.contato.created_at, "PPP")
                             : "N/A"}
                         </p>
                       </div>
@@ -444,8 +495,8 @@ export function ChatInterface() {
                       <div>
                         <p className="font-medium">Última interação</p>
                         <p className="text-xs text-muted-foreground">
-                          {selectedConversa.ultima_mensagem_at
-                            ? format(new Date(selectedConversa.ultima_mensagem_at), "PPp", { locale: ptBR })
+                            {selectedConversa.ultima_mensagem_at
+                            ? safeFormat(selectedConversa.ultima_mensagem_at, "PPp")
                             : "N/A"}
                         </p>
                       </div>
@@ -483,45 +534,4 @@ export function ChatInterface() {
   );
 }
 
-// Sub-componente memoizado para cada item da lista de conversas
-const ConversationItem = React.memo(({ conversa, isSelected, onSelect }: any) => {
-  return (
-    <button
-      onClick={() => onSelect(conversa.id)}
-      className={cn(
-        "w-full p-4 flex gap-3 text-left transition-colors hover:bg-muted/50",
-        isSelected && "bg-muted"
-      )}
-    >
-      <Avatar className="h-10 w-10 border">
-        <AvatarFallback className="bg-primary/10 text-primary">
-          {conversa.contato?.nome?.[0] || "C"}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-medium truncate">{conversa.contato?.nome || "Sem Nome"}</span>
-          <span className="text-[10px] text-muted-foreground">
-            {conversa.ultima_mensagem_at && format(new Date(conversa.ultima_mensagem_at), "HH:mm")}
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {conversa.ultima_mensagem_preview || "Sem mensagens"}
-        </p>
-        <div className="mt-2 flex items-center gap-2">
-           <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
-            {conversa.status}
-           </Badge>
-           {conversa.agente && (
-             <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-               <User className="h-2.5 w-2.5" />
-               {conversa.agente.nome}
-             </span>
-           )}
-        </div>
-      </div>
-    </button>
-  );
-});
-
-ConversationItem.displayName = "ConversationItem";
+// O componente ConversationItem foi movido para o topo do arquivo para evitar problemas de hoisting com const.

@@ -177,7 +177,7 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, interacoes, isOpen, onClo
                             {getInteractionIcon(interacao.tipo)} {interacao.tipo.replace('_', ' ')}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
-                            {format(new Date(interacao.data_criacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            {interacao.data_criacao ? new Date(interacao.data_criacao).toLocaleString('pt-BR') : 'N/A'}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
@@ -191,7 +191,7 @@ const LeadDetail: React.FC<LeadDetailProps> = ({ lead, interacoes, isOpen, onClo
                       <div className="flex justify-between items-start">
                         <span className="text-xs font-semibold">Lead Criado</span>
                         <span className="text-[10px] text-muted-foreground">
-                          {format(new Date(lead.data_criacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          {lead.data_criacao ? new Date(lead.data_criacao).toLocaleString('pt-BR') : 'N/A'}
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
