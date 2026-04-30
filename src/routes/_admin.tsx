@@ -38,6 +38,7 @@ function AdminLayout() {
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [alertasCount, setAlertasCount] = useState<{ total: number; criticos: number }>({
     total: 0,
     criticos: 0,
