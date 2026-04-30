@@ -37,6 +37,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { AssinaturaStatus } from "@/hooks/use-auth";
+import { AdminStatCard } from "@/components/admin/AdminStatCard";
+
 
 export const Route = createFileRoute("/_admin/admin")({
   head: () => ({
