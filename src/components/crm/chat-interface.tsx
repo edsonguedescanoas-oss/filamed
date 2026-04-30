@@ -41,32 +41,40 @@ const ConversationItem = React.memo(({ conversa, isSelected, onSelect }: any) =>
     <button
       onClick={() => onSelect(conversa.id)}
       className={cn(
-        "w-full p-4 flex gap-3 text-left transition-colors hover:bg-muted/50",
-        isSelected && "bg-muted"
+        "w-full p-4 flex gap-4 text-left transition-all duration-200 outline-none focus-visible:bg-muted/80",
+        isSelected 
+          ? "bg-accent/40 shadow-[inset_4px_0_0_0_var(--primary)]" 
+          : "hover:bg-muted/40 active:bg-muted/60"
       )}
+      aria-selected={isSelected}
     >
-      <Avatar className="h-10 w-10 border">
-        <AvatarFallback className="bg-primary/10 text-primary">
-          {conversa.contato?.nome?.[0] || "C"}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="font-medium truncate">{conversa.contato?.nome || "Sem Nome"}</span>
-          <span className="text-[10px] text-muted-foreground">
+      <div className="relative shrink-0">
+        <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+          <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold">
+            {conversa.contato?.nome?.[0] || "C"}
+          </AvatarFallback>
+        </Avatar>
+        <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-success" aria-hidden="true" />
+      </div>
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <div className="flex items-center justify-between mb-0.5">
+          <span className="font-bold text-sm truncate text-foreground group-hover:text-primary transition-colors">
+            {conversa.contato?.nome || "Sem Nome"}
+          </span>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
             {conversa.ultima_mensagem_at && safeFormat(conversa.ultima_mensagem_at, "HH:mm")}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {conversa.ultima_mensagem_preview || "Sem mensagens"}
+        <p className="text-xs text-muted-foreground/80 truncate leading-normal">
+          {conversa.ultima_mensagem_preview || "Nenhuma mensagem enviada"}
         </p>
         <div className="mt-2 flex items-center gap-2">
-           <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
+           <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 font-bold uppercase tracking-wider bg-muted/60">
             {conversa.status}
            </Badge>
            {conversa.agente && (
-             <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-               <User className="h-2.5 w-2.5" />
+             <span className="text-[9px] text-muted-foreground font-medium flex items-center gap-1">
+               <User className="h-2.5 w-2.5 opacity-60" />
                {conversa.agente.nome}
              </span>
            )}
@@ -83,7 +91,15 @@ export function ChatInterface() {
   const queryClient = useQueryClient();
   const [selectedConversaId, setSelectedConversaId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
+  const [showSidebar, setShowSidebar] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // No mobile, se selecionou uma conversa, esconde a sidebar automaticamente
+  useEffect(() => {
+    if (selectedConversaId && window.innerWidth < 768) {
+      setShowSidebar(false);
+    }
+  }, [selectedConversaId]);
 
   // 1. Carregar conversas com paginação infinita
   const { 
@@ -259,28 +275,42 @@ export function ChatInterface() {
   }, [messageText, sendMutation, selectedConversaId]);
 
   return (
-    <div className="flex h-full bg-background overflow-hidden">
+    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden relative">
       {/* Sidebar - Lista de Conversas */}
-      <div className="w-80 md:w-96 border-r flex flex-col shrink-0">
-        <div className="p-4 space-y-4">
+      <div className={cn(
+        "absolute inset-0 z-20 bg-background md:relative md:flex md:inset-auto w-full md:w-80 lg:w-96 border-r flex-col shrink-0 transition-transform duration-300 ease-in-out",
+        !showSidebar && "-translate-x-full md:translate-x-0"
+      )}>
+        <div className="p-4 space-y-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg">Caixa de Entrada</h2>
-            <Button variant="ghost" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
+            <h2 className="font-display font-bold text-xl tracking-tight">Conversas</h2>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Filtrar">
+                <Filter className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full md:hidden" onClick={() => setShowSidebar(false)} aria-label="Fechar menu">
+                <ChevronRight className="h-4 w-4 rotate-180" />
+              </Button>
+            </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar conversas..." className="pl-9" />
+          <div className="relative group">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input placeholder="Buscar por nome ou telefone..." className="pl-9 h-10 bg-muted/30 border-none focus-visible:ring-1 focus-visible:ring-primary rounded-xl" />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="divide-y">
+          <div className="divide-y divide-border/40">
             {loadingConversas ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
+              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="text-sm font-medium">Carregando conversas...</span>
+              </div>
             ) : conversas.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground">Nenhuma conversa.</div>
+              <div className="flex flex-col items-center justify-center p-12 gap-3 text-muted-foreground">
+                <MessageSquare className="h-10 w-10 opacity-20" />
+                <span className="text-sm">Nenhuma conversa encontrada.</span>
+              </div>
             ) : (
               <>
                 {conversas.map((conversa: any) => (
@@ -298,8 +328,10 @@ export function ChatInterface() {
                       size="sm" 
                       onClick={() => fetchNextConversas()}
                       disabled={isFetchingNextConversas}
+                      className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
                     >
-                      {isFetchingNextConversas ? <Loader2 className="h-4 w-4 animate-spin" /> : "Carregar mais"}
+                      {isFetchingNextConversas ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      {isFetchingNextConversas ? "Buscando..." : "Ver mais conversas"}
                     </Button>
                   </div>
                 )}
@@ -310,31 +342,40 @@ export function ChatInterface() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-gradient-mesh">
         {selectedConversa ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b flex items-center justify-between bg-background/95 backdrop-blur">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9 border">
-                  <AvatarFallback className="bg-primary/10 text-primary uppercase">
-                    {selectedConversa.contato?.nome?.[0]}
+            <div className="h-16 px-4 border-b flex items-center justify-between bg-background/80 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center gap-3 min-w-0">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-9 w-9 md:hidden shrink-0" 
+                  onClick={() => setShowSidebar(true)}
+                  aria-label="Voltar para lista"
+                >
+                  <ChevronRight className="h-5 w-5 rotate-180" />
+                </Button>
+                <Avatar className="h-10 w-10 border-2 border-background shadow-sm shrink-0">
+                  <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold">
+                    {selectedConversa.contato?.nome?.[0] || "C"}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-semibold leading-none">{selectedConversa.contato?.nome}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                    <Phone className="h-3 w-3" />
-                    {selectedConversa.contato?.telefone}
-                  </p>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm truncate leading-tight">{selectedConversa.contato?.nome}</h3>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    <div className="h-1.5 w-1.5 rounded-full bg-success" />
+                    Ativo agora
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-2 text-xs">
+              <div className="flex items-center gap-1.5">
+                <Button variant="outline" size="sm" className="hidden sm:flex h-8 gap-2 text-[10px] font-bold uppercase tracking-wider rounded-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Resolver
+                  Finalizar
                 </Button>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Mais opções">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </div>
@@ -378,19 +419,19 @@ export function ChatInterface() {
                         )}
                       >
                         <div className={cn(
-                          "group relative px-4 py-2 rounded-2xl text-sm shadow-sm",
+                          "group relative px-4 py-2.5 rounded-2xl text-[13.5px] shadow-sm transition-all hover:shadow-md",
                           isOut 
-                            ? "bg-primary text-primary-foreground rounded-tr-none" 
-                            : "bg-background border rounded-tl-none"
+                            ? "bg-primary text-primary-foreground rounded-tr-none shadow-primary/10" 
+                            : "bg-background border border-border/60 rounded-tl-none"
                         )}>
-                          <p className="whitespace-pre-wrap">{msg.conteudo}</p>
+                          <p className="whitespace-pre-wrap leading-relaxed">{msg.conteudo}</p>
                           <div className={cn(
-                            "mt-1 flex items-center gap-1.5 text-[10px]",
+                            "mt-1.5 flex items-center gap-1.5 text-[10px] font-medium",
                             isOut ? "text-primary-foreground/70 justify-end" : "text-muted-foreground"
                           )}>
                             {safeFormat(msg.created_at, "HH:mm")}
                             {isOut && (
-                              <span className="flex items-center">
+                              <span className="flex items-center gap-0.5" aria-hidden="true">
                                  {msg.wa_status === "read" ? "✓✓" : "✓"}
                               </span>
                             )}

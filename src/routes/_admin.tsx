@@ -73,21 +73,21 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-40 border-b border-border bg-background">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6">
-          <Link to="/admin" className="flex items-center gap-2 shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/40">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
+          <Link to="/admin" className="group flex items-center gap-2.5 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg transition-all active:scale-95">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground shadow-lg transition-transform group-hover:rotate-3">
               <Activity className="h-5 w-5 text-background" strokeWidth={2.5} />
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="font-display text-base font-semibold">FilaMed</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Admin
+            <div className="flex flex-col leading-none">
+              <span className="font-display text-lg font-bold tracking-tight">FilaMed</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                Administration
               </span>
             </div>
           </Link>
 
-          <nav className="order-last flex w-full items-center gap-1 overflow-x-auto pb-1 md:order-none md:ml-6 md:w-auto md:overflow-visible md:pb-0">
+          <nav className="hidden md:flex items-center gap-1 ml-6 h-10 px-1 rounded-xl bg-muted/30 border border-border/50 overflow-x-auto no-scrollbar">
             {NAV.map((item) => {
               const active = item.exact
                 ? location.pathname === item.to
@@ -99,27 +99,26 @@ function AdminLayout() {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "relative flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary",
                     active
-                      ? "bg-foreground/10 text-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/50",
                   )}
                 >
                   <Icon
                     className={cn(
-                      "h-4 w-4",
-                      showBadge && alertasCount.criticos > 0 && "text-destructive",
+                      "h-3.5 w-3.5",
+                      showBadge && alertasCount.criticos > 0 && "text-destructive animate-pulse",
                     )}
                   />
                   {item.label}
                   {showBadge && (
                     <Badge
-                      variant="outline"
                       className={cn(
-                        "h-5 min-w-[20px] justify-center px-1.5 text-[10px] font-bold",
+                        "h-4 min-w-[16px] justify-center px-1 text-[9px] font-black border-none shadow-sm",
                         alertasCount.criticos > 0
-                          ? "border-destructive/40 bg-destructive/10 text-destructive"
-                          : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                          ? "bg-destructive text-destructive-foreground"
+                          : "bg-amber-500 text-white",
                       )}
                     >
                       {alertasCount.total}
@@ -132,19 +131,24 @@ function AdminLayout() {
 
           <div className="flex-1" />
 
-          <span className="hidden sm:inline text-sm text-muted-foreground">
-            {profile?.nome_completo}
-          </span>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/">
-              <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">Site</span>
-            </Link>
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => void handleLogout()}>
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex flex-col items-end leading-tight mr-2">
+              <span className="text-xs font-bold text-foreground truncate max-w-[120px]">
+                {profile?.nome_completo}
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-wider">Super Admin</span>
+            </div>
+            
+            <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted" title="Ver Site">
+              <Link to="/">
+                <Home className="h-4 w-4" />
+              </Link>
+            </Button>
+            
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive" onClick={() => void handleLogout()} title="Sair">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 

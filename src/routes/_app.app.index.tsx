@@ -49,21 +49,39 @@ function DashboardPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Bem-vindo de volta
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-bold">{profile?.nome_completo}</h1>
-          {unidadeNome && <p className="mt-1 text-muted-foreground">{unidadeNome}</p>}
+    <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Mesh Gradient Background Decor */}
+      <div className="absolute left-1/2 top-0 -z-10 h-[400px] w-full -translate-x-1/2 bg-gradient-hero opacity-50" aria-hidden="true" />
+
+      <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+        <div className="animate-fade-up">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-primary/80">
+            <span className="h-[1px] w-8 bg-primary/30" />
+            Dashboard
+          </div>
+          <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
+            Olá, <span className="text-gradient">{profile?.nome_completo?.split(' ')[0]}</span>!
+          </h1>
+          <div className="mt-3 flex items-center gap-3 text-muted-foreground">
+            {unidadeNome && (
+              <div className="flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1 text-sm font-medium ring-1 ring-border/50">
+                <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                {unidadeNome}
+              </div>
+            )}
+            <p className="text-sm">Que bom ver você hoje.</p>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+
+        <div className="flex flex-wrap gap-2 animate-fade-in delay-200">
           {roles.length === 0 ? (
-            <Badge variant="outline">Sem perfil atribuído</Badge>
+            <Badge variant="outline" className="h-8 px-4 rounded-full border-dashed">Sem perfil atribuído</Badge>
           ) : (
             roles.map((r) => (
-              <Badge key={r} className="bg-gradient-primary capitalize">
+              <Badge 
+                key={r} 
+                className="h-8 rounded-full bg-background px-4 text-xs font-bold uppercase tracking-wider text-foreground ring-1 ring-border shadow-soft transition-transform hover:-translate-y-0.5"
+              >
                 {r}
               </Badge>
             ))
@@ -72,12 +90,12 @@ function DashboardPage() {
       </div>
 
       {unidadeId && roles.includes("admin") && (
-        <div className="mt-8">
+        <div className="mt-10 animate-fade-up delay-300">
           <OnboardingChecklist unidadeId={unidadeId} unidadeSlug={unidadeSlug} />
         </div>
       )}
 
-      <div className="mt-10">{renderWidgets()}</div>
+      <div className="mt-12 animate-fade-up delay-500">{renderWidgets()}</div>
     </div>
   );
 }

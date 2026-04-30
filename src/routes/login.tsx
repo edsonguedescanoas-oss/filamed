@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, type AppRole } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // Contas de teste compartilhando a unidade Canoas
 const TEST_ACCOUNTS: Array<{
@@ -327,38 +328,40 @@ function QuickLoginPanel() {
   };
 
   return (
-    <div className="mt-6 rounded-xl border border-dashed border-border bg-muted/30 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Zap className="h-4 w-4 text-primary" />
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Login rápido — contas de teste
+    <div className="mt-8 rounded-2xl border border-border/60 bg-muted/40 p-5 shadow-inner">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Zap className="h-3.5 w-3.5" />
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">
+          Modo Desenvolvedor — Login Rápido
         </span>
       </div>
-      <p className="text-xs text-muted-foreground mb-3">
-        Todas vinculadas à unidade <span className="font-medium text-foreground">Canoas</span>. Abra abas
-        diferentes para simular a equipe trabalhando em conjunto.
-      </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {TEST_ACCOUNTS.map((acc) => {
           const Icon = acc.icon;
           const isLoading = loadingRole === acc.role;
           return (
-            <Button
+            <button
               key={acc.role}
               type="button"
-              variant="outline"
-              size="sm"
               disabled={loadingRole !== null}
               onClick={() => quickLogin(acc)}
-              className="justify-start h-auto py-2 px-2.5"
-            >
-              {isLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Icon className={`h-3.5 w-3.5 ${acc.color}`} />
+              className={cn(
+                "group flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-border/60 bg-background transition-all hover:border-primary/50 hover:shadow-soft hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none",
+                isLoading && "ring-2 ring-primary ring-offset-2"
               )}
-              <span className="ml-1.5 text-xs">{acc.label}</span>
-            </Button>
+            >
+              <div className={cn("p-2 rounded-lg bg-muted/50 group-hover:bg-primary/5 transition-colors", acc.color.replace('text-', 'bg-').replace('-600', '-500/10'))}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <Icon className={cn("h-4 w-4", acc.color)} />
+                )}
+              </div>
+              <span className="text-[11px] font-bold text-foreground tracking-tight">{acc.label}</span>
+            </button>
           );
         })}
       </div>
